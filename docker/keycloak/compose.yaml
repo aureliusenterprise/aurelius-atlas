@@ -93,6 +93,8 @@ services:
             PROVISIONING_CLIENT_SECRET: ${PROVISIONING_CLIENT_SECRET:?}
             # The platform operator's password, the realm's one person (DD-700).
             DEMO_USER_OPERATOR_PASSWORD: ${DEMO_USER_OPERATOR_PASSWORD:?}
+            # The standalone Grafana's client secret (15.9, DD-735).
+            GRAFANA_CLIENT_SECRET: ${GRAFANA_CLIENT_SECRET:?}
             # The admin service identity (DD-666) and the validate-entity app (12.7, DD-499), the
             # sample import and the rules leg signing through them; both in infra/keycloak/.env.
             ATLAS_ADMIN_CLIENT_SECRET: ${ATLAS_ADMIN_CLIENT_SECRET:?}

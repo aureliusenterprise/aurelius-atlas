@@ -238,6 +238,11 @@ class RealmTenants:
             raise RealmError(msg)
         return found
 
+    async def username_and_email(self, user: str) -> tuple[str, str]:
+        """The username and email of the realm's user of that id, the email empty without one (TGF-07)."""
+        found, _ = await self.admin.call("GET", f"/users/{user}")
+        return str(found["username"]), str(found.get("email") or "")
+
     async def find_user(self, username: str) -> str | None:
         """The id of the realm's user of that username, or None (TAD-06)."""
         query = f"username={quote(username)}&exact=true&briefRepresentation=true"
