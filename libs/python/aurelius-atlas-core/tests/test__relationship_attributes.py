@@ -21,6 +21,7 @@ from aurelius_atlas_model import codec
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import (
     AtlasEntitiesWithExtInfo,
+    AtlasEntity,
     AtlasEntityWithExtInfo,
     AtlasRelationship,
     EntityStatus,
@@ -229,6 +230,124 @@ async def test__a_saved_hierarchy_child_attribute_keeps_one_parent_edge(store: E
     assert [found for found in after_move if found.state.value == "ACTIVE"] == [after_move[-1]]
     assert mutated(cleared, "UPDATE") == [g("-3"), g("-2")]
     assert [found for found in after_clear if found.state.value == "ACTIVE"] == []
+
+
+D = "aurelius_atlas_core.entity_discovery.EntityDiscovery.validate_parent_groups"
+
+
+@pytest.mark.covers(D, rules=["PME-07"])
+async def test__a_create_filling_both_parents_of_one_group_is_refused(store: EntityStore) -> None:
+    """``s_choice`` may hang under ``s_box`` (``box``) or under ``s_note`` (``note``), not under both (PME-07)."""
+    with pytest.raises(AtlasError) as raised:
+        await write(
+            store,
+            entity("s_box", "-1", qualifiedName="b@cl"),
+            entity("s_note", "-2", qualifiedName="n@cl"),
+            entity(
+                "s_choice",
+                "-3",
+                {"box": ref("-1", "s_box"), "note": ref("-2", "s_note")},
+                qualifiedName="c@cl",
+            ),
+        )
+
+    assert raised.value.code is AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS
+    assert "s_choice: box and note cannot both hold a parent of group s_choice_parent" in raised.value.message
+    assert GUIDS == {}
+
+
+@pytest.mark.covers(D, rules=["PME-08"])
+async def test__an_update_gains_a_second_parent_only_by_moving(store: EntityStore) -> None:
+    """The stored ``box`` edge fills the group, so naming ``note`` alone fails and nulling ``box`` moves (PME-08)."""
+    await write(
+        store,
+        entity("s_box", "-1", qualifiedName="b@cl"),
+        entity("s_note", "-2", qualifiedName="n@cl"),
+        entity("s_choice", "-3", {"box": ref("-1", "s_box")}, qualifiedName="c@cl"),
+    )
+
+    with pytest.raises(AtlasError) as raised:
+        await write(store, entity("s_choice", g("-3"), {"note": ref("-2", "s_note")}, qualifiedName="c@cl"))
+    assert raised.value.code is AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS
+
+    moved = await write(
+        store,
+        entity("s_choice", g("-3"), {"box": None, "note": ref("-2", "s_note")}, qualifiedName="c@cl"),
+    )
+    after = await relationships(store, g("-3"))
+
+    assert mutated(moved, "UPDATE") == [g("-3"), g("-1"), g("-2")]
+    assert ends(after) == [(g("-1"), g("-3"), "DELETED"), (g("-3"), g("-2"), "ACTIVE")]
+
+
+@pytest.mark.covers(D, rules=["PME-03"])
+async def test__a_group_of_two_types_is_never_compared(store: EntityStore) -> None:
+    """``r_shelf`` names ``s_box_parent`` on both ends, so a lone member per type enforces nothing (PME-03).
+
+    The group's two members, ``shelf`` and ``shelved``, sit on ``s_box`` and ``s_note``. Each type holds one,
+    so the write check finds one member of the group per type and refuses nothing.
+    """
+    answer = await write(
+        store,
+        entity("s_box", "-1", {"shelf": ref("-2", "s_note")}, qualifiedName="b@cl"),
+        entity("s_note", "-2", {"shelved": ref("-1", "s_box")}, qualifiedName="n@cl"),
+    )
+
+    assert mutated(answer, "CREATE") == [g("-1"), g("-2")]
+    assert (await relationships(store, g("-1")))[0].state.value == "ACTIVE"
+
+
+@pytest.mark.covers(D, rules=["PME-09"])
+async def test__a_child_with_no_parent_or_one_parent_writes_and_reads(store: EntityStore) -> None:
+    """Neither or one filled member of the group is valid (PME-09), and the one parent reads back alone."""
+    await write(
+        store,
+        entity("s_box", "-1", qualifiedName="b@cl"),
+        entity("s_note", "-2", qualifiedName="n@cl"),
+        entity("s_choice", "-3", qualifiedName="c@cl"),
+        entity("s_choice", "-4", {"note": ref("-2", "s_note")}, qualifiedName="d@cl"),
+    )
+
+    parentless = await read(store, g("-3"))
+    one = await read(store, g("-4"))
+    ends_one = await relationships(store, g("-4"))
+
+    assert parentless["entity"]["relationshipAttributes"].get("box") is None
+    assert parentless["entity"]["relationshipAttributes"].get("note") is None
+    assert one["entity"]["relationshipAttributes"]["note"]["guid"] == g("-2")
+    assert one["entity"]["relationshipAttributes"]["box"] is None
+    assert [found for found in ends_one if found.state.value == "ACTIVE"] == [ends_one[0]]
+
+
+@pytest.mark.covers(D, rules=["PME-03"])
+async def test__a_partial_update_naming_neither_parent_changes_nothing(store: EntityStore) -> None:
+    """A partial update that names neither member of the group leaves the entity parented as it was (PME-03).
+
+    The stored ``box`` edge alone fills the group, and the partial request touches neither member, so the check
+    has one filled member and writes nothing new.
+    """
+    await write(
+        store,
+        entity("s_box", "-1", qualifiedName="b@cl"),
+        entity("s_choice", "-2", {"box": ref("-1", "s_box")}, qualifiedName="c@cl"),
+    )
+    entity_type = store.registry.entity_type("s_choice")
+    assert entity_type is not None
+
+    touched = as_json(
+        await EntityWriter(store).update_by_unique_attributes(
+            entity_type,
+            {"qualifiedName": "c@cl"},
+            AtlasEntityWithExtInfo(
+                entity=AtlasEntity(type_name="s_choice", guid=g("-2"), attributes={"name": "Chosen"})
+            ),
+        )
+    )
+    read_back = await read(store, g("-2"))
+
+    assert mutated(touched, "PARTIAL_UPDATE") == [g("-2")]
+    assert read_back["entity"]["attributes"]["name"] == "Chosen"
+    assert read_back["entity"]["relationshipAttributes"]["box"]["guid"] == g("-1")
 
 
 @pytest.mark.covers(f"{M}.map", rules=["REL-13", "REL-14", "REL-15"])

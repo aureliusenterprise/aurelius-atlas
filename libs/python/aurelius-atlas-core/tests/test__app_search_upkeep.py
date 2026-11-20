@@ -15,7 +15,12 @@ from aurelius_atlas_core.stored_entity import StoredAppSearch
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model import codec
-from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity, AtlasObjectId
+from aurelius_atlas_model.instance import (
+    AtlasEntitiesWithExtInfo,
+    AtlasEntity,
+    AtlasObjectId,
+    AtlasRelationship,
+)
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 X = "aurelius_atlas_core.app_search_indexer.AppSearchIndexer"
@@ -98,6 +103,22 @@ class Catalogue:
         by_guid = {guid: key for key, guid in self.guids.items()}
         return [by_guid[guid] for guid in guids]
 
+    async def legacy_parent(self, rel_type: str, end1_key: str, end1_type: str, end2_key: str, end2_type: str) -> None:
+        """A parent edge added below the writer, as data that predates the parent-group rule (DD-748).
+
+        The entity create path rejects two parents of one group (PME-07), but a store that already held both
+        keeps them readable, and only a later save to that pair fails. The relationship endpoint is where such
+        an edge was made before the rule existed, so it still accepts the second parent here. The ends follow
+        the relationship's own order: for ``m4i_parent_entity_assignment`` the child (``parentEntity``) is end 1.
+        """
+        await RelationshipStore(self.store, user="u").create(
+            AtlasRelationship(
+                type_name=rel_type,
+                end1=AtlasObjectId(guid=self.guids[end1_key], type_name=end1_type),
+                end2=AtlasObjectId(guid=self.guids[end2_key], type_name=end2_type),
+            )
+        )
+
     async def assert_current(self) -> None:
         """Every stored document is the one derived from scratch; none is stale, no relationship is unseen."""
         found = await self.documents.get(list(self.guids.values()))
@@ -149,9 +170,10 @@ async def test__a_deleted_entity_leaves_every_document_and_those_below_get_their
     catalogue = await Catalogue.indexed(
         m4i("m4i_data_domain", "d"),
         m4i("m4i_data_entity", "e1", dataDomain="d"),
-        m4i("m4i_data_entity", "e2", parentEntity="e1", dataDomain="d"),
+        m4i("m4i_data_entity", "e2", dataDomain="d"),
         m4i("m4i_data_attribute", "a", dataEntity="e2"),
     )
+    await catalogue.legacy_parent("m4i_parent_entity_assignment", "e2", "m4i_data_entity", "e1", "m4i_data_entity")
 
     await catalogue.writer.delete_by_id(catalogue.guids["e1"])
     await catalogue.indexer.run_once()

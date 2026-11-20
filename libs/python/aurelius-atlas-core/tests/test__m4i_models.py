@@ -200,6 +200,49 @@ def test__every_hierarchy_child_end_is_single_and_holds_no_mirrored_attribute() 
         assert attribute not in child_attributes, name  # no mirrored attribute (HCA-02)
 
 
+# The four child ends that name a parent group, with the group each belongs to (PME-04).
+PARENT_GROUPS = {
+    "m4i_data_entity_assignment": ("endDef2", "dataDomain", "m4i_data_entity_parent"),
+    "m4i_parent_entity_assignment": ("endDef1", "parentEntity", "m4i_data_entity_parent"),
+    "m4i_field_assignment": ("endDef2", "datasets", "m4i_field_parent"),
+    "m4i_field_parent_assignment": ("endDef1", "parentField", "m4i_field_parent"),
+}
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["PME-04"])
+def test__the_parent_choice_is_named_on_the_child_ends_of_the_dictionary() -> None:
+    """The four ends of the two parent choices carry one group each, and only their definitions go to ``1.2``
+    (PME-04).
+    """  # noqa: D205 - one sentence
+    model = json.loads(MODEL.read_text(encoding="utf-8"))
+    relationships = {definition["name"]: definition for definition in model["relationshipDefs"]}
+
+    for name, (end, attribute, group) in PARENT_GROUPS.items():
+        definition = relationships[name]
+        assert definition[end]["name"] == attribute, name
+        assert definition[end]["constraints"] == [{"type": "mutuallyExclusive", "params": {"group": group}}], name
+        assert definition["typeVersion"] == "1.2", name
+
+    grouped = {name for name, (_end, _attribute, _group) in PARENT_GROUPS.items()}
+    assert sorted(
+        name for name, definition in relationships.items() if definition.get("typeVersion") == "1.2"
+    ) == sorted(grouped)
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["PME-04"])
+def test__every_bundle_carries_the_parent_groups_of_the_model() -> None:
+    """Each bundle's typedef file answers the same constraints and type version as the model (PME-04)."""
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        types = m4i_of(_typesdef(sample))
+        for name, (end, _attribute, group) in PARENT_GROUPS.items():
+            definition = types[name]
+            assert definition[end]["constraints"] == [{"type": "mutuallyExclusive", "params": {"group": group}}], (
+                sample.name,
+                name,
+            )
+            assert definition["typeVersion"] == "1.2", (sample.name, name)
+
+
 @pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["HCA-08"])
 def test__every_bundle_holds_at_most_one_value_per_hierarchy_child() -> None:
     """Each bundle keeps the model's child ends, and every entity holds at most one value per child attribute

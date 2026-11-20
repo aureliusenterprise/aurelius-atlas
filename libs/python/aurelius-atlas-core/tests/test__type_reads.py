@@ -16,6 +16,7 @@ from aurelius_atlas_model.typedef import (
     AtlasAttributeDef,
     AtlasBaseTypeDef,
     AtlasClassificationDef,
+    AtlasConstraintDef,
     AtlasEntityDef,
     AtlasEnumDef,
     AtlasEnumElementDef,
@@ -97,6 +98,63 @@ async def test__a_name_without_a_definition_fails(
     error = failure(lambda: store.get_by_name(name))
 
     assert (error.code, error.params) == (code, params)
+
+
+@pytest.mark.covers("aurelius_atlas_core.typedef_store.TypedefStore.get_by_name", rules=["PME-05"])
+async def test__a_parent_group_constraint_is_served_on_the_end_and_the_attribute() -> None:
+    """The metamodel answers a parent-group constraint both on the end definition and on the built child
+    attribute (PME-05, DV-183).
+    """  # noqa: D205 - one sentence
+    group = [{"type": "mutuallyExclusive", "params": {"group": "a_child_parent"}}]
+    store = TypedefStore(TypeRegistry(), MemoryTypedefDocument())
+    await store.load()
+    await store.create_types_def(
+        types_def_of(
+            [
+                entity("a_child"),
+                entity("b_box"),
+                entity("c_note"),
+                AtlasRelationshipDef(
+                    name="a_boxed",
+                    end_def1=AtlasRelationshipEndDef(type="b_box", name="boxed", cardinality=Cardinality.SET),
+                    end_def2=AtlasRelationshipEndDef(
+                        type="a_child",
+                        name="box",
+                        cardinality=Cardinality.SINGLE,
+                        constraints=[AtlasConstraintDef(type="mutuallyExclusive", params={"group": "a_child_parent"})],
+                    ),
+                ),
+                AtlasRelationshipDef(
+                    name="a_noted",
+                    end_def1=AtlasRelationshipEndDef(
+                        type="a_child",
+                        name="note",
+                        cardinality=Cardinality.SINGLE,
+                        constraints=[AtlasConstraintDef(type="mutuallyExclusive", params={"group": "a_child_parent"})],
+                    ),
+                    end_def2=AtlasRelationshipEndDef(type="c_note", name="noted", cardinality=Cardinality.SET),
+                ),
+            ]
+        )
+    )
+
+    boxed = store.get_by_name("a_boxed")
+    noted = store.get_by_name("a_noted")
+    child = store.get_by_name("a_child")
+    assert isinstance(boxed, AtlasRelationshipDef)
+    assert isinstance(noted, AtlasRelationshipDef)
+    assert isinstance(child, AtlasEntityDef)
+    assert boxed.end_def2 is not None
+    assert noted.end_def1 is not None
+    by_name = {attribute.name: attribute for attribute in child.relationship_attribute_defs or [] if attribute.name}
+
+    assert [constraint.to_json() for constraint in boxed.end_def2.constraints or []] == group
+    assert [constraint.to_json() for constraint in noted.end_def1.constraints or []] == group
+    assert sorted(by_name) == ["box", "note"]
+    assert {name: [c.to_json() for c in by_name[name].constraints or []] for name in ("box", "note")} == {
+        "box": group,
+        "note": group,
+    }
 
 
 @pytest.mark.covers("aurelius_atlas_core.typedef_store.TypedefStore.get_by_guid", rules=["TYR-02"])

@@ -22,12 +22,19 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
+from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.impexp import AtlasImportRequest
-from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity, AtlasObjectId, EntityStatus
+from aurelius_atlas_model.instance import (
+    AtlasEntitiesWithExtInfo,
+    AtlasEntity,
+    AtlasObjectId,
+    AtlasRelationship,
+    EntityStatus,
+)
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -286,6 +293,25 @@ def m4i(type_name: str, key: str, **relations: list[str] | str | None) -> AtlasE
     )
 
 
+async def legacy_parent(
+    catalogue: Catalogue, rel_type: str, end1_key: str, end1_type: str, end2_key: str, end2_type: str
+) -> None:
+    """A parent edge added below the writer, as data that predates the parent-group rule (DD-748).
+
+    The entity create path rejects two parents of one group (PME-07), but a store that already held both
+    keeps them readable, and only a later save to that pair fails. The relationship endpoint is where such
+    an edge was made before the rule existed, so it still accepts the second parent here. The ends follow
+    the relationship's own order: for ``m4i_parent_entity_assignment`` the child (``parentEntity``) is end 1.
+    """
+    await RelationshipStore(catalogue.store, user="u").create(
+        AtlasRelationship(
+            type_name=rel_type,
+            end1=AtlasObjectId(guid=catalogue.guids[end1_key], type_name=end1_type),
+            end2=AtlasObjectId(guid=catalogue.guids[end2_key], type_name=end2_type),
+        )
+    )
+
+
 def _related(others: list[str] | str | None) -> object:
     """One object id for a single parent, the ids of each key for a list, null for none."""
     if others is None:
@@ -301,9 +327,10 @@ async def test__a_breadcrumb_follows_the_first_parent_of_the_type_s_order_up() -
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
         m4i("m4i_data_entity", "e1", dataDomain="d"),
-        m4i("m4i_data_entity", "e2", parentEntity="e1", dataDomain="d"),
+        m4i("m4i_data_entity", "e2", dataDomain="d"),
         m4i("m4i_data_attribute", "a", dataEntity="e2"),
     )
+    await legacy_parent(catalogue, "m4i_parent_entity_assignment", "e2", "m4i_data_entity", "e1", "m4i_data_entity")
 
     documents = await catalogue.documents_of()
 
@@ -335,8 +362,9 @@ async def test__a_deleted_parent_is_passed_over_and_listed_nowhere() -> None:
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
         m4i("m4i_data_entity", "e1", dataDomain="d"),
-        m4i("m4i_data_entity", "e2", parentEntity="e1", dataDomain="d"),
+        m4i("m4i_data_entity", "e2", dataDomain="d"),
     )
+    await legacy_parent(catalogue, "m4i_parent_entity_assignment", "e2", "m4i_data_entity", "e1", "m4i_data_entity")
     await EntityWriter(catalogue.store, user="u").delete_by_id(catalogue.guids["e1"])
 
     documents = await catalogue.documents_of()

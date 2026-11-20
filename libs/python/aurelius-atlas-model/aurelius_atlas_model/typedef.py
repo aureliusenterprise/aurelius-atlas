@@ -82,6 +82,15 @@ CONSTRAINT_TYPE_OWNED_REF = "ownedRef"
 CONSTRAINT_TYPE_INVERSE_REF = "inverseRef"
 CONSTRAINT_PARAM_ATTRIBUTE = "attribute"
 
+CONSTRAINT_TYPE_MUTUAL_EXCLUSION = "mutuallyExclusive"
+"""The constraint type that names the parent group a relationship end belongs to (18.3, PME-01).
+
+Apache Atlas has no such constraint (DV-183).
+"""
+
+CONSTRAINT_PARAM_GROUP = "group"
+"""The parameter of a ``mutuallyExclusive`` constraint naming its group (PME-03)."""
+
 OPTION_DISPLAY_TEXT_ATTRIBUTE = "displayTextAttribute"
 ATTR_OPTION_APPLICABLE_ENTITY_TYPES = "applicableEntityTypes"
 ATTR_MAX_STRING_LENGTH = "maxStrLength"
@@ -579,6 +588,12 @@ class AtlasRelationshipEndDef(AtlasModel):
     )
 
     description: str | None = Field(default=None, description="A description of this end of the relationship.")
+
+    constraints: Annotated[list[AtlasConstraintDef] | None, AfterValidator(null_when_empty)] = Field(
+        default=None,
+        description="Constraints on the attribute this end adds, in the shape an attribute definition uses. "
+        "A ``mutuallyExclusive`` constraint names the parent group this end belongs to (PME-01, DV-183).",
+    )
 
 
 class AtlasRelationshipDef(AtlasStructDef):

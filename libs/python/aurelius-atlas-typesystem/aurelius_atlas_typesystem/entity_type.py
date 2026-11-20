@@ -10,6 +10,8 @@ from aurelius_atlas_model.typedef import (
     ATLAS_TYPE_INT,
     ATLAS_TYPE_STRING,
     ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE,
+    CONSTRAINT_PARAM_GROUP,
+    CONSTRAINT_TYPE_MUTUAL_EXCLUSION,
     OPTION_DISPLAY_TEXT_ATTRIBUTE,
     AtlasAttributeDef,
     AtlasEntityDef,
@@ -115,6 +117,24 @@ class EntityType(HierarchyType):
         if relationship_type is not None and relationship_type in attributes:
             return attributes[relationship_type]
         return next(iter(attributes.values()))
+
+    def parent_groups(self) -> dict[str, frozenset[str]]:
+        """This type's parent groups by group name: each the relationship attributes that hold one parent
+        (PME-03, DV-183).
+
+        A group comes from a ``mutuallyExclusive`` constraint on a relationship attribute of this type, so a
+        group that names no second attribute of this type holds one attribute and enforces nothing.
+        """  # noqa: D205 - one sentence
+        groups: dict[str, set[str]] = {}
+        for name, by_relationship in self.relationship_attributes.items():
+            for attribute in by_relationship.values():
+                for constraint in attribute.attribute_def.constraints or []:
+                    if not constraint.is_constraint_type(CONSTRAINT_TYPE_MUTUAL_EXCLUSION):
+                        continue
+                    group = constraint.get_param(CONSTRAINT_PARAM_GROUP)
+                    if isinstance(group, str) and group.strip():
+                        groups.setdefault(group.strip(), set()).add(name)
+        return {group: frozenset(names) for group, names in groups.items() if len(names) > 1}
 
     def _resolve_references(self, registry: TypeRegistry) -> None:
         super()._resolve_references(registry)

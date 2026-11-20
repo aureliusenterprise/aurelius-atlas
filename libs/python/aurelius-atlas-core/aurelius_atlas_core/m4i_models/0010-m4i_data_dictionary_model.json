@@ -1356,6 +1356,14 @@
             },
             "endDef2": {
                 "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_data_entity_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "dataDomain",
@@ -1365,7 +1373,7 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],
@@ -1556,6 +1564,14 @@
             },
             "endDef2": {
                 "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_field_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "datasets",
@@ -1565,13 +1581,21 @@
             "options": {},
             "propagateTags": "TWO_TO_ONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],
             "description": "The relationship between the data field to other data entities",
             "endDef1": {
                 "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_field_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "parentField",
@@ -1588,13 +1612,21 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],
             "description": "The relationship between the data entity to other data entities",
             "endDef1": {
                 "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_data_entity_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "parentEntity",
@@ -1611,7 +1643,7 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],

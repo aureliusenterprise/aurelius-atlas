@@ -429,6 +429,150 @@ def test__relationship_ends_must_fit_the_category(
     assert failure(entity("t"), typedef).code is code
 
 
+def group(name: str = "g") -> list[AtlasConstraintDef]:
+    """A ``mutuallyExclusive`` constraint on the group ``name`` (PME-01)."""
+    return [AtlasConstraintDef(type="mutuallyExclusive", params={"group": name})]
+
+
+@pytest.mark.covers("aurelius_atlas_typesystem.relationship_type.validate_relationship_def", rules=["PME-01"])
+@pytest.mark.parametrize(
+    ("category", "end1", "end2", "message"),
+    [
+        (
+            "COMPOSITION",
+            end("t", "a", isContainer=True, cardinality="SET", constraints=group()),
+            end("t", "b"),
+            "r end a is a container",
+        ),
+        (
+            "COMPOSITION",
+            end("t", "a"),
+            end("t", "b", cardinality="SET", isContainer=True, constraints=[AtlasConstraintDef(type="ownedRef")]),
+            "r end b is a container",
+        ),
+        (None, end("t", "a", constraints=group("")), end("t", "b"), "r end a has no mutually exclusive group"),
+        (None, end("t", "a", constraints=group("   ")), end("t", "b"), "r end a has no mutually exclusive group"),
+        (
+            None,
+            end("t", "a", constraints=[AtlasConstraintDef(type="mutuallyExclusive")]),
+            end("t", "b"),
+            "r end a has no mutually exclusive group",
+        ),
+        (
+            None,
+            end("t", "a", constraints=[AtlasConstraintDef(type="mutuallyExclusive", params={"group": 7})]),
+            end("t", "b"),
+            "r end a has no mutually exclusive group",
+        ),
+    ],
+    ids=[
+        "constraint-on-container",
+        "other-constraint-on-container",
+        "empty-group",
+        "blank-group",
+        "no-group",
+        "group-not-a-string",
+    ],
+)
+def test__an_end_constraint_needs_a_child_end_and_a_group(
+    category: str | None, end1: AtlasRelationshipEndDef, end2: AtlasRelationshipEndDef, message: str
+) -> None:
+    """A constraint on a container end, or a mutual exclusion with no group, fails the definition (DV-183)."""
+    typedef = relationship("r", end1, end2, relationship_category=category)
+
+    assert failure(entity("t"), typedef).code is AtlasErrorCode.RELATIONSHIPDEF_INVALID
+    assert failure(entity("t"), typedef).message == f"Invalid relationshipDef: {message}"
+
+
+@pytest.mark.covers("aurelius_atlas_typesystem.relationship_type.validate_relationship_def", rules=["PME-01"])
+def test__an_end_carries_constraints_like_an_attribute_does() -> None:
+    """The same constraint shape an attribute definition uses, on both ends; a valid child end resolves."""
+    registry = resolve(
+        entity("t"),
+        relationship(
+            "r",
+            end("t", "a", cardinality="SET"),
+            end("t", "b", constraints=group("g")),
+            relationship_category="ASSOCIATION",
+        ),
+    )
+    definition = relationship_type(registry, "r").relationship_def
+    assert definition.end_def1 is not None
+    assert definition.end_def2 is not None
+
+    assert [end.constraints for end in (definition.end_def1, definition.end_def2)] == [None, group("g")]
+
+
+@pytest.mark.covers("aurelius_atlas_typesystem.relationship_type.RelationshipType._add_to_end", rules=["PME-02"])
+def test__a_built_child_attribute_carries_the_end_s_constraints_and_the_group_is_seen() -> None:
+    """The registry copies the end's constraints onto the attribute it builds, and the type sees the group."""
+    registry = resolve(
+        entity("data_entity"),
+        entity("data_domain"),
+        entity("dataset"),
+        relationship(
+            "data_entity_assignment",
+            end("data_domain", "dataEntity", cardinality="SET"),
+            end("data_entity", "dataDomain", constraints=group("entity_parent")),
+            relationship_category="ASSOCIATION",
+        ),
+        relationship(
+            "parent_entity_assignment",
+            end("data_entity", "parentEntity", constraints=group("entity_parent")),
+            end("data_entity", "childEntity", cardinality="SET"),
+            relationship_category="ASSOCIATION",
+        ),
+        relationship(
+            "field_assignment",
+            end("dataset", "fields", cardinality="SET"),
+            end("data_entity", "datasets", constraints=group("field_parent")),
+            relationship_category="ASSOCIATION",
+        ),
+    )
+    data_entity = entity_type(registry, "data_entity")
+
+    built = data_entity.relationship_attribute("dataDomain")
+    assert built is not None
+    assert built.attribute_def.constraints == group("entity_parent")
+    parent = data_entity.relationship_attribute("parentEntity")
+    assert parent is not None
+    assert parent.attribute_def.constraints == group("entity_parent")
+    lone = data_entity.relationship_attribute("datasets")
+    assert lone is not None
+    assert lone.attribute_def.constraints == group("field_parent")
+    assert data_entity.parent_groups() == {"entity_parent": frozenset({"dataDomain", "parentEntity"})}
+
+
+@pytest.mark.covers("aurelius_atlas_typesystem.entity_type.EntityType.parent_groups", rules=["PME-02", "PME-03"])
+def test__a_declared_attribute_keeps_its_own_constraints_and_a_lone_group_enforces_nothing() -> None:
+    """An entity-declared attribute is reused unchanged (HCA-02's legacy path), and a group of one is dropped."""
+    registry = resolve(
+        entity("t", attributes=(attr("own", "t", constraints=group("mine")),)),
+        relationship(
+            "r_own",
+            end("t", "own", isLegacyAttribute=True, constraints=group("other")),
+            end("t", "other", cardinality="SET"),
+            relationship_category="ASSOCIATION",
+        ),
+        relationship(
+            "r_lone",
+            end("t", "lone", constraints=group("lonely")),
+            end("t", "loneOf", cardinality="SET"),
+            relationship_category="ASSOCIATION",
+        ),
+    )
+    type_ = entity_type(registry, "t")
+
+    own = type_.relationship_attribute("own")
+    assert own is not None
+    assert own.is_legacy_attribute
+    assert own.attribute_def.constraints == group("mine")
+    lone = type_.relationship_attribute("lone")
+    assert lone is not None
+    assert lone.attribute_def.constraints == group("lonely")
+    assert type_.parent_groups() == {}
+
+
 @pytest.mark.covers(
     "aurelius_atlas_typesystem.entity_type.EntityType.relationship_attribute", rules=["THY-09", "THY-10"]
 )
