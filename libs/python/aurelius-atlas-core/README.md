@@ -72,8 +72,8 @@ store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_
 await store.load()  # every stored definition into the registry
 created = await store.create_types_def(types_def)
 await store.refresh()  # pick up another process's change (at most every 5 s)
-await ModelLoader(store).load(BUILTIN_MODELS_DIR)  # addons/models of Atlas 2.4.0, and their patches
-store.get_by_name("hive_table")  # the registered definition, as resolution completed it
+await ModelLoader(store).load(BUILTIN_MODELS_DIR)  # the Area0 models of Atlas 2.4.0, and their patches
+store.get_by_name("AtlasGlossary")  # the registered definition, as resolution completed it
 search_types_def(store.registry, TypeSearchFilter.from_query([("type", "ENTITY")]))  # each kind sorted by name
 await EntityRetriever(entity_store, min_ext_info=True).entity_with_ext_info(guid)  # as GET /v2/entity/guid/{guid}
 await EntityWriter(entity_store).create_or_update(entities)  # as POST /v2/entity/bulk
@@ -91,12 +91,17 @@ workspace = true
 
 ## Vendored models
 
-`aurelius_atlas_core/models/` is `addons/models` of Apache Atlas `release-2.4.0`, byte for byte
+`aurelius_atlas_core/models/0000-Area0/` is the `0000-Area0` directory of `addons/models` of Apache Atlas
+`release-2.4.0`, byte for byte
 ([DD-032](specs/1-5-builtin-models/design.md#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)).
-To prove it, compare it with the tag:
+The five domain model directories of Atlas do not ship, because a catalogue bootstraps only the metamodel it
+serves ([ADR 068](../../../docs/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves.md),
+[DD-715](../../../specs/18-1-metamodel-scope/design.md#dd-715-the-shipped-models-directory-holds-only-the-area0-model-files)).
+`ModelLoader.load` reads any directory you pass it, so an operator who copies Atlas's `addons/models` there
+gets the old set. To prove it, compare the directory with the tag:
 
 ```bash
-diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurelius-atlas-core/aurelius_atlas_core/models
+diff -r <apache-atlas checkout at release-2.4.0>/addons/models/0000-Area0 libs/python/aurelius-atlas-core/aurelius_atlas_core/models/0000-Area0
 ```
 
 ## Documentation

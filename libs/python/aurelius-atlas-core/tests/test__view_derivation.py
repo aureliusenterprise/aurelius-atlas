@@ -186,6 +186,21 @@ def test__the_card_description_falls_back_to_the_description_attribute(m4i: Type
     assert "description" not in view_of(only_definition, entity_type).attributes
 
 
+@pytest.mark.covers(f"{V}.view_of", rules=["MMS-09"])
+def test__the_card_carries_the_type_alias_whenever_it_holds_one(m4i: TypeRegistry) -> None:
+    """attributes.typeAlias rides the card as typeAlias; empty or absent answers none (MMS-09, DD-721)."""
+    entity_type = type_of(m4i, "m4i_dataset")
+
+    aliased = hand("m4i_dataset", entity_type, qualifiedName="s", typeAlias="Data Set")
+    assert view_of(aliased, entity_type).type_alias == "Data Set"
+    assert view_of(aliased, entity_type).to_json()["typeAlias"] == "Data Set"
+
+    blank = hand("m4i_dataset", entity_type, qualifiedName="s", typeAlias="")
+    assert view_of(blank, entity_type).type_alias is None
+    assert "typeAlias" not in view_of(blank, entity_type).to_json()
+    assert view_of(hand("m4i_dataset", entity_type, qualifiedName="s"), entity_type).type_alias is None
+
+
 @pytest.mark.covers(f"{V}.view_of", rules=["AVS-02"])
 def test__an_entity_without_a_document_answers_empty_and_unmarked() -> None:
     """No document: breadcrumb, relations and quality empty; no governed key; not stale (AVS-02)."""

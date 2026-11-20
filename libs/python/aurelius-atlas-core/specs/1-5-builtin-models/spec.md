@@ -11,7 +11,9 @@ into the typedef store of 1.4, as `AtlasTypeDefStoreInitializer` does:
 
 - the 2.4.0 models, vendored unchanged into `aurelius-atlas-core`
   ([DD-032](design.md#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)),
-  read from a directory the server can be pointed at (`AURELIUS_ATLAS_SERVER_MODELS_DIR`);
+  read from a directory the server can be pointed at (`AURELIUS_ATLAS_SERVER_MODELS_DIR`). Since 18.1 the
+  shipped copy is the `0000-Area0` directory of `addons/models` and the domain models stay behind
+  ([ADR 068](../../../../../docs/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves.md));
 - each model file creates the types not yet stored and updates those whose `typeVersion` is newer
   (`createUpdateTypesDef`);
 - the typedef patches, with the nine patch actions of Atlas 2.4.0, and the record of each patch's
@@ -55,7 +57,7 @@ High availability is replaced by DD-029 and DD-033: every process may load the m
 | MDL-13 | `UPDATE_ATTRIBUTE_METADATA` (entities, structs): to the attributes named `attributeName`, ignoring case, applies each of `params`: `searchWeight`, a number, -1 or 1 to 10; `indexType`, `DEFAULT` or `STRING`, ignored when empty. Any other parameter or value is an error that ends the patch file (MDL-06). A type without the attribute still has the patch `APPLIED`                                                                                                                                                                                                                                                  |
 | MDL-14 | `ADD_SUPER_TYPES` (entities): without `superTypes` the patch is `SKIPPED`, before the version check; otherwise each is added                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | MDL-15 | Each model file and each patch is one change of the typedef store (TDS-10, TDS-11), decided on the newest stored definitions and records: when another process wrote first, it is decided again, so processes starting together create, update and patch each type once (DD-033)                                                                                                                                                                                                                                                                                                                                            |
-| MDL-16 | The server loads the models after the stored definitions (TDS-12) and before it answers, from `AURELIUS_ATLAS_SERVER_MODELS_DIR`, by default the vendored 2.4.0 models, which are byte-identical to `addons/models` of `release-2.4.0`. Built-in model types and patch records name no user (DV-07)                                                                                                                                                                                                                                                                                                                         |
+| MDL-16 | The server loads the models after the stored definitions (TDS-12) and before it answers, from `AURELIUS_ATLAS_SERVER_MODELS_DIR`, by default the vendored 2.4.0 models — since 18.1 the `0000-Area0/` directory of `addons/models`, whose files are byte-identical to `release-2.4.0` ([ADR 068](../../../../../docs/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves.md)). Built-in model types and patch records name no user (DV-07)                                                                                                                                                             |
 
 ## Java origin
 
@@ -72,7 +74,7 @@ Apache Atlas `release-2.4.0`:
   `RequestContext.isInTypePatching` allows
 - `intg/.../model/patches/AtlasPatch.java`: `PatchStatus`
 - `repository/.../graph/GraphBackedSearchIndexer.java`: `isValidSearchWeight`
-- `addons/models/`: the models and patches, vendored
+- `addons/models/`: the models and patches, vendored (since 18.1 the shipped `0000-Area0/` only)
 - tests: `repository/src/test/java/org/apache/atlas/patches/AtlasPatchRegistryTest.java`
 
 ## Deviations

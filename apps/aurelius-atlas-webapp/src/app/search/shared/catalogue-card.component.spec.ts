@@ -42,6 +42,7 @@ const CARD: EntityCard = {
     name: "cost_centre_code",
     qualifiedName: "cost_centre_code@finance",
     displayText: "cost_centre_code",
+    typeAlias: "Cost Code",
     definition: "The **code** of the cost centre.",
     status: "ACTIVE",
     stale: false,
@@ -84,7 +85,16 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
         expect(normalize(title?.textContent)).toBe("cost_centre_code");
         title.click();
         expect(host.last).toBe("e1");
-        // The badge carries the dictionary name and icon, no alias (DV-167).
+        // The badge carries the card's alias alone, with no base-type
+        // suffix — the legacy card's shape (7-21a), on the field the card
+        // shape gained in 18.1 (MMS-09, DD-721).
+        const badge = fixture.nativeElement.querySelector("aurelius-atlas-ui-type-name");
+        expect(normalize(badge?.textContent)).toContain("Cost Code");
+        expect(normalize(badge?.textContent)).not.toContain("Data Attribute");
+    });
+
+    it("a card without an alias badges the dictionary type name (MMS-09)", () => {
+        const { fixture } = mount({ ...CARD, typeAlias: undefined });
         const badge = fixture.nativeElement.querySelector("aurelius-atlas-ui-type-name");
         expect(normalize(badge?.textContent)).toContain("Data Attribute");
     });
@@ -221,7 +231,7 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
     });
 
     it("an unmapped type answers a raw badge name and no icon (DD-378)", () => {
-        const { fixture } = mount({ ...CARD, typeName: "spark_application" });
+        const { fixture } = mount({ ...CARD, typeName: "spark_application", typeAlias: undefined });
         const badge = fixture.nativeElement.querySelector("aurelius-atlas-ui-type-name");
         expect(normalize(badge?.textContent)).toContain("spark_application");
     });

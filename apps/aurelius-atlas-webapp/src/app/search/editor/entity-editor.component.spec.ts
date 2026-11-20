@@ -113,6 +113,12 @@ const TYPEDEFS: AtlasTypesDef = {
         },
         { name: "DataSet", superTypes: ["Asset"], attributeDefs: [] },
         { name: "Process", superTypes: ["Asset"], attributeDefs: [] },
+        // Two metamodel types the icon map names (MMS-07): the only ones the
+        // create picker offers (EDT-04 as scoped). `m4i_collection` extends
+        // `m4i_dataset`, so picking the subtype loads the supertype whole and a
+        // re-pick up the chain asks nothing (VDE-02's cache).
+        { name: "m4i_dataset", superTypes: ["DataSet"], attributeDefs: [] },
+        { name: "m4i_collection", superTypes: ["m4i_dataset"], attributeDefs: [] },
         { name: "AtlasGlossary", attributeDefs: [] },
         { name: "__AtlasHauskeeping", attributeDefs: [] },
     ],
@@ -478,7 +484,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         const blocks = [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-relationship")];
         expect(blocks.map((block) => block.dataset["field"])).toEqual(["inputToProcesses", "model"]);
-        expect(normalize(blocks[0].querySelector("p.label")?.textContent)).toBe("inputToProcesses (Process)");
+        // The label is the catalogue string alone (EDT-34, 7-33, DD-724): no
+        // target-type bracket — the chips lead with the type (DD-341).
+        expect(normalize(blocks[0].querySelector("p.label")?.textContent)).toBe("Input to Processes");
         // The mandatory flag marks the label (EDT-13); the optional one does not.
         expect(blocks[1].querySelector("p.label .has-text-danger")).toBeNull();
 
@@ -536,7 +544,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         vi.useRealTimers();
     });
 
-    it("edit mode renders the entity's type as static text, not a picker (EDT-04, DD-330)", () => {
+    it("edit mode renders the entity's type as a static badge, not a picker (EDT-04, DD-330)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
@@ -544,7 +552,19 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(normalize(compiled.querySelector(".aurelius-editor-type")?.textContent)).toBe("DataSet");
     });
 
-    it("create mode: the picker lists the entity typedef headers minus glossary and internals (EDT-04, VDE-02)", () => {
+    it("the static badge shows the entity's alias with the base type (EDT-04, MMS-09, DD-721)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, {
+            ...ANSWER,
+            attributes: { ...ANSWER.attributes, typeAlias: "Variant Set" },
+        });
+
+        // The alias wins as the name, the base type rides the suffix, and
+        // the icon resolves off the raw type — the details header's shape.
+        expect(normalize(compiled.querySelector(".aurelius-editor-type")?.textContent)).toBe("Variant Set (DataSet)");
+    });
+
+    it("create mode: the picker lists only the metamodel types (EDT-04, VDE-02, MMS-07)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true });
         arriveTypeDefs(fixture, httpMock);
 
@@ -552,14 +572,18 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(select).toBeTruthy();
         const options = [...(select?.querySelectorAll("option") ?? [])].map((option) => option.textContent);
         // The placeholder row is the hidden option; the data rows are the
-        // picker list — no AtlasGlossary, no __ — ordered by the label shown
-        // (DD-497). The rows ride the entity typedef headers (VDE-02), which
-        // carry no display name, so every label is the plain type name.
+        // picker list, ordered by the label shown (DD-497). The rows ride the
+        // entity typedef headers the icon map names (EDT-04 as scoped by
+        // MMS-07), labelled by their dictionary display name (DD-379): the two
+        // m4i types, not the base supertypes an author never creates.
         const dataRows = [...(select?.querySelectorAll("option") ?? [])]
             .filter((option) => !option.hasAttribute("hidden"))
             .map((option) => option.textContent);
-        expect(dataRows).toEqual(["Asset", "DataSet", "Process", "Referenceable"]);
+        expect(dataRows).toEqual(["Collection", "Dataset"]);
         expect(options).not.toContain("AtlasGlossary");
+        expect(options).not.toContain("DataSet");
+        expect(options).not.toContain("Asset");
+        expect(options).not.toContain("Referenceable");
         // The bare route (no type yet): the picker alone, no form (DD-330).
         expect(compiled.querySelector("form")).toBeNull();
     });
@@ -570,16 +594,16 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         const select = compiled.querySelector<HTMLSelectElement>(".aurelius-editor-picker select")!;
-        const dataSetIndex = [...select.querySelectorAll("option")].find(
-            (option) => option.value !== "" && option.textContent === "DataSet",
+        const datasetIndex = [...select.querySelectorAll("option")].find(
+            (option) => option.value !== "" && option.textContent === "Dataset",
         )!.value;
-        select.value = dataSetIndex;
+        select.value = datasetIndex;
         select.dispatchEvent(new Event("change"));
         fixture.detectChanges();
 
         // The type is part of the path: the pick is a navigation, and the
         // form appears only when the route arrives with the type (DD-330).
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "DataSet"] } }]);
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "m4i_dataset"] } }]);
         expect(compiled.querySelector("form")).toBeNull();
         httpMock.verify(); // no entity read in create mode (EDT-02's edit-only)
     });
@@ -628,8 +652,12 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
     });
 
     it("switching the type re-seeds the form through the route (EDT-04, DD-330)", () => {
-        const { fixture, compiled, httpMock, paramMap } = setup({ create: true, createType: "DataSet" });
-        arriveTypeDefs(fixture, httpMock, "DataSet");
+        // `m4i_collection` (the route type) extends `m4i_dataset`, so the
+        // supertype's whole typedef already sits in its chain and the switch
+        // up the chain asks nothing (VDE-02 — the store holds every supertype
+        // whole, and the guard skips a def already in hand).
+        const { fixture, compiled, httpMock, paramMap } = setup({ create: true, createType: "m4i_collection" });
+        arriveTypeDefs(fixture, httpMock, "m4i_collection", chainFor(TYPEDEFS, "m4i_collection"));
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
@@ -638,32 +666,35 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         // Re-pick in the picker: the switch is a navigation to the new type.
         const select = compiled.querySelector<HTMLSelectElement>(".aurelius-editor-picker select")!;
-        const refIndex = [...select.querySelectorAll("option")].find(
-            (option) => option.value !== "" && option.textContent === "Referenceable",
+        const datasetIndex = [...select.querySelectorAll("option")].find(
+            (option) => option.value !== "" && option.textContent === "Dataset",
         )!.value;
-        select.value = refIndex;
+        select.value = datasetIndex;
         select.dispatchEvent(new Event("change"));
         fixture.detectChanges();
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "Referenceable"] } }]);
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "m4i_dataset"] } }]);
 
         // The router answers: the same component with the new type param. The
-        // new type asks nothing: Referenceable's whole typedef already sits in
-        // the chain the DataSet read answered (VDE-02 — the store holds every
-        // supertype whole, and the guard skips a def already in hand). The
-        // DataSet form is gone (Referenceable carries no rendered field —
-        // qualifiedName never renders, EDT-03) and a save posts the new type.
-        paramMap.next(convertToParamMap({ type: "Referenceable" }));
+        // new type asks nothing (its def already sits in the chain the
+        // collection read answered, VDE-02), the old draft is dropped, and a
+        // save posts the new type fresh.
+        paramMap.next(convertToParamMap({ type: "m4i_dataset" }));
         fixture.detectChanges();
         flushValidation(httpMock);
-        expect(compiled.querySelector<HTMLInputElement>("#editor-name")).toBeNull();
+        const reseeded = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        expect(reseeded.value).toBe(""); // the half-typed draft is gone (EDT-04)
 
+        reseeded.value = "fresh_dataset";
+        reseeded.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
         const post = httpMock.expectOne(VIEW_POST_URL);
         const body = post.request.body as ViewSaveRequest;
-        expect(body.typeName).toBe("Referenceable");
+        expect(body.typeName).toBe("m4i_dataset");
+        expect(body.attributes["name"]).toBe("fresh_dataset");
         expect(body.guid).toBeUndefined(); // a fresh seed, not the old draft
-        post.flush(savedView({ guid: "9998", typeName: "Referenceable" }));
+        post.flush(savedView({ guid: "9998", typeName: "m4i_dataset" }));
         httpMock.verify();
     });
 
@@ -995,8 +1026,10 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(httpMock.match((request) => request.method === "POST" || request.method === "PUT")).toHaveLength(0);
         const block = compiled.querySelector<HTMLElement>('[data-field="model"]')!;
         // FORM-REQ-001: the red asterisk is silent on its own, so the block label
-        // carries the word too.
-        expect(normalize(block.querySelector("p.label")?.textContent)).toBe("model (Process) *(required)");
+        // carries the word too. "model" has no catalogue key (it is a sample
+        // relationship, not a dictionary attribute) so it stays the raw name
+        // (DD-723), and carries no target-type bracket (EDT-34, DD-724).
+        expect(normalize(block.querySelector("p.label")?.textContent)).toBe("model *(required)");
         expect(normalize(block.querySelector(".aurelius-editor-error")?.textContent)).toBe("Name is required.");
         expect(block.querySelector(".aurelius-relationship-box")?.classList.contains("is-danger")).toBe(true);
         expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
@@ -1055,7 +1088,34 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         // An optional field gets neither.
         const ownerBlock = compiled.querySelector<HTMLElement>('[data-field="owner"]')!;
         expect(compiled.querySelector<HTMLInputElement>("#editor-owner")?.required).toBe(false);
-        expect(normalize(ownerBlock.querySelector("label.label")?.textContent)).toBe("owner");
+        // An attribute the raw name of would be human-readable only by case
+        // gets its catalogue string (EDT-33, 7-33).
+        expect(normalize(ownerBlock.querySelector("label.label")?.textContent)).toBe("Owner");
+    });
+
+    it("the catalogue label beats the definition's displayName (EDT-03, EDT-33)", () => {
+        // The precedence EDT-03 states: catalogue string, then displayName,
+        // then the name. The dictionary's raw or typo'd displayNames must not
+        // win over the translated string (7-33, DD-722, DV-181).
+        const { fixture, compiled, httpMock } = setup();
+        const defs: AtlasTypesDef = {
+            ...TYPEDEFS,
+            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+                def.name === "Asset"
+                    ? {
+                          ...def,
+                          attributeDefs: def.attributeDefs!.map((attribute) =>
+                              attribute.name === "owner" ? { ...attribute, displayName: "owner" } : attribute,
+                          ),
+                      }
+                    : def,
+            ),
+        };
+        arrive(fixture, httpMock, ANSWER, chainFor(defs, "DataSet"));
+
+        const block = compiled.querySelector<HTMLElement>('[data-field="owner"]')!;
+
+        expect(normalize(block.querySelector("label.label")?.textContent)).toBe("Owner");
     });
 
     it("a required multi group names its rows and says required (FORM-REQ-001)", () => {

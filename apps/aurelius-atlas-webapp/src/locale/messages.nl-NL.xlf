@@ -1140,10 +1140,155 @@ The technical data governance model consists of the following types of entities:
         <target>Geen beschrijving beschikbaar.</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.description.notAvailable</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.attribute.ProcessOwner" datatype="html">
+        <source>Process Owner</source>
+        <target>Proces eigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.ProcessOwner</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.abbreviation" datatype="html">
+        <source>Abbreviation</source>
+        <target>Afkorting</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.abbreviation</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.active" datatype="html">
+        <source>Active</source>
+        <target>Actief</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.active</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.anchor" datatype="html">
+        <source>Anchor</source>
+        <target>Anker</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.anchor</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.antonyms" datatype="html">
+        <source>Antonyms</source>
+        <target>Antoniemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.antonyms</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.assignedEntities" datatype="html">
+        <source>Assigned Entities</source>
+        <target>Toegewezen entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.assignedEntities</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.attributeType" datatype="html">
+        <source>Attribute Type</source>
+        <target>Attribuuttype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.attributeType</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.attributes" datatype="html">
+        <source>Data Attributes</source>
+        <target>Data-attributen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.attributes</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.branch" datatype="html">
+        <source>Branch</source>
+        <target>Tak</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.branch</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.businessOwner" datatype="html">
+        <source>Business Data Owner</source>
+        <target>Bedrijfsmatig data eigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.businessOwner</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.businessOwnerAttribute" datatype="html">
+        <source>Business Owner Attribute</source>
+        <target>Attribuuteigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.businessOwnerAttribute</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.businessOwnerEntity" datatype="html">
+        <source>Business Owner Entity</source>
+        <target>Entiteitseigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.businessOwnerEntity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.businessRuleDescription" datatype="html">
+        <source>Business Rule Description</source>
+        <target>Bedrijfsregelomschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.businessRuleDescription</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.categories" datatype="html">
+        <source>Categories</source>
+        <target>Categorieën</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.categories</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.changeLog" datatype="html">
+        <source>Change Log</source>
+        <target>Wijzigingslogboek</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.changeLog</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.checkKind" datatype="html">
+        <source>Check Kind</source>
+        <target>Controlesoort</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.checkKind</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.childDataset" datatype="html">
+        <source>Child Dataset</source>
+        <target>Onderliggende dataset</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.childDataset</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.childEntity" datatype="html">
+        <source>Child Entity</source>
+        <target>Onderliggende entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.childEntity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.childField" datatype="html">
+        <source>Child Field</source>
+        <target>Onderliggend veld</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.childField</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.childSystem" datatype="html">
+        <source>Child System</source>
+        <target>Onderliggend systeem</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.childSystem</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.childrenCategories" datatype="html">
+        <source>Child Categories</source>
+        <target>Onderliggende categorieën</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.childrenCategories</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.attribute.classifications" datatype="html">
         <source>Classifications</source>
         <target>Classificaties</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.classifications</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.classifies" datatype="html">
+        <source>Classifies</source>
+        <target>Classificeert</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.classifies</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.clientId" datatype="html">
+        <source>Client ID</source>
+        <target>Cliënt-ID</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.clientId</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.collectionTime" datatype="html">
+        <source>Collection time</source>
+        <target>Verzameltijd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.collectionTime</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.collections" datatype="html">
+        <source>Collections</source>
+        <target>Verzamelingen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.collections</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.compliantMessage" datatype="html">
+        <source>Compliant Message</source>
+        <target>Conform bericht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.compliantMessage</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.dataDomain" datatype="html">
+        <source>Data Domain</source>
+        <target>Datadomein</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.dataDomain</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.dataEntity" datatype="html">
+        <source>Data Entity</source>
+        <target>Data-entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.dataEntity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.dataQuality" datatype="html">
+        <source>Data Quality</source>
+        <target>Datakwaliteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.dataQuality</note>
       </trans-unit>
       <trans-unit id="search.components.editor.attribute.dataentity" datatype="html">
         <source>Data entity</source>
@@ -1154,6 +1299,16 @@ The technical data governance model consists of the following types of entities:
         <source>Data owners</source>
         <target>Data Eigenaren</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.dataowners</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.datasetGuid" datatype="html">
+        <source>Dataset GUID</source>
+        <target>Dataset-guid</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.datasetGuid</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.datasets" datatype="html">
+        <source>Datasets</source>
+        <target>Datasets</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.datasets</note>
       </trans-unit>
       <trans-unit id="search.components.editor.attribute.datastewards" datatype="html">
         <source>Data stewards</source>
@@ -1177,10 +1332,140 @@ The technical data governance model consists of the following types of entities:
  Vervang het vóór import door een standaardapostrof (').</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.definitionWarning</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.attribute.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.description</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.dimension" datatype="html">
+        <source>Dimension</source>
+        <target>Dimensie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.dimension</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.displayName" datatype="html">
+        <source>Display Name</source>
+        <target>Weergavenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.displayName</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.domainLead" datatype="html">
+        <source>Domain Lead</source>
+        <target>Domeinverantwoordelijke</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.domainLead</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.email" datatype="html">
+        <source>Email</source>
+        <target>E-mail</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.email</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.endTime" datatype="html">
+        <source>End time</source>
+        <target>Eindtijd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.endTime</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.errorMessage" datatype="html">
+        <source>Error Message</source>
+        <target>Foutmelding</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.errorMessage</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.execTime" datatype="html">
+        <source>Execution Time</source>
+        <target>Uitvoeringstijd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.execTime</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.expression" datatype="html">
+        <source>Expression</source>
+        <target>Expressie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.expression</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.expressionVersion" datatype="html">
+        <source>Expression Version</source>
+        <target>Versie expressie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.expressionVersion</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.fieldType" datatype="html">
+        <source>Field Type</source>
+        <target>Veldtype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.fieldType</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.attribute.fields" datatype="html">
         <source>Fields</source>
         <target>Datavelden</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.fields</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.filterRequired" datatype="html">
+        <source>Filter Required</source>
+        <target>Filter verplicht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.filterRequired</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.fullName" datatype="html">
+        <source>Full Name</source>
+        <target>Volledige naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.fullName</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.hasContent" datatype="html">
+        <source>Has Content</source>
+        <target>Heeft inhoud</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.hasContent</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.hasPII" datatype="html">
+        <source>Has PII</source>
+        <target>Bevat PII</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.hasPII</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.hashCode" datatype="html">
+        <source>Hash Code</source>
+        <target>Hashcode</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.hashCode</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.id" datatype="html">
+        <source>ID</source>
+        <target>ID</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.id</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.inputToProcesses" datatype="html">
+        <source>Input to Processes</source>
+        <target>Invoer voor processen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.inputToProcesses</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.inputs" datatype="html">
+        <source>Inputs</source>
+        <target>Invoeren</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.inputs</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.isA" datatype="html">
+        <source>Is A</source>
+        <target>Is een</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.isA</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.isKeyData" datatype="html">
+        <source>Is Key Data</source>
+        <target>Is sleutelgegevens</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.isKeyData</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.language" datatype="html">
+        <source>Language</source>
+        <target>Taal</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.language</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.longDescription" datatype="html">
+        <source>Long Description</source>
+        <target>Uitgebreide omschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.longDescription</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.meanings" datatype="html">
+        <source>Meanings</source>
+        <target>Betekenissen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.meanings</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.metrics" datatype="html">
+        <source>Metrics</source>
+        <target>Metrics</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.metrics</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.metricsId" datatype="html">
+        <source>Metrics ID</source>
+        <target>Metrics-ID</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.metricsId</note>
       </trans-unit>
       <trans-unit id="search.components.editor.attribute.name" datatype="html">
         <source>Name*</source>
@@ -1204,15 +1489,305 @@ The technical data governance model consists of the following types of entities:
  Vervang het vóór import door een standaardapostrof (').</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.nameWarning</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.attribute.nonCompliantMessage" datatype="html">
+        <source>Non-compliant Message</source>
+        <target>Niet-conform bericht</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.nonCompliantMessage</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.attribute.notification" datatype="html">
         <source>This entity can't be saved because one or more required fields are missing.</source>
         <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.notification</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.attribute.operation" datatype="html">
+        <source>Operation</source>
+        <target>Bewerking</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.operation</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.operationEndTime" datatype="html">
+        <source>Operation end time</source>
+        <target>Eindtijd bewerking</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.operationEndTime</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.operationParams" datatype="html">
+        <source>Operation Parameters</source>
+        <target>Parameters bewerking</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.operationParams</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.operationStartTime" datatype="html">
+        <source>Operation start time</source>
+        <target>Starttijd bewerking</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.operationStartTime</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.optionalField" datatype="html">
+        <source>Optional Field</source>
+        <target>Optioneel veld</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.optionalField</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.outputFromProcesses" datatype="html">
+        <source>Output from Processes</source>
+        <target>Uitvoer uit processen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.outputFromProcesses</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.outputs" datatype="html">
+        <source>Outputs</source>
+        <target>Uitvoeren</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.outputs</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.owner" datatype="html">
+        <source>Owner</source>
+        <target>Eigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.owner</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.ownerName" datatype="html">
+        <source>Owner Name</source>
+        <target>Naam eigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.ownerName</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.params" datatype="html">
+        <source>Parameters</source>
+        <target>Parameters</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.params</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.parentCategory" datatype="html">
+        <source>Parent Category</source>
+        <target>Bovenliggende categorie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.parentCategory</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.parentDataset" datatype="html">
+        <source>Parent Dataset</source>
+        <target>Bovenliggende dataset</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.parentDataset</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.parentEntity" datatype="html">
+        <source>Parent Entity</source>
+        <target>Bovenliggende entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.parentEntity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.parentField" datatype="html">
+        <source>Parent Field</source>
+        <target>Bovenliggend veld</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.parentField</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.parentSystem" datatype="html">
+        <source>Parent System</source>
+        <target>Bovenliggend systeem</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.parentSystem</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.passed" datatype="html">
+        <source>Passed</source>
+        <target>Geslaagd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.passed</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.preferredTerms" datatype="html">
+        <source>Preferred Terms</source>
+        <target>Voorkeurstermen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.preferredTerms</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.preferredToTerms" datatype="html">
+        <source>Preferred to Terms</source>
+        <target>Voorkeur naar termen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.preferredToTerms</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.processOwner" datatype="html">
+        <source>Process Owner</source>
+        <target>Proces eigenaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.processOwner</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.processes" datatype="html">
+        <source>Processes</source>
+        <target>Processen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.processes</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.qualityDimension" datatype="html">
+        <source>Quality Dimension</source>
+        <target>Kwaliteitsdimensie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.qualityDimension</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.queryText" datatype="html">
+        <source>Query Text</source>
+        <target>Querytekst</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.queryText</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.replacedBy" datatype="html">
+        <source>Replaced By</source>
+        <target>Vervangen door</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.replacedBy</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.replacementTerms" datatype="html">
+        <source>Replacement Terms</source>
+        <target>Vervangende termen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.replacementTerms</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.attribute.requiredMark" datatype="html">
         <source>(required)</source>
         <target>(verplicht)</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.requiredMark</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.result" datatype="html">
+        <source>Result</source>
+        <target>Resultaat</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.result</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.resultCount" datatype="html">
+        <source>Result Count</source>
+        <target>Aantal resultaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.resultCount</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.resultSummary" datatype="html">
+        <source>Result Summary</source>
+        <target>Resultaatsamenvatting</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.resultSummary</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.riskClassification" datatype="html">
+        <source>Risk Classification</source>
+        <target>Risicoklassificatie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.riskClassification</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.rowsChecked" datatype="html">
+        <source>Rows Checked</source>
+        <target>Rijen gecontroleerd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.rowsChecked</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.rowsFailed" datatype="html">
+        <source>Rows Failed</source>
+        <target>Rijen mislukt</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.rowsFailed</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.ruleDescription" datatype="html">
+        <source>Rule Description</source>
+        <target>Regelomschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.ruleDescription</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.ruleGuid" datatype="html">
+        <source>Rule GUID</source>
+        <target>Regel-guid</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.ruleGuid</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.ruleType" datatype="html">
+        <source>Rule Type</source>
+        <target>Regeltype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.ruleType</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.runAtMs" datatype="html">
+        <source>Run At</source>
+        <target>Uitgevoerd op</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.runAtMs</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.runId" datatype="html">
+        <source>Run ID</source>
+        <target>Run-ID</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.runId</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.savedSearches" datatype="html">
+        <source>Saved Searches</source>
+        <target>Opgeslagen zoekopdrachten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.savedSearches</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.score" datatype="html">
+        <source>Score</source>
+        <target>Score</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.score</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.scoreKey" datatype="html">
+        <source>Score Key</source>
+        <target>Score-sleutel</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.scoreKey</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.searchParameters" datatype="html">
+        <source>Search Parameters</source>
+        <target>Zoekparameters</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.searchParameters</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.searchType" datatype="html">
+        <source>Search Type</source>
+        <target>Zoektype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.searchType</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.seeAlso" datatype="html">
+        <source>See Also</source>
+        <target>Zie ook</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.seeAlso</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.serviceType" datatype="html">
+        <source>Service Type</source>
+        <target>Servicetype</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.serviceType</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.shortDescription" datatype="html">
+        <source>Short Description</source>
+        <target>Korte omschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.shortDescription</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.source" datatype="html">
+        <source>Source</source>
+        <target>Bron</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.source</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.sourceServerName" datatype="html">
+        <source>Source Server Name</source>
+        <target>Naam bronserver</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.sourceServerName</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.startTime" datatype="html">
+        <source>Start time</source>
+        <target>Starttijd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.startTime</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.steward" datatype="html">
+        <source>Business Data Steward</source>
+        <target>Bedrijfsmatig data steward</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.steward</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.stewardAttribute" datatype="html">
+        <source>Steward Attribute</source>
+        <target>Attribuutsteward</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.stewardAttribute</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.stewardEntity" datatype="html">
+        <source>Steward Entity</source>
+        <target>Entiteitsteward</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.stewardEntity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.synonyms" datatype="html">
+        <source>Synonyms</source>
+        <target>Synoniemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.synonyms</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.system" datatype="html">
+        <source>System</source>
+        <target>Systeem</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.system</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.systems" datatype="html">
+        <source>Systems</source>
+        <target>Systemen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.systems</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.targetServerName" datatype="html">
+        <source>Target Server Name</source>
+        <target>Naam doelserver</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.targetServerName</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.terms" datatype="html">
+        <source>Terms</source>
+        <target>Termen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.terms</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.timeToLiveMillis" datatype="html">
+        <source>Time To Live (ms)</source>
+        <target>Levensduur (ms)</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.timeToLiveMillis</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.translatedTerms" datatype="html">
+        <source>Translated Terms</source>
+        <target>Vertaalde termen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.translatedTerms</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.translationTerms" datatype="html">
+        <source>Translation Terms</source>
+        <target>Vertaaltermen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.translationTerms</note>
       </trans-unit>
       <trans-unit id="search.components.editor.attribute.typeAlias" datatype="html">
         <source>Type alias</source>
@@ -1223,6 +1798,51 @@ The technical data governance model consists of the following types of entities:
         <source>Type alias</source>
         <target>Type alias</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.typeAliasPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.uiParameters" datatype="html">
+        <source>UI Parameters</source>
+        <target>UI-parameters</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.uiParameters</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.uniqueName" datatype="html">
+        <source>Unique Name</source>
+        <target>Unieke naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.uniqueName</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.usage" datatype="html">
+        <source>Usage</source>
+        <target>Gebruik</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.usage</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.userDescription" datatype="html">
+        <source>User Description</source>
+        <target>Gebruikersomschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.userDescription</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.userName" datatype="html">
+        <source>User Name</source>
+        <target>Gebruikersnaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.userName</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.userProfile" datatype="html">
+        <source>User Profile</source>
+        <target>Gebruikersprofiel</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.userProfile</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.validValues" datatype="html">
+        <source>Valid Values</source>
+        <target>Geldige waarden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.validValues</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.validValuesFor" datatype="html">
+        <source>Valid Values For</source>
+        <target>Geldige waarden voor</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.validValuesFor</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.verdict" datatype="html">
+        <source>Verdict</source>
+        <target>Oordeel</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.verdict</note>
       </trans-unit>
       <trans-unit id="search.components.editor.collection.datasets" datatype="html">
         <source>Datasets</source>

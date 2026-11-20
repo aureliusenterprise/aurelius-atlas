@@ -37,18 +37,20 @@ async def test__with_nothing_stored_the_registry_holds_the_built_in_types(
     assert "aurelius-atlas-typedefs" in fake_es.aliases
 
 
-@pytest.mark.covers("aurelius_atlas_server.app.create_app", rules=["MDL-16"])
+@pytest.mark.covers("aurelius_atlas_server.app.create_app", rules=["MDL-16", "MMS-02"])
 async def test__the_models_are_loaded_after_the_stored_types(settings: ServerSettings, fake_es: FakeClient) -> None:
-    """By default Atlas's 2.4.0 models load at start-up, patched, next to what was stored."""
+    """By default Atlas's 2.4.0 Area0 models and the m4i models load at start-up, patched, next to what was stored."""
     stored = ElasticsearchTypedefDocument(cast("AsyncElasticsearch", fake_es))
     await stored.prepare()
     await stored.write(StoredTypedefs(AtlasTypesDef(entity_defs=[AtlasEntityDef(name="stored_type")])), None)
-    app = create_app(settings.model_copy(update={"models_dir": BUILTIN_MODELS_DIR}))
+    app = create_app(settings.model_copy(update={"models_dir": BUILTIN_MODELS_DIR, "m4i_models_enabled": True}))
 
     async with app.router.lifespan_context(app):
         registry = app.state.type_registry
         assert registry.entity_type("stored_type") is not None
-        assert registry.entity_type("hive_table") is not None
+        assert registry.entity_type("AtlasGlossary") is not None
+        assert registry.entity_type("m4i_dataset") is not None
+        assert registry.entity_type("hive_table") is None  # no domain model ships (ADR 068)
         referenceable = registry.typedef_by_name("Referenceable")
         assert referenceable is not None
         assert referenceable.service_type == "atlas_core"

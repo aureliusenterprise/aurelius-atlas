@@ -293,12 +293,14 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         httpMock.expectOne("/api/atlas/v2/types/typedefs?type=ENUM").flush({ enumDefs: [{ name: "RiskLevel" }] });
         httpMock
             .expectOne("/api/atlas/v2/types/typedefs/headers?type=ENTITY")
-            .flush([{ name: "DataSet" }, { name: "AtlasGlossary" }, { name: "__Internal" }]);
+            .flush([{ name: "m4i_dataset" }, { name: "DataSet" }, { name: "AtlasGlossary" }, { name: "__Internal" }]);
 
         expect(state.classificationDefs().map((def) => def.name)).toEqual(["PII", "FINANCE"]);
         expect(state.enumsByName().has("RiskLevel")).toBe(true);
-        // The picker drops the glossary types and the internals (EDT-04).
-        expect(state.pickerTypes().map((row) => row.name)).toEqual(["DataSet"]);
+        // The picker keeps the metamodel type and drops the base supertype with
+        // it (EDT-04 as scoped by MMS-07), the glossary types and the internals
+        // (EDT-04).
+        expect(state.pickerTypes().map((row) => row.name)).toEqual(["m4i_dataset"]);
     });
 
     it("a slice failure alerts once and leaves its list empty (VDE-02)", () => {
