@@ -69,6 +69,10 @@ export const Empty: Story = {
             { label: "Data Owner(s)", people: [] },
             { label: "Data Steward(s)", people: [] },
         ],
+        // The host template binds [showEmpty], so the story must carry it —
+        // an unbound input falls back to the input's default, an unbound
+        // binding passes undefined.
+        showEmpty: true,
         emptyLabel: "No people assigned.",
     },
     play: async ({ canvas }) => {

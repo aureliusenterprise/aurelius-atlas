@@ -32,7 +32,9 @@ export const Primary: Story = {
         notAvailable: "No data quality results available",
     },
     play: async ({ canvas }) => {
-        await expect(canvas.getByText("(34)")).toBeVisible();
+        // The row's span is one text node — "92%\u00a0accuracy\u00a0(34)" —
+        // so the count is a substring, not its own element (UIC-37).
+        await expect(canvas.getByText(/\(34\)/)).toBeVisible();
     },
 };
 
