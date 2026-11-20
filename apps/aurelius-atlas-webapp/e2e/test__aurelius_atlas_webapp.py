@@ -686,6 +686,56 @@ def _purge_type(page: Page, root_url: str, token: str, type_name: str) -> None:
         _delete_entity(page, root_url, token, entity["guid"])
 
 
+def _purge_and_drop_types(
+    page: Page, root_url: str, token: str, entity_types: list[str], type_names: list[str]
+) -> None:
+    """Delete a run's own types and every entity of them, softly first then purged.
+
+    ENS-09 keeps a type in use while an entity of it exists in ANY state, and
+    the e2e server deletes softly (DD-059): the run's soft-deleted entities
+    must pass through the admin's purge (EDL-01, the hard remove) before their
+    types may go, and the relationship before the entity types it names. The
+    typedef delete races the purge's ES refresh, so it retries the ``has
+    references`` 409 (bounded; self-cleaning only, the idiom of the
+    classification cleanup).
+    """
+    guids: list[str] = []
+    for entity_type in entity_types:
+        listing = page.request.post(
+            urljoin(root_url, "/api/atlas/v2/search/basic"),
+            data=json.dumps(
+                {"typeName": entity_type, "limit": 1000, "offset": 0, "excludeDeletedEntities": False},
+            ),
+            headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+        )
+
+        assert listing.status == 200, listing.text()
+
+        guids += [entity["guid"] for entity in listing.json().get("entities", [])]
+
+    if guids:
+        purged = page.request.put(
+            urljoin(root_url, "/api/atlas/admin/purge"),
+            data=json.dumps(guids),
+            headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+        )
+
+        assert purged.status == 200, purged.text()
+
+    deadline = time.monotonic() + 30
+    for type_name in type_names:
+        while True:
+            removed = page.request.delete(
+                urljoin(root_url, f"/api/atlas/v2/types/typedef/name/{type_name}"),
+                headers={"authorization": f"Bearer {token}"},
+            )
+            if removed.status in (204, 404):  # gone, or never landed
+                break
+            assert removed.status == 409, removed.text()
+            assert time.monotonic() < deadline, removed.text()
+            time.sleep(1)
+
+
 @pytest.mark.critical
 def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, root_url: str, user_token: str) -> None:
     """The hero field searches: seeded hits, the count, the parentless card trail (SRH-01..SRH-05).
@@ -2161,30 +2211,58 @@ def test__the_editor_unlinks_a_relationship(authenticated: Page, root_url: str, 
 def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root_url: str, user_token: str) -> None:
     """Create refuses until the mandatory relationship picker holds a chip (EDT-13, EDT-17).
 
-    ``ozone_bucket.volume`` is a non-optional ``SINGLE`` relationship attribute
-    (probed self-contained: neither type demands a plain attribute). The
-    create form marks the picker ``*`` (EDT-13) and the save bails while the
-    picker is empty — no POST, the notification stands (EDT-17, where the
-    server itself would answer the create with the mandatory-attribute error).
-    Picking the API-seeded volume through the picker's own search lands the
-    create, and reopening shows its chip.
+    A run-unique pair of types seeded through the typedef door plays the part
+    the vendored ``ozone_bucket.volume`` used to (DD-734, 18.1): the holder
+    gets a ``COMPOSITION`` over the leaf with a non-container ``SINGLE`` end,
+    which makes the leaf's ``volume`` attribute non-optional (the rule
+    relationship_type.py derives). The create form marks the picker ``*``
+    (EDT-13) and the save bails while the picker is empty — no POST, the
+    notification stands (EDT-17, where the server itself would answer the
+    create with the mandatory-attribute error). Picking the API-seeded leaf
+    through the picker's own search lands the create, and reopening shows its
+    chip. The drawer opens on the deep link (``drawer:create/<type>``): the
+    create picker lists the icon map's types alone (MMS-07, DD-719), so a
+    runtime type arrives no person could pick from that list either.
     """
     run = secrets.token_hex(4)
+    leaf_type, holder_type, link = f"zz{run}_leaf", f"zz{run}_holder", f"zz{run}_holds"
     volume_name = f"zz{run}volume"
     bucket_name = f"zz{run}bucket"
-    volume_guid = _seed_entities(authenticated, root_url, user_token, "ozone_volume", [volume_name])["-0"]
+
+    entity_def = {"superTypes": ["DataSet"], "attributeDefs": []}
+    seeded = authenticated.request.post(
+        urljoin(root_url, "/api/atlas/v2/types/typedefs"),
+        data=json.dumps(
+            {
+                "entityDefs": [
+                    {"name": leaf_type, **entity_def},
+                    {"name": holder_type, **entity_def},
+                ],
+                "relationshipDefs": [
+                    {
+                        "name": link,
+                        "relationshipCategory": "COMPOSITION",
+                        "endDef1": {"type": leaf_type, "name": "buckets", "isContainer": True, "cardinality": "SET"},
+                        "endDef2": {"type": holder_type, "name": "volume", "cardinality": "SINGLE"},
+                    }
+                ],
+            }
+        ),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert seeded.status == 200, seeded.text()
+
+    volume_guid = _seed_entities(authenticated, root_url, user_token, leaf_type, [volume_name])["-0"]
 
     created: str | None = None
     try:
-        authenticated.goto(urljoin(root_url, "/en-US/search/browse"))
-        authenticated.locator("button.aurelius-create-entity").click()
-        authenticated.locator(".aurelius-editor-picker select").select_option(label="ozone_bucket")
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/browse(drawer:create/{holder_type})"))
 
         drawer = authenticated.locator(".aurelius-drawer")
         block = drawer.locator('.aurelius-editor-relationship[data-field="volume"]')
         # No catalogue key: the raw name (EDT-33), and no target-type bracket (EDT-34, DD-724).
         expect(block.locator("p.label")).to_contain_text("volume")
-        expect(block.locator("p.label")).not_to_contain_text("ozone_volume")
+        expect(block.locator("p.label")).not_to_contain_text(leaf_type)
         expect(block.locator("p.label .has-text-danger")).to_have_text("*")  # the EDT-13 marker
 
         authenticated.locator("#editor-name").fill(bucket_name)
@@ -2193,9 +2271,9 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         # EDT-17: the save fires nothing — the notification appears and the
         # drawer stays open on the create route.
         expect(drawer.locator(".aurelius-editor-notification")).to_be_visible()
-        expect(authenticated).to_have_url(re.compile(r"drawer:create/ozone_bucket"))
+        expect(authenticated).to_have_url(re.compile(rf"drawer:create/{holder_type}"))
 
-        # The pick (EDT-14): the volume arrives through the picker's search.
+        # The pick (EDT-14): the leaf arrives through the picker's search.
         box = block.locator(".aurelius-relationship-input")
         box.fill(volume_name)
         row = block.locator('[role="option"]').filter(has_text=volume_name)
@@ -2211,7 +2289,7 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         assert landed is not None
         created = bucket_guid = landed.group(1)
 
-        # The volume edge visible before the reopened editor reads (the rule
+        # The leaf edge visible before the reopened editor reads (the rule
         # the links scenario documents).
         _wait_entity_read(
             authenticated,
@@ -2229,6 +2307,16 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         if created is not None:
             _delete_entity(authenticated, root_url, user_token, created)
         _delete_entity(authenticated, root_url, user_token, volume_guid)
+        # ENS-09 keeps a type in use while an entity of it exists in ANY state
+        # and the deletes above are soft (DD-059), so the run's own entities are
+        # purged before their types may go (DD-734).
+        _purge_and_drop_types(
+            authenticated,
+            root_url,
+            user_token,
+            [leaf_type, holder_type],
+            [link, leaf_type, holder_type],
+        )
 
 
 # impact=major, likelihood=high (the conflict re-edit is a young promise on the mutation door)

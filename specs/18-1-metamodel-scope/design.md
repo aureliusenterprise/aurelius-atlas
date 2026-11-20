@@ -261,3 +261,53 @@ it on one screen and not on the next.
 - **Run the alias through `nameDisplay`.** The alias is author text, not a typedef name. The legacy stored
   it already translated, and the component treats it as a display string (UIC-15); the dictionary has no key
   for it and would pass it through anyway.
+
+### DD-734. The mandatory-relationship scenario seeds its own types
+
+- **Status:** Proposed
+- **Increment:** 18.1
+- **Date:** 2026-11-20
+- **Supersedes:** nothing. The scenario's seed (`ozone_volume`, `ozone_bucket`)
+  left with DD-715's deleted model files; the rule it guards (EDT-13, EDT-17)
+  stands.
+
+**Decision.** The e2e scenario that proves the editor refuses a create whose
+mandatory relationship is empty no longer reads a metamodel type. It seeds a
+run-unique pair of entity types and one `COMPOSITION` relationship over them,
+through the typedef door, and cleans the run's types and entities away at the
+end. The drawer opens on the create deep link for the holder type, because the
+create picker lists the icon map's types only (MMS-07, DD-719).
+
+**Reason.** No shipped metamodel type carries a mandatory relationship
+attribute: the shipped models hold three, and each sits on a glossary or
+internal type the editor cannot create. The old seed died with the deleted
+vendored models, and the scenario is a `@pytest.mark.critical` guard of EDT-13
+and EDT-17. Deleting it would close the only door that proves the save bails
+before the POST. The seeded pair repeats the deleted `ozone` shape exactly: a
+container end and a non-container `SINGLE` end, which the typesystem's rule
+(`is_optional = not composition or is_container`) makes mandatory. The suite
+already seeds and deletes its own classification typedef (EDT-05), so the
+pattern is on record in the same file. The cleanup differs: entities must pass
+through the admin purge, because ENS-09 keeps a type in use while a
+soft-deleted entity of it lives, and the e2e server deletes softly (DD-059).
+
+**Alternatives.**
+
+- **Retire the scenario.** It is one of the two critical editor guards, and
+  the mandatory-relationship bail is the save rule a person hits first.
+- **Test the glossary term's `anchor`.** `AtlasGlossaryTerm` has a mandatory
+  relationship, but `__internal` types sit outside the editor's created
+  types (MMS-05) and its search, so the scenario would pin a path no product
+  surface opens.
+- **Add a mandatory relationship to a shipped m4i type.** The metamodel is
+  vendored byte for byte (DD-031); a new attribute is a deviation, not a fix.
+- **Mock the typedef at the door.** The scenario's value is that the server
+  derives the mandatory attribute (relationship_type.py) and the editor reads
+  it (EDT-13); a stub answers neither.
+
+**Consequences.** The scenario now needs `atlas-types` (create and delete
+typedefs) and the admin purge (the e2e sign-in user holds both). Its types
+exist only for the run, namespaced by the run word like every other seed. If
+the purge or a delete fails mid-run, the leftover `zz<run>_*` types sit in the
+shared dev store harmlessly: no screen lists them (DD-719's picker excludes
+them, and they match no shipped surface).
