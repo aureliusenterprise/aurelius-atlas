@@ -2,7 +2,7 @@
 
 - **Status:** in review
 - **Pull request:** #422
-- **Records:** DD-760 to DD-764 (here). Relies on
+- **Records:** DD-760 to DD-766 (here), DV-188. Relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md),
   increment 1.5 (MDL, the loader), [18.2](../18-2-hierarchy-cardinality/spec.md) (HCA, one parent),
   [18.3](../18-3-parent-mutual-exclusion/spec.md) (PME, the parent group), and
@@ -54,17 +54,17 @@ Out of scope:
 
 ## Semantics
 
-| Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DCP-01 | The dataset end of `m4i_dataset_assignment` is `SINGLE` and carries the `mutuallyExclusive` constraint for the group `m4i_dataset_parent`. The collection end stays `SET`.                                                                                                                                                                                                                              |
-| DCP-02 | The `m4i_dataset` entity definition declares no `collections` attribute. The registry builds the attribute from the relationship end definition, as one object reference (HCA-02, HCA-03).                                                                                                                                                                                                              |
-| DCP-03 | `collections` and `parentDataset` share the group `m4i_dataset_parent`, so the write check of PME-07 refuses an entity that fills both, on create and on update.                                                                                                                                                                                                                                        |
-| DCP-04 | A save that names `collections` replaces the edge the dataset holds, exactly as `datasets` does on a field (HCA-04). A read answers one collection, not a list (HCA-05).                                                                                                                                                                                                                                |
-| DCP-05 | The editor disables the `parentDataset` picker while `collections` holds a pick, and the `collections` picker while `parentDataset` holds a pick (PME-10). Clearing the pick frees the sibling.                                                                                                                                                                                                         |
-| DCP-06 | A collection's `datasets` picker is a parent-side picker (RPS-07). It filters its search to candidates with `hasParent` false, and a save that adds a held dataset follows RPS-01: refuse without `unsafeReparent`, clear the old parent with it.                                                                                                                                                       |
-| DCP-07 | Every dataset of every bundle under `data/atlas-sample/` holds at most one `collections` value and never both parents, in the single shape: no mirrored attribute, one object in `relationshipAttributes` (HCA-08). The scan of the three bundles on the day this spec was written already holds 0 rule violations, so only the shape of the 23 values changes, and no dataset gains or loses a parent. |
-| DCP-08 | The App Search document keeps one `hasparent` boolean per dataset. A dataset in a collection is held, which is now also what the write check refuses, so the picker filter and the refusal agree (DD-764). The derivation version does not move.                                                                                                                                                        |
-| DCP-09 | The bootstrap does not change a catalogue that holds the dataset types at the old shape. A new catalogue holds the `SINGLE` shape at type version `1.2` (HCA-10).                                                                                                                                                                                                                                       |
+| Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DCP-01 | The dataset end of `m4i_dataset_assignment` is `SINGLE` and carries the `mutuallyExclusive` constraint for the group `m4i_dataset_parent`. The collection end stays `SET`.                                                                                                                                                                                                                                                                                                |
+| DCP-02 | The `m4i_dataset` entity definition declares no `collections` attribute. The registry builds the attribute from the relationship end definition, as one object reference (HCA-02, HCA-03).                                                                                                                                                                                                                                                                                |
+| DCP-03 | `collections` and `parentDataset` share the group `m4i_dataset_parent`, so the write check of PME-07 refuses an entity that fills both, on create and on update.                                                                                                                                                                                                                                                                                                          |
+| DCP-04 | A save that names `collections` replaces the edge the dataset holds, exactly as `datasets` does on a field (HCA-04). A read answers one collection, not a list (HCA-05).                                                                                                                                                                                                                                                                                                  |
+| DCP-05 | The editor disables the `parentDataset` picker while `collections` holds a pick, and the `collections` picker while `parentDataset` holds a pick (PME-10). Clearing the pick frees the sibling.                                                                                                                                                                                                                                                                           |
+| DCP-06 | A collection's `datasets` picker is a parent-side picker (RPS-07). It filters its search to candidates with `hasParent` false, and a save that adds a held dataset follows RPS-01: refuse without `unsafeReparent`, clear the old parent with it.                                                                                                                                                                                                                         |
+| DCP-07 | Every dataset of every bundle under `data/atlas-sample/` holds at most one `collections` value and never both parents, in the single shape: no mirrored attribute, one object in `relationshipAttributes` (HCA-08). Each bundle also has to agree on both sides of a parent edge, because a child's own value and its parent's listing name the same edge. The scan found two datasets that a second parent listed, and the corpus no longer lists them (DV-188, DD-766). |
+| DCP-08 | The App Search document keeps one `hasparent` boolean per dataset. A dataset in a collection is held, which is now also what the write check refuses, so the picker filter and the refusal agree (DD-764). The derivation version does not move.                                                                                                                                                                                                                          |
+| DCP-09 | The bootstrap does not change a catalogue that holds the dataset types at the old shape. A new catalogue holds the `SINGLE` shape at type version `1.2` (HCA-10).                                                                                                                                                                                                                                                                                                         |
 
 ## Java origin
 
@@ -75,8 +75,10 @@ path, and no Java behaviour ports here.
 ## Deviations
 
 None from Apache Atlas. The end-definition constraint itself is DV-183 (18.3), and this increment only puts
-one more end into one more group. The data conformance of DCP-07 needs no entry: the scan shows the bundles
-already hold one parent each, the way HCA-08 needed no entry for its two datasets after 18.2 fixed them.
+one more end into one more group. The data conformance of DCP-07 needs its own entry, because the scan found
+two datasets that two parents each claimed: the dataset named one parent in `parentDataset`, and a sibling
+listed the same dataset in its `childDataset`. An import writes both sides of an edge (RPS-08), so the store
+held the child under both. The deviation is DV-188, and the data decision is DD-766.
 
 ## Acceptance
 
@@ -84,7 +86,8 @@ already hold one parent each, the way HCA-08 needed no entry for its two dataset
   with the group, the opposite end stays `SET`),
   `libs/python/aurelius-atlas-core/tests/test__m4i_models.py` (DCP-01, DCP-02, DCP-07: the dictionary names
   the end at `SINGLE` with the group at version `1.2`, the dataset entity declares no mirrored attribute,
-  the model equals the typedef file of every bundle, and no bundle dataset breaks the rule),
+  the model equals the typedef file of every bundle, no bundle dataset breaks the rule, and every bundle
+  child answers one parent across both sides of the edge),
   `libs/python/aurelius-atlas-core/tests/test__model_loader.py` (DCP-09: a model file that changes a stored
   end's cardinality is refused whole and changes nothing; PME-06 as written still covers the `parentDataset`
   end, which keeps `SINGLE` and only gains its constraint),
@@ -108,4 +111,5 @@ already hold one parent each, the way HCA-08 needed no entry for its two dataset
 - E2E: `nx e2e aurelius-atlas-server` (the registry bootstraps the group on a real store), the scanner e2e
   suites (one bulk request writes the tree with the single shape).
 - Data: each bundle's `atlas-typesdef.json` changes with the model, which `test__m4i_models.py` compares
-  (DCP-01).
+  (DCP-01). `sample_data.zip` loses the two phantom `childDataset` listings (DD-766), and the three 14.6
+  gates of `libs/python/aurelius-atlas-core/tests/` re-baseline with it (DV-188).

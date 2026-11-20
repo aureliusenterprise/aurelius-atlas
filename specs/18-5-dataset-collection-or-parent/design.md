@@ -140,3 +140,41 @@ answer is the same one the stored boolean gives.
   where the boolean lies, and this increment removes it.
 - **Drop a collection from the breadcrumb parents.** The breadcrumb and the lineage page read a dataset's
   collection as its place in the tree; removing it would break the trail 16.x built and the rule wording.
+
+### DD-766. The child's own parent value wins over a parent's listing
+
+- **Status:** Proposed
+- **Increment:** 18.5
+- **Date:** 2026-11-20
+- **Relates to:** DCP-07 (the one-parent corpus), RPS-08 (the import exemption), HCA-08 (the single shape),
+  DV-188, LAS-05 (the derived relations).
+
+**Decision.** When a bundle states both sides of a hierarchy edge and the two disagree, the child's own
+single-valued end is the truth. The parent's listing is emptied to match. `sample_data.zip` held two datasets
+this way, and the corpus now holds none: `kib1-hourly-table` listed `kib1-hourly-index` in `childDataset`
+while the child named `kib1-hourly-bar-graph` as its `parentDataset`, and `kib1-hr-bar-graph` listed
+`kib1-hr-change-index` while the child named `kib1-hr-table`. Both frames of both files (`attributes` and
+`relationshipAttributes`) cleared together.
+
+**Reason.** The child end is `SINGLE`, so the model cannot hold a second parent, and PME-07 refuses the
+second parent on every write. The import is exempt from that refusal (RPS-08), which is how the store came to
+hold two edges for one dataset: the import writes both sides of every edge the bundle names. A bundle that
+names an edge twice in two directions is the only way that can happen, so the fix belongs in the bundle. The
+child's own value is the side the API and the editor read (DCP-04), so it is the side a reader can check.
+Clearing the other keeps the stored tree equal to what a client reads back.
+
+**Alternatives.**
+
+- **Clear the child's own value instead.** The parent-side listing is a derived view in the editor and in the
+  lineage page. Choosing it would move each dataset to a parent no picker offers on the child, and it would
+  change the breadcrumb the App Search document stores.
+- **Leave the corpus and let the store hold two parents.** DCP-07's rule reads the corpus, the store shows a
+  dataset under two parents, and DCP-06's picker filter hides a child that a governance rule counts twice.
+  It is the bug this increment exists to close.
+- **Repair the store on bootstrap instead of the corpus.** The corpus is the dev store, and a bootstrap patch
+  would leave every future import of the same bundle broken again.
+
+**Effect on the parity gates.** The frozen `atlas-dev` oracle walked both sides of the edge, so two of its
+documents hold the phantom. `test__app_search_indexer.py` names the two pairs it no longer derives.
+`test__app_search_governance.py` counts 27 moved verdicts instead of 29, because the two siblings'
+field-or-child verdicts now answer the value the oracle recorded (DV-188).

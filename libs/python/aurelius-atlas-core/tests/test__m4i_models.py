@@ -279,6 +279,67 @@ def test__every_bundle_holds_at_most_one_value_per_hierarchy_child() -> None:
                     assert not isinstance(value, list), (sample.name, entry, attribute)
 
 
+def _guids_of(value: object) -> list[str]:
+    """The guids a relationship attribute value holds, read from a single object or from a list."""
+    items = value if isinstance(value, list) else [] if value is None else [value]
+    guids: list[str] = []
+    for item in items:
+        if isinstance(item, str):
+            guids.append(item)
+        elif isinstance(item, dict):
+            guids.append(str(item["guid"]))
+    return guids
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["HCA-08", "DCP-07", "PME-04"])
+def test__every_bundle_holds_each_child_under_one_parent_of_its_choice() -> None:
+    """Each child of a bundle answers one parent, counting its own value and its parents' listings together
+    (HCA-08, DCP-07, PME-04).
+
+    A child names its parent from its own end, and a parent lists its children from its side. The two views of
+    the same edge must not disagree, because an import writes both sides of the edge it reads (RPS-08) and the
+    store then holds the child under two parents. 18.5's first scan of the corpus found two datasets listed by
+    a parent their own ``parentDataset`` did not name, which the corpus no longer does (DD-766).
+    """  # noqa: D205 - one sentence
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        types = m4i_of(_typesdef(sample))
+        groups: dict[str, list[tuple[str, str, str, str]]] = {}
+        for name, (child_end, _attribute, group) in PARENT_GROUPS.items():
+            parent_end = "endDef2" if child_end == "endDef1" else "endDef1"
+            definition = types[name]
+            groups.setdefault(group, []).append(
+                (
+                    definition[child_end]["name"],
+                    definition[child_end]["type"],
+                    definition[parent_end]["name"],
+                    definition[parent_end]["type"],
+                )
+            )
+
+        with zipfile.ZipFile(sample) as archive:
+            payload = [
+                json.loads(archive.read(entry))
+                for entry in archive.namelist()
+                if entry.endswith(".json") and not entry.startswith("atlas-")
+            ]
+        entities = [document["entity"] for document in payload if document.get("entity")]
+
+        for group, ends in groups.items():
+            parents: dict[str, set[str]] = {}
+            for entity in entities:
+                held = entity.get("relationshipAttributes") or {}
+                for child_attribute, child_type, parent_attribute, parent_type in ends:
+                    if entity["typeName"] == child_type:
+                        parents.setdefault(entity["guid"], set()).update(_guids_of(held.get(child_attribute)))
+                    if entity["typeName"] == parent_type:
+                        for child in _guids_of(held.get(parent_attribute)):
+                            parents.setdefault(child, set()).add(entity["guid"])
+            assert {child: sorted(seen) for child, seen in parents.items() if len(seen) > 1} == {}, (
+                sample.name,
+                group,
+            )
+
+
 # The rule of the sample corpus that measures a SINGLE parent, and the sentences it must hold (PME-11).
 PARENT_RULE_SENTENCES = {
     "name": "Data entity belongs to a data domain or parent entity",
