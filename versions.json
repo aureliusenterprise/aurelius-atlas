@@ -25,11 +25,6 @@
     "aliases": []
   },
   {
-    "version": "fix-navbar-dark-band-utility-group",
-    "title": "fix-navbar-dark-band-utility-group",
-    "aliases": []
-  },
-  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
