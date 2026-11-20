@@ -1,7 +1,7 @@
 # 18.5 A dataset picks a collection or a parent dataset
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** #422
 - **Records:** DD-760 to DD-764 (here). Relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md),
   increment 1.5 (MDL, the loader), [18.2](../18-2-hierarchy-cardinality/spec.md) (HCA, one parent),
