@@ -2957,6 +2957,10 @@ The technical data governance model consists of the following types of entities:
         <source>No alerts</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.alerts.empty</note>
       </trans-unit>
+      <trans-unit id="shell.alerts.expired" datatype="html">
+        <source>Your session has expired. Signing you in again.</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.alerts.expired</note>
+      </trans-unit>
       <trans-unit id="shell.alerts.feed" datatype="html">
         <source>Alerts</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.alerts.feed</note>
