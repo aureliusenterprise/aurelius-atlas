@@ -45,6 +45,11 @@
     "aliases": []
   },
   {
+    "version": "fix-details-properties-derived-pair",
+    "title": "fix-details-properties-derived-pair",
+    "aliases": []
+  },
+  {
     "version": "feat-18-1-metamodel-scope",
     "title": "feat-18-1-metamodel-scope",
     "aliases": []
