@@ -229,6 +229,8 @@
       
         
       
+        
+      
     
     
     
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -7324,6 +7355,8 @@
       
         
       
+        
+      
     
     
     
@@ -9201,6 +9234,33 @@
     
   
   067. The standalone stack ships as one generated release bundle
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
 
     
   </span>
@@ -17036,8 +17096,8 @@ through a journal (DD-043 to DD-048).</p>
 <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>  <span class="c1"># every stored definition into the registry</span>
 <span class="n">created</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">create_types_def</span><span class="p">(</span><span class="n">types_def</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>  <span class="c1"># pick up another process's change (at most every 5 s)</span>
-<span class="k">await</span> <span class="n">ModelLoader</span><span class="p">(</span><span class="n">store</span><span class="p">)</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">BUILTIN_MODELS_DIR</span><span class="p">)</span>  <span class="c1"># addons/models of Atlas 2.4.0, and their patches</span>
-<span class="n">store</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="s2">"hive_table"</span><span class="p">)</span>  <span class="c1"># the registered definition, as resolution completed it</span>
+<span class="k">await</span> <span class="n">ModelLoader</span><span class="p">(</span><span class="n">store</span><span class="p">)</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">BUILTIN_MODELS_DIR</span><span class="p">)</span>  <span class="c1"># the Area0 models of Atlas 2.4.0, and their patches</span>
+<span class="n">store</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="s2">"AtlasGlossary"</span><span class="p">)</span>  <span class="c1"># the registered definition, as resolution completed it</span>
 <span class="n">search_types_def</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">registry</span><span class="p">,</span> <span class="n">TypeSearchFilter</span><span class="o">.</span><span class="n">from_query</span><span class="p">([(</span><span class="s2">"type"</span><span class="p">,</span> <span class="s2">"ENTITY"</span><span class="p">)]))</span>  <span class="c1"># each kind sorted by name</span>
 </code></pre></div>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
@@ -17047,11 +17107,15 @@ through a journal (DD-043 to DD-048).</p>
 <span class="n">workspace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 </code></pre></div>
 <h2 id="vendored-models">Vendored models<a class="headerlink" href="#vendored-models" title="Permanent link">&para;</a></h2>
-<p><code>aurelius_atlas_core/models/</code> is <code>addons/models</code> of Apache Atlas <code>release-2.4.0</code>, byte for byte
+<p><code>aurelius_atlas_core/models/0000-Area0/</code> is the <code>0000-Area0</code> directory of <code>addons/models</code> of Apache Atlas
+<code>release-2.4.0</code>, byte for byte
 (<code>DD-032</code> (the record: <code>libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md</code>)).
-To prove it, compare it with the tag:</p>
-<div class="highlight"><pre><span></span><code>diff<span class="w"> </span>-r<span class="w"> </span>&lt;apache-atlas<span class="w"> </span>checkout<span class="w"> </span>at<span class="w"> </span>release-2.4.0&gt;/addons/models
-libs/python/aurelius-atlas-core/aurelius_atlas_core/models
+The five domain model directories of Atlas do not ship, because a catalogue bootstraps only the metamodel it
+serves (<code>ADR 068</code>, <code>DD-715</code>).
+<code>ModelLoader.load</code> reads any directory you pass it, so an operator who copies Atlas's <code>addons/models</code> there
+gets the old set. To prove it, compare the directory with the tag:</p>
+<div class="highlight"><pre><span></span><code>diff<span class="w"> </span>-r<span class="w"> </span>&lt;apache-atlas<span class="w"> </span>checkout<span class="w"> </span>at<span class="w"> </span>release-2.4.0&gt;/addons/models/0000-Area0
+libs/python/aurelius-atlas-core/aurelius_atlas_core/models/0000-Area0
 </code></pre></div>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
 
@@ -23213,6 +23277,19 @@ one that is not moves to a new generation behind its alias first (VEC-03, DD-434
     <div class="doc doc-contents ">
 
         <p>One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="RuntimeError">RuntimeError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>Elasticsearch refused an action of the request, so an entity keeps a verdict it no
+longer holds or misses one it gained (ASG-06, DD-705).</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -32085,7 +32162,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
    (aurelius_atlas_core.model_loader.BUILTIN_MODELS_DIR)" href="./#aurelius_atlas_core.model_loader.BUILTIN_MODELS_DIR">BUILTIN_MODELS_DIR</a></code></b>
           –
           <div class="doc-md-description">
-            <p><code>addons/models</code> of Apache Atlas 2.4.0, unchanged (DD-032).</p>
+            <p><code>addons/models</code> of Apache Atlas 2.4.0, unchanged (DD-032): the shipped subset is its <code>0000-Area0</code> (DD-715).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -32191,7 +32268,7 @@ the typedef store, decided on the newest stored definitions (DD-033); a patch's 
 
     <div class="doc doc-contents ">
 
-        <p><code>addons/models</code> of Apache Atlas 2.4.0, unchanged (DD-032).</p>
+        <p><code>addons/models</code> of Apache Atlas 2.4.0, unchanged (DD-032): the shipped subset is its <code>0000-Area0</code> (DD-715).</p>
 
     </div>
 

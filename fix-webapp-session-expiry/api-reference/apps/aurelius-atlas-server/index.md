@@ -623,6 +623,19 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       ],
 >       "default": null,
 >       "title": "Tenancy Admin Client Secret"
+>     },
+>     "sample_dir": {
+>       "anyOf": [
+>         {
+>           "format": "path",
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Sample Dir"
 >     }
 >   },
 >   "required": [
@@ -727,6 +740,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tenancy_refresh_seconds` (`float`)
 > - `tenancy_admin_client_id` (`str`)
 > - `tenancy_admin_client_secret` (`SecretStr | None`)
+> - `sample_dir` (`Path | None`)
 >
 > ### app\_search\_answer\_seconds
 >
@@ -1301,6 +1315,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The path a proxy serves the server under, such as `/atlas2`, passed to uvicorn: the server's redirects and its sign-in's return lead there; empty serves it at the root (PFX-01, DD-363).
+>
+> ### sample\_dir
+>
+> ```
+> sample_dir: Path | None = None
+> ```
+>
+> The folder of the samples `provisioning add --sample <name>` imports, `<name>.zip` each; none offers no sample (TAD-02, TAD-10).
 >
 > ### session\_timeout\_seconds
 >
