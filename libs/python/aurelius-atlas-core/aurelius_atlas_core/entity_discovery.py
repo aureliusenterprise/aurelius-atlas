@@ -6,9 +6,9 @@ given, their references recorded, then resolved against the store.
 """
 
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, NamedTuple
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string
 from aurelius_atlas_model.instance import (
@@ -29,7 +29,13 @@ from aurelius_atlas_typesystem.values import relationship_type_of
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.graph_helper import edge_for_label
+from aurelius_atlas_core.graph_helper import (
+    edge_for_label,
+    held_parent_edges,
+    other_end,
+    parent_family,
+    parent_side_children,
+)
 from aurelius_atlas_core.guids import AssignedGuid, as_assigned_guid
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 
@@ -177,6 +183,70 @@ class EntityDiscovery:
             entity_type.get_normalized_value_for_update(entity)
         else:
             entity_type.get_normalized_value(entity)
+
+    async def validate_parent_safe(self, entity: AtlasEntity, entity_type: EntityType, guid: str) -> None:
+        """Each parent-side candidate the entity names: refused when it is held (RPS-01, RPS-03, DD-755).
+
+        A candidate a stored edge holds to another parent is released when the same request also updates that
+        parent to drop the candidate, so a deliberate move in one request is not refused (RPS-02).
+
+        Raises:
+            AtlasError: ``INSTANCE_CRUD_INVALID_PARAMS`` with one message per held candidate.
+        """
+        keeps = self._request_parent_keeps()
+        held = await held_parent_sides(
+            self._store,
+            self.stream,
+            entity,
+            entity_type,
+            guid,
+            resolve=self._resolve_guid,
+            released=lambda child_attribute, parent_guid, candidate: self._released(
+                keeps, child_attribute, parent_guid, candidate
+            ),
+        )
+        if held:
+            messages = [held_parent_message(found) for found in held]
+            raise AtlasError(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages)
+
+    def _resolve_guid(self, guid: str) -> str:
+        """The assigned GUID a request's placeholder became, or ``guid`` when it names an assigned one (DV-162)."""
+        found = self.context.resolved_guids.get(guid)
+        return str(found) if found is not None else guid
+
+    def _released(
+        self, keeps: dict[tuple[str, str], set[str]], child_attribute: str, parent_guid: str, candidate: str
+    ) -> bool:
+        """Whether the request drops ``candidate`` from ``parent_guid``'s list of ``child_attribute`` (RPS-02)."""
+        kept = keeps.get((parent_guid, child_attribute))
+        return kept is not None and candidate not in kept
+
+    def _request_parent_keeps(self) -> dict[tuple[str, str], set[str]]:
+        """Each parent side the request writes, with the candidates it keeps: ``(parent GUID, child attribute)``.
+
+        A parent-side `SET` an entity names replaces the parent's whole child list, so a candidate missing from
+        it is dropped there (RPS-02). Candidates named by placeholder are resolved, so a move made in one
+        request -- the child added under the new parent and dropped from the old one -- is read as deliberate.
+        """
+        registry = self._store.registry
+        keeps: dict[tuple[str, str], set[str]] = {}
+        for entity in self.stream.entities:
+            entity_type = None if entity is None else registry.entity_type(str(entity.type_name))
+            if entity is None or entity_type is None:
+                continue
+            parent_guid = self._resolve_guid(str(entity.guid))
+            for parent_attribute, child_attribute in parent_side_children(registry, entity_type).items():
+                if not entity.has_relationship_attribute(parent_attribute):
+                    continue
+                value = entity.get_relationship_attribute(parent_attribute)
+                items = value if isinstance(value, list | tuple | set) else []
+                kept: set[str] = set()
+                for item in items:
+                    object_id = object_id_of(item)
+                    if object_id is not None and object_id.guid is not None:
+                        kept.add(self._resolve_guid(str(object_id.guid)))
+                keeps[(parent_guid, child_attribute)] = kept
+        return keeps
 
     async def validate_parent_groups(
         self,
@@ -419,3 +489,172 @@ def object_id_of(value: Any) -> AtlasObjectId | None:  # noqa: ANN401 - a refere
         if is_valid_object_id(found):
             return found
     raise AtlasError(AtlasErrorCode.INVALID_OBJECT_ID, value)
+
+
+class HeldParent(NamedTuple):
+    """A candidate held on a save (RPS-01): which candidate, by which child attribute, and which parent.
+
+    The edge's GUID is None for a candidate this request creates, whose edges do not exist yet.
+    """
+
+    candidate_type: str
+    candidate_guid: str
+    child_attribute: str
+    parent_type: str
+    parent_guid: str
+    edge_guid: str | None = None
+
+
+def held_parent_message(held: HeldParent) -> str:
+    """The refusal of one held candidate: its child attribute and the parent it already holds (RPS-03)."""
+    return (
+        f"{held.candidate_type} {held.candidate_guid}: {held.child_attribute} holds parent "
+        f"{held.parent_type} {held.parent_guid}, pass unsafeReparent to move it"
+    )
+
+
+async def held_parent_sides(  # noqa: PLR0913, PLR0917 - the save's parts, each needed once
+    store: EntityStore,
+    stream: EntityStream,
+    entity: AtlasEntity,
+    entity_type: EntityType,
+    guid: str,
+    resolve: Callable[[str], str] | None = None,
+    released: Callable[[str, str, str], bool] | None = None,
+) -> list[HeldParent]:
+    """Each parent-side candidate of the entity that already holds another parent (RPS-01, RPS-02, DD-755).
+
+    A parent side is a `SET` whose opposite end is a `SINGLE` child end (HCA-01). Neither write door ever
+    cleared the child's edge of another relationship on such a save, so the child ended under two parents:
+    Apache Atlas has no check, and neither had Aurelius. A candidate this request creates is read on the
+    parents it declares; a stored one on its active edges. The parent the save names never holds the
+    candidate (RPS-02). ``resolve`` answers the assigned GUID a request's placeholder became, so a candidate
+    created in this same request naming the written parent by its placeholder is not a reparent.
+    Apache Atlas has no such check.
+    """
+    registry = store.registry
+    held: list[HeldParent] = []
+    for name, child_attribute in parent_side_children(registry, entity_type).items():
+        value = entity.get_relationship_attribute(name) if entity.has_relationship_attribute(name) else None
+        items = value if isinstance(value, list | tuple | set) else []
+        for item in items:
+            object_id = object_id_of(item)
+            if object_id is None or object_id.guid is None:
+                continue  # a unique-attribute reference: the writer resolves it, and checks what it names
+            declared = stream.get_by_guid(object_id.guid)
+            if declared is not None:
+                held += await _declared_parents_held(store, stream, declared, child_attribute, guid, resolve)
+            elif is_assigned_guid(object_id.guid):
+                held += await held_parents_of(store, str(object_id.guid), child_attribute, guid, released)
+    return held
+
+
+async def _declared_parents_held(  # noqa: PLR0913, PLR0917 - the candidate's parts, each needed once
+    store: EntityStore,
+    stream: EntityStream,
+    candidate: AtlasEntity,
+    child_attribute: str,
+    parent_guid: str,
+    resolve: Callable[[str], str] | None = None,
+) -> list[HeldParent]:
+    """The parents a created candidate declares that are not the one being written (RPS-01).
+
+    A created candidate's edges do not exist yet, so it is held by what the same request declares for it, on
+    any family member including the written attribute: a candidate moved off its parent on that attribute is a
+    reparent. A declaration naming the written parent -- by placeholder or assigned GUID -- is the edge the
+    save writes, so it is not a reparent (RPS-02).
+    """
+    registry = store.registry
+    candidate_type = registry.entity_type(str(candidate.type_name))
+    if candidate_type is None:
+        return []
+    family = parent_family(registry, candidate_type, child_attribute)
+    held: list[HeldParent] = []
+    for name in candidate_type.relationship_attributes:
+        attribute = candidate_type.relationship_attribute(name)
+        if attribute is None or str(attribute.relationship_edge_label) not in family:
+            continue
+        value = (
+            candidate.get_relationship_attribute(name)
+            if candidate.has_relationship_attribute(name)
+            else candidate.get_attribute(name)
+        )
+        items = value if isinstance(value, list | tuple | set) else [value] if value is not None else []
+        for item in items:
+            parent = _reference_guid(item)
+            if parent is not None and (resolve is None or resolve(parent)) != parent_guid:
+                held.append(
+                    HeldParent(
+                        str(candidate.type_name),
+                        str(candidate.guid),
+                        str(name),
+                        await _known_type_name(store, stream, parent),
+                        parent,
+                    )
+                )
+    return held
+
+
+async def held_parents_of(
+    store: EntityStore,
+    candidate_guid: str,
+    child_attribute: str,
+    parent_guid: str,
+    released: Callable[[str, str, str], bool] | None = None,
+) -> list[HeldParent]:
+    """The active family edges of a stored candidate to a parent other than the save's (RPS-01).
+
+    Both doors ask this of one candidate: the wire path through ``held_parent_sides``, the view door's
+    ``sections`` step directly, where the edge is created by the relationship store instead of the mapper. An
+    active edge on any member of the family to another parent is a held child, including the written attribute:
+    moving it is the reparent the check guards. ``released(child_attribute, parent_guid, candidate)`` answers
+    whether the same request drops the candidate from that parent, releasing it (RPS-02).
+    """
+    found = await store.get(candidate_guid)
+    if found is None or not found.entity.relationship_guids:
+        return []
+    entity_type = store.registry.entity_type(found.entity.type_name)
+    if entity_type is None:
+        return []
+    family = parent_family(store.registry, entity_type, child_attribute)
+    edges = await store.get_relationships(found.entity.relationship_guids)
+    relationships = [edges[guid].relationship for guid in found.entity.relationship_guids if guid in edges]
+    held: list[HeldParent] = []
+    for relationship, attribute in held_parent_edges(candidate_guid, relationships, family, parent_guid):
+        parent = other_end(relationship, candidate_guid)
+        if released is not None and released(attribute, parent, candidate_guid):
+            continue
+        held.append(
+            HeldParent(
+                found.entity.type_name,
+                candidate_guid,
+                attribute,
+                await _type_name(store, parent),
+                parent,
+                relationship.guid,
+            )
+        )
+    return held
+
+
+def _reference_guid(value: Any) -> str | None:  # noqa: ANN401 - a reference as given
+    """The GUID a reference value names, None when it names none or is no valid object id."""
+    try:
+        object_id = object_id_of(value)
+    except AtlasError:
+        return None
+    return None if object_id is None or object_id.guid is None else str(object_id.guid)
+
+
+async def _known_type_name(store: EntityStore, stream: EntityStream, guid: str) -> str:
+    """The type name a same-request or stored GUID names, "entity" when it names neither yet."""
+    entity = stream.get_by_guid(guid)
+    if entity is not None:
+        return str(entity.type_name)
+    return await _type_name(store, guid)
+
+
+async def _type_name(store: EntityStore, guid: str) -> str:
+    """The type name of the stored entity, "entity" when there is none."""
+    found = await store.get(guid)
+    return "entity" if found is None else found.entity.type_name

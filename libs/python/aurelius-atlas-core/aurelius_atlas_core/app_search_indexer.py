@@ -291,6 +291,7 @@ async def _document(catalogue: _Catalogue, entity: StoredEntity) -> StoredAppSea
         "breadcrumbname": [document_name(above) for above in breadcrumb],
         "breadcrumbtype": [above.type_name for above in breadcrumb],
         "parentguid": breadcrumb[-1].guid if breadcrumb else None,
+        "hasparent": bool(breadcrumb),
     }
     related = await catalogue.related(entity.guid)
     if path := _JOINS.get(entity.type_name):

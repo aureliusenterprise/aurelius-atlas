@@ -62,11 +62,11 @@ ROLE_NAME_FIELDS = tuple(ROLE_FIELDS.values())
 ROLE_GUID_FIELDS = tuple(f"{field}guid" for field in ROLE_FIELDS.values())
 """The document's role GUID lists, mapped as keywords like the other relation GUIDs (ASD-06)."""
 
-DERIVATION_VERSION = 2
-"""The derivation rules an index round writes documents under: 16.5f's, with the role fields (ASD-07, DD-628).
+DERIVATION_VERSION = 3
+"""The derivation rules an index round writes documents under: 16.5f's, with the role fields and ``hasparent``.
 
-Version 1 is 14.2's hash, which carries no version and no role fields; a document of another version than
-this one is what the round derives again.
+Version 1 is 14.2's hash, which carries no version and no role fields; version 2 is 16.5f's, before the
+parent flag (RPS-06, DD-758); a document of another version than this one is what the round derives again.
 """
 
 DERIVATION_VERSION_FIELD = f"{APP_SEARCH_FIELD}.derivationVersion"
@@ -334,7 +334,11 @@ def app_search_mapping() -> dict[str, Any]:
     properties = (
         dict.fromkeys(MAPPING_NAME_FIELDS, _NAME)
         | dict.fromkeys(keywords, _KEYWORD)
-        | {"stale": {"type": "boolean"}, "derivationVersion": {"type": "integer"}}
+        | {
+            "stale": {"type": "boolean"},
+            "hasparent": {"type": "boolean"},
+            "derivationVersion": {"type": "integer"},
+        }
     )
     return {"properties": properties}
 

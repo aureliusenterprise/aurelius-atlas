@@ -144,6 +144,7 @@ def door_fields(registry: TypeRegistry, type_name: str | None = None) -> dict[st
         "classificationNames": EngineField(Kind.TEXT, path=f"search.{KEYWORD}.__traitNames"),
         "governed": EngineField(Kind.BOOL, path="governed", missing=False),
         "stale": EngineField(Kind.BOOL, path=f"{APP_SEARCH_FIELD}.stale", missing=False),
+        "hasParent": EngineField(Kind.BOOL, path=f"{APP_SEARCH_FIELD}.hasparent", missing=False),
     }
     for name in _NAME_ATTRIBUTES:
         if type_name is None:

@@ -69,6 +69,9 @@ export type EntityCard = {
     quality?: CardQuality[];
     governed?: boolean | null;
     stale: boolean;
+    /** Whether the entity holds any parent (RPS-06, DD-758). The card answers the
+     * stored boolean; a card from an older door omits it, which reads as unknown. */
+    hasParent?: boolean;
 };
 
 /**

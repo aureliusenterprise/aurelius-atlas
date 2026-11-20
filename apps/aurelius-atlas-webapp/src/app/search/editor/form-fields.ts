@@ -5,6 +5,7 @@ import {
     AtlasEnumDef,
     AtlasRelatedEntity,
     AtlasRelationshipAttributeDef,
+    AtlasRelationshipDef,
 } from "aurelius-atlas-data-access";
 
 /** The input one editor field renders. */
@@ -243,6 +244,12 @@ export type RelationshipField = {
      * group enforces nothing (PME-03), so it is omitted. The editor reads it
      * to make the group's members mutually exclusive in the form. */
     readonly parentGroup?: string;
+    /** Whether the picker adds children (RPS-07): a `SET` whose relationship's
+     * other end is a `SINGLE` child end (HCA-01). The picker filters its search
+     * to candidates that hold no parent on it, since a held candidate would
+     * move. Omitted for every other picker, so the child-side and the plain
+     * association pickers search everything as before. */
+    readonly parentSide?: boolean;
 };
 
 /** The constraint type of 18.3's parent choice (PME-01) and its group parameter
@@ -269,6 +276,28 @@ function parentGroupOf(def: AtlasRelationshipAttributeDef): string | null {
     return null;
 }
 
+/** Whether one relationship attribute adds children (RPS-07): a `SET` whose
+ * relationship's other end is a `SINGLE` child end (HCA-01). The attribute's
+ * name picks its own end — the two ends of a relationship always name
+ * different attributes, so the name alone tells them apart.
+ * @param def the derived relationship-attribute definition
+ * @param relationships every relationship definition by name
+ */
+function parentSideOf(
+    def: AtlasRelationshipAttributeDef,
+    relationships: ReadonlyMap<string, AtlasRelationshipDef>,
+): boolean {
+    if (def.cardinality !== "SET") {
+        return false;
+    }
+    const relationship = relationships.get(def.relationshipTypeName ?? "");
+    const ends = [relationship?.endDef1, relationship?.endDef2].filter((end) => end !== null && end !== undefined);
+    const mine = ends.find((end) => end.name === def.name);
+    const opposite = ends.find((end) => end !== mine);
+
+    return mine !== undefined && opposite?.cardinality === "SINGLE";
+}
+
 /** One chosen relationship target — a chip's value and a save entry (EDT-15). */
 export type RelationshipPick = {
     readonly guid: string;
@@ -292,12 +321,15 @@ function unwrapArrayType(typeName: string): string {
  * @param entityDef the entity's own definition
  * @param defsByName every entity definition by name (for the supertype links)
  * @param labels the localized strings, shared with the plain fields (EDT-34)
+ * @param relationshipDefs every relationship definition by name — the parent-side
+ * test reads the opposite end from them (RPS-07); without them no picker filters
  * @returns the picker fields, in label order (the plain fields keep the top)
  */
 export function buildRelationshipFields(
     entityDef: AtlasEntityDef,
     defsByName: ReadonlyMap<string, AtlasEntityDef>,
     labels: EditorLabels = {},
+    relationshipDefs: readonly AtlasRelationshipDef[] = [],
 ): RelationshipField[] {
     const merged = new Map<string, AtlasRelationshipAttributeDef>();
 
@@ -306,6 +338,13 @@ export function buildRelationshipFields(
             if (def.name && !merged.has(def.name) && !DROPPED_ATTRIBUTES.has(def.name)) {
                 merged.set(def.name, def);
             }
+        }
+    }
+
+    const byRelationship = new Map<string, AtlasRelationshipDef>();
+    for (const def of relationshipDefs) {
+        if (def.name) {
+            byRelationship.set(def.name, def);
         }
     }
 
@@ -320,6 +359,7 @@ export function buildRelationshipFields(
                     unwrapArrayType(typeName),
                     labels[def.name as string],
                     parentGroupOf(def),
+                    parentSideOf(def, byRelationship),
                 ),
             );
         }
@@ -355,6 +395,7 @@ function relationshipFieldOf(
     target: string,
     label?: string,
     parentGroup?: string | null,
+    parentSide?: boolean,
 ): RelationshipField {
     return {
         name,
@@ -364,6 +405,7 @@ function relationshipFieldOf(
         required: def.isOptional === false,
         ...(def.relationshipTypeName ? { relationshipTypeName: def.relationshipTypeName } : {}),
         ...(parentGroup !== null && parentGroup !== undefined ? { parentGroup } : {}),
+        ...(parentSide === true ? { parentSide: true } : {}),
     };
 }
 
