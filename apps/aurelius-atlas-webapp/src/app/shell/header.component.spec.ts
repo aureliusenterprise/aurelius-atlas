@@ -9,6 +9,7 @@ import { AlertsService } from "../alerts/alerts.service";
 import { APP_CONFIG } from "../tokens";
 import { ShellHeader } from "./header.component";
 import { TENANCY } from "../tenancy";
+import { DashboardsService } from "./dashboards.service";
 import { Session } from "./session.service";
 
 const config: AppConfig = {
@@ -339,7 +340,7 @@ describe("ShellHeader", () => {
 });
 
 describe("ShellHeader with tenancy on (TNW-06, DD-635)", () => {
-    function setupTenancy(tenant: string | undefined) {
+    function setupTenancy(tenant: string | undefined, dashboards?: string) {
         const login = vi.fn().mockResolvedValue(undefined);
         window.matchMedia = vi.fn().mockReturnValue({ matches: false });
         TestBed.configureTestingModule({
@@ -349,6 +350,7 @@ describe("ShellHeader with tenancy on (TNW-06, DD-635)", () => {
                 { provide: APP_CONFIG, useValue: config },
                 { provide: Keycloak, useValue: { logout: vi.fn(), login } },
                 { provide: Session, useValue: { identity: () => "ann", tenant: () => tenant } },
+                { provide: DashboardsService, useValue: { url: () => dashboards } },
                 {
                     provide: TENANCY,
                     useValue: { enabled: true, operatorOrganization: "operators", operatorRole: "atlas-operator" },
@@ -378,6 +380,39 @@ describe("ShellHeader with tenancy on (TNW-06, DD-635)", () => {
 
         expect(text).not.toContain("Tenant:");
         expect(text).toContain("Switch tenant");
+    });
+
+    describe("the dashboards item (TDL-08, TDL-09, TDL-10)", () => {
+        const URL = "https://atlas.example/grafana/d/tenant-catalogue?orgId=7";
+
+        function dashboardsLink(compiled: HTMLElement): HTMLAnchorElement | undefined {
+            return [...compiled.querySelectorAll<HTMLAnchorElement>(".navbar-dropdown a.navbar-item")].find((item) =>
+                item.textContent?.includes("Dashboards"),
+            );
+        }
+
+        it("TDL-08: with a link, shows Dashboards right under Switch tenant, opening it in a new tab", () => {
+            setupTenancy("acme", URL);
+            const compiled = render();
+            const link = dashboardsLink(compiled);
+
+            expect(link?.getAttribute("href")).toBe(URL);
+            expect(link?.getAttribute("target")).toBe("_blank");
+            expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+            expect(link?.previousElementSibling?.textContent).toContain("Switch tenant");
+        });
+
+        it("TDL-09: without a link, shows no Dashboards item", () => {
+            setupTenancy("acme", undefined);
+
+            expect(dashboardsLink(render())).toBeUndefined();
+        });
+
+        it("TDL-10: the item's label is the dictionary's shell.header.dashboards", () => {
+            setupTenancy("acme", URL);
+
+            expect(normalize(dashboardsLink(render())?.textContent)).toBe("Dashboards");
+        });
     });
 });
 

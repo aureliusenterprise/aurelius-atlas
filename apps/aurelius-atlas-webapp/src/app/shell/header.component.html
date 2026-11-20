@@ -119,6 +119,17 @@
                     >
                         Switch tenant
                     </button>
+                    <!-- The tenant's dashboards in Grafana, for those the server says may see them (TDL-08, DD-769). -->
+                    @if (dashboards.url(); as url) {
+                        <a
+                            class="navbar-item"
+                            i18n="@@shell.header.dashboards"
+                            [href]="url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            >Dashboards</a
+                        >
+                    }
                     <hr class="navbar-divider" />
                 }
                 <!-- Account-security: the Keycloak account console. -->
