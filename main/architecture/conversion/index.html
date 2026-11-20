@@ -8431,6 +8431,13 @@ checks a PR must pass:</p>
 <td>A move that names the old parent. A filter on the child-side single pickers, where choosing an attached entity is the legitimate move (PME-10). The relationship endpoints of the wire door.</td>
 <td>in progress</td>
 </tr>
+<tr>
+<td>18.5</td>
+<td>A dataset picks a collection or a parent dataset</td>
+<td>The dataset end of <code>m4i_dataset_assignment</code> becomes <code>SINGLE</code> with the <code>mutuallyExclusive</code> constraint, and <code>m4i_dataset</code> loses its mirrored <code>collections</code> array attribute: the group <code>m4i_dataset_parent</code> joins <code>collections</code> and <code>parentDataset</code>, so the write check and the disabled picker of 18.3 hold for a dataset, the collection's <code>datasets</code> picker filters held candidates as a parent-side picker of 18.4, and the scanners write one collection as one object (DCP-01..09, DD-760..764)</td>
+<td>Migration of a store at the old shape (not planned, breaking); a second parent kind for the system, the data attribute or the process, each with one parent kind; a mandatory parent (composition)</td>
+<td>in progress</td>
+</tr>
 </tbody>
 </table>
 <h2 id="after-phase-0">After phase 0<a class="headerlink" href="#after-phase-0" title="Permanent link">&para;</a></h2>
