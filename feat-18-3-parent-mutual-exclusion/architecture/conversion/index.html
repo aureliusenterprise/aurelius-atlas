@@ -8413,14 +8413,14 @@ checks a PR must pass:</p>
 <tr>
 <td>18.2</td>
 <td>The metamodel gives every hierarchy child one parent</td>
-<td>The child-side end of the eight m4i hierarchy relationships becomes <code>SINGLE</code> and the child entity definitions lose the mirrored <code>array&lt;...&gt;</code> attribute, so the end def governs: the registry builds the child's attribute as one object reference, a save replaces the parent edge, the read answers one object, the editor shows one picker, and the sample bundles hold one parent each (the two datasets under two parents keep one). Breaking: the m4i types go to version <code>1.1</code> with no migration, since no catalogue runs this shape yet (HCA-01..10, DD-740..743)</td>
+<td>The child-side end of the eight m4i hierarchy relationships becomes <code>SINGLE</code> and the child entity definitions lose the mirrored <code>array&lt;...&gt;</code> attribute, so the end def governs: the registry builds the child's attribute as one object reference, a save replaces the parent edge, the read answers one object, the editor shows one picker, and the sample bundles hold one parent each (the two datasets under two parents keep one). Breaking: the m4i types go to version <code>1.1</code> with no migration, since no catalogue runs this shape yet (HCA-01..10, DD-742..745)</td>
 <td>Migration of a store that already holds the <code>SET</code> shape (not planned, breaking); a mandatory parent (composition); cardinality on the base or glossary models</td>
 <td>in progress</td>
 </tr>
 <tr>
 <td>18.3</td>
 <td>A child that can sit under two parents picks one</td>
-<td>A child relationship end carries a <code>mutuallyExclusive</code> constraint naming a parent group, which every child end of one choice shares. The type system rejects it on a container end, the registry copies it onto the built child attribute, so the API and the write path read the rule in one place. The m4i model puts <code>dataDomain</code> and <code>parentEntity</code> in one group and <code>datasets</code> and <code>parentField</code> in another, and those four relationships go to <code>1.2</code> through the typedef update check, with no migration. A save that fills two members of one group is refused; filling neither stays legal. The editor disables the other picker of a filled group (PME-01..13, DD-744..752, DV-183/185).</td>
+<td>A child relationship end carries a <code>mutuallyExclusive</code> constraint naming a parent group, which every child end of one choice shares. The type system rejects it on a container end, the registry copies it onto the built child attribute, so the API and the write path read the rule in one place. The m4i model puts <code>dataDomain</code> and <code>parentEntity</code> in one group and <code>datasets</code> and <code>parentField</code> in another, and those four relationships go to <code>1.2</code> through the typedef update check, with no migration. A save that fills two members of one group is refused; filling neither stays legal. The editor disables the other picker of a filled group (PME-01..13, DD-746..754, DV-183/185).</td>
 <td>A must-choose-one variant. Mutual exclusion between anything other than hierarchical children. A hint sentence in the editor, since no new string may join the webapp's vendored catalogue.</td>
 <td>in progress</td>
 </tr>
