@@ -73,7 +73,7 @@ The one shot makes each tenant's users when it provisions the tenant, not the re
 
 `operators` is the platform's organization: a person who is its member holds the operator role, so the server holds that person at read access outside the tenants (ADR 063). The one shot also gives the platform a user of its own in the store, named `operator`, an admin of every index (ADR 063's direct store access). Its password is `DEMO_USER_OPERATOR_PASSWORD` in `infra/keycloak/.env`, the same as the realm's `operator`'s. The store has no published port, so it is reached from the stack's network. `TENANT_SAMPLE` names the export ZIP in `SAMPLE_DIR` that demo starts with, `sample_data.zip` by default. With tenancy on, `SAMPLE_ZIP` is left unset: the sample goes into demo, not into the stack's own catalogue.
 
-To add a tenant of your own that lasts, follow the user guide's page `docs/user-guide/standalone-tenants.md`.
+To add a tenant of your own, with its people and a sample if you name one, run `docker/bin/tenant.sh add <tenant>`; the user guide's page `docs/user-guide/standalone-tenants.md` explains its options. You edit no file.
 
 At sign-in, a person in several organizations, such as an operator who also reads a tenant, chooses which to act in. The webapp shows the tenant in its account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in. Another tenant is provisioned by the server's command, run in the server's image with its settings:
 
