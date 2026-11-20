@@ -67,3 +67,27 @@ Compute it server-side and answer it (a whole round trip for the browser's clock
 which is the clock the reader of the footer sits in). A per-deployment override
 through an env var: no such requirement exists, and the chart keeps `appName` as the
 one shell string a deployment may still rename (SHC-02).
+
+### DD-733. The landing's no-API test leaves out the start's version read
+
+- **Status:** Proposed
+- **Increment:** 7.34
+- **Date:** 2026-11-20
+
+**Decision.** The landing scenario that counts `/api` calls leaves out the version
+read (`GET /api/atlas/admin/version`) beside the tenancy read it already leaves out.
+
+**Reason.** VER-01 moved the version from `/config.json` to a read, and
+`VersionService` starts it the first time the shell renders behind the guard (VER-02,
+APC-05). The landing itself still issues no call, so the rule the scenario guards
+(BRW-01, BRW-04) holds. The scenario reloads the page, and a reload restarts the app:
+the read belongs to the start, exactly as 15.6's tenancy read does (TNW-02), which the
+same test already carves out for the same reason.
+
+**Alternatives.** Route the read and answer an empty version: the scenario then pins a
+stub rather than the shipped start, and a second scenario would still need the same
+exclusion. Move the version out of the shell: the footer is the version's primary
+reader (VER-01).
+
+**Consequences.** The scenario's carve-out is a two-entry list of start reads. A future
+shell-level start read joins it, and each entry names the rule that owns the read.
