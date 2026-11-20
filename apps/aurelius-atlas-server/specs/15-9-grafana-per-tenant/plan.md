@@ -18,7 +18,7 @@ request; it reworks the unmerged commit 303fcf80d, whose dashboards it keeps.
    `aurelius_atlas_server/grafana/*.json`, moved from 303fcf80d with their data sources named by uid.
 4. **The command** (TGF-04 to TGF-11): `add`, `user add`, `user remove`, `remove` and `operators` call it after
    their realm steps; the subcommand `grafana sync`. The tenant's reader in the store, with its generated
-   password (DD-734).
+   password (DD-737).
 5. **Tests**: `test__aurelius_atlas_server_grafana_tenants.py` against a stand-in Grafana API, recording its calls
    and answering as Grafana does; the command's tests extended; the workspace test of the realm, the compose
    pieces and the proxy route.

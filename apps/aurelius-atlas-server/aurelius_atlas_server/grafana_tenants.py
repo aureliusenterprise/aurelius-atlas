@@ -1,9 +1,9 @@
 """The tenants' side of Grafana, through its HTTP API as its local administrator (15.9, TGF-04 to TGF-14).
 
 Each tenant has a Grafana organization named after it, with two Elasticsearch data sources that read the tenant's
-indices alone as a store user of that tenant, and the dashboards shipped in this package (DD-734, DD-735). The
+indices alone as a store user of that tenant, and the dashboards shipped in this package (DD-737, DD-738). The
 tenant's members are its Viewers; the operators are Viewers of the main organization, the platform's, where
-everyone else has no role (DD-733). Nothing here takes a role from a token: the tenant command keeps it.
+everyone else has no role (DD-736). Nothing here takes a role from a token: the tenant command keeps it.
 """
 
 import asyncio
@@ -253,7 +253,7 @@ class GrafanaTenants:
         return int(made["id"]), True
 
     async def _reader(self, alias: str) -> str:
-        """The tenant's store reader, made or given a new password; the password (TGF-05, DD-734)."""
+        """The tenant's store reader, made or given a new password; the password (TGF-05, DD-737)."""
         await self._store.security.put_role(
             name=reader_role(alias),
             cluster=["monitor"],

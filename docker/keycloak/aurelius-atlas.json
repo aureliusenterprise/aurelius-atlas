@@ -879,7 +879,7 @@
             "clientId": "grafana",
             "consentRequired": false,
             "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
-            "description": "The standalone Grafana's client (15.9, TGF-01, DD-732): its confidential OIDC login at https://localhost:9000/grafana/. Roles and organizations in Grafana are the tenant command's (DD-733), not this client's.",
+            "description": "The standalone Grafana's client (15.9, TGF-01, DD-735): its confidential OIDC login at https://localhost:9000/grafana/. Roles and organizations in Grafana are the tenant command's (DD-736), not this client's.",
             "directAccessGrantsEnabled": false,
             "enabled": true,
             "frontchannelLogout": true,

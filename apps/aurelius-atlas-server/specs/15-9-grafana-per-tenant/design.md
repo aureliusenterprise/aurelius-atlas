@@ -6,7 +6,7 @@ entry is never edited except its status line, and a changed decision is a new en
 
 ## Entries
 
-### DD-732. The stack's Grafana sits behind the proxy and signs in through Keycloak alone
+### DD-735. The stack's Grafana sits behind the proxy and signs in through Keycloak alone
 
 - **Status:** Proposed
 - **Increment:** 15.9
@@ -31,7 +31,7 @@ Grafana's free edition, which the chart's Grafana already signs in with (DD-661)
 **Consequences.** `http://localhost:3000` no longer answers. The local administrator is reached by the command
 on the stack's network alone (TGF-12). The dev observability slice's Grafana is unchanged.
 
-### DD-733. The command keeps a person's Grafana organizations, not the token
+### DD-736. The command keeps a person's Grafana organizations, not the token
 
 - **Status:** Proposed
 - **Increment:** 15.9
@@ -60,7 +60,7 @@ same in Grafana keeps one place that does both.
 Grafana only after `grafana sync`. Grafana's own organization switcher is how an operator moves between
 tenants, as the webapp's tenant switch is for the catalogue.
 
-### DD-734. Each tenant's data sources read as a store user of that tenant alone
+### DD-737. Each tenant's data sources read as a store user of that tenant alone
 
 - **Status:** Proposed
 - **Increment:** 15.9
@@ -83,7 +83,7 @@ organization still reads only their tenant's indices.
 
 **Consequences.** The store holds one more user per tenant, removed with the tenant (TGF-08).
 
-### DD-735. The tenant dashboards ship in the server's package and are made through Grafana's API
+### DD-738. The tenant dashboards ship in the server's package and are made through Grafana's API
 
 - **Status:** Proposed
 - **Increment:** 15.9
@@ -107,7 +107,7 @@ dashboards travel with the command that makes them, on any deployment.
 **Consequences.** A dashboard change reaches a tenant at the next `grafana sync`, which replaces the tenant's
 copy with the package's.
 
-### DD-736. A person's first sign-in finds the Grafana user the command made, by email
+### DD-739. A person's first sign-in finds the Grafana user the command made, by email
 
 - **Status:** Proposed
 - **Increment:** 15.9
@@ -125,7 +125,7 @@ refuses the sign-in because the login exists. Grafana has no API that links a us
 - Let the first sign-in make the user, and make the memberships at the next `grafana sync`: until then the
   person sees only the main organization, where they have no role.
 - Let the first sign-in make the user and put it in its organizations with Grafana's `org_mapping`: a restart
-  of Grafana for each tenant (DD-733).
+  of Grafana for each tenant (DD-736).
 
 **Consequences.** Grafana trusts the realm's email. The realm refuses duplicate emails and changes of username,
 both by default, so an email reaches only the person who holds it in the realm. A realm that allowed duplicate

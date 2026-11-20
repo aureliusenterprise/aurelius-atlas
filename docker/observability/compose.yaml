@@ -99,10 +99,10 @@ services:
             file: ../../infra/observability/docker-compose.yaml
             service: tempo
     # Grafana is the slice's, behind the stack's proxy at https://localhost:9000/grafana/ and signed in to through
-    # Keycloak alone (15.9, DD-732). It runs in the proxy's network, as the server does: the proxy reaches it on
+    # Keycloak alone (15.9, DD-735). It runs in the proxy's network, as the server does: the proxy reaches it on
     # 127.0.0.1:3000, it reaches Keycloak at the address the browser uses, and the tenant command reaches its API
     # there too. Organizations, roles, data sources and dashboards of the tenants are the tenant command's,
-    # through Grafana's API (DD-733, DD-735); the token gives no one a role, and everyone joins the main
+    # through Grafana's API (DD-736, DD-738); the token gives no one a role, and everyone joins the main
     # organization, the platform's, with none. The local administrator stays for that API.
     grafana:
         extends:
@@ -142,7 +142,7 @@ services:
             - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true
             - GF_AUTH_GENERIC_OAUTH_SKIP_ORG_ROLE_SYNC=true
             # The command makes each person in Grafana before they first sign in (TGF-07); the first sign-in
-            # finds that record by email. The realm forbids duplicate emails and username changes (DD-736).
+            # finds that record by email. The realm forbids duplicate emails and username changes (DD-739).
             - GF_AUTH_OAUTH_ALLOW_INSECURE_EMAIL_LOOKUP=true
             - GF_AUTH_GENERIC_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN=false
             # The stack's certificates share one CA: the proxy's, which Keycloak answers behind, is checked with it.
