@@ -8065,6 +8065,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Area0 is vendored and names no attribute; the m4i dictionary leaves names raw or missing. The legacy chose the catalogue, which Aurelius already bridges (SHL-08) and the completeness spec proves. The dictionary is Aurelius-owned, so its typos go at the source</td>
 <td>7.33</td>
 </tr>
+<tr>
+<td>DV-182</td>
+<td>Interface</td>
+<td>(Aurelius origin, no Atlas behaviour.) The webapp footer printed a copyright year and a version baked into <code>/config.json</code>.</td>
+<td>The footer prints the browser's current year and the version the server answers at <code>admin/version</code> (ADM-01); the two keys left <code>config.json</code> (7.34, DD-725/DD-726).</td>
+<td>The release stamps one version everywhere (DD-288), so the config copy could only go stale; a fixed year reads as neglect.</td>
+<td>7.34</td>
+</tr>
 </tbody>
 </table>
 
