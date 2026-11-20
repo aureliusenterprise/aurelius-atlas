@@ -76,3 +76,10 @@ def test__the_one_shot_keeps_grafana_through_the_command() -> None:
     assert '["grafana", "sync"]' in script
     assert "grafana_demo_reader" not in script
     assert not (STACK / "observability/config/grafana").exists()
+
+
+@pytest.mark.covers(rules=["TDL-11"])
+def test__the_server_names_grafanas_browser_address() -> None:
+    """The stack's server gives the tenant's dashboards link on the proxy's Grafana address."""
+    server = standalone_compose()["services"]["aurelius-atlas-server"]
+    assert _environment(server)["AURELIUS_ATLAS_SERVER_GRAFANA_PUBLIC_URL"] == "https://localhost:9000/grafana"
