@@ -4,8 +4,10 @@
  * the name-matching query, the 250 ms debounce), the client-side name-prefix
  * rule, the exclusions (the chosen and the edited entity never ride the panel),
  * the card-like row (EDT-33: name, type badge, trail), the pick path (append +
- * clear), the SINGLE rule (the box hides its input at one chip), and the chip
- * delete. The http client is the real one through HttpTestingController — the
+ * clear), the SINGLE rule (the box hides its input at one chip), the chip
+ * delete, and the parent-side filter (RPS-07: a picker that adds children asks
+ * the door for candidates holding no parent, and drops one the door answers as
+ * held). The http client is the real one through HttpTestingController — the
  * picker's only dependency is ViewSearchService. The box, its combobox keyboard
  * and its accessible name are the dumb `TokenPicker`'s and are tested in the ui
  * library (UIC-44, DD-713); this spec drives them through the rendered box.
@@ -437,5 +439,92 @@ describe("EntityRelationshipInput (EDT-14, EDT-33, DD-711)", () => {
         fixture.detectChanges();
 
         expect(names(compiled)).toEqual([]);
+    });
+});
+
+describe("a parent-side picker (RPS-07, DD-758)", () => {
+    /** A picker adding children: the SET end of a hierarchy (HCA-01), flagged
+     * by the field builder from the relationship definitions (RPS-07). */
+    const PARENT_SIDE_FIELD: RelationshipField = {
+        name: "childDataset",
+        label: "childDataset",
+        targetType: "m4i_dataset",
+        single: false,
+        required: false,
+        relationshipTypeName: "m4i_dataset_parent_assignment",
+        parentSide: true,
+    };
+    /** The other end of the same relationship (RPS-07, DD-759): choosing a
+     * held candidate there is the legitimate move of the edited entity. */
+    const CHILD_SIDE_FIELD: RelationshipField = {
+        name: "parentDataset",
+        label: "parentDataset",
+        targetType: "m4i_dataset",
+        single: true,
+        required: false,
+        relationshipTypeName: "m4i_dataset_parent_assignment",
+    };
+
+    /** One browse answer of datasets: the first holds a parent, the rest do not
+     * (RPS-06's card field). */
+    const HELD_ANSWER: ViewSearchAnswer = {
+        cards: [
+            card({ guid: "d1", typeName: "m4i_dataset", displayText: "set_held", hasParent: true }),
+            card({ guid: "d2", typeName: "m4i_dataset", displayText: "set_free", hasParent: false }),
+            card({ guid: "d3", typeName: "m4i_dataset", displayText: "set_unknown" }),
+        ],
+        facets: {},
+        total: 3,
+    };
+
+    /** Browse the target type of one field through the door. */
+    function browse(httpMock: HttpTestingController, compiled: HTMLElement) {
+        type(compiled, "set");
+        vi.advanceTimersByTime(250);
+
+        return httpMock.expectOne((req) => req.url === SEARCH_URL && req.method === "POST");
+    }
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it("asks for candidates holding no parent and drops one the door answers as held (RPS-07)", () => {
+        const { fixture, compiled, httpMock } = setup(PARENT_SIDE_FIELD);
+
+        const request = browse(httpMock, compiled);
+        expect(request.request.body).toEqual({
+            filters: { any: [{ typeName: ["m4i_dataset"] }, { superTypeNames: ["m4i_dataset"] }], hasParent: false },
+            limit: 10,
+            query: "set*",
+        });
+        request.flush(HELD_ANSWER);
+        fixture.detectChanges();
+
+        // The stored mark can lag the edges, so a card that answers as held is
+        // dropped here too — picking it would only be refused (RPS-01). A card
+        // without the mark is not held and stays pickable.
+        expect(names(compiled)).toEqual(["set_free", "set_unknown"]);
+    });
+
+    it("the child-side picker of the same relationship asks for everything (RPS-07, DD-759)", () => {
+        const { fixture, compiled, httpMock } = setup(CHILD_SIDE_FIELD);
+
+        const request = browse(httpMock, compiled);
+        expect(request.request.body).toEqual({
+            filters: { any: [{ typeName: ["m4i_dataset"] }, { superTypeNames: ["m4i_dataset"] }] },
+            limit: 10,
+            query: "set*",
+        });
+        request.flush(HELD_ANSWER);
+        fixture.detectChanges();
+
+        // The held dataset is exactly what an author reparenting the edited
+        // entity means to pick, so the panel keeps it.
+        expect(names(compiled)).toEqual(["set_held", "set_free", "set_unknown"]);
     });
 });

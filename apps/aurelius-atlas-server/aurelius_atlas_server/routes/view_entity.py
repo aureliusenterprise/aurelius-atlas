@@ -11,6 +11,7 @@ its conflicts beside the stored view (DD-591).
 from aurelius_atlas_core.view_derivation import read_ends, view_of
 from aurelius_atlas_core.view_mutation import ViewMutationDoor, ViewVersionConflictError
 from aurelius_atlas_model.errors import validate_guid
+from aurelius_atlas_model.params import EntityWriteParams
 from aurelius_atlas_model.views import EntityView
 from fastapi import APIRouter, Request
 
@@ -20,7 +21,7 @@ from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, is_a
 from aurelius_atlas_server.bodies import Body
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import json_response, request_body
-from aurelius_atlas_server.routes.entity import Store, notifier, tasks_enabled
+from aurelius_atlas_server.routes.entity import Store, notifier, read_query, tasks_enabled
 
 VIEW_ENTITY = APIRouter(prefix="/api/aurelius/v1", tags=["View family"])
 
@@ -71,6 +72,7 @@ async def write(request: Request, body: Body, store: Store) -> AtlasJSONResponse
         authorizer=authorizer(request),
         notifier=notifier(request, store),
         tasks=tasks_enabled(request),
+        unsafe_reparent=read_query(EntityWriteParams, request).unsafe_reparent,
     )
     try:
         view = await door.apply({} if body is None else body)

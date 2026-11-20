@@ -71,11 +71,18 @@ def ref(request_guid: str, type_name: str, **more: Any) -> dict[str, Any]:  # no
 
 
 async def write(
-    store: EntityStore, *entities: dict[str, Any], delete_type: DeleteType = DeleteType.SOFT
+    store: EntityStore,
+    *entities: dict[str, Any],
+    delete_type: DeleteType = DeleteType.SOFT,
+    unsafe: bool = False,
 ) -> dict[str, Any]:
-    """The JSON answer to creating or updating these entities; their GUIDs are kept for ``g``."""
+    """The JSON answer to creating or updating these entities; their GUIDs are kept for ``g``.
+
+    ``unsafe`` is the request's ``unsafeReparent`` opt-in (RPS-04).
+    """
     request = AtlasEntitiesWithExtInfo.model_validate({"entities": list(entities)})
-    answer = as_json(await EntityWriter(store, delete_type=delete_type).create_or_update(request))
+    writer = EntityWriter(store, delete_type=delete_type, unsafe_reparent=unsafe)
+    answer = as_json(await writer.create_or_update(request))
     GUIDS.update(answer.get("guidAssignments", {}))
     return answer
 
@@ -546,3 +553,141 @@ async def test__deleting_a_whole_deletes_its_parts_through_the_composition(store
     assert mutated(deleted, "DELETE") == [g("-1"), g("-3"), g("-2")]
     assert mutated(purged, "PURGE") == [g("-1"), g("-3"), g("-2"), g("-4")]
     assert left is None
+
+
+S = "aurelius_atlas_core.entity_discovery.EntityDiscovery.validate_parent_safe"
+
+
+@pytest.mark.covers(S, rules=["RPS-01", "RPS-03"])
+async def test__a_parent_side_write_reaching_a_held_child_is_refused(store: EntityStore) -> None:
+    """The ``s_note`` save that lists a choice the box already holds is refused naming child and parent (RPS-01)."""
+    await write(
+        store,
+        entity("s_box", "-1", qualifiedName="b@cl"),
+        entity("s_note", "-2", qualifiedName="n@cl"),
+        entity("s_choice", "-3", {"box": ref("-1", "s_box")}, qualifiedName="c@cl"),
+    )
+
+    with pytest.raises(AtlasError) as raised:
+        await write(store, entity("s_note", g("-2"), {"noted": [ref("-3", "s_choice")]}, qualifiedName="n@cl"))
+
+    assert raised.value.code is AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS
+    (message,) = raised.value.messages or [raised.value.message]
+    assert f"s_choice {g('-3')}: box holds parent s_box {g('-1')}" in message
+    assert "unsafeReparent" in message
+    active = [found for found in await relationships(store, g("-3")) if found.state.value == "ACTIVE"]
+    assert [(found.end1_guid, found.end2_guid) for found in active] == [(g("-1"), g("-3"))]
+
+
+@pytest.mark.covers(S, rules=["RPS-02"])
+async def test__a_parent_side_write_to_a_free_or_same_parent_child_passes(store: EntityStore) -> None:
+    """A free choice is accepted, and naming it again under the parent it holds is never refused (RPS-02)."""
+    await write(store, entity("s_note", "-2", qualifiedName="n@cl"), entity("s_choice", "-3", qualifiedName="c@cl"))
+
+    first = await write(store, entity("s_note", g("-2"), {"noted": [ref("-3", "s_choice")]}, qualifiedName="n@cl"))
+    again = await write(store, entity("s_note", g("-2"), {"noted": [ref("-3", "s_choice")]}, qualifiedName="n@cl"))
+    held = [found for found in await relationships(store, g("-3")) if found.state.value == "ACTIVE"]
+
+    assert g("-3") in mutated(first, "UPDATE")
+    assert mutated(again, "UPDATE") == []  # naming the parent it holds mutates nothing, and is not refused
+    assert [(found.end1_guid, found.end2_guid) for found in held] == [(g("-3"), g("-2"))]
+
+
+@pytest.mark.covers(S, rules=["RPS-02"])
+async def test__a_parent_side_move_in_one_request_is_not_refused(store: EntityStore) -> None:
+    """One request that adds a held choice to a second note and drops it from the first moves it (RPS-02)."""
+    await write(
+        store,
+        entity("s_note", "-1", qualifiedName="n1@cl"),
+        entity("s_note", "-2", qualifiedName="n2@cl"),
+        entity("s_choice", "-3", qualifiedName="c@cl"),
+    )
+    await write(store, entity("s_note", g("-1"), {"noted": [ref("-3", "s_choice")]}, qualifiedName="n1@cl"))
+
+    answer = await write(
+        store,
+        entity("s_note", g("-2"), {"noted": [ref("-3", "s_choice")]}, qualifiedName="n2@cl"),
+        entity("s_note", g("-1"), {"noted": []}, qualifiedName="n1@cl"),
+    )
+    held = [found for found in await relationships(store, g("-3")) if found.state.value == "ACTIVE"]
+    read_choice = await read(store, g("-3"))
+
+    assert g("-2") in mutated(answer, "UPDATE")
+    assert [(found.end1_guid, found.end2_guid) for found in held] == [(g("-3"), g("-2"))]
+    assert read_choice["entity"]["relationshipAttributes"]["note"]["guid"] == g("-2")
+
+
+@pytest.mark.covers(f"{M}.map", rules=["RPS-05"])
+async def test__the_opt_in_moves_a_held_child_to_one_parent(store: EntityStore) -> None:
+    """With ``unsafeReparent`` the note lists the boxed choice, the box edge goes ``DELETED`` (RPS-05)."""
+    await write(
+        store,
+        entity("s_box", "-1", qualifiedName="b@cl"),
+        entity("s_note", "-2", qualifiedName="n@cl"),
+        entity("s_choice", "-3", {"box": ref("-1", "s_box")}, qualifiedName="c@cl"),
+    )
+
+    moved = await write(
+        store,
+        entity("s_note", g("-2"), {"noted": [ref("-3", "s_choice")]}, qualifiedName="n@cl"),
+        unsafe=True,
+    )
+    after = await relationships(store, g("-3"))
+    read_choice = await read(store, g("-3"))
+
+    assert g("-2") in mutated(moved, "UPDATE")
+    assert ends(after) == [(g("-1"), g("-3"), "DELETED"), (g("-3"), g("-2"), "ACTIVE")]
+    assert [found for found in after if found.state.value == "ACTIVE"] == [after[-1]]
+    assert read_choice["entity"]["relationshipAttributes"]["note"]["guid"] == g("-2")
+
+
+@pytest.mark.covers(S, rules=["RPS-01"])
+async def test__a_created_candidate_holding_another_parent_is_refused(store: EntityStore) -> None:
+    """The same request that creates a boxed choice under the note is refused on what it declares (RPS-01)."""
+    await write(
+        store,
+        entity("s_box", "-1", qualifiedName="b@cl"),
+        entity("s_note", "-2", qualifiedName="n@cl"),
+    )
+    request = AtlasEntitiesWithExtInfo.model_validate(
+        {
+            "entities": [
+                entity("s_note", g("-2"), {"noted": [{"guid": "-9", "typeName": "s_choice"}]}, qualifiedName="n@cl"),
+                entity("s_choice", "-9", {"box": ref("-1", "s_box")}, qualifiedName="k@cl"),
+            ]
+        }
+    )
+
+    with pytest.raises(AtlasError) as raised:
+        await EntityWriter(store).create_or_update(request)
+
+    assert raised.value.code is AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS
+    message = raised.value.message
+    assert "s_choice -9: box holds parent s_box" in message
+
+
+@pytest.mark.covers(S, rules=["RPS-08"])
+async def test__an_import_writes_a_parent_side_bundle_reaching_a_held_child(store: EntityStore) -> None:
+    """The import of a note listing a boxed choice is exempt from the guard: both edges stay (RPS-08)."""
+    await write(
+        store,
+        entity("s_box", "-1", qualifiedName="b@cl"),
+        entity("s_note", "-2", qualifiedName="n@cl"),
+        entity("s_choice", "-3", {"box": ref("-1", "s_box")}, qualifiedName="c@cl"),
+    )
+    bundle = AtlasEntityWithExtInfo.model_validate(
+        {
+            "entity": {
+                "typeName": "s_note",
+                "guid": g("-2"),
+                "attributes": {"qualifiedName": "n@cl"},
+                "relationshipAttributes": {"noted": [{"guid": g("-3"), "typeName": "s_choice"}]},
+            }
+        }
+    )
+
+    answer = as_json(await EntityWriter(store).create_or_update_for_import(bundle))
+    active = [found for found in await relationships(store, g("-3")) if found.state.value == "ACTIVE"]
+
+    assert g("-2") in mutated(answer, "UPDATE")
+    assert sorted(found.ends() for found in active) == sorted([(g("-1"), g("-3")), (g("-3"), g("-2"))])

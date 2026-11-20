@@ -212,7 +212,7 @@ def test__an_own_document_carries_the_derivation_version_it_was_made_under() -> 
     """The round writes documents of its current version; one made without the mark is of version 1 (ASD-07)."""
     document = own_document(entity(**{"m4i_data_entity.name": "N"}))
 
-    assert document.derivation_version == DERIVATION_VERSION == 2
+    assert document.derivation_version == DERIVATION_VERSION == 3
     assert StoredAppSearch(source_hash="h", referenceablequalifiedname="q").derivation_version == 1
 
 

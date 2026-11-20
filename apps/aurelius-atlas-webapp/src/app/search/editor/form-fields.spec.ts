@@ -3,6 +3,7 @@ import type {
     AtlasEntityDef,
     AtlasEnumDef,
     AtlasRelationshipAttributeDef,
+    AtlasRelationshipDef,
     EntityCard,
 } from "aurelius-atlas-data-access";
 
@@ -597,6 +598,85 @@ describe("a parent group's pickers (PME-10, 18.3)", () => {
         expect(
             buildRelationshipFields(blank, new Map([["E", blank]])).every((field) => field.parentGroup === undefined),
         ).toBe(true);
+    });
+});
+
+describe("a parent-side picker (RPS-07, 18.4)", () => {
+    /** The data dictionary's hierarchy relationship: a `SINGLE` child end and a
+     * `SET` parent end (HCA-01), plus a plain association both ends of which
+     * are `SINGLE` — the shape the picker must not confuse with a hierarchy. */
+    const RELATIONSHIPS: AtlasRelationshipDef[] = [
+        {
+            name: "m4i_dataset_parent_assignment",
+            endDef1: { type: "m4i_dataset", name: "parentDataset", cardinality: "SINGLE" },
+            endDef2: { type: "m4i_dataset", name: "childDataset", cardinality: "SET" },
+        },
+        {
+            name: "m4i_field_assignment",
+            endDef1: { type: "m4i_field", name: "datasets", cardinality: "SINGLE" },
+            endDef2: { type: "m4i_dataset", name: "fields", cardinality: "SET" },
+        },
+        {
+            name: "m4i_referenceable_source_assignment",
+            endDef1: { type: "m4i_dataset", name: "source", cardinality: "SET" },
+            endDef2: { type: "m4i_source", name: "assets", cardinality: "SET" },
+        },
+    ];
+    const DATASET = raDef(
+        "m4i_dataset",
+        [
+            ra({
+                name: "parentDataset",
+                typeName: "m4i_dataset",
+                cardinality: "SINGLE",
+                relationshipTypeName: "m4i_dataset_parent_assignment",
+            }),
+            ra({
+                name: "childDataset",
+                typeName: "array<m4i_dataset>",
+                cardinality: "SET",
+                relationshipTypeName: "m4i_dataset_parent_assignment",
+            }),
+            ra({
+                name: "fields",
+                typeName: "array<m4i_field>",
+                cardinality: "SET",
+                relationshipTypeName: "m4i_field_assignment",
+            }),
+            ra({
+                name: "source",
+                typeName: "array<m4i_source>",
+                cardinality: "SET",
+                relationshipTypeName: "m4i_referenceable_source_assignment",
+            }),
+        ],
+        ["Asset"],
+    );
+    const fields = Object.fromEntries(
+        buildRelationshipFields(DATASET, new Map([["m4i_dataset", DATASET]]), {}, RELATIONSHIPS).map((f) => [
+            f.name,
+            f,
+        ]),
+    );
+
+    it("the SET end of a hierarchy is recognised as parent-side (RPS-07)", () => {
+        expect(fields["childDataset"].parentSide).toBe(true);
+        expect(fields["fields"].parentSide).toBe(true);
+    });
+
+    it("the SINGLE child end and a SET-to-SET association are not (RPS-07, DD-759)", () => {
+        // The child side must still offer every candidate: choosing a held one
+        // there is the legitimate move of the edited entity itself (DD-759).
+        expect(fields["parentDataset"].parentSide).toBeUndefined();
+        expect(fields["source"].parentSide).toBeUndefined();
+    });
+
+    it("without the relationship defs no picker filters (RPS-07)", () => {
+        const plain = Object.fromEntries(
+            buildRelationshipFields(DATASET, new Map([["m4i_dataset", DATASET]])).map((f) => [f.name, f]),
+        );
+
+        expect(plain["childDataset"].parentSide).toBeUndefined();
     });
 });
 

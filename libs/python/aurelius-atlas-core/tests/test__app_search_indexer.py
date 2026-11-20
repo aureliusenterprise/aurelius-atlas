@@ -341,8 +341,9 @@ async def test__a_breadcrumb_follows_the_first_parent_of_the_type_s_order_up() -
     assert attribute.breadcrumbname == ["D", "E1", "E2"]
     assert attribute.breadcrumbtype == ["m4i_data_domain", "m4i_data_entity", "m4i_data_entity"]
     assert attribute.parentguid == catalogue.guids["e2"]
+    assert attribute.hasparent is True
     assert catalogue.keys(documents["e2"].breadcrumbguid) == ["d", "e1"]
-    assert (documents["d"].breadcrumbguid, documents["d"].parentguid) == ([], None)
+    assert (documents["d"].breadcrumbguid, documents["d"].parentguid, documents["d"].hasparent) == ([], None, False)
 
 
 @pytest.mark.covers(f"{X}.derive", rules=["LAS-04"])
@@ -477,7 +478,7 @@ async def test__a_round_derives_again_a_document_of_the_version_before_the_curre
     assert written >= 1
     after = (await catalogue.documents.get([guid]))[guid].entity.app_search
     assert after is not None
-    assert after.derivation_version == 2
+    assert after.derivation_version == 3
     assert not after.stale
     assert catalogue.keys(after.deriveddatastewardguid) == ["p"]
     assert await catalogue.indexer().run_once() == 0

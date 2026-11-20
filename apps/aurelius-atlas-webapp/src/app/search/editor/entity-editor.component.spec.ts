@@ -27,6 +27,7 @@ import {
     ViewEntityService,
     type AtlasEntityDef,
     type AtlasRelationshipAttributeDef,
+    type AtlasRelationshipDef,
     type AtlasTypeDefHeader,
     type AtlasTypesDef,
     type EntityRelation,
@@ -56,10 +57,11 @@ const VIEW_URL = "/api/aurelius/v1/entity/guid/";
 const VIEW_POST_URL = "/api/aurelius/v1/entity";
 /** The form-slice door (VDE-02, AVW-11): `GET /api/aurelius/v1/types/for-type/{name}`. */
 const CHAIN_URL = "/api/aurelius/v1/types/for-type/";
-/** The Atlas typedef door the three small slices ride (VDE-02, DD-611). */
+/** The Atlas typedef door the four small slices ride (VDE-02, DD-611). */
 const TYPEDEFS_URL = "/api/atlas/v2/types/typedefs";
 const CLASSIFICATION_SLICE_URL = `${TYPEDEFS_URL}?type=CLASSIFICATION`;
 const ENUM_SLICE_URL = `${TYPEDEFS_URL}?type=ENUM`;
+const RELATIONSHIP_SLICE_URL = `${TYPEDEFS_URL}?type=RELATIONSHIP`;
 const ENTITY_HEADERS_URL = `${TYPEDEFS_URL}/headers?type=ENTITY`;
 /** The delete stays Atlas's (VDE-11): `DELETE /api/atlas/v2/entity/guid/{guid}`. */
 const ATLAS_ENTITY_URL = "/api/atlas/v2/entity/guid/";
@@ -139,6 +141,9 @@ const TYPEDEFS: AtlasTypesDef = {
 const CLASSIFICATION_SLICE = { classificationDefs: TYPEDEFS.classificationDefs };
 /** The enum slice the form's enum fields read (VDE-02, DD-611): none shipped. */
 const ENUM_SLICE = { enumDefs: [] };
+/** The relationship slice the pickers read the opposite end from (RPS-07):
+ * none shipped, so no picker of these fixtures filters its search. */
+const RELATIONSHIP_SLICE: { relationshipDefs: AtlasRelationshipDef[] } = { relationshipDefs: [] };
 
 /** The create picker's rows come from the entity typedef headers (VDE-02):
  * names only — headers carry no display name, so every label is the
@@ -371,9 +376,15 @@ function flushValidation(httpMock: HttpTestingController, body = VALIDATION): vo
 }
 
 /** Flush the three slices the editor reads on open (VDE-02, DD-611) and settle. */
-function arriveSlices(fixture: { detectChanges: () => void }, httpMock: HttpTestingController, validate = true) {
+function arriveSlices(
+    fixture: { detectChanges: () => void },
+    httpMock: HttpTestingController,
+    validate = true,
+    relationships = RELATIONSHIP_SLICE,
+) {
     httpMock.expectOne(CLASSIFICATION_SLICE_URL).flush(CLASSIFICATION_SLICE);
     httpMock.expectOne(ENUM_SLICE_URL).flush(ENUM_SLICE);
+    httpMock.expectOne(RELATIONSHIP_SLICE_URL).flush(relationships);
     httpMock.expectOne(ENTITY_HEADERS_URL).flush(ENTITY_HEADERS);
     fixture.detectChanges();
     if (validate) {
@@ -395,8 +406,9 @@ function arriveTypeDefs(
     createType = "",
     chain: ViewForTypeAnswer = DATASET_CHAIN,
     validate = true,
+    relationships = RELATIONSHIP_SLICE,
 ) {
-    arriveSlices(fixture, httpMock, false);
+    arriveSlices(fixture, httpMock, false, relationships);
     if (createType !== "") {
         arriveChain(httpMock, createType, chain);
     }
@@ -415,8 +427,9 @@ function arrive(
     view: EntityView = ANSWER,
     chain: ViewForTypeAnswer = DATASET_CHAIN,
     validate = true,
+    relationships = RELATIONSHIP_SLICE,
 ) {
-    arriveSlices(fixture, httpMock, false);
+    arriveSlices(fixture, httpMock, false, relationships);
     httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(view);
     // The chain is asked from the view's type (VDE-02): the effect fires on
     // the tick the answer lands on, so the request appears one settle later.
@@ -451,9 +464,10 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         const viewRequest = httpMock.expectOne("/api/aurelius/v1/entity/guid/7a1b");
         expect(viewRequest.request.method).toBe("GET");
-        // The three small slices replace the whole-typedefs dump (VDE-02, DD-611).
+        // The small slices replace the whole-typedefs dump (VDE-02, DD-611).
         expect(httpMock.expectOne(CLASSIFICATION_SLICE_URL).request.method).toBe("GET");
         expect(httpMock.expectOne(ENUM_SLICE_URL).request.method).toBe("GET");
+        expect(httpMock.expectOne(RELATIONSHIP_SLICE_URL).request.method).toBe("GET");
         expect(httpMock.expectOne(ENTITY_HEADERS_URL).request.method).toBe("GET");
         viewRequest.flush(ANSWER);
         fixture.detectChanges(); // the answer's type fires the chain read (VDE-02)
@@ -626,6 +640,59 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(
             compiled.querySelectorAll('[data-field="inputToProcesses"] aurelius-atlas-ui-classification-chip'),
         ).toHaveLength(1);
+        vi.useRealTimers();
+    });
+
+    it("a parent-side picker searches only entities that hold no parent (RPS-07, DD-758)", () => {
+        vi.useFakeTimers();
+        const { fixture, compiled, httpMock } = setup();
+        // The hierarchy pair on the DataSet stand-in: one `SET` parent end and
+        // its `SINGLE` child end, the shape of the dictionary's assignment
+        // relationships (HCA-01). The relationship slice is what lets the field
+        // builder tell the two apart (RPS-07).
+        const chain = chainFor(
+            withDataSetRelationships(TYPEDEFS, [
+                {
+                    name: "childDataSet",
+                    typeName: "array<DataSet>",
+                    cardinality: "SET",
+                    relationshipTypeName: "dataset_parent_assignment",
+                },
+                {
+                    name: "parentDataSet",
+                    typeName: "DataSet",
+                    cardinality: "SINGLE",
+                    relationshipTypeName: "dataset_parent_assignment",
+                },
+            ]),
+            "DataSet",
+        );
+        arrive(fixture, httpMock, RA_ANSWER, chain, true, {
+            relationshipDefs: [
+                {
+                    name: "dataset_parent_assignment",
+                    endDef1: { type: "DataSet", name: "parentDataSet", cardinality: "SINGLE" },
+                    endDef2: { type: "DataSet", name: "childDataSet", cardinality: "SET" },
+                },
+            ],
+        });
+
+        const search = (field: string): Record<string, unknown> => {
+            const input = compiled.querySelector<HTMLInputElement>(`[data-field="${field}"] .aurelius-token-input`)!;
+            input.dispatchEvent(new Event("focusin", { bubbles: true }));
+            input.dispatchEvent(new Event("input"));
+            vi.advanceTimersByTime(250);
+
+            return httpMock.expectOne((request) => request.url === "/api/aurelius/v1/search").request.body as Record<
+                string,
+                unknown
+            >;
+        };
+
+        expect(search("childDataSet")).toMatchObject({ filters: { hasParent: false } });
+        // The child side must still offer every candidate: choosing one that
+        // holds a parent moves the entity being edited (DD-759).
+        expect(Object.keys(search("parentDataSet")["filters"] as Record<string, unknown>)).not.toContain("hasParent");
         vi.useRealTimers();
     });
 

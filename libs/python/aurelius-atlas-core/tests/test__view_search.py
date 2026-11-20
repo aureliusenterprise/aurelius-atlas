@@ -238,6 +238,24 @@ async def test__the_answer_holds_cards_facets_and_a_total(m4i: TypeRegistry) -> 
     assert answer["facets"]["typeName"] == [{"value": "m4i_data_entity", "count": 1}]
 
 
+@pytest.mark.covers(X, f"{V}._card", f"{V}.door_fields", rules=["RPS-06"])
+async def test__a_card_answers_has_parent_and_a_filter_takes_it(m4i: TypeRegistry) -> None:
+    """``hasParent`` is the stored boolean: true on a parented document, false without one, filterable (RPS-06)."""
+    door = await opened(
+        hold(m4i, "d-1", document={"hasparent": True}),
+        hold(m4i, "d-2", document={}),
+        hold(m4i, "d-3"),
+        m4i=m4i,
+    )
+
+    answer = await door.search({"limit": 10})
+    by_guid = {card["guid"]: card["hasParent"] for card in answer["cards"]}
+
+    assert by_guid == {"d-1": True, "d-2": False, "d-3": False}
+    assert await held(door, {"filters": {"hasParent": False}}) == ["d-2", "d-3"]
+    assert await held(door, {"filters": {"hasParent": True}}) == ["d-1"]
+
+
 @pytest.mark.covers(X, rules=["AVR-09"])
 async def test__only_active_entities_are_in_the_door_marking_stale_documents(m4i: TypeRegistry) -> None:
     """A deleted entity is out; a stale document is answered with its mark and filters by it (AVR-09, AVS-06)."""

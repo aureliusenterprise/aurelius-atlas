@@ -592,3 +592,89 @@ async def test__one_save_audits_one_update_per_changed_kind(typed: httpx.AsyncCl
     new = now - before
     assert new["ENTITY_UPDATE"] == 1
     assert set(new) >= {"ENTITY_UPDATE", "LABEL_ADD", "CLASSIFICATION_ADD", "TERM_ADD"}
+
+
+async def attach(client: httpx.AsyncClient, guid: str, attribute: str, target: str, type_name: str) -> None:
+    """Attach ``target`` to ``guid``'s child attribute through the wire POST (a held seed)."""
+    body = {
+        "entity": {
+            "typeName": type_name,
+            "guid": guid,
+            "attributes": {},
+            "relationshipAttributes": {attribute: {"guid": target, "typeName": "s_box"}},
+        }
+    }
+    posted = await client.post(ENTITY, json=body)
+    assert posted.status_code == 200, posted.text
+
+
+async def active_parents(client: httpx.AsyncClient, guid: str) -> dict[str, str]:
+    """The active single-parent edges of ``guid``, by child attribute, through the Atlas read."""
+    found = await client.get(f"{ENTITY}/guid/{guid}")
+    assert found.status_code == 200, found.text
+    return {
+        name: end["guid"]
+        for name, end in found.json()["entity"]["relationshipAttributes"].items()
+        if isinstance(end, dict) and end.get("relationshipStatus", "ACTIVE") == "ACTIVE" and name in ("box", "note")
+    }
+
+
+async def active_children(client: httpx.AsyncClient, guid: str, attribute: str) -> list[str]:
+    """The active children ``guid`` lists under its SET parent attribute, through the Atlas read."""
+    found = await client.get(f"{ENTITY}/guid/{guid}")
+    assert found.status_code == 200, found.text
+    listed = found.json()["entity"]["relationshipAttributes"].get(attribute) or []
+    return [end["guid"] for end in listed if end.get("relationshipStatus", "ACTIVE") == "ACTIVE"]
+
+
+@pytest.mark.covers(D, rules=["RPS-01", "RPS-03"])
+async def test__a_sections_add_reaching_a_held_child_is_refused(typed: httpx.AsyncClient) -> None:
+    """A note save whose ``noted`` lists a boxed choice is refused naming it, and writes nothing (RPS-01, RPS-03)."""
+    box = await create(typed, "s_box", qualifiedName="b@door")
+    note = await create(typed, "s_note", qualifiedName="n@door")
+    choice = await create(typed, "s_choice", qualifiedName="c@door")
+    await attach(typed, choice, "box", box, "s_choice")
+
+    start = await view_of(typed, note)
+    refused = await save(
+        typed,
+        {
+            "guid": note,
+            "typeName": "s_note",
+            "updateTime": start["updateTime"],
+            "attributes": {"qualifiedName": "n@door"},
+            "sections": [{"attribute": "noted", "entities": [{"guid": choice, "typeName": "s_choice"}]}],
+        },
+    )
+
+    assert refused.status_code == 404, refused.text
+    assert refused.json()["errorCode"] == "ATLAS-404-00-007"
+    assert f"s_choice {choice}: box holds parent s_box {box}" in refused.json()["errorMessage"]
+    assert "unsafeReparent" in refused.json()["errorMessage"]
+    assert await active_children(typed, note, "noted") == []  # the rewind left the note listing nothing
+    assert await active_parents(typed, choice) == {"box": box}
+
+
+@pytest.mark.covers(D, rules=["RPS-05"])
+async def test__the_opt_in_moves_a_held_child_through_the_door(typed: httpx.AsyncClient) -> None:
+    """With ``?unsafeReparent=true`` the door clears the box edge, so the choice holds only the note (RPS-05)."""
+    box = await create(typed, "s_box", qualifiedName="b@mv")
+    note = await create(typed, "s_note", qualifiedName="n@mv")
+    choice = await create(typed, "s_choice", qualifiedName="c@mv")
+    await attach(typed, choice, "box", box, "s_choice")
+
+    start = await view_of(typed, note)
+    moved = await typed.post(
+        f"{DOOR}?unsafeReparent=true",
+        json={
+            "guid": note,
+            "typeName": "s_note",
+            "updateTime": start["updateTime"],
+            "attributes": {"qualifiedName": "n@mv"},
+            "sections": [{"attribute": "noted", "entities": [{"guid": choice, "typeName": "s_choice"}]}],
+        },
+    )
+
+    assert moved.status_code == 200, moved.text
+    assert await active_parents(typed, choice) == {"note": note}
+    assert await active_children(typed, note, "noted") == [choice]

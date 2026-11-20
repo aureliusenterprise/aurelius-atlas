@@ -128,20 +128,26 @@ export class EntityRelationshipInput {
         const excluded = this.excluded();
         const typed = this.text().trim().toLowerCase();
 
-        return this.found()
-            .filter((card) => !excluded.has(card.guid))
-            .filter((card) => typed === "" || (card.displayText || card.guid).toLowerCase().startsWith(typed))
-            .map((card) => {
-                const icon = typeIcon(card.typeName);
-                const trail = trailOf(card, typeIcon).slice(0, -1);
-                return {
-                    key: card.guid,
-                    name: card.displayText || card.guid,
-                    type: nameDisplay(card.typeName),
-                    ...(icon !== undefined ? { icon: icon.icon, iconClass: icon.classIcon } : {}),
-                    ...(trail.length > 0 ? { trail } : {}),
-                };
-            });
+        return (
+            this.found()
+                .filter((card) => !excluded.has(card.guid))
+                // A parent-side picker also drops a card the door answered as held
+                // (RPS-07): the filter already excludes it, so a held answer means
+                // the stored mark lags the edges — picking it would only be refused.
+                .filter((card) => this.field().parentSide !== true || card.hasParent !== true)
+                .filter((card) => typed === "" || (card.displayText || card.guid).toLowerCase().startsWith(typed))
+                .map((card) => {
+                    const icon = typeIcon(card.typeName);
+                    const trail = trailOf(card, typeIcon).slice(0, -1);
+                    return {
+                        key: card.guid,
+                        name: card.displayText || card.guid,
+                        type: nameDisplay(card.typeName),
+                        ...(icon !== undefined ? { icon: icon.icon, iconClass: icon.classIcon } : {}),
+                        ...(trail.length > 0 ? { trail } : {}),
+                    };
+                })
+        );
     });
 
     /** The ids the combobox wiring (DD-336) names — unique per field. The
@@ -200,8 +206,14 @@ export class EntityRelationshipInput {
                 .search({
                     // The type-narrowing idiom of the search page (VSR-04):
                     // the stored documents carry the whole super chain, so a
-                    // sub type's entities answer too.
-                    filters: { any: [{ typeName: [target] }, { superTypeNames: [target] }] },
+                    // sub type's entities answer too. A parent-side picker
+                    // also asks for candidates that hold no parent (RPS-07):
+                    // a held one would move under the edited entity, which the
+                    // server refuses without the flag (RPS-01).
+                    filters: {
+                        any: [{ typeName: [target] }, { superTypeNames: [target] }],
+                        ...(this.field().parentSide === true ? { hasParent: false } : {}),
+                    },
                     limit: text === "" ? 5 : 10,
                     ...(text === "" ? {} : { query: `${text.replace(/[*?]/g, "")}*` }),
                 })
