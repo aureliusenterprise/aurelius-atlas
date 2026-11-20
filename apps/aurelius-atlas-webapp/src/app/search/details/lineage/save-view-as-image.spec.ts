@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { APP_CONFIG } from "../../../tokens";
 import { Session } from "../../../shell/session.service";
+import { VersionService } from "../../../shell/version.service";
 import type { Ar3View } from "./parse-ar3";
 import { createChunk, joinChunk, splitChunk } from "./png-metadata";
 import { SaveViewAsImage, type RasterSurface } from "./save-view-as-image";
@@ -78,7 +79,7 @@ function captureSurface(overrides: Partial<RasterSurface> = {}) {
 
 const view = { name: "Lineage", description: "The lineage view" } as Ar3View;
 
-function setup(email = "ada@example.org") {
+function setup(email = "ada@example.org", version = "7.34.0#abc1234") {
     @Injectable()
     class StubSession {
         readonly email = signal(email);
@@ -89,8 +90,11 @@ function setup(email = "ada@example.org") {
             { provide: Session, useClass: StubSession },
             {
                 provide: APP_CONFIG,
-                useValue: { appName: "Aurelius Atlas Data Governance", appVersion: "7.22.0#abc1234" },
+                useValue: { appName: "Aurelius Atlas Data Governance" },
             },
+            // The version is the server's answer (VER-01, DD-725), stubbed here
+            // so the chunk's value is known and no read leaves the spec.
+            { provide: VersionService, useValue: { version: signal(version) } },
         ],
     });
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -187,9 +191,24 @@ describe("save-view-as-image (LDG-29/30/31)", () => {
             ["Author", "ada@example.org"],
             ["Description", "The lineage view"],
             ["Creation Time", expect.any(String)],
-            ["Software", "Aurelius Atlas/Aurelius Atlas Data Governance/7.22.0#abc1234"],
+            ["Software", "Aurelius Atlas/Aurelius Atlas Data Governance/7.34.0#abc1234"],
             ["Source", "Generated model"],
         ]);
+    });
+
+    it("VER-03: no version yet ships no Software chunk (LDG-31's skip)", async () => {
+        // The server has not answered, so the service still holds "" (VER-02).
+        const { service, svg } = setup("ada@example.org", "");
+        const { surface, downloaded } = captureSurface();
+
+        await service.save(svg, 640, 480, view, surface);
+
+        const keywords = splitChunk(downloaded().png)
+            .filter((chunk) => chunk.type === "tEXt")
+            .map((chunk) => chunk.data.split("\u0000")[0]);
+        expect(keywords).not.toContain("Software");
+        // The rest of the fields still ride the bytes.
+        expect(keywords).toContain("Title");
     });
 
     it("LDG-31: an absent email claim ships no Author chunk (DD-398's skip)", async () => {

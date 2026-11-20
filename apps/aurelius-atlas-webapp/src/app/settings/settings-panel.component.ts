@@ -5,6 +5,7 @@ import { AdminService } from "aurelius-atlas-data-access";
 import { Drawer, Mode, Select } from "aurelius-atlas-ui";
 
 import { APP_CONFIG } from "../tokens";
+import { VersionService } from "../shell/version.service";
 import { PAGE_SIZES } from "./page-size.service";
 import { SearchMode } from "./search-mode.service";
 import { SettingsService } from "./settings.service";
@@ -35,6 +36,9 @@ export class SettingsPanel {
     protected readonly settings = inject(SettingsService);
 
     protected readonly config = inject(APP_CONFIG);
+
+    /** The About section's version: the server's answer, empty until it lands (SPL-12, VER-01/03). */
+    protected readonly version = inject(VersionService).version;
 
     private readonly admin = inject(AdminService);
 

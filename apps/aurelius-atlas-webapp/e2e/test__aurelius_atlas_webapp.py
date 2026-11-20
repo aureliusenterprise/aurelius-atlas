@@ -4,6 +4,7 @@ import re
 import secrets
 import time
 from collections.abc import Callable
+from datetime import UTC, datetime
 from urllib.parse import quote, urljoin
 
 import pytest
@@ -435,6 +436,10 @@ def test__csp_keeps_connect_src_self(page: Page, root_url: str) -> None:
 START_TENANCY_READ = "/api/aurelius/v1/tenancy"
 """The app start's read of the server's tenancy (TNW-02), before any screen renders."""
 
+START_VERSION_READ = "/api/atlas/admin/version"
+"""The app start's read of the server's version (VER-01, DD-733), which the shell's footer
+starts behind the guard. It is the start's, not the landing's, like the tenancy read above."""
+
 
 # impact=severe, likelihood=low (the screen after sign-in; a stable template, boot has a backstop)
 @pytest.mark.high
@@ -444,8 +449,8 @@ def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page)
     The screen exists before its API does: the requests recorded across a
     reload of the landing must contain no /api call — the search affordances
     that would need one are deferred (DD-143). The reload restarts the app, whose
-    start reads the server's tenancy (TNW-02, 15.6): that read is the start's, not
-    the landing's, and is left out of the count.
+    start reads the server's tenancy (TNW-02, 15.6) and its version (VER-01, 7.34).
+    Both reads are the start's, not the landing's, and are left out of the count.
     """
     api_requests: list[str] = []
     authenticated.on("request", lambda request: api_requests.append(request.url))
@@ -459,7 +464,8 @@ def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page)
     card_titles = authenticated.locator(".columns .column .card .media-content .title.is-4")
     expect(card_titles).to_have_text(["Business context", "Technical context", "Data governance organization"])
 
-    assert [url for url in api_requests if "/api/" in url and not url.endswith(START_TENANCY_READ)] == []
+    start_reads = (START_TENANCY_READ, START_VERSION_READ)
+    assert [url for url in api_requests if "/api/" in url and not url.endswith(start_reads)] == []
 
 
 # impact=major, likelihood=low (a modal in its own screen)
@@ -536,14 +542,26 @@ def test__settings_panel_language_navigates_to_the_dutch_build(authenticated: Pa
 
 # impact=minor, likelihood=low (footer text from config)
 @pytest.mark.low
-def test__footer_shows_the_runtime_config_values(authenticated: Page) -> None:
-    """The footer renders copyright year, app name, and version from /config.json (SHC-06, SHC-09)."""
+def test__footer_shows_the_product_name_copyright_and_version(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """The footer renders the app name, the current year, and the running version (SHC-06, SHC-09).
+
+    Since 7.34 only the name comes from ``config.json``: the copyright prints
+    the browser's current year (DD-726) and the version is the server's answer
+    (VER-04, VER-01). The version is read back from the same endpoint the footer
+    calls, so the pin can never drift with a release.
+    """
     footer = authenticated.locator("footer.footer")
+    version = authenticated.request.get(
+        urljoin(root_url, "/api/atlas/admin/version"),
+        headers={"authorization": f"Bearer {user_token}"},
+    ).json()["Version"]
 
     expect(footer).to_be_visible()
-    expect(footer.locator(".level-left")).to_have_text("Copyright 2022")
+    expect(footer.locator(".level-left")).to_have_text(f"Copyright {datetime.now(tz=UTC).year}")
     expect(footer.locator(".level > .level-item")).to_have_text("Aurelius Atlas Data Governance")
-    expect(footer.locator(".level-right")).to_have_text("0.0.0")
+    expect(footer.locator(".level-right")).to_have_text(version)
     expect(footer.locator(".level-left .icon svg")).to_be_visible()  # faCopyright
 
 

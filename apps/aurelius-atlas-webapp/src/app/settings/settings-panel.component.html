@@ -137,9 +137,10 @@
     </div>
 
     <div class="settings-section">
-        <!-- About: the build (SPL-12, DD-165). App and server share one
+        <!-- About: the build (SPL-12, DD-725). App and server share one
              version under the Nx release strategy — one release, one
-             number — so the section shows the app version alone. -->
+             number — so the section shows that one version alone, read from
+             the server (VER-01) and blank until it answers (VER-03). -->
         <p class="label">
             <!-- About. -->
             <span i18n="@@shell.settings.about">About</span>
@@ -148,7 +149,7 @@
             {{ config.appName }}
             <!-- Version. -->
             <span class="has-text-grey-light" i18n="@@shell.settings.version">Version</span>
-            {{ config.appVersion }}
+            {{ version() }}
         </p>
     </div>
 </aurelius-atlas-ui-drawer>

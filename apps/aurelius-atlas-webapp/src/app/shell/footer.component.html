@@ -1,6 +1,7 @@
 <!--
-  The Aurelius footer (SHC-06), ported from the legacy shell footer: copyright
-  year, application name, and version — all three from the runtime config.
+  The Aurelius footer (SHC-06), ported from the legacy shell footer: the current
+  copyright year (VER-04), the application name from the runtime config, and the
+  version the server answers (VER-01, VER-03) — empty until it lands.
 
   i18n ids are the legacy dictionary paths, read by the XLIFF bridge (DD-128,
   extended to @@shell.* by SHC-07). Translation descriptions are comments,
@@ -22,7 +23,7 @@
             </div>
             <div class="level-item has-text-centered has-text-white">{{ appName }}</div>
             <div class="level-right">
-                <div class="level-item has-text-centered has-text-white">{{ version }}</div>
+                <div class="level-item has-text-centered has-text-white">{{ version() }}</div>
             </div>
         </div>
     </div>

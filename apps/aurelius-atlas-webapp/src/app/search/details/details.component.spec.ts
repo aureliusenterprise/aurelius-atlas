@@ -1,6 +1,7 @@
 import { ViewportScroller } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter, type UrlTree } from "@angular/router";
 import { By } from "@angular/platform-browser";
@@ -14,6 +15,7 @@ import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
 import modelFixture from "../../../../tests/fixtures/lineage-graph.extract.json";
 
 import { AlertsService } from "../../alerts/alerts.service";
+import { VersionService } from "../../shell/version.service";
 import { APP_CONFIG } from "../../tokens";
 import { EntitySaved } from "../editor/entity-saved";
 
@@ -80,6 +82,10 @@ function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = 
                 provide: Keycloak,
                 useValue: { hasResourceRole: (role: string) => atlasWrite && role === "atlas-write" },
             },
+            // The lineage box's save flow reads the version (VER-01, DD-725);
+            // the screen's own reads are what this spec verifies, so the
+            // version never leaves this stub (its fetch is its service's spec).
+            { provide: VersionService, useValue: { version: signal("7.34.0#abc1234") } },
         ],
     });
     const fixture = TestBed.createComponent(Details);

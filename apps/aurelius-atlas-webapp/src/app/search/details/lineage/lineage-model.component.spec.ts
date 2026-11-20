@@ -1,11 +1,13 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import Keycloak from "keycloak-js";
 import { describe, expect, it } from "vitest";
 
 import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import { VersionService } from "../../../shell/version.service";
 import { APP_CONFIG } from "../../../tokens";
 
 import { LineageModel } from "./lineage-model.component";
@@ -46,7 +48,10 @@ function setup(guid = "ds-1"): {
             provideHttpClientTesting(),
             LineageModelState,
             { provide: Keycloak, useValue: { tokenParsed: {} } },
-            { provide: APP_CONFIG, useValue: { appName: "Aurelius Atlas", appVersion: "0.0.0" } },
+            { provide: APP_CONFIG, useValue: { appName: "Aurelius Atlas" } },
+            // The viewer's save flow reads the version (VER-01, DD-725): the
+            // read is the service's own spec, not this box's.
+            { provide: VersionService, useValue: { version: signal("0.0.0") } },
         ],
     });
     const fixture = TestBed.createComponent(LineageModel);
