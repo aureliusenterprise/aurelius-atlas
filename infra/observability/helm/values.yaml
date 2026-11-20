@@ -175,8 +175,9 @@ grafana:
     enabled: true
     image:
         repository: dhi.io/grafana
-        tag: "13-debian13"
-        digest: sha256:3524a4af20d6485671f0576084ee16b35a276fa2e7a490f02c95e46e18778384
+        # 13.3 at least: 13.2 can't delete an organization (grafana/grafana#127386, DD-765).
+        tag: "13.3-debian13"
+        digest: sha256:bebca1e1793beba44a742bd43812fecb4414d72d8cb25369287da8d52d4964be
     resources:
         requests:
             cpu: 50m
