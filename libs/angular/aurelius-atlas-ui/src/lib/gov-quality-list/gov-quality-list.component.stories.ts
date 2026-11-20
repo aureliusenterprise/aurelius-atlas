@@ -40,7 +40,9 @@ export const Compliant: Story = {
         loading: false,
     },
     play: async ({ canvas }) => {
-        await expect(canvas.getByRole("menu", { hidden: true })).toBeNull();
+        // ROLE-MENU-MISUSE (7.30): the dropdown carries no menu role, so
+        // queryByRole — getByRole would throw before toBeNull could judge.
+        await expect(canvas.queryByRole("menu", { hidden: true })).toBeNull();
     },
 };
 

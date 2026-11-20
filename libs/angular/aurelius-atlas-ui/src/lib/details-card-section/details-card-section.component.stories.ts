@@ -28,6 +28,14 @@ const options: CardSortOption[] = [
 /** The reset clicks the play() tests collect. */
 let resets = 0;
 
+/** The section's card links: every link but the count line's reset link
+ * (always there since UIC-27/DD-374). */
+function cardLinks(canvasElement: HTMLElement): HTMLAnchorElement[] {
+    return [...canvasElement.querySelectorAll<HTMLAnchorElement>("a")].filter(
+        (a) => !a.classList.contains("aurelius-card-section-reset"),
+    );
+}
+
 /**
  * A host that owns the section's state the way the details store will:
  * the keyword filters the cards, the sort reorders them, and the reset
@@ -133,15 +141,22 @@ export const Primary: Story = {
         await expect(canvas.getByText("3 result(s)")).toBeVisible();
         await expect(canvas.getByRole("link", { name: "gene_symbol" })).toBeVisible();
 
-        // DET-21: the Name sort reorders the cards.
+        // DET-21: the Name sort reorders the cards. The count line is a
+        // reset link too (UIC-27/DD-374), so the cards are the links minus it.
         await userEvent.selectOptions(canvas.getByRole("combobox"), "name");
-        const links = await canvas.findAllByRole("link");
-        expect(links.map((link) => link.textContent?.trim())).toEqual(["assembly", "gene_symbol", "variant_pos"]);
+        expect(cardLinks(canvasElement).map((link) => link.textContent?.trim())).toEqual([
+            "assembly",
+            "gene_symbol",
+            "variant_pos",
+        ]);
 
         // DET-21: the direction button reverses.
         await userEvent.click(canvas.getByRole("button", { name: "Sort direction" }));
-        const reversed = await canvas.findAllByRole("link");
-        expect(reversed.map((link) => link.textContent?.trim())).toEqual(["variant_pos", "gene_symbol", "assembly"]);
+        expect(cardLinks(canvasElement).map((link) => link.textContent?.trim())).toEqual([
+            "variant_pos",
+            "gene_symbol",
+            "assembly",
+        ]);
     },
 };
 
@@ -159,12 +174,12 @@ export const Filtered: Story = {
         const search = canvas.getByRole("searchbox");
         await userEvent.type(search, "gene");
         await userEvent.click(canvas.getByRole("button", { name: "Search" }));
-        await expect(canvas.getAllByRole("link")).toHaveLength(1);
+        expect(cardLinks(canvasElement)).toHaveLength(1);
         await expect(canvas.getByRole("link", { name: "gene_symbol" })).toBeVisible();
         await expect(canvas.getByText("1 result(s)")).toBeVisible();
 
         await userEvent.click(canvas.getByRole("link", { name: /result\(s\)/ }));
-        await expect(canvas.getAllByRole("link")).toHaveLength(3);
+        expect(cardLinks(canvasElement)).toHaveLength(3);
         expect(resets).toBe(1);
     },
 };
@@ -178,10 +193,13 @@ export const Empty: Story = {
         sortOptions: options,
         allLoaded: true,
     },
-    play: async ({ canvas }) => {
+    play: async ({ canvas, canvasElement }) => {
         await expect(canvas.getByText("Child Entities")).toBeVisible();
         await expect(canvas.getByText("0 result(s)")).toBeVisible();
-        await expect(canvas.queryAllByRole("link", { name: /result\(s\)/ })).toHaveLength(0);
+        // DET-17 renders at zero and the count line is always the reset link
+        // (UIC-27/DD-374): the section's one link, with no cards behind it.
+        expect(cardLinks(canvasElement)).toHaveLength(0);
+        await expect(canvas.getByRole("link", { name: /result\(s\)/ })).toBeVisible();
     },
 };
 

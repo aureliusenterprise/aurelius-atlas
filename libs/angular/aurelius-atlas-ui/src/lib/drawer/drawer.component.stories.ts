@@ -116,8 +116,10 @@ export const OnDark: Story = {
         // The toolbar Theme switch can move this story to either scheme, so
         // assert the surface of whichever one is active.
         const dark = document.documentElement.dataset["theme"] !== "light";
+        // 7.30 re-pinned the dark scheme-main to Bulma's neutral
+        // hsl(0, 0%, 9%) = rgb(23, 23, 23).
         await expect(panel).toHaveStyle({
-            "background-color": dark ? "rgb(20, 22, 26)" : "rgb(255, 255, 255)",
+            "background-color": dark ? "rgb(23, 23, 23)" : "rgb(255, 255, 255)",
         });
         const title = canvasElement.querySelector<HTMLElement>(".aurelius-drawer-title");
         if (!title) throw new Error("the title is missing");
