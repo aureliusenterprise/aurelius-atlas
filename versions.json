@@ -25,6 +25,11 @@
     "aliases": []
   },
   {
+    "version": "fix-ui-story-play-tests",
+    "title": "fix-ui-story-play-tests",
+    "aliases": []
+  },
+  {
     "version": "fix-trace-checker-blind-report",
     "title": "fix-trace-checker-blind-report",
     "aliases": []
