@@ -2,6 +2,7 @@
 
 ## User Guide
 
+- [Deploy to Kubernetes](<https://aureliusenterprise.github.io/feat-7-34-config-slimming/user-guide/deployment/index.md>)
 - [User Guide](<https://aureliusenterprise.github.io/feat-7-34-config-slimming/user-guide/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/feat-7-34-config-slimming/user-guide/standalone-server/index.md>)
 - [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/feat-7-34-config-slimming/user-guide/standalone-tenants/index.md>)
