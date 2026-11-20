@@ -212,6 +212,12 @@ class RealmTenants:
         """The organization's members' user ids."""
         return frozenset(member["id"] for member in await self._every(f"/organizations/{org.id}/members"))
 
+    async def group_members(self, org: RealmOrganization, group: str) -> frozenset[str]:
+        """The user ids of the organization's members in its role group ``group`` (TDL-01)."""
+        return frozenset(
+            member["id"] for member in await self._every(f"/organizations/{org.id}/groups/{org.groups[group]}/members")
+        )
+
     async def add_member(self, org: RealmOrganization, user: str) -> None:
         """Make the user a member of the organization, in none of its groups (TRM-03)."""
         await self.admin.call("POST", f"/organizations/{org.id}/members", body=user)

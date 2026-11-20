@@ -5,6 +5,8 @@ Apache Atlas has no tenants and no Grafana; the expected results are the spec's.
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import httpx2 as httpx
 import pytest
@@ -12,6 +14,7 @@ from aurelius_atlas_server import ServerSettings
 from aurelius_atlas_server.grafana_tenants import GrafanaAdmin, GrafanaError, GrafanaTenants, reader_name, reader_role
 from aurelius_atlas_server.provisioning import NO_GRAFANA, NO_REALM, parser, run
 from aurelius_atlas_server.realm_tenants import KeycloakAdmin, RealmTenants
+from aurelius_atlas_server.tenants import TenantsIndex
 from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from base_models import base_models
@@ -201,15 +204,15 @@ async def test__grafana_sync_makes_the_operators_viewers_of_the_platform_alone(
 async def test__grafana_sync_catches_up_a_person_added_in_the_console(
     command: Command, grafana: FakeGrafana, keycloak: FakeKeycloak
 ) -> None:
-    """A person put in acme's organization in Keycloak, not by the command, is a Viewer of ``acme`` after
-    ``grafana sync``; one taken out there leaves it.
+    """A person put in acme's organization and its group ``atlas-write`` in Keycloak, not by the command, is a
+    Viewer of ``acme`` after ``grafana sync``; one taken out there leaves it.
     """  # noqa: D205 - one sentence
     await command("add", "acme")
     org = keycloak.by_alias("acme")
     assert org is not None
     bob = keycloak.user("bob")
     keycloak.users[bob]["email"] = "bob@example.com"
-    org.members[bob] = set()
+    org.members[bob] = {org.groups["atlas-write"]}
 
     await command("grafana", "sync")
     assert grafana.roles("acme")["bob"] == "Viewer"
@@ -368,3 +371,55 @@ async def test__a_refused_organization_delete_empties_it_and_the_removal_finishe
     assert grafana.by_name("acme") is org
     assert set(org.datasources) == {"tenant-entities", "tenant-audits"}
     assert grafana.roles("acme")["acme_atlas"] == "Viewer"
+
+
+@pytest.mark.covers(
+    f"{P}._grafana_tenant", "aurelius_atlas_server.realm_tenants.RealmTenants.group_members", rules=["TDL-01", "TDL-02"]
+)
+async def test__only_stewards_administrators_and_trusted_operators_are_viewers(
+    command: Command, grafana: FakeGrafana
+) -> None:
+    """``add acme --users all``: ``acme_atlas`` and ``acme_steward``, in ``atlas-write``, and the trusted operator Ann
+    are Viewers of ``acme``; ``acme_scientist``, in ``atlas-read`` alone, is not a member of it.
+    """  # noqa: D205 - one sentence
+    await command("add", "acme", "--users", "all")
+
+    assert grafana.roles("acme") == {
+        "admin": "Admin",
+        "acme_atlas": "Viewer",
+        "acme_steward": "Viewer",
+        "ann": "Viewer",
+    }
+
+
+@pytest.mark.covers(f"{P}.grafana_sync", f"{G}.cleanup", rules=["TDL-03"])
+async def test__grafana_sync_deletes_a_scientist_from_grafana(command: Command, grafana: FakeGrafana) -> None:
+    """A scientist Grafana met before 15.10, a Viewer of acme then, is taken out of acme and deleted from Grafana by
+    ``grafana sync``; acme's stewards and administrators stay.
+    """  # noqa: D205 - one sentence
+    await command("add", "acme", "--users", "all")
+    org = grafana.by_name("acme")
+    assert org is not None
+    sid = max(grafana.users) + 1
+    grafana.users[sid] = {"id": sid, "login": "acme_scientist", "email": "s@example.com", "isAdmin": False}
+    org.members[sid] = "Viewer"
+
+    await command("grafana", "sync")
+
+    logins = {user["login"] for user in grafana.users.values()}
+    assert "acme_scientist" not in logins
+    assert {"acme_atlas", "acme_steward"} <= logins
+
+
+@pytest.mark.covers(f"{P}._grafana_tenant", rules=["TDL-04"])
+async def test__the_tenant_record_holds_its_grafana_organization(
+    command: Command, grafana: FakeGrafana, fake_es: FakeClient
+) -> None:
+    """After ``add acme``, acme's tenant record names its Grafana organization's id."""
+    await command("add", "acme")
+    org = grafana.by_name("acme")
+    assert org is not None
+
+    record = await TenantsIndex(cast("ElasticsearchStore", SimpleNamespace(client=fake_es))).get("acme")
+    assert record is not None
+    assert record.grafana_org == org.id

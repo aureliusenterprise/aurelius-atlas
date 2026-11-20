@@ -1,4 +1,7 @@
-"""Whether the server serves tenants: ``GET /api/aurelius/v1/tenancy``, answered without a user (TNW-01, DD-636).
+"""Whether the server serves tenants, and the link to a tenant's dashboards.
+
+``GET /api/aurelius/v1/tenancy`` is answered without a user (TNW-01, DD-636); ``GET
+/api/aurelius/v1/tenancy/dashboards`` gives the signed-in user the link to their tenant's dashboards (TDL-06).
 
 The webapp reads it before it signs in, to know whether to ask Keycloak for the organization scope and how to
 read the tenant's roles. The answer tells nothing a token doesn't carry: the operator organization and role are
@@ -6,18 +9,35 @@ the claims the server reads (TEN-04, TEN-06). The path is Aurelius's own; no Atl
 """
 
 from aurelius_atlas_model.base import AtlasModel
+from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from fastapi import APIRouter, Request
 
+from aurelius_atlas_server.authentication import User
 from aurelius_atlas_server.errors import AtlasJSONResponse
 from aurelius_atlas_server.openapi import json_response
+from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.tenancy import Tenancy
+from aurelius_atlas_server.tenants import TenantDirectory
 
-__all__ = ["TENANCY", "TENANCY_PATH", "TenancyAnswer"]
+__all__ = ["DASHBOARD", "TENANCY", "TENANCY_PATH", "DashboardsAnswer", "TenancyAnswer"]
 
 TENANCY = APIRouter(prefix="/api/aurelius/v1", tags=["Tenancy"])
 
 TENANCY_PATH = "/api/aurelius/v1/tenancy"
 """The answer's path, which needs no user (TNW-01)."""
+
+
+DASHBOARD = "tenant-catalogue"
+"""The dashboard the link opens: the tenant's catalogue (TGF-06, DD-769)."""
+
+WRITE_ROLE = "atlas-write"
+"""The tenant role that sees its dashboards: its administrators' and stewards' (TDL-01, DD-767)."""
+
+
+class DashboardsAnswer(AtlasModel):
+    """The link to the user's tenant's catalogue dashboard in Grafana (TDL-06)."""
+
+    url: str
 
 
 class TenancyAnswer(AtlasModel):
@@ -43,3 +63,31 @@ async def tenancy(request: Request) -> AtlasJSONResponse:
         )
     )
     return AtlasJSONResponse(answer.model_dump(by_alias=True, exclude_none=True))
+
+
+@TENANCY.get(
+    "/tenancy/dashboards",
+    responses=json_response(DashboardsAnswer, description="The link to the tenant's catalogue dashboard."),
+)
+async def dashboards(request: Request) -> AtlasJSONResponse:
+    """The signed-in user's link to their tenant's catalogue dashboard, for its stewards, administrators and the
+    operators its trust made members (TDL-06, TDL-07).
+
+    Raises:
+        AtlasError: ``NO_DASHBOARDS`` without tenancy, Grafana's public address or the tenant's Grafana
+            organization; ``DASHBOARDS_FORBIDDEN`` for a user who holds no ``atlas-write`` in the tenant and is
+            none of the operators its trust made members.
+    """  # noqa: D205 - one sentence
+    user: User = request.state.user
+    settings: ServerSettings = request.app.state.settings
+    tenancy: Tenancy | None = request.app.state.tenancy
+    directory: TenantDirectory | None = request.app.state.tenant_directory
+    if tenancy is None or directory is None or user.tenant is None or settings.grafana_public_url is None:
+        raise AtlasError(AtlasErrorCode.NO_DASHBOARDS, user.tenant or "-")
+    record = await directory.index.get(user.tenant)
+    if record is None or record.grafana_org is None:
+        raise AtlasError(AtlasErrorCode.NO_DASHBOARDS, user.tenant)
+    if WRITE_ROLE not in user.roles and user.subject not in record.operator_members:
+        raise AtlasError(AtlasErrorCode.DASHBOARDS_FORBIDDEN, user.name, user.tenant)
+    url = f"{settings.grafana_public_url.rstrip('/')}/d/{DASHBOARD}?orgId={record.grafana_org}"
+    return AtlasJSONResponse(DashboardsAnswer(url=url).model_dump(by_alias=True))

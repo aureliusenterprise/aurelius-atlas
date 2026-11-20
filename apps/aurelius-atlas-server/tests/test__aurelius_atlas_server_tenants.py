@@ -87,6 +87,7 @@ async def test__a_tenants_record_is_written_read_listed_and_deleted(fake_es: Fak
         "updatedBy": "op",
         "operatorMembers": [],
         "administrators": [],
+        "grafanaOrg": None,
     }
     assert await index.get("globex") == record
     assert [tenant.alias for tenant in await index.list()] == ["acme", "globex"]

@@ -350,6 +350,9 @@ class ServerSettings(StoreAccessSettings):
     """Grafana's API, which the tenant command keeps each tenant's organization in; none leaves Grafana alone
     (TGF-11, TGF-12)."""
 
+    grafana_public_url: str | None = None
+    """Grafana's address as the browser reaches it, for the tenant's dashboards link; none, no link (TDL-05)."""
+
     grafana_admin_user: str = "admin"
     """Grafana's local administrator, as whom the command calls its API (TGF-12)."""
 
