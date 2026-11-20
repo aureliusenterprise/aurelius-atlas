@@ -130,3 +130,27 @@ refuses the sign-in because the login exists. Grafana has no API that links a us
 **Consequences.** Grafana trusts the realm's email. The realm refuses duplicate emails and changes of username,
 both by default, so an email reaches only the person who holds it in the realm. A realm that allowed duplicate
 emails would need this decision revisited.
+
+### DD-765. Grafana 13.3 at least, and a tenant's organization Grafana won't delete is emptied
+
+- **Status:** Proposed
+- **Increment:** 15.9
+- **Date:** 2026-11-21
+
+**Decision.** The observability slice pins Grafana to the 13.3 line (`dhi.io/grafana:13.3-debian13`). When Grafana
+still refuses to delete a tenant's organization, `remove <tenant>` takes its members, data sources and dashboards
+out, says so, and finishes the removal (TGF-15). The empty organization stays, seen by Grafana's administrator
+alone, and is found by name and filled again when the tenant is added back.
+
+**Reason.** Grafana 13.2 answers 500 to every organization delete, even of an empty one, because its dashboard
+storage refuses the bulk delete the call makes (grafana/grafana#127386). The floating tag `13-debian13` let a
+cached 13.2 image run. A removal then stopped after deleting the tenant's indices and its Keycloak organization,
+leaving the tenant `removing` until it was run again.
+
+**Alternatives.**
+
+- Only the pin: a later Grafana regression would stop a removal halfway again.
+- Retrying the delete: it fails the same way each time.
+
+**Consequences.** An organization Grafana refused to delete may stay behind, empty and without access for
+anyone but the administrator. Deleting it by hand later is harmless.

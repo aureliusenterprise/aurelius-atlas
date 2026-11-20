@@ -174,7 +174,7 @@ PINNED = {
     "dhi.io/prometheus": "sha256:585a54e52b97d4400aaa4c7ef9470add072362b236cd7fb4e8aacdd371121109",
     "dhi.io/loki": "sha256:4e7325c57c492c02e8944b22cf0c80299a49d657eced3ed9f56853a01f622a41",
     "dhi.io/tempo": "sha256:e6355af759ed371adca5b1fc76303b9eb7db3da15739ba76def54a3f336734c8",
-    "dhi.io/grafana": "sha256:3524a4af20d6485671f0576084ee16b35a276fa2e7a490f02c95e46e18778384",
+    "dhi.io/grafana": "sha256:bebca1e1793beba44a742bd43812fecb4414d72d8cb25369287da8d52d4964be",
 }
 
 

@@ -40,6 +40,8 @@ class FakeGrafana:
     users: dict[int, dict[str, Any]] = field(default_factory=dict)
     using: dict[int, int] = field(default_factory=dict)
     calls: list[tuple[str, str]] = field(default_factory=list)
+    refuse_org_delete: bool = False
+    """Answer an organization's deletion with Grafana 13.2's 500 (grafana/grafana#127386)."""
     _ids: itertools.count = field(default_factory=lambda: itertools.count(2))
 
     def __post_init__(self) -> None:
@@ -90,6 +92,8 @@ class FakeGrafana:
                 httpx.Response(404) if found is None else httpx.Response(200, json={"id": found.id, "name": found.name})
             )
         if (match := re.fullmatch(r"/api/orgs/(\d+)", path)) and method == "DELETE":
+            if self.refuse_org_delete:
+                return httpx.Response(500, json={"message": "Failed to delete organization"})
             del self.orgs[int(match[1])]
             return httpx.Response(200, json={})
         if match := re.fullmatch(r"/api/orgs/(\d+)/users", path):
@@ -138,6 +142,8 @@ class FakeGrafana:
             return httpx.Response(200, json={})
         assert org is not None
         if match := re.fullmatch(r"/api/datasources/uid/(.+)", path):
+            if method == "DELETE":
+                return httpx.Response(200, json={}) if org.datasources.pop(match[1], None) else httpx.Response(404)
             if method == "GET":
                 found = org.datasources.get(match[1])
                 return httpx.Response(404) if found is None else httpx.Response(200, json=found)
@@ -146,6 +152,8 @@ class FakeGrafana:
         if path == "/api/datasources" and method == "POST":
             org.datasources[body["uid"]] = body
             return httpx.Response(200, json={})
+        if (match := re.fullmatch(r"/api/dashboards/uid/(.+)", path)) and method == "DELETE":
+            return httpx.Response(200, json={}) if org.dashboards.pop(match[1], None) else httpx.Response(404)
         if path == "/api/dashboards/db" and method == "POST":
             org.dashboards[body["dashboard"]["uid"]] = body["dashboard"]
             return httpx.Response(200, json={})

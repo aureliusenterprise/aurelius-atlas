@@ -34,7 +34,7 @@ def test__the_realm_holds_grafanas_confidential_client() -> None:
     assert "GRAFANA_CLIENT_SECRET" in _environment(keycloak)
 
 
-@pytest.mark.covers(rules=["TGF-02", "TGF-03"])
+@pytest.mark.covers(rules=["TGF-02", "TGF-03", "TGF-15"])
 def test__grafana_sits_behind_the_proxy_and_signs_in_through_keycloak_alone() -> None:
     """Grafana in the proxy's network with no port of its own, served from /grafana/; anonymous access and the
     login form off, generic OAuth on the client ``grafana``, no role taken from the token, everyone in the main
@@ -52,6 +52,8 @@ def test__grafana_sits_behind_the_proxy_and_signs_in_through_keycloak_alone() ->
     assert (env["GF_USERS_AUTO_ASSIGN_ORG_ID"], env["GF_USERS_AUTO_ASSIGN_ORG_ROLE"]) == ("1", "None")
     assert env["GF_AUTH_GENERIC_OAUTH_TOKEN_URL"].startswith("https://localhost:9000/auth/realms/aurelius-atlas/")
     assert env["GF_SECURITY_ADMIN_PASSWORD"]
+    major, minor = (int(part) for part in grafana["image"].split(":")[1].split("-")[0].split(".")[:2])
+    assert (major, minor) >= (13, 3), "13.2 can't delete an organization (DD-765)"
     targets = {v["target"] if isinstance(v, dict) else v.split(":")[1] for v in grafana["volumes"]}
     assert not any("demo-tenant" in target for target in targets)
     nginx = (STACK / "gateway/nginx.conf").read_text()

@@ -341,3 +341,30 @@ async def test__a_call_waits_for_grafana_and_names_a_refusal() -> None:
     await gone.close()
     real = GrafanaAdmin.http()
     await real.aclose()
+
+
+@pytest.mark.covers(f"{G}.remove_tenant", f"{G}._empty", f"{P}.remove", rules=["TGF-15"])
+async def test__a_refused_organization_delete_empties_it_and_the_removal_finishes(
+    command: Command, grafana: FakeGrafana, store: FakeStore
+) -> None:
+    """Grafana refuses to delete acme's organization: the command empties it (no members but the administrator,
+    no data sources, no dashboards), says so, and still removes the tenant and its reader. Adding acme back finds
+    the same organization and fills it again.
+    """  # noqa: D205 - one sentence
+    await command("add", "acme")
+    org = grafana.by_name("acme")
+    assert org is not None
+    grafana.refuse_org_delete = True
+
+    lines = await command("remove", "acme")
+
+    assert "Grafana refused to delete acme's organization: it is left empty (TGF-15)" in lines
+    assert lines[-1].startswith("Removed acme:")
+    assert grafana.roles("acme") == {"admin": "Admin"}
+    assert (org.datasources, org.dashboards) == ({}, {})
+    assert reader_name("acme") not in store.security.users
+
+    await command("add", "acme")
+    assert grafana.by_name("acme") is org
+    assert set(org.datasources) == {"tenant-entities", "tenant-audits"}
+    assert grafana.roles("acme")["acme_atlas"] == "Viewer"

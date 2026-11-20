@@ -134,7 +134,9 @@ services:
             - tempo-data:/var/tempo
 
     grafana:
-        image: dhi.io/grafana:13-debian13
+        # 13.3 at least: 13.2 can't delete an organization (grafana/grafana#127386), which removing a
+        # tenant does (15.9, DD-765).
+        image: dhi.io/grafana:13.3-debian13
         mem_limit: 512m
         user: "65532"
         depends_on:
