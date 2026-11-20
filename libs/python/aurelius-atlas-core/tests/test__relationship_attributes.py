@@ -9,6 +9,7 @@ The expected relationships and reads are read from ``EntityGraphMapper`` (``mapO
 from typing import Any
 
 import pytest
+import test__app_search_quality as quality
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
@@ -691,3 +692,143 @@ async def test__an_import_writes_a_parent_side_bundle_reaching_a_held_child(stor
 
     assert g("-2") in mutated(answer, "UPDATE")
     assert sorted(found.ends() for found in active) == sorted([(g("-1"), g("-3")), (g("-3"), g("-2"))])
+
+
+@pytest.fixture
+async def m4i_store() -> EntityStore:
+    """A store of Atlas's and the data dictionary's types (ADR 058), the dataset group of 18.5 among them."""
+    return EntityStore((await quality.m4i_types()).registry, MemoryEntityDocuments())
+
+
+@pytest.mark.covers(D, rules=["DCP-03"])
+async def test__a_dataset_filling_collection_and_parent_dataset_is_refused(m4i_store: EntityStore) -> None:
+    """A dataset may hang under a collection (``collections``) or under a dataset (``parentDataset``), never
+    under both: on create, and on an update that adds the sibling beside the edge it holds (DCP-03, PME-07, PME-08).
+    """  # noqa: D205 - one sentence
+    store = m4i_store
+    group = "m4i_dataset: collections and parentDataset cannot both hold a parent of group m4i_dataset_parent"
+
+    with pytest.raises(AtlasError) as on_create:
+        await write(
+            store,
+            entity("m4i_collection", "-1", qualifiedName="c@cl", name="C"),
+            entity("m4i_dataset", "-2", qualifiedName="d@cl", name="D"),
+            entity(
+                "m4i_dataset",
+                "-3",
+                {"collections": ref("-1", "m4i_collection"), "parentDataset": ref("-2", "m4i_dataset")},
+                qualifiedName="s@cl",
+                name="S",
+            ),
+        )
+    assert on_create.value.code is AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS
+    assert group in on_create.value.message
+    assert GUIDS == {}
+
+    await write(
+        store,
+        entity("m4i_collection", "-1", qualifiedName="c@cl", name="C"),
+        entity("m4i_dataset", "-2", qualifiedName="d@cl", name="D"),
+        entity(
+            "m4i_dataset",
+            "-3",
+            {"collections": ref("-1", "m4i_collection")},
+            qualifiedName="s@cl",
+            name="S",
+        ),
+    )
+    with pytest.raises(AtlasError) as on_update:
+        await write(
+            store,
+            entity("m4i_dataset", g("-3"), {"parentDataset": ref("-2", "m4i_dataset")}, qualifiedName="s@cl", name="S"),
+        )
+    assert on_update.value.code is AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS
+    assert group in on_update.value.message
+
+
+@pytest.mark.covers(D, rules=["DCP-06"])
+async def test__a_collection_listing_a_held_dataset_is_refused_without_the_opt_in(m4i_store: EntityStore) -> None:
+    """The collection save that lists a dataset the parent already holds follows RPS-01 on the dataset group: the
+    refusal names the held ``parentDataset`` edge, and ``unsafeReparent`` clears it (DCP-06).
+    """  # noqa: D205 - one sentence
+    store = m4i_store
+    await write(
+        store,
+        entity("m4i_dataset", "-1", qualifiedName="p@cl", name="P"),
+        entity("m4i_collection", "-2", qualifiedName="c@cl", name="C"),
+        entity(
+            "m4i_dataset",
+            "-3",
+            {"parentDataset": ref("-1", "m4i_dataset")},
+            qualifiedName="s@cl",
+            name="S",
+        ),
+    )
+
+    with pytest.raises(AtlasError) as refused:
+        await write(
+            store,
+            entity(
+                "m4i_collection",
+                g("-2"),
+                {"datasets": [ref("-3", "m4i_dataset")]},
+                qualifiedName="c@cl",
+                name="C",
+            ),
+        )
+    assert refused.value.code is AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS
+    (message,) = refused.value.messages or [refused.value.message]
+    assert f"m4i_dataset {g('-3')}: parentDataset holds parent m4i_dataset {g('-1')}" in message
+    assert "unsafeReparent" in message
+
+    moved = await write(
+        store,
+        entity(
+            "m4i_collection",
+            g("-2"),
+            {"datasets": [ref("-3", "m4i_dataset")]},
+            qualifiedName="c@cl",
+            name="C",
+        ),
+        unsafe=True,
+    )
+    after = await relationships(store, g("-3"))
+
+    assert g("-2") in mutated(moved, "UPDATE")
+    assert ends(after) == [(g("-3"), g("-1"), "DELETED"), (g("-3"), g("-2"), "ACTIVE")]
+    assert [found for found in after if found.state.value == "ACTIVE"] == [after[-1]]
+
+
+@pytest.mark.covers(f"{M}.map", rules=["DCP-04"])
+async def test__a_saved_collections_value_keeps_one_collection_edge(m4i_store: EntityStore) -> None:
+    """The dataset's ``collections`` end replaces its edge on every save, exactly as the sample ``badge`` does
+    (DCP-04, HCA-04): move, then clear with ``None``.
+    """  # noqa: D205 - one sentence
+    store = m4i_store
+    await write(
+        store,
+        entity("m4i_collection", "-1", qualifiedName="c1@cl", name="C1"),
+        entity("m4i_collection", "-2", qualifiedName="c2@cl", name="C2"),
+        entity(
+            "m4i_dataset",
+            "-3",
+            {"collections": ref("-1", "m4i_collection")},
+            qualifiedName="s@cl",
+            name="S",
+        ),
+    )
+    one = await relationships(store, g("-3"))
+
+    moved = await write(
+        store,
+        entity("m4i_dataset", g("-3"), {"collections": ref("-2", "m4i_collection")}, qualifiedName="s@cl", name="S"),
+    )
+    after_move = await relationships(store, g("-3"))
+    await write(store, entity("m4i_dataset", g("-3"), {"collections": None}, qualifiedName="s@cl", name="S"))
+    after_clear = await relationships(store, g("-3"))
+
+    assert ends(one) == [(g("-3"), g("-1"), "ACTIVE")]
+    assert g("-3") in mutated(moved, "UPDATE")
+    assert ends(after_move) == [(g("-3"), g("-1"), "DELETED"), (g("-3"), g("-2"), "ACTIVE")]
+    assert [found for found in after_move if found.state.value == "ACTIVE"] == [after_move[-1]]
+    assert [found for found in after_clear if found.state.value == "ACTIVE"] == []

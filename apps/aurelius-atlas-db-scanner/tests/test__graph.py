@@ -253,7 +253,7 @@ def test_a_pair_that_resolves_to_no_referred_column_is_dropped_with_a_notice() -
     ]
 
 
-@pytest.mark.covers("aurelius_atlas_db_scanner.graph.build_graph", rules=["DBS-09"])
+@pytest.mark.covers("aurelius_atlas_db_scanner.graph.build_graph", rules=["DBS-09", "DCP-04"])
 def test_every_entity_carries_a_temporary_guid_and_the_ends_ride_through_them() -> None:
     """DBS-09: request-local guids (negative, unique per run) connect every end of the tree."""
     tables = [
@@ -278,7 +278,7 @@ def test_every_entity_carries_a_temporary_guid_and_the_ends_ride_through_them() 
     datasets = {_attributes(dataset)["name"]: dataset for dataset in _by_type(graph.entities, DATASET_TYPE)}
     orders, line = datasets["orders"], datasets["line"]
     assert line.relationship_attributes is not None
-    assert [end["guid"] for end in line.relationship_attributes["collections"]] == [collection.guid]
+    assert line.relationship_attributes["collections"] == {"guid": collection.guid, "typeName": COLLECTION_TYPE}
     fields = _by_type(graph.entities, FIELD_TYPE)
     assert [end["guid"] for end in line.relationship_attributes["fields"]] == [
         field.guid for field in fields if _attributes(field)["name"] == "order_id"

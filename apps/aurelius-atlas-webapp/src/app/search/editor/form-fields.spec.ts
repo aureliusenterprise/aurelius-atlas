@@ -612,6 +612,11 @@ describe("a parent-side picker (RPS-07, 18.4)", () => {
             endDef2: { type: "m4i_dataset", name: "childDataset", cardinality: "SET" },
         },
         {
+            name: "m4i_dataset_assignment",
+            endDef1: { type: "m4i_dataset", name: "collections", cardinality: "SINGLE" },
+            endDef2: { type: "m4i_collection", name: "datasets", cardinality: "SET" },
+        },
+        {
             name: "m4i_field_assignment",
             endDef1: { type: "m4i_field", name: "datasets", cardinality: "SINGLE" },
             endDef2: { type: "m4i_dataset", name: "fields", cardinality: "SET" },
@@ -630,6 +635,12 @@ describe("a parent-side picker (RPS-07, 18.4)", () => {
                 typeName: "m4i_dataset",
                 cardinality: "SINGLE",
                 relationshipTypeName: "m4i_dataset_parent_assignment",
+            }),
+            ra({
+                name: "collections",
+                typeName: "m4i_collection",
+                cardinality: "SINGLE",
+                relationshipTypeName: "m4i_dataset_assignment",
             }),
             ra({
                 name: "childDataset",
@@ -668,7 +679,29 @@ describe("a parent-side picker (RPS-07, 18.4)", () => {
         // The child side must still offer every candidate: choosing a held one
         // there is the legitimate move of the edited entity itself (DD-759).
         expect(fields["parentDataset"].parentSide).toBeUndefined();
+        expect(fields["collections"].parentSide).toBeUndefined();
         expect(fields["source"].parentSide).toBeUndefined();
+    });
+
+    it("the collection's datasets picker filters its search (DCP-06, RPS-07)", () => {
+        // 18.5's dictionary shape: the collection holds the SET end of the same
+        // hierarchy, so its picker is parent-side and the dataset's SINGLE
+        // collections end is not.
+        const COLLECTION = raDef("m4i_collection", [
+            ra({
+                name: "datasets",
+                typeName: "array<m4i_dataset>",
+                cardinality: "SET",
+                relationshipTypeName: "m4i_dataset_assignment",
+            }),
+        ]);
+        const collectionFields = Object.fromEntries(
+            buildRelationshipFields(COLLECTION, new Map([["m4i_collection", COLLECTION]]), {}, RELATIONSHIPS).map(
+                (f) => [f.name, f],
+            ),
+        );
+
+        expect(collectionFields["datasets"].parentSide).toBe(true);
     });
 
     it("without the relationship defs no picker filters (RPS-07)", () => {

@@ -442,14 +442,19 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
 
 @pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09"])
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
-    """28 of 66 rules read; 1,785 verdicts; 1,583 of the 1,612 legacy verdicts of a rule that reads as it
+    """28 of 66 rules read; 1,785 verdicts; 1,585 of the 1,612 legacy verdicts of a rule that reads as it
     were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).
 
     DV-171 and DV-172: the sample corpus's four hierarchy rules are OR pairs — the two dataset pairs
     (a field or a child; a collection or a parent, DV-171) and the two content/membership pairs (a field's
     dataset or its parent field; a data entity's attribute or its child entity, DV-172). Each pair judges
-    verdicts the frozen oracle never carried, and 29 legacy verdicts now pass through the alternative the
+    verdicts the frozen oracle never carried, and 27 legacy verdicts now pass through the alternative the
     oracle's one-name rule did not measure.
+
+    DCP-07 and DD-766: the corpus used to hold two datasets under a second parent through a parent-side
+    ``childDataset`` listing that disagreed with the child's own ``parentDataset``. The listing was the
+    phantom, and clearing it returns the two siblings' field-or-child verdicts to the value the oracle
+    recorded, so two fewer verdicts move.
 
     DV-173: the two field-flag rules (`hasContent`, `optionalField`) are inactive, so 528 verdicts the
     frozen oracle never carried leave the read set. Every legacy verdict still answers as it was.
@@ -469,7 +474,7 @@ def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> 
     assert (read, rules) == (28, 66)
     assert (len(verdicts), Counter(verdict["compliant"] for verdict in verdicts.values())) == (
         1785,
-        Counter({"1": 1767, "0": 18}),
+        Counter({"1": 1765, "0": 20}),
     )
     kept = [document for document in legacy if document["id"] in verdicts]
     assert len(kept) == 1612
@@ -482,7 +487,7 @@ def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> 
         "c4d10911-7661-4058-a2df-a25fbed0e093",
     )
     moved = [document for document in kept if verdicts[document["id"]]["compliant"] != document["compliant"]]
-    assert len(moved) == 29
+    assert len(moved) == 27
     assert all(document["id"].endswith(tuple(pairs)) and document["compliant"] == "0" for document in moved)
     assert all(document not in moved for document in kept if not document["id"].endswith(tuple(pairs)))
     assert {document["guid"] for document in legacy if document["id"] not in verdicts} == {

@@ -91,9 +91,16 @@ function createNodesInternal(
                     [buildTargetName]: {
                         configurations: {
                             local: {
+                                // No --pull: a local build may lack registry credentials (a toolbox
+                                // container) or a network. A base this machine pulled earlier can
+                                // then lag the registry; the webapp's Dockerfile checks its two
+                                // nginx stages agree and says to pull when they don't.
                                 command: `docker buildx build . -f ${configFilePath} -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version}`,
                             },
                             ci: {
+                                // --pull: every FROM resolved against the registry, so two stages on
+                                // one base line (the webapp's builder and runtime nginx) can't take
+                                // different patch releases from a runner's leftover copies.
                                 // Registry-backed layer cache (GHCR, same namespace as
                                 // the images). Chosen over type=gha: the Actions cache
                                 // service is the least reliable part of the pipeline
@@ -104,7 +111,7 @@ function createNodesInternal(
                                 // miss degrades to a cold build instead of failing it.
                                 // Writes go to the branch's own tag; main's tag is the
                                 // shared baseline every build imports.
-                                command: `docker buildx build . -f ${configFilePath} -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version} --load --cache-from="type=registry,ref={args.namespace}/{projectName}:buildcache-main" --cache-from="type=registry,ref={args.namespace}/{projectName}:buildcache-${branchName}" --cache-to="type=registry,ref={args.namespace}/{projectName}:buildcache-${branchName},mode=max,image-manifest=true,oci-mediatypes=true"`,
+                                command: `docker buildx build . --pull -f ${configFilePath} -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version} --load --cache-from="type=registry,ref={args.namespace}/{projectName}:buildcache-main" --cache-from="type=registry,ref={args.namespace}/{projectName}:buildcache-${branchName}" --cache-to="type=registry,ref={args.namespace}/{projectName}:buildcache-${branchName},mode=max,image-manifest=true,oci-mediatypes=true"`,
                             },
                         },
                         defaultConfiguration: "local",
@@ -122,7 +129,7 @@ function createNodesInternal(
                         },
                     },
                     [publishTargetName]: {
-                        command: `docker buildx build . -f ${configFilePath} -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version} --provenance=true --push`,
+                        command: `docker buildx build . --pull -f ${configFilePath} -t {args.namespace}/{projectName}:{args.version} --build-arg VERSION={args.version} --provenance=true --push`,
                         options: {
                             env: {
                                 DOCKER_BUILDKIT: "1",

@@ -65,3 +65,32 @@ real, proven in the prototype burst). The v0.1.x line is 2023-frozen
 (4 open issues, no maintainer activity); re-evaluate at the next nginx
 baseline (the 1.30 signature check is the compatibility gate — a mismatched
 module fails at config parse, loudly, at boot). Next free DD: 240.
+
+### DD-766. The module's two nginx stages are checked to agree at build time, and CI pulls its bases
+
+- **Status:** Proposed
+- **Increment:** 9.4
+- **Date:** 2026-11-21
+
+**Decision.** The webapp's Dockerfile names its runtime base once, as the stage `runtime-base`. A stage
+`otel-verified` runs that base's nginx binary in the builder and fails the build when its version differs
+from the one the module was built for, saying to pull both bases. The runtime stage copies the module from
+that stage, so the check always runs. The builder installs the source kit pinned to the running nginx
+(`nginx-stable-mod-dev~<version>`). The CI and publish builds pass `--pull`. Local builds don't.
+
+**Reason.** The builder and runtime stages both name the floating `1.30` line, which takes patch releases on
+its own. A build on a machine that held an older copy of one base produced an image whose nginx refused the
+module at start (`version 1030007 instead of 1030006`). DD-239 expected that mismatch to fail loudly at
+boot. It did, but only in a running stack, after the image had been built and shipped. Separately, apk's
+newest kit can run ahead of the image's nginx. The pin installs the matching kit, or fails at the existing
+`test -d` while dhi hasn't published it.
+
+**Alternatives.**
+
+- `--pull` on local builds too: a toolbox container without registry credentials, or a machine offline,
+  couldn't build any image.
+- Pinning both stages to one patch release or digest: each nginx patch would need an edit to the Dockerfile.
+
+**Consequences.** A stale local base fails the build with an instruction instead of the container at start.
+While dhi publishes a new nginx before its source kit, the build still fails at `test -d` until the kit
+appears.

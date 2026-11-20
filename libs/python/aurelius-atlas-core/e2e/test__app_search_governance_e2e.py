@@ -56,7 +56,7 @@ async def test__a_rule_s_verdicts_answer_the_details_cards_and_the_rule_page(
         "id": 1,
     }
     collected = m4i("m4i_dataset", "orders")
-    collected.relationship_attributes = {"collections": [AtlasObjectId(guid="-sales")]}
+    collected.relationship_attributes = {"collections": AtlasObjectId(guid="-sales")}
     response = await writer.create_or_update(
         AtlasEntitiesWithExtInfo(
             entities=[
@@ -106,7 +106,7 @@ async def test__a_rule_s_verdicts_answer_the_details_cards_and_the_rule_page(
         type_name="m4i_dataset",
         guid=guids["loose"],
         attributes={"qualifiedName": "e2e--loose", "name": "Loose"},
-        relationship_attributes={"collections": [AtlasObjectId(guid=guids["sales"])]},
+        relationship_attributes={"collections": AtlasObjectId(guid=guids["sales"])},
     )
     await writer.create_or_update(AtlasEntitiesWithExtInfo(entities=[joined]))
     await indexer.run_once()

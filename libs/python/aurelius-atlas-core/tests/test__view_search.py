@@ -256,6 +256,23 @@ async def test__a_card_answers_has_parent_and_a_filter_takes_it(m4i: TypeRegistr
     assert await held(door, {"filters": {"hasParent": True}}) == ["d-1"]
 
 
+@pytest.mark.covers(X, f"{V}.door_fields", rules=["RPS-06", "DCP-06"])
+async def test__the_picker_filter_finds_only_datasets_no_collection_holds(m4i: TypeRegistry) -> None:
+    """The collection's ``datasets`` picker filters on ``hasParent`` false, so a dataset a collection already
+    holds drops out of its sibling's search and a free one stays (DCP-06, RPS-07).
+    """  # noqa: D205 - one sentence
+    door = await opened(
+        hold(m4i, "s-1", "m4i_dataset", document={"hasparent": True}),
+        hold(m4i, "s-2", "m4i_dataset", document={"hasparent": False}),
+        hold(m4i, "c-1", "m4i_collection", document={"hasparent": False}),
+        m4i=m4i,
+    )
+
+    free = await door.search({"filters": {"typeName": "m4i_dataset", "hasParent": False}, "limit": 10})
+
+    assert [card["guid"] for card in free["cards"]] == ["s-2"]
+
+
 @pytest.mark.covers(X, rules=["AVR-09"])
 async def test__only_active_entities_are_in_the_door_marking_stale_documents(m4i: TypeRegistry) -> None:
     """A deleted entity is out; a stale document is answered with its mark and filters by it (AVR-09, AVS-06)."""
