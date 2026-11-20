@@ -341,6 +341,7 @@
                             [field]="field"
                             [editedGuid]="state.entity()?.guid ?? ''"
                             [invalid]="relationshipErrorShown(field)"
+                            [disabled]="relationshipBlocked(field)"
                             [label]="field.label"
                             [deleteLabel]="deleteLabel"
                             [selected]="picksOf(field)"

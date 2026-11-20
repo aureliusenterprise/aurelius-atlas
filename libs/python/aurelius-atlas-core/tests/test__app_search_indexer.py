@@ -22,13 +22,21 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
+from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.impexp import AtlasImportRequest
-from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity, AtlasObjectId, EntityStatus
+from aurelius_atlas_model.instance import (
+    AtlasEntitiesWithExtInfo,
+    AtlasEntity,
+    AtlasObjectId,
+    AtlasRelationship,
+    EntityStatus,
+)
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from test__app_search_engine import DROPPED_RULES
 
 FIXTURES = Path(__file__).parent / "fixtures"
 SAMPLE = Path(__file__).parents[4] / "data" / "atlas-sample" / "sample_data.zip"
@@ -124,10 +132,11 @@ def indexed() -> Indexed:
 
 @cache
 def legacy() -> dict[str, Document]:
-    """``atlas-dev``'s documents by GUID."""
+    """``atlas-dev``'s documents by GUID, minus the 29 a deleted rule still has (DV-185)."""
     return {
         document["guid"]: document
         for document in json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev.json").read_text())
+        if document["guid"] not in DROPPED_RULES
     }
 
 
@@ -143,11 +152,11 @@ def differing(field: str) -> dict[str, str]:
 
 @pytest.mark.covers("aurelius_atlas_core.app_search_indexer.AppSearchIndexer.run_once", rules=["LAS-01", "ASD-04"])
 def test__every_entity_of_atlas_dev_gets_its_document_and_no_other() -> None:
-    """The 684 documents of ``atlas-dev``, written in one round; the three sources have none."""
+    """The 655 documents of ``atlas-dev`` (DV-185), written in one round; the three sources have none."""
     found = indexed()
 
     assert set(found.derived()) == set(legacy())
-    assert found.written == 684
+    assert found.written == 655
     assert {entity.type_name for guid, entity in found.entities().items() if guid not in legacy()} == {"m4i_source"}
 
 
@@ -156,10 +165,10 @@ def test__the_own_fields_are_the_legacy_ones_but_dd_485_s() -> None:
     """Name, qualified name, definition, email and source type; the differences of the spec's table only."""
     derived = indexed().derived()
 
-    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639: the sample corpus's five pair rules carry new
-    # names, so their documents name what the frozen ``atlas-dev`` oracle never held —
-    # the one existing difference beside the five renamed rule records.
-    assert list(differing("name").values()) == ["m4i_gov_data_quality"] * 6
+    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-752: the sample corpus's six pair
+    # rules carry new names, so their documents name what the frozen ``atlas-dev`` oracle never held —
+    # the one existing difference beside the six renamed rule records.
+    assert list(differing("name").values()) == ["m4i_gov_data_quality"] * 7
     assert sorted(differing("referenceablequalifiedname").values()) == [
         *["m4i_generic_process"] * 19,
         "m4i_gov_data_quality",
@@ -273,16 +282,45 @@ class Catalogue:
         return [by_guid[guid] for guid in guids]
 
 
-def m4i(type_name: str, key: str, **relations: list[str]) -> AtlasEntity:
-    """An entity named after ``key``, with relationship attributes naming other entities of the request by key."""
+def m4i(type_name: str, key: str, **relations: list[str] | str | None) -> AtlasEntity:
+    """An entity named after ``key``, with relationship attributes naming other entities of the request by key.
+
+    A hierarchy child names its one parent by key (HCA-03); a parent lists the children it holds.
+    """
     return AtlasEntity(
         type_name=type_name,
         guid=f"-{key}",
         attributes={"qualifiedName": key, "name": key.upper()},
-        relationship_attributes={
-            name: [AtlasObjectId(guid=f"-{other}") for other in others] for name, others in relations.items()
-        },
+        relationship_attributes={name: _related(others) for name, others in relations.items()},
     )
+
+
+async def legacy_parent(
+    catalogue: Catalogue, rel_type: str, end1_key: str, end1_type: str, end2_key: str, end2_type: str
+) -> None:
+    """A parent edge added below the writer, as data that predates the parent-group rule (DD-750).
+
+    The entity create path rejects two parents of one group (PME-07), but a store that already held both
+    keeps them readable, and only a later save to that pair fails. The relationship endpoint is where such
+    an edge was made before the rule existed, so it still accepts the second parent here. The ends follow
+    the relationship's own order: for ``m4i_parent_entity_assignment`` the child (``parentEntity``) is end 1.
+    """
+    await RelationshipStore(catalogue.store, user="u").create(
+        AtlasRelationship(
+            type_name=rel_type,
+            end1=AtlasObjectId(guid=catalogue.guids[end1_key], type_name=end1_type),
+            end2=AtlasObjectId(guid=catalogue.guids[end2_key], type_name=end2_type),
+        )
+    )
+
+
+def _related(others: list[str] | str | None) -> object:
+    """One object id for a single parent, the ids of each key for a list, null for none."""
+    if others is None:
+        return None
+    if isinstance(others, str):
+        return AtlasObjectId(guid=f"-{others}")
+    return [AtlasObjectId(guid=f"-{other}") for other in others]
 
 
 @pytest.mark.covers(f"{X}.derive", rules=["LAS-04"])
@@ -290,10 +328,11 @@ async def test__a_breadcrumb_follows_the_first_parent_of_the_type_s_order_up() -
     """An entity's parent entity comes before its domain; the chain from the top, its parent last."""
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e1", dataDomain=["d"]),
-        m4i("m4i_data_entity", "e2", parentEntity=["e1"], dataDomain=["d"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e2"]),
+        m4i("m4i_data_entity", "e1", dataDomain="d"),
+        m4i("m4i_data_entity", "e2", dataDomain="d"),
+        m4i("m4i_data_attribute", "a", dataEntity="e2"),
     )
+    await legacy_parent(catalogue, "m4i_parent_entity_assignment", "e2", "m4i_data_entity", "e1", "m4i_data_entity")
 
     documents = await catalogue.documents_of()
 
@@ -310,7 +349,7 @@ async def test__a_breadcrumb_follows_the_first_parent_of_the_type_s_order_up() -
 async def test__an_entity_already_in_the_chain_ends_it() -> None:
     """Two entities each the other's parent: each has the other as its whole breadcrumb."""
     catalogue = await Catalogue.of(
-        m4i("m4i_data_entity", "x", parentEntity=["y"]), m4i("m4i_data_entity", "y", parentEntity=["x"])
+        m4i("m4i_data_entity", "x", parentEntity="y"), m4i("m4i_data_entity", "y", parentEntity="x")
     )
 
     documents = await catalogue.documents_of()
@@ -324,9 +363,10 @@ async def test__a_deleted_parent_is_passed_over_and_listed_nowhere() -> None:
     """With its parent entity deleted, an entity's first parent is its domain; no document lists the deleted one."""
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e1", dataDomain=["d"]),
-        m4i("m4i_data_entity", "e2", parentEntity=["e1"], dataDomain=["d"]),
+        m4i("m4i_data_entity", "e1", dataDomain="d"),
+        m4i("m4i_data_entity", "e2", dataDomain="d"),
     )
+    await legacy_parent(catalogue, "m4i_parent_entity_assignment", "e2", "m4i_data_entity", "e1", "m4i_data_entity")
     await EntityWriter(catalogue.store, user="u").delete_by_id(catalogue.guids["e1"])
 
     documents = await catalogue.documents_of()
@@ -346,9 +386,9 @@ async def test__the_relations_list_both_ends_and_a_field_joins_its_dataset_and_d
     catalogue = await Catalogue.of(
         m4i("m4i_person", "p"),
         m4i("m4i_data_entity", "e", steward=["p"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_data_attribute", "a", dataEntity="e"),
         m4i("m4i_dataset", "s"),
-        m4i("m4i_field", "f", datasets=["s"], attributes=["a"]),
+        m4i("m4i_field", "f", datasets="s", attributes=["a"]),
         quality,
     )
 
@@ -379,8 +419,8 @@ async def test__the_role_fields_list_the_people_of_each_role_attribute() -> None
         m4i("m4i_person", "alice"),
         m4i("m4i_person", "bob"),
         m4i("m4i_data_domain", "d", domainLead=["alice", "bob"]),
-        m4i("m4i_data_entity", "e", dataDomain=["d"], businessOwner=["alice"], steward=["bob", "alice"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"], businessOwner=["bob"], steward=["bob"]),
+        m4i("m4i_data_entity", "e", dataDomain="d", businessOwner=["alice"], steward=["bob", "alice"]),
+        m4i("m4i_data_attribute", "a", dataEntity="e", businessOwner=["bob"], steward=["bob"]),
         m4i("m4i_field", "f", attributes=["a"], steward=["alice"]),
     )
 
@@ -448,7 +488,7 @@ async def test__an_entity_changed_while_its_document_was_derived_gets_it_in_a_la
     """The write that met a change leaves the entity for the next round; sources and deleted entities get none."""
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e", dataDomain=["d"]),
+        m4i("m4i_data_entity", "e", dataDomain="d"),
         m4i("m4i_system", "y"),
         m4i("m4i_source", "src"),
         m4i("m4i_data_entity", "gone"),
@@ -474,8 +514,8 @@ async def test__a_renamed_neighbour_embeds_the_entities_naming_it_again() -> Non
     """  # noqa: D205 - one sentence
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e", dataDomain=["d"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_data_entity", "e", dataDomain="d"),
+        m4i("m4i_data_attribute", "a", dataEntity="e"),
         m4i("m4i_system", "y"),
     )
     embedder = FakeEmbedder()
@@ -512,7 +552,7 @@ async def test__a_renamed_neighbour_embeds_the_entities_naming_it_again() -> Non
 @pytest.mark.covers("aurelius_atlas_core.entity_retriever.EntityRetriever.entity_with_ext_info", rules=["ASD-05"])
 async def test__no_atlas_answer_shows_an_entity_s_document() -> None:
     """An indexed entity reads through the retriever as before: none of its document's fields in its JSON."""
-    catalogue = await Catalogue.of(m4i("m4i_data_domain", "d"), m4i("m4i_data_entity", "e", dataDomain=["d"]))
+    catalogue = await Catalogue.of(m4i("m4i_data_domain", "d"), m4i("m4i_data_entity", "e", dataDomain="d"))
     await catalogue.indexer().run_once()
     guid = catalogue.guids["e"]
     assert (await catalogue.documents.get([guid]))[guid].entity.app_search is not None

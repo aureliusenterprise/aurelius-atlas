@@ -28,7 +28,7 @@ def m4i(type_name: str, key: str, **attributes: object) -> AtlasEntity:
         type_name=type_name,
         guid=f"-{key}",
         attributes={"qualifiedName": f"e2e--{key}", "name": key.title()} | attributes,
-        relationship_attributes={"dataDomain": [AtlasObjectId(guid=f"-{domain}")]} if domain else None,
+        relationship_attributes={"dataDomain": AtlasObjectId(guid=f"-{domain}")} if domain else None,
     )
 
 

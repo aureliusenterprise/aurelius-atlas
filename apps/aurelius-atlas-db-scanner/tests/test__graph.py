@@ -286,7 +286,7 @@ def test_every_entity_carries_a_temporary_guid_and_the_ends_ride_through_them() 
     for field in fields:
         assert field.relationship_attributes is not None
         owner = orders if _attributes(field)["name"] == "id" else line
-        assert [end["guid"] for end in field.relationship_attributes["datasets"]] == [owner.guid]
+        assert field.relationship_attributes["datasets"] == {"guid": owner.guid, "typeName": DATASET_TYPE}
     process = _by_type(graph.entities, PROCESS_TYPE)[0]
     assert process.relationship_attributes is not None
     assert [end["guid"] for end in process.relationship_attributes["inputs"]] == [line.guid]

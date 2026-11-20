@@ -138,6 +138,25 @@ export const SingleFull: Story = {
     },
 };
 
+/** The disabled box (PME-10, DD-751): the caller blocks the control, so the
+ * box takes the input's muted look, the input carries the flag, and the panel
+ * never opens. The placeholder is gone — a muted "Select a relationship..."
+ * would invite the pick the control refuses. The value stays deletable. */
+export const Disabled: Story = {
+    args: { selected: [], rows: ROWS, single: true, disabled: true },
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        const field = canvas.getByRole("combobox", { hidden: true });
+
+        await expect(canvasElement.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(true);
+        await expect(field).toBeDisabled();
+        await expect(canvasElement.querySelector(".aurelius-token-input")?.hasAttribute("placeholder")).toBe(false);
+
+        await userEvent.click(field);
+        await expect(canvas.queryByRole("listbox", { hidden: true })).not.toBeVisible();
+    },
+};
+
 /** The required field with nothing chosen (EDT-17): the box takes the danger
  * border and the input names the error line below it. */
 export const Invalid: Story = {

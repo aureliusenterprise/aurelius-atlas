@@ -238,7 +238,36 @@ export type RelationshipField = {
     readonly required: boolean;
     /** The definition's relationship type, sent in every entry (EDT-16). */
     readonly relationshipTypeName?: string;
+    /** The 18.3 parent group this field's `mutuallyExclusive` constraint names
+     * (PME-10), only when another field of the same type shares it — a lone
+     * group enforces nothing (PME-03), so it is omitted. The editor reads it
+     * to make the group's members mutually exclusive in the form. */
+    readonly parentGroup?: string;
 };
+
+/** The constraint type of 18.3's parent choice (PME-01) and its group parameter
+ * — the same strings the server's model and metamodel use. */
+const CONSTRAINT_MUTUAL_EXCLUSION = "mutuallyExclusive";
+const CONSTRAINT_PARAM_GROUP = "group";
+
+/** The parent group one relationship definition names (PME-01, PME-03): the
+ * `group` param of a `mutuallyExclusive` constraint, or null when it carries
+ * none or names a blank group.
+ * @param def the derived relationship-attribute definition
+ * @returns the group name, or null
+ */
+function parentGroupOf(def: AtlasRelationshipAttributeDef): string | null {
+    for (const constraint of def.constraints ?? []) {
+        if (constraint?.type !== CONSTRAINT_MUTUAL_EXCLUSION) {
+            continue;
+        }
+        const group = constraint.params?.[CONSTRAINT_PARAM_GROUP];
+
+        return typeof group === "string" && group !== "" ? group : null;
+    }
+
+    return null;
+}
 
 /** One chosen relationship target — a chip's value and a save entry (EDT-15). */
 export type RelationshipPick = {
@@ -285,14 +314,34 @@ export function buildRelationshipFields(
         const typeName = def.typeName ?? "";
         if (typeName !== "") {
             fields.push(
-                relationshipFieldOf(def, def.name as string, unwrapArrayType(typeName), labels[def.name as string]),
+                relationshipFieldOf(
+                    def,
+                    def.name as string,
+                    unwrapArrayType(typeName),
+                    labels[def.name as string],
+                    parentGroupOf(def),
+                ),
             );
         }
     }
 
+    // A group only enforces when a second field of the type shares it (PME-03):
+    // count the members, then drop the group from any field that stands alone.
+    const membersPerGroup = new Map<string, number>();
+    for (const field of fields) {
+        if (field.parentGroup !== undefined) {
+            membersPerGroup.set(field.parentGroup, (membersPerGroup.get(field.parentGroup) ?? 0) + 1);
+        }
+    }
+    const enforced: RelationshipField[] = fields.map((field) =>
+        field.parentGroup !== undefined && membersPerGroup.get(field.parentGroup) === 1
+            ? { ...field, parentGroup: undefined }
+            : field,
+    );
+
     // Same rule as the plain fields: the label the reader sorts on, the name
     // only as the tie-break (EDT-13 as amended, DD-727).
-    return fields.sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
+    return enforced.sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 
 /** The picker field one merged relationship definition becomes (EDT-13).
@@ -305,6 +354,7 @@ function relationshipFieldOf(
     name: string,
     target: string,
     label?: string,
+    parentGroup?: string | null,
 ): RelationshipField {
     return {
         name,
@@ -313,6 +363,7 @@ function relationshipFieldOf(
         single: (def.cardinality ?? "SINGLE") === "SINGLE",
         required: def.isOptional === false,
         ...(def.relationshipTypeName ? { relationshipTypeName: def.relationshipTypeName } : {}),
+        ...(parentGroup !== null && parentGroup !== undefined ? { parentGroup } : {}),
     };
 }
 

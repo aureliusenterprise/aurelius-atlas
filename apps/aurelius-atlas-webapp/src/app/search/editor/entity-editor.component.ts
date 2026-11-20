@@ -244,6 +244,47 @@ export class EntityEditor {
         return this.qualityMode() ? all.filter((field) => field.name === QUALITY_FIELDS_RELATIONSHIP) : all;
     });
 
+    /**
+     * The pickers currently blocked by 18.3's parent choice (PME-10, DD-751):
+     * a field of a parent group whose *other* members already hold a value.
+     * Filling one member makes the others unfillable — the rule the server
+     * enforces on save (PME-07), made impossible in the form instead of
+     * reported after the fact. The check rides the picker values, so it moves
+     * with the edits, and it never blocks a field that holds a value itself:
+     * the one the user filled stays live, so it can be deleted and the choice
+     * switched. A field with no parent group is never blocked.
+     */
+    protected readonly blockedRelationships = computed<ReadonlySet<string>>(() => {
+        const held = new Set<string>();
+        for (const field of this.relationshipFields()) {
+            if (field.parentGroup !== undefined && (this.relationshipValues().get(field.name)?.length ?? 0) > 0) {
+                held.add(field.parentGroup);
+            }
+        }
+        if (held.size === 0) {
+            return new Set<string>();
+        }
+
+        return new Set(
+            this.relationshipFields()
+                .filter(
+                    (field) =>
+                        field.parentGroup !== undefined &&
+                        held.has(field.parentGroup) &&
+                        (this.relationshipValues().get(field.name)?.length ?? 0) === 0,
+                )
+                .map((field) => field.name),
+        );
+    });
+
+    /** Whether one picker is blocked by a filled sibling of its parent group
+     * (PME-10). The template's disabled input.
+     * @param field the picker's field
+     */
+    protected relationshipBlocked(field: RelationshipField): boolean {
+        return this.blockedRelationships().has(field.name);
+    }
+
     /** The picker rows for the ui-lib Select (EDT-04). The Select's `options`
      * input is a mutable array, so the map yields a fresh one (not readonly). */
     protected readonly pickerRows = computed<PickerRow[]>(() =>
@@ -987,9 +1028,12 @@ export class EntityEditor {
         this.relationshipValues.update((values) => new Map(values).set(field.name, picks));
     }
 
-    /** Whether a required picker is empty (EDT-17): an invalid form, one more way. */
+    /** Whether a required picker is empty (EDT-17): an invalid form, one more
+     * way. A picker the parent choice blocks (PME-10) stands down — its
+     * emptiness is the rule working, not a missing value, and a disabled
+     * control the user cannot fill must never hold the save hostage. */
     protected relationshipInvalid(field: RelationshipField): boolean {
-        return field.required && this.picksOf(field).length === 0;
+        return field.required && !this.relationshipBlocked(field) && this.picksOf(field).length === 0;
     }
 
     /** Whether a picker shows its error (EDT-17 as EDT-07): after a save

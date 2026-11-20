@@ -148,6 +148,10 @@ RELATIONSHIP_TYPES: dict[str, Any] = {
                 _attribute("follower", "r_node", constraints=[{"type": "inverseRef", "params": {"attribute": "lead"}}]),
             ],
         },
+        # The parent-choice trio PME-07..09 write against: ``s_choice`` picks one of two parents.
+        {"name": "s_box", "superTypes": ["s_ref"]},
+        {"name": "s_note", "superTypes": ["s_ref"]},
+        {"name": "s_choice", "superTypes": ["s_ref"]},
     ],
     "relationshipDefs": [
         {
@@ -187,6 +191,44 @@ RELATIONSHIP_TYPES: dict[str, Any] = {
             "endDef1": {"type": "r_node", "name": "lead", "cardinality": "SINGLE", "isLegacyAttribute": True},
             "endDef2": {"type": "r_tag", "name": "follower", "cardinality": "SINGLE", "isLegacyAttribute": True},
         },
+        {
+            "name": "r_boxed",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {"type": "s_box", "name": "boxed", "cardinality": "SET"},
+            "endDef2": {
+                "type": "s_choice",
+                "name": "box",
+                "cardinality": "SINGLE",
+                "constraints": [{"type": "mutuallyExclusive", "params": {"group": "s_choice_parent"}}],
+            },
+        },
+        {
+            "name": "r_noted",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {
+                "type": "s_choice",
+                "name": "note",
+                "cardinality": "SINGLE",
+                "constraints": [{"type": "mutuallyExclusive", "params": {"group": "s_choice_parent"}}],
+            },
+            "endDef2": {"type": "s_note", "name": "noted", "cardinality": "SET"},
+        },
+        {
+            "name": "r_shelf",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {
+                "type": "s_note",
+                "name": "shelved",
+                "cardinality": "SINGLE",
+                "constraints": [{"type": "mutuallyExclusive", "params": {"group": "s_box_parent"}}],
+            },
+            "endDef2": {
+                "type": "s_box",
+                "name": "shelf",
+                "cardinality": "SINGLE",
+                "constraints": [{"type": "mutuallyExclusive", "params": {"group": "s_box_parent"}}],
+            },
+        },
     ],
 }
 """Types for relationship attributes (REL-11 to REL-19), on top of the others, as Atlas JSON.
@@ -198,6 +240,9 @@ no attribute for (``badge`` is ``IN``); ``r_lead``'s ends, ``r_node.lead`` and
 ``r_tag.follower``, are legacy attributes, each the other's ``inverseRef``.
 ``friends`` keeps its relationships on any update (``appendRelationshipsOnPartialUpdate``). ``owns`` is a plain
 owned array that appends on a partial update; ``r_pin.pinned`` is a mandatory plain reference (OWN-01, OWN-02).
+``s_choice`` has two possible parents, ``box`` and ``note``, both in the group ``s_choice_parent`` — the shape
+PME-04's write check enforces. ``r_shelf`` names the group ``s_box_parent`` on both ends, but its members sit on
+two different types, so the check finds one member each and enforces nothing there (PME-03).
 """
 
 

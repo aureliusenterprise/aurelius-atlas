@@ -11,7 +11,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, java_string
-from aurelius_atlas_model.instance import AtlasEntity, AtlasEntityExtInfo, AtlasObjectId, AtlasStruct
+from aurelius_atlas_model.instance import (
+    AtlasEntity,
+    AtlasEntityExtInfo,
+    AtlasObjectId,
+    AtlasStruct,
+    RelationshipStatus,
+)
 from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.atlas_type import AtlasType, resolved
@@ -23,7 +29,9 @@ from aurelius_atlas_typesystem.values import relationship_type_of
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.graph_helper import edge_for_label
 from aurelius_atlas_core.guids import AssignedGuid, as_assigned_guid
+from aurelius_atlas_core.stored_relationship import StoredRelationship
 
 CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH = 50
 """``atlas.custom.attribute.key.max.length``'s default."""
@@ -169,6 +177,67 @@ class EntityDiscovery:
             entity_type.get_normalized_value_for_update(entity)
         else:
             entity_type.get_normalized_value(entity)
+
+    async def validate_parent_groups(
+        self,
+        entity: AtlasEntity,
+        entity_type: EntityType,
+        stored: VersionedEntity | None,
+    ) -> None:
+        """The parent groups of the entity's type: one filled member each (PME-07, PME-08, PME-09, DV-183).
+
+        An attribute is filled when the request names it with a value, or the stored entity holds an active
+        edge on it, read as the retriever reads it (PME-03). Apache Atlas has no such check.
+
+        Raises:
+            AtlasError: ``INSTANCE_CRUD_INVALID_PARAMS`` with one message per group that has two filled
+                members.
+        """
+        groups = entity_type.parent_groups()
+        if not groups:
+            return
+        edges = await self._held_edges(stored)
+        guid = stored.entity.guid if stored is not None else str(entity.guid)
+        messages: list[str] = []
+        for group, names in sorted(groups.items()):
+            filled = sorted(name for name in names if self._is_filled(entity, entity_type, name, guid, edges))
+            if len(filled) > 1:
+                messages.append(
+                    f"{entity.type_name}: {' and '.join(filled)} cannot both hold a parent of group {group}"
+                )
+        if messages:
+            raise AtlasError(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages)
+
+    @staticmethod
+    def _is_filled(
+        entity: AtlasEntity,
+        entity_type: EntityType,
+        name: str,
+        guid: str,
+        edges: list[StoredRelationship],
+    ) -> bool:
+        """Whether attribute ``name`` is filled (PME-03).
+
+        A value in the request fills it. A null in the request clears it, as the mapper clears its edge, so it
+        stays unfilled while the stored edge is still active. When the request names neither, the stored
+        active edge fills it.
+        """
+        if entity.has_relationship_attribute(name):
+            return entity.get_relationship_attribute(name) is not None
+        if entity.has_attribute(name):
+            return entity.get_attribute(name) is not None
+        attribute = entity_type.relationship_attribute(name)
+        if attribute is None or attribute.relationship_edge_label is None:
+            return False
+        held = edge_for_label(guid, edges, attribute.relationship_edge_label, attribute.relationship_edge_direction)
+        return held is not None and held.state is RelationshipStatus.ACTIVE
+
+    async def _held_edges(self, stored: VersionedEntity | None) -> list[StoredRelationship]:
+        """The stored entity's relationships, read once for the check (PME-08)."""
+        if stored is None or not stored.entity.relationship_guids:
+            return []
+        found = await self._store.get_relationships(stored.entity.relationship_guids)
+        return [found[guid].relationship for guid in stored.entity.relationship_guids if guid in found]
 
     def _walk(self, entity: AtlasEntity) -> None:
         """``walkEntityGraph``: record the entity's GUID, then visit its relationship and other attributes."""

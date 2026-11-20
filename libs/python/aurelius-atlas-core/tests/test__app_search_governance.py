@@ -45,16 +45,28 @@ async def m4i_types() -> TypedefStore:
     return _LOADED["m4i"]
 
 
-def m4i(type_name: str, key: str, values: dict[str, Any] | None = None, **relations: list[str]) -> AtlasEntity:
-    """An entity named after ``key`` with ``values``, and relationship attributes naming others of the request."""
+def m4i(
+    type_name: str, key: str, values: dict[str, Any] | None = None, **relations: list[str] | str | None
+) -> AtlasEntity:
+    """An entity named after ``key`` with ``values``, and relationship attributes naming others of the request.
+
+    A hierarchy child names its one parent by key (HCA-03); a parent lists the children it holds.
+    """
     return AtlasEntity(
         type_name=type_name,
         guid=f"-{key}",
         attributes={"qualifiedName": key, "name": key.upper()} | (values or {}),
-        relationship_attributes={
-            name: [AtlasObjectId(guid=f"-{other}") for other in others] for name, others in relations.items()
-        },
+        relationship_attributes={name: _related(others) for name, others in relations.items()},
     )
+
+
+def _related(others: list[str] | str | None) -> object:
+    """One object id for a single parent, the ids of each key for a list, null for none."""
+    if others is None:
+        return None
+    if isinstance(others, str):
+        return AtlasObjectId(guid=f"-{others}")
+    return [AtlasObjectId(guid=f"-{other}") for other in others]
 
 
 def rule(type_name: str, key: str, expression: str | None = None, **attributes: Any) -> AtlasEntity:  # noqa: ANN401
@@ -85,7 +97,7 @@ def catalogue_entities() -> list[AtlasEntity]:
     return [
         m4i("m4i_data_domain", "d", {"definition": "Sales"}),
         m4i("m4i_data_domain", "x", {"definition": ""}),
-        m4i("m4i_data_entity", "e", dataDomain=["d"]),
+        m4i("m4i_data_entity", "e", dataDomain="d"),
         m4i("m4i_data_entity", "o"),
         rule("m4i_data_domain", "named", "completeness('definition')"),
         rule(
@@ -136,15 +148,20 @@ class Catalogue:
         await self.indexer.run_once()
         return await self.governance.run_once()
 
-    def moved(self, type_name: str, key: str, **relations: list[str]) -> AtlasEntity:
+    def moved(self, type_name: str, key: str, **relations: list[str] | str | None) -> AtlasEntity:
         """The key's entity again, by its GUID, with these relationship attributes."""
+
+        def guid_id(other: list[str] | str | None) -> object:
+            if other is None:
+                return None
+            if isinstance(other, list):
+                return [AtlasObjectId(guid=self.guids[other_key]) for other_key in other]
+            return AtlasObjectId(guid=self.guids[other])
+
         return m4i(type_name, key).model_copy(
             update={
                 "guid": self.guids[key],
-                "relationship_attributes": {
-                    name: [AtlasObjectId(guid=self.guids[other]) for other in others]
-                    for name, others in relations.items()
-                },
+                "relationship_attributes": {name: guid_id(others) for name, others in relations.items()},
             }
         )
 
@@ -211,7 +228,7 @@ async def test__a_vocabulary_rule_without_message_or_dimension_answers_its_kind_
     assert verdict["usedattributes"] == ["definition"]
 
 
-@pytest.mark.covers(f"{X}.verdicts", rules=["ASG-04"])
+@pytest.mark.covers(f"{X}.verdicts", rules=["ASG-04", "HCA-09"])
 async def test__each_kind_meets_and_misses_its_attribute_or_relationship() -> None:
     """An empty definition is present but empty; a domain or, failing it, a parent entity; neither misses."""
     catalogue = await Catalogue.judged(*catalogue_entities())
@@ -226,7 +243,7 @@ async def test__each_kind_meets_and_misses_its_attribute_or_relationship() -> No
     }
 
     child = m4i("m4i_data_entity", "c")
-    child.relationship_attributes = {"parentEntity": [AtlasObjectId(guid=catalogue.guids["o"])]}
+    child.relationship_attributes = {"parentEntity": AtlasObjectId(guid=catalogue.guids["o"])}
     await catalogue.create(child)
     assert catalogue.compliant()[("c", "domained")] == "1"
 
@@ -265,10 +282,10 @@ async def test__a_second_round_writes_nothing_and_each_change_shows_after_the_ne
     await catalogue.change("x", "definition", "Finance")
     assert catalogue.compliant()[("x", "defined")] == "1"
 
-    await catalogue.create(catalogue.moved("m4i_data_entity", "o", dataDomain=["x"]))
+    await catalogue.create(catalogue.moved("m4i_data_entity", "o", dataDomain="x"))
     assert catalogue.compliant()[("o", "domained")] == "1"
 
-    await catalogue.create(catalogue.moved("m4i_data_entity", "e", dataDomain=[]))
+    await catalogue.create(catalogue.moved("m4i_data_entity", "e", dataDomain=None))
     assert catalogue.compliant()[("e", "domained")] == "0"
 
     await catalogue.change("named", "nonCompliantMessage", "Needs a definition")
@@ -423,9 +440,9 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
     return asyncio.run(build())
 
 
-@pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04"])
+@pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09"])
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
-    """43 of 95 rules read; 2,030 verdicts; 1,583 of the 1,612 legacy verdicts of a rule that reads as it
+    """28 of 66 rules read; 1,785 verdicts; 1,583 of the 1,612 legacy verdicts of a rule that reads as it
     were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).
 
     DV-171 and DV-172: the sample corpus's four hierarchy rules are OR pairs — the two dataset pairs
@@ -440,14 +457,19 @@ def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> 
     DV-174: the system rule is the fifth pair (a collection or a subsystem), but no system in the sample
     corpus carries a subsystem, so no legacy verdict moves — the two systems without a collection still
     fail, and the pair changes the rule's text only.
+
+    DV-185: the corpus ships 66 rules, not 95. Increment 18.3 (PME-13) deletes the 29 whose expression
+    names a type, attribute or relationship the m4i model does not define; 15 of them read, and their
+    245 always-noncompliant verdicts leave the read set. None of the deleted rules has a legacy verdict
+    (DV-185), so the kept, moved and lost counts hold.
     """  # noqa: D205 - one sentence
     read, rules, verdicts = sample_verdicts()
     legacy = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-gov-quality.json").read_text())
 
-    assert (read, rules) == (43, 95)
+    assert (read, rules) == (28, 66)
     assert (len(verdicts), Counter(verdict["compliant"] for verdict in verdicts.values())) == (
-        2030,
-        Counter({"1": 1767, "0": 263}),
+        1785,
+        Counter({"1": 1767, "0": 18}),
     )
     kept = [document for document in legacy if document["id"] in verdicts]
     assert len(kept) == 1612

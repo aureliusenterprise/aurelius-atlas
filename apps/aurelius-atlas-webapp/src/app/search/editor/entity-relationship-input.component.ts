@@ -36,6 +36,7 @@ import { type RelationshipField, type RelationshipPick, relationshipEntry } from
             [rows]="rows()"
             [text]="text()"
             [single]="field().single"
+            [disabled]="disabled()"
             [invalid]="invalid()"
             [label]="label()"
             [placeholder]="placeholder"
@@ -61,6 +62,12 @@ export class EntityRelationshipInput {
 
     /** Whether the control shows its required error (EDT-17). */
     readonly invalid = input(false);
+
+    /** Whether the control cannot take a pick (PME-10): the box renders
+     * disabled and offers no panel — the editor sets this when another member
+     * of the field's parent group already holds a value. The picker's own
+     * chip stays deletable, so an existing edge is still editable away. */
+    readonly disabled = input(false);
 
     /** The accessible name of the combobox input (the field label). */
     readonly label = input("");
@@ -152,8 +159,13 @@ export class EntityRelationshipInput {
     protected readonly singlePlaceholder = $localize`:@@search.components.editor.components.relationshipsInput.selectPlaceholder:Select a relationship...`;
 
     /** Typing (EDT-14): non-empty text searches with the typed prefix; empty
-     * or whitespace-only text is the browse (DD-343). */
+     * or whitespace-only text is the browse (DD-343). A disabled picker
+     * searches nothing (PME-10): the box cannot take a pick, so the round
+     * trip would only ask for rows it can never show. */
     protected onTyped(value: string): void {
+        if (this.disabled()) {
+            return;
+        }
         this.text.set(value);
         this.searchFor(value.trim());
     }

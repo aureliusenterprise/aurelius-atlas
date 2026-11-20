@@ -458,6 +458,148 @@ describe("buildRelationshipFields (EDT-13, DD-338)", () => {
     });
 });
 
+describe("a hierarchy child picker (HCA-06, 18.2)", () => {
+    const DATASET = raDef(
+        "m4i_dataset",
+        [
+            ra({
+                name: "parentDataset",
+                typeName: "m4i_dataset",
+                cardinality: "SINGLE",
+                relationshipTypeName: "m4i_dataset_parent_assignment",
+            }),
+            ra({
+                name: "badgeOf",
+                typeName: "m4i_data_domain",
+                cardinality: "SET",
+                relationshipTypeName: "m4i_data_entity_assignment",
+            }),
+        ],
+        ["Asset"],
+    );
+    const fields = buildRelationshipFields(DATASET, new Map([["m4i_dataset", DATASET]]));
+
+    it("a SINGLE child end renders the one picker", () => {
+        const parent = fields.find((field) => field.name === "parentDataset");
+
+        expect(parent?.single).toBe(true);
+        expect(parent?.targetType).toBe("m4i_dataset");
+    });
+
+    it("a read of the old shape still seeds the one chip", () => {
+        const entity = {
+            relationshipAttributes: {
+                parentDataset: [
+                    { guid: "p1", typeName: "m4i_dataset", relationshipStatus: "ACTIVE" },
+                    { guid: "p2", typeName: "m4i_dataset", relationshipStatus: "ACTIVE" },
+                ],
+            },
+        };
+
+        expect(seedRelationshipValues(entity, fields)["parentDataset"]).toEqual([
+            { guid: "p1", typeName: "m4i_dataset" },
+        ]);
+    });
+
+    it("the save answers the one parent object, or null when cleared", () => {
+        const named = mergeRelationshipsOntoEntity(
+            { attributes: {}, relationshipAttributes: {} },
+            fields,
+            new Map([
+                [
+                    "parentDataset",
+                    [
+                        { guid: "p1", typeName: "m4i_dataset" },
+                        { guid: "p2", typeName: "m4i_dataset" },
+                    ],
+                ],
+            ]),
+        );
+        const cleared = mergeRelationshipsOntoEntity(
+            { attributes: {}, relationshipAttributes: {} },
+            fields,
+            new Map([["parentDataset", []]]),
+        );
+
+        expect(named.relationshipAttributes?.["parentDataset"]).toEqual({
+            guid: "p1",
+            typeName: "m4i_dataset",
+            relationshipType: "m4i_dataset_parent_assignment",
+            relationshipStatus: "ACTIVE",
+        });
+        expect(cleared.relationshipAttributes?.["parentDataset"]).toBeNull();
+    });
+});
+
+describe("a parent group's pickers (PME-10, 18.3)", () => {
+    const GROUP = [{ type: "mutuallyExclusive", params: { group: "m4i_data_entity_parent" } }];
+    const ENTITY = raDef("m4i_data_entity", [
+        ra({
+            name: "dataDomain",
+            typeName: "m4i_data_domain",
+            cardinality: "SINGLE",
+            relationshipTypeName: "m4i_data_entity_assignment",
+            constraints: GROUP,
+        }),
+        ra({
+            name: "parentEntity",
+            typeName: "m4i_data_entity",
+            cardinality: "SINGLE",
+            relationshipTypeName: "m4i_parent_entity_assignment",
+            constraints: GROUP,
+        }),
+        ra({ name: "steward", typeName: "m4i_person" }),
+    ]);
+    const byName = Object.fromEntries(
+        buildRelationshipFields(ENTITY, new Map([["m4i_data_entity", ENTITY]])).map((f) => [f.name, f]),
+    );
+
+    it("reads the mutuallyExclusive group off the derived attribute (PME-01, PME-02, PME-05)", () => {
+        expect(byName["dataDomain"].parentGroup).toBe("m4i_data_entity_parent");
+        expect(byName["parentEntity"].parentGroup).toBe("m4i_data_entity_parent");
+    });
+
+    it("leaves an attribute that carries no constraint ungrouped", () => {
+        expect(byName["steward"].parentGroup).toBeUndefined();
+    });
+
+    it("ignores a constraint that is not a mutual exclusion", () => {
+        const owned = raDef("E", [
+            ra({ name: "children", typeName: "array<E>", constraints: [{ type: "ownedRef" }] }),
+            ra({ name: "parent", typeName: "E", cardinality: "SINGLE", constraints: [{ type: "ownedRef" }] }),
+        ]);
+
+        expect(
+            buildRelationshipFields(owned, new Map([["E", owned]])).every((field) => field.parentGroup === undefined),
+        ).toBe(true);
+    });
+
+    it("leaves a group with one member on the type unenforced (PME-03)", () => {
+        // A lone member enforces nothing server-side, so the form must not
+        // disable anything over it either.
+        const lone = raDef("E", [
+            ra({ name: "dataDomain", typeName: "m4i_data_domain", cardinality: "SINGLE", constraints: GROUP }),
+            ra({ name: "steward", typeName: "m4i_person" }),
+        ]);
+        const loneFields = Object.fromEntries(
+            buildRelationshipFields(lone, new Map([["E", lone]])).map((f) => [f.name, f]),
+        );
+
+        expect(loneFields["dataDomain"].parentGroup).toBeUndefined();
+    });
+
+    it("ignores a mutual exclusion whose group is not a usable name", () => {
+        const blank = raDef("E", [
+            ra({ name: "a", typeName: "E", constraints: [{ type: "mutuallyExclusive", params: { group: "" } }] }),
+            ra({ name: "b", typeName: "E", constraints: [{ type: "mutuallyExclusive", params: {} }] }),
+        ]);
+
+        expect(
+            buildRelationshipFields(blank, new Map([["E", blank]])).every((field) => field.parentGroup === undefined),
+        ).toBe(true);
+    });
+});
+
 describe("seedRelationshipValues (EDT-15)", () => {
     const fields = buildRelationshipFields(
         raDef("DataSet", [

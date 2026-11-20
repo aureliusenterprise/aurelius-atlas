@@ -38,6 +38,7 @@ from aurelius_atlas_model.typedef import (
     AtlasBaseTypeDef,
     AtlasBusinessMetadataDef,
     AtlasClassificationDef,
+    AtlasConstraintDef,
     AtlasEntityDef,
     AtlasEnumDef,
     AtlasEnumElementDef,
@@ -220,6 +221,61 @@ async def test__loading_again_changes_only_newer_versions(
     assert unchanged == writes
     assert document.writes == writes + 1
     assert [a.name for a in stored(store, "t", AtlasEntityDef).attribute_defs] == ["b", "a"]
+
+
+def child_relationship(*ends: AtlasRelationshipEndDef, version: str = "1.1") -> AtlasRelationshipDef:
+    """A two-end relationship at ``version``."""
+    return AtlasRelationshipDef(
+        name="boxed",
+        relationship_category=RelationshipCategory.ASSOCIATION,
+        end_def1=ends[0],
+        end_def2=ends[1],
+        type_version=version,
+    )
+
+
+def second_end(definition: AtlasRelationshipDef) -> AtlasRelationshipEndDef:
+    """The second end of a stored relationship."""
+    assert definition.end_def2 is not None
+    return definition.end_def2
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["PME-06"])
+async def test__a_newer_end_constraint_loads_over_the_store_through_the_update_check(
+    store: TypedefStore, tmp_path: Path
+) -> None:
+    """A model that adds a parent-group constraint at ``1.2`` applies over a store holding the same relationship
+    at ``1.1``: the ordinary typedef update check passes it with no error and no migration (PME-06).
+    """  # noqa: D205 - one sentence
+    child = AtlasEntityDef(name="child")
+    parent = AtlasEntityDef(name="parent")
+    plain = child_relationship(
+        AtlasRelationshipEndDef(type="parent", name="boxed", cardinality=Cardinality.SET),
+        AtlasRelationshipEndDef(type="child", name="box", cardinality=Cardinality.SINGLE),
+    )
+    write_json(tmp_path / "1.json", model(child, parent, plain))
+    await ModelLoader(store).load(tmp_path)
+    assert second_end(stored(store, "boxed", AtlasRelationshipDef)).constraints is None
+
+    constrained = child_relationship(
+        AtlasRelationshipEndDef(type="parent", name="boxed", cardinality=Cardinality.SET),
+        AtlasRelationshipEndDef(
+            type="child",
+            name="box",
+            cardinality=Cardinality.SINGLE,
+            constraints=[AtlasConstraintDef(type="mutuallyExclusive", params={"group": "child_parent"})],
+        ),
+        version="1.2",
+    )
+    write_json(tmp_path / "1.json", model(child, parent, constrained))
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == []
+    served = stored(store, "boxed", AtlasRelationshipDef)
+    assert served.type_version == "1.2"
+    assert [constraint.to_json() for constraint in second_end(served).constraints or []] == [
+        {"type": "mutuallyExclusive", "params": {"group": "child_parent"}}
+    ]
 
 
 @pytest.mark.covers("aurelius_atlas_core.model_loader.TypedefPatch.record", rules=["MDL-05"])

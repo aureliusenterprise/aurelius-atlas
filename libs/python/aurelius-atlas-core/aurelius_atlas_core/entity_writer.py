@@ -637,6 +637,7 @@ class EntityWriter:
                 if self._importing and stored.entity.is_incomplete and entity.is_incomplete:
                     continue  # an import leaves a shell entity it gives as a shell (IMP-04)
                 discovery.validate_and_normalize(entity, for_update=partial)
+                await discovery.validate_parent_groups(entity, entity_type, stored)
                 entity.guid = found
                 if partial and stored.entity.is_incomplete:
                     continue  # Atlas leaves an incomplete entity out of a partial update
@@ -647,6 +648,7 @@ class EntityWriter:
                     _import_status(mutation, entity, stored.entity)
             else:
                 discovery.validate_and_normalize(entity, for_update=False)
+                await discovery.validate_parent_groups(entity, entity_type, None)
                 kept = self._importing and entity.guid is not None and is_assigned_guid(entity.guid)
                 guid = as_assigned_guid(str(entity.guid)) if kept else self._store.new_guid()
                 context.resolved_guids[request_guid] = guid

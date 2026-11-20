@@ -26,8 +26,10 @@ import { Holdable } from "aurelius-atlas-ui";
 import {
     ViewEntityService,
     type AtlasEntityDef,
+    type AtlasRelationshipAttributeDef,
     type AtlasTypeDefHeader,
     type AtlasTypesDef,
+    type EntityRelation,
     type EntityView,
     type ViewForTypeAnswer,
     type ViewSaveRequest,
@@ -195,27 +197,92 @@ const RA_ANSWER: EntityView = {
 /** The DataSet chain carrying the derived relationship attributes (EDT-13):
  * the door answers them on the whole typedef (AVW-11). */
 function raChain(modelRequired = false): ViewForTypeAnswer {
-    const defs: AtlasTypesDef = {
-        ...TYPEDEFS,
-        entityDefs: TYPEDEFS.entityDefs!.map((def) =>
-            def.name === "DataSet"
-                ? {
-                      ...def,
-                      relationshipAttributeDefs: [
-                          {
-                              name: "inputToProcesses",
-                              typeName: "array<Process>",
-                              cardinality: "SET",
-                              relationshipTypeName: "dataset_process_inputs",
-                          },
-                          { name: "model", typeName: "Process", isOptional: !modelRequired },
-                      ],
-                  }
-                : def,
+    return chainFor(
+        withDataSetRelationships(TYPEDEFS, [
+            {
+                name: "inputToProcesses",
+                typeName: "array<Process>",
+                cardinality: "SET",
+                relationshipTypeName: "dataset_process_inputs",
+            },
+            { name: "model", typeName: "Process", isOptional: !modelRequired },
+        ]),
+        "DataSet",
+    );
+}
+
+/** One def of the chain's DataSet stand-in, carrying relationship attributes. */
+type RaFixture = AtlasRelationshipAttributeDef & { name: string };
+
+/** The shipped typedefs with the DataSet's derived ends swapped (the chain
+ * walk needs the base defs beside it — Referenceable and Asset carry the
+ * plain fields, so a wholesale entityDefs replacement breaks the form). */
+function withDataSetRelationships(defs: AtlasTypesDef, ends: RaFixture[]): AtlasTypesDef {
+    return {
+        ...defs,
+        entityDefs: defs.entityDefs!.map((def) =>
+            def.name === "DataSet" ? { ...def, relationshipAttributeDefs: ends } : def,
         ),
     };
+}
 
-    return chainFor(defs, "DataSet");
+/** The 18.3 parent choice on the same DataSet stand-in (PME-10): two `SINGLE`
+ * ends of one `mutuallyExclusive` group — the shape the server derives from
+ * `m4i_data_entity`'s `dataDomain` and `parentEntity` ends.
+ * @param required whether both ends are mandatory (the PME-10 lock-out probe)
+ */
+function parentChain(required = false): ViewForTypeAnswer {
+    const group = [{ type: "mutuallyExclusive", params: { group: "m4i_data_entity_parent" } }];
+
+    return chainFor(
+        withDataSetRelationships(TYPEDEFS, [
+            {
+                name: "dataDomain",
+                typeName: "m4i_data_domain",
+                cardinality: "SINGLE",
+                isOptional: !required,
+                relationshipTypeName: "m4i_data_entity_assignment",
+                constraints: group,
+            },
+            {
+                name: "parentEntity",
+                typeName: "DataSet",
+                cardinality: "SINGLE",
+                isOptional: !required,
+                relationshipTypeName: "m4i_parent_entity_assignment",
+                constraints: group,
+            },
+        ]),
+        "DataSet",
+    );
+}
+
+/** The stored view the parent-group probes edit: the DataSet's own values with
+ * the two parent keys as sections — the shape 18.3's child entity reads as. */
+function parentAnswer(withDomain: boolean): EntityView {
+    const sections: EntityRelation[] = [];
+    if (withDomain) {
+        sections.push({
+            attribute: "dataDomain",
+            entities: [{ guid: "d1", name: "Sales", typeName: "m4i_data_domain", status: "ACTIVE" }],
+        });
+    }
+    sections.push({ attribute: "parentEntity", entities: [] });
+
+    return {
+        ...ANSWER,
+        attributes: { name: "genomic_variants", owner: "analyst-3" },
+        sections,
+    };
+}
+
+/** The PME-10 search answer for a parent picker: one candidate of the target type. */
+function parentSearchResult(): Record<string, unknown> {
+    return {
+        cards: [{ guid: "e7", typeName: "DataSet", displayText: "parent_call", status: "ACTIVE", stale: false }],
+        facets: {},
+        total: 1,
+    };
 }
 
 /**
@@ -560,6 +627,116 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
             compiled.querySelectorAll('[data-field="inputToProcesses"] aurelius-atlas-ui-classification-chip'),
         ).toHaveLength(1);
         vi.useRealTimers();
+    });
+
+    it("a filled parent disables its sibling in the same group (PME-10, DD-751)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, parentAnswer(true), parentChain());
+
+        const domain = compiled.querySelector<HTMLElement>('[data-field="dataDomain"]')!;
+        const parent = compiled.querySelector<HTMLElement>('[data-field="parentEntity"]')!;
+
+        // The member holding the edge stays live, so the choice can be
+        // deleted and switched.
+        expect(domain.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(false);
+        expect(domain.querySelectorAll("aurelius-atlas-ui-classification-chip")).toHaveLength(1);
+
+        // The empty member of the same group cannot be filled: the box is
+        // disabled and its input carries the flag (the rule PME-07 enforces
+        // on save is impossible in the form).
+        expect(parent.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(true);
+        expect(parent.querySelector<HTMLInputElement>(".aurelius-token-input")?.disabled).toBe(true);
+
+        // Nothing to pick: a focused, typed-into disabled box offers no panel
+        // and asks the search door nothing. The rows stay in the DOM (Bulma
+        // hides the menu), so the shut state is the box class and the aria flag.
+        vi.useFakeTimers();
+        const parentInput = parent.querySelector<HTMLInputElement>(".aurelius-token-input")!;
+        parentInput.dispatchEvent(new Event("focusin", { bubbles: true }));
+        parentInput.value = "parent";
+        parentInput.dispatchEvent(new Event("input"));
+        vi.advanceTimersByTime(250);
+        fixture.detectChanges();
+        expect(parent.querySelector(".aurelius-token-box")?.classList.contains("is-active")).toBe(false);
+        expect(httpMock.match((request) => request.url === "/api/aurelius/v1/search")).toHaveLength(0);
+        vi.useRealTimers();
+    });
+
+    it("clearing one parent frees the sibling in the same group (PME-10, PME-08)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, parentAnswer(true), parentChain());
+
+        // Delete the stored domain edge → the sibling opens up (moving a
+        // parent from one member to the other, PME-08's other half).
+        compiled
+            .querySelector<HTMLButtonElement>('[data-field="dataDomain"] .aurelius-classification-chip-delete')!
+            .click();
+        fixture.detectChanges();
+
+        expect(compiled.querySelector(".aurelius-editor-notification")).toBeNull();
+        expect(compiled.querySelector('[data-field="dataDomain"] .aurelius-token-box.is-disabled')).toBeNull();
+        expect(compiled.querySelector('[data-field="parentEntity"] .aurelius-token-box.is-disabled')).toBeNull();
+
+        // The freed picker searches again and takes the pick (one parent of
+        // the group, PME-09).
+        vi.useFakeTimers();
+        const parentInput = compiled.querySelector<HTMLInputElement>(
+            '[data-field="parentEntity"] .aurelius-token-input',
+        )!;
+        parentInput.dispatchEvent(new Event("focusin", { bubbles: true }));
+        parentInput.value = "parent";
+        parentInput.dispatchEvent(new Event("input"));
+        vi.advanceTimersByTime(250);
+        httpMock.expectOne((request) => request.url === "/api/aurelius/v1/search").flush(parentSearchResult());
+        fixture.detectChanges();
+        compiled
+            .querySelector<HTMLButtonElement>('[data-field="parentEntity"] [role="option"]')!
+            .dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        fixture.detectChanges();
+        expect(
+            compiled.querySelectorAll('[data-field="parentEntity"] aurelius-atlas-ui-classification-chip'),
+        ).toHaveLength(1);
+        // The other half of the swap closed: the emptied domain is disabled.
+        expect(compiled.querySelector('[data-field="dataDomain"] .aurelius-token-box.is-disabled')).toBeTruthy();
+        vi.useRealTimers();
+
+        // The save sends exactly the parent the picker holds (PME-09).
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        expect((post.request.body as ViewSaveRequest).sections).toEqual([
+            { attribute: "dataDomain", entities: [] },
+            { attribute: "parentEntity", entities: ["e7"] },
+        ]);
+        post.flush(savedView());
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalled();
+    });
+
+    it("a blocked mandatory parent never holds the save (PME-10, DD-751)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, parentAnswer(true), parentChain(true));
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        // Both members of the group are mandatory; the empty one sits disabled
+        // (PME-10), so the form must not demand a value the user cannot give
+        // (EDT-17's rule, stood down for a blocked picker).
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        expect(compiled.querySelector(".aurelius-editor-notification")).toBeNull();
+        expect(compiled.querySelector(".aurelius-editor-error")).toBeNull();
+        expect(compiled.querySelector('[data-field="parentEntity"] .aurelius-token-box.is-danger')).toBeNull();
+
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        expect((post.request.body as ViewSaveRequest).sections).toEqual([
+            { attribute: "dataDomain", entities: ["d1"] },
+            { attribute: "parentEntity", entities: [] },
+        ]);
+        post.flush(savedView());
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalled();
     });
 
     it("edit mode renders the entity's type as a static badge, not a picker (EDT-04, DD-330)", () => {

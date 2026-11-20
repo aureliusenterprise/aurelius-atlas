@@ -189,22 +189,6 @@
                 },
                 {
                     "cardinality": "SET",
-                    "description": "The functional name of the data entity that the data attribute belongs to",
-                    "displayName": "Data Entity",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "dataEntity",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_data_entity>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
                     "description": "The business data steward of the data attribute",
                     "displayName": "Business Data Steward",
                     "includeInNotification": true,
@@ -288,7 +272,7 @@
             "name": "m4i_data_attribute",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [
@@ -399,22 +383,6 @@
                 },
                 {
                     "cardinality": "SET",
-                    "description": "The functional name of the data domain that the data entity belongs to",
-                    "displayName": "Data Domain",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "dataDomain",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_data_domain>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
                     "description": "The functional names of the data attributes that belong to the data entity",
                     "displayName": "Data Attribute",
                     "includeInNotification": true,
@@ -426,22 +394,6 @@
                     "options": {},
                     "searchWeight": 1,
                     "typeName": "array<m4i_data_attribute>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
-                    "description": "The functional names of the data entity that the data entity belongs to",
-                    "displayName": "Parent Data Entity",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "parentEntity",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_data_entity>",
                     "valuesMaxCount": 2147483647,
                     "valuesMinCount": 0
                 },
@@ -498,7 +450,7 @@
             "name": "m4i_data_entity",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [
@@ -705,22 +657,6 @@
                 },
                 {
                     "cardinality": "SET",
-                    "description": "The functional names of the dataset that the dataset belongs to",
-                    "displayName": "Parent Dataset",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "parentDataset",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_dataset>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
                     "description": "The functional names of the dataset that belong to the dataset",
                     "displayName": "Child Dataset",
                     "includeInNotification": true,
@@ -740,7 +676,7 @@
             "name": "m4i_dataset",
             "options": {},
             "superTypes": ["DataSet", "m4i_referenceable"],
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [
@@ -826,22 +762,6 @@
                 },
                 {
                     "cardinality": "SET",
-                    "description": "The name of the dataset to which the field belongs to",
-                    "displayName": "Dataset",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "datasets",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_dataset>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
                     "description": "The functional name of the data attribute that the data field belongs to",
                     "displayName": "Data Attribute",
                     "includeInNotification": true,
@@ -875,22 +795,6 @@
                 {
                     "cardinality": "SET",
                     "description": "The functional names of the field that this field belongs to",
-                    "displayName": "Parent Field",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "parentField",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_field>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
-                    "description": "The functional names of the field that this field belongs to",
                     "displayName": "Child Field",
                     "includeInNotification": true,
                     "indexType": "DEFAULT",
@@ -909,7 +813,7 @@
             "name": "m4i_field",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [
@@ -924,20 +828,6 @@
                     "options": {},
                     "searchWeight": 1,
                     "typeName": "array<m4i_person>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "system",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_system>",
                     "valuesMaxCount": 2147483647,
                     "valuesMinCount": 0
                 },
@@ -962,7 +852,7 @@
             "name": "m4i_generic_process",
             "options": {},
             "superTypes": ["Process", "m4i_referenceable"],
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [
@@ -1322,22 +1212,6 @@
                 },
                 {
                     "cardinality": "SET",
-                    "description": "The functional names of the System that the System belongs to",
-                    "displayName": "Parent System",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "parentSystem",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_system>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
                     "description": "The functional names of the System that belong to the System",
                     "displayName": "Child System",
                     "includeInNotification": true,
@@ -1373,7 +1247,7 @@
             "name": "m4i_system",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         }
     ],
     "enumDefs": [],
@@ -1481,7 +1355,15 @@
                 "type": "m4i_data_domain"
             },
             "endDef2": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_data_entity_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "dataDomain",
@@ -1491,7 +1373,7 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],
@@ -1504,7 +1386,7 @@
                 "type": "m4i_data_entity"
             },
             "endDef2": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "dataEntity",
@@ -1514,7 +1396,7 @@
             "options": {},
             "propagateTags": "TWO_TO_ONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [],
@@ -1612,7 +1494,7 @@
             "attributeDefs": [],
             "description": "The relationship between the dataset to other datasets",
             "endDef1": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "parentDataset",
@@ -1629,7 +1511,7 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [],
@@ -1681,7 +1563,15 @@
                 "type": "m4i_dataset"
             },
             "endDef2": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_field_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "datasets",
@@ -1691,13 +1581,21 @@
             "options": {},
             "propagateTags": "TWO_TO_ONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],
             "description": "The relationship between the data field to other data entities",
             "endDef1": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_field_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "parentField",
@@ -1714,13 +1612,21 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],
             "description": "The relationship between the data entity to other data entities",
             "endDef1": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_data_entity_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "parentEntity",
@@ -1737,7 +1643,7 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],
@@ -1789,7 +1695,7 @@
             "attributeDefs": [],
             "description": "The relationship between the system to other systems",
             "endDef1": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "parentSystem",
@@ -1806,7 +1712,7 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [],
@@ -1819,7 +1725,7 @@
                 "type": "m4i_system"
             },
             "endDef2": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "system",
@@ -1829,7 +1735,7 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         }
     ],
     "structDefs": []

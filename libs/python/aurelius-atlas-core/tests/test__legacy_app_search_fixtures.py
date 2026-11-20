@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from test__app_search_engine import DROPPED_RULES
 
 FIXTURES = Path(__file__).parent / "fixtures"
 SAMPLE = Path(__file__).parents[4] / "data" / "atlas-sample" / "sample_data.zip"
@@ -60,11 +61,14 @@ def attribute(guid: str, name: str) -> object:
 
 
 def mismatches(field: str, expected: dict[str, object]) -> dict[str, str]:
-    """The ``atlas-dev`` documents whose ``field`` is not the expected value, by GUID, with their type."""
+    """The ``atlas-dev`` documents whose ``field`` is not the expected value, by GUID, with their type.
+
+    DV-185: the 29 documents of the rules the corpus deleted are skipped; their entity is gone.
+    """
     return {
         document["guid"]: document["typename"]
         for document in engine("atlas-dev")
-        if (document[field] or None) != (expected[document["guid"]] or None)
+        if document["guid"] not in DROPPED_RULES and (document[field] or None) != (expected[document["guid"]] or None)
     }
 
 
@@ -83,8 +87,11 @@ def test__one_document_per_m4i_entity_but_the_sources() -> None:
 
 @pytest.mark.covers(rules=["LAS-02"])
 def test__the_identity_fields_are_the_entity_s_but_the_listed_differences() -> None:
-    """Type, super types and email hold everywhere; name, qualified name and definition but for DD-485's list."""
-    documents = engine("atlas-dev")
+    """Type, super types and email hold everywhere; name, qualified name and definition but for DD-485's list.
+
+    DV-185: the 29 documents of the rules the corpus deleted are skipped, as their entity is gone.
+    """
+    documents = [document for document in engine("atlas-dev") if document["guid"] not in DROPPED_RULES]
     names = {guid: attribute(guid, "name") or attribute(guid, "qualifiedName") for guid in entities()}
     qualified = {guid: attribute(guid, "qualifiedName") or guid for guid in entities()}
     definitions = {guid: attribute(guid, "definition") for guid in entities()}
@@ -96,9 +103,9 @@ def test__the_identity_fields_are_the_entity_s_but_the_listed_differences() -> N
         for document in documents
         if document["typename"] == "m4i_person"
     )
-    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639: the sample corpus's five pair rules carry new
-    # names, so they join the one name the frozen oracle already missed.
-    assert list(mismatches("name", names).values()) == ["m4i_gov_data_quality"] * 6
+    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-752: the sample corpus's six pair
+    # rules carry new names, so they join the one name the frozen oracle already missed.
+    assert list(mismatches("name", names).values()) == ["m4i_gov_data_quality"] * 7
     assert sorted(mismatches("referenceablequalifiedname", qualified).values()) == [
         *["m4i_generic_process"] * 19,
         "m4i_gov_data_quality",
@@ -221,18 +228,19 @@ def test__a_quality_result_names_its_rule_and_a_field_of_it() -> None:
 @pytest.mark.covers(rules=["LAS-13"])
 def test__a_governance_verdict_names_its_entity_and_a_rule_for_its_type() -> None:
     """Identity, type and the rule's kind, description and dimension hold for all 1,628 verdicts; the
-    description of the five pair rules differs in 337, text only (DV-171, DV-172, DV-174).
+    description of the six edited rules differs in 353, text only (DV-171, DV-172, DV-174, DV-184).
     """  # noqa: D205 - one sentence
     verdicts = engine("atlas-dev-gov-quality")
-    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639: the sample corpus's five pair rules carry the pair
-    # sentence where the frozen oracle still holds the one-name one — the rule's own text, unchanged
-    # everywhere else.
-    pair_rules = {
+    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-752: the sample corpus's six edited
+    # rules carry their own sentence where the frozen oracle still holds the one it recorded. Only
+    # the rule's text moved, and nothing else did.
+    edited_rules = {
         "cfd24715-125d-46e2-854d-b0c1b16340bf",
         "fb2c608f-d7ff-4574-8c2d-a240c8c79e91",
         "cad0a3bf-9f7f-464f-aeb5-9ce97eb993b3",
         "c4d10911-7661-4058-a2df-a25fbed0e093",
         "1afbce14-aebe-4c3f-beba-562ee4aa86b1",
+        "3cb9ab0b-050c-40db-9f12-f136045a77a0",
     }
     description_differs = 0
     for verdict in verdicts:
@@ -253,9 +261,9 @@ def test__a_governance_verdict_names_its_entity_and_a_rule_for_its_type() -> Non
     )
     assert len(verdicts) == len({verdict["id"] for verdict in verdicts}) == 1628
     assert disagree == 199
-    assert description_differs == 337
+    assert description_differs == 353
     assert all(
-        verdict["guid"] in pair_rules
+        verdict["guid"] in edited_rules
         for verdict in verdicts
         if verdict["dataqualityruledescription"] != attribute(verdict["guid"], "ruleDescription")
     )

@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import AtlasRelationship
 from aurelius_atlas_model.typedef import (
+    CONSTRAINT_PARAM_GROUP,
+    CONSTRAINT_TYPE_MUTUAL_EXCLUSION,
     CONSTRAINT_TYPE_OWNED_REF,
     AtlasAttributeDef,
     AtlasConstraintDef,
@@ -131,6 +133,7 @@ class RelationshipType(StructType):
                 type_name=array_type_name(other_type_name) if end.cardinality is Cardinality.SET else other_type_name,
                 is_optional=not composition or end.is_container,
                 cardinality=end.cardinality,
+                constraints=list(end.constraints) if end.constraints else None,
             )
             if composition and end.is_container:
                 attribute_def.add_constraint(AtlasConstraintDef(type=CONSTRAINT_TYPE_OWNED_REF))
@@ -232,3 +235,26 @@ def validate_relationship_def(relationship_def: AtlasRelationshipDef) -> None:
         end.cardinality is Cardinality.SET and not end.is_container for end in (end1, end2)
     ):
         raise AtlasError(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS, name)
+    _validate_end_constraints(name, end1)
+    _validate_end_constraints(name, end2)
+
+
+def _validate_end_constraints(relationship_name: str | None, end: AtlasRelationshipEndDef) -> None:
+    """The end-def constraints of 18.3: none on a container end, and a group on every mutual exclusion.
+
+    Raises:
+        AtlasError: ``RELATIONSHIPDEF_INVALID`` when the end is a container, or when a
+            ``mutuallyExclusive`` constraint names no group (PME-01, PME-03, DV-183).
+    """
+    for constraint in end.constraints or []:
+        if end.is_container:
+            raise AtlasError(
+                AtlasErrorCode.RELATIONSHIPDEF_INVALID, f"{relationship_name} end {end.name} is a container"
+            )
+        if constraint.is_constraint_type(CONSTRAINT_TYPE_MUTUAL_EXCLUSION):
+            group = constraint.get_param(CONSTRAINT_PARAM_GROUP)
+            if not isinstance(group, str) or not group.strip():
+                raise AtlasError(
+                    AtlasErrorCode.RELATIONSHIPDEF_INVALID,
+                    f"{relationship_name} end {end.name} has no mutually exclusive group",
+                )
