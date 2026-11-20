@@ -118,6 +118,7 @@
 - [065\. Compose stacks that deploy the whole system live at the root](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/index.md>)
 - [066\. Infrastructure components live at the repository root](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/architecture/adr/066-infrastructure-components-live-at-the-repository-root/index.md>)
 - [067\. The standalone stack ships as one generated release bundle](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/index.md>)
+- [068\. A catalogue bootstraps only the metamodel it serves](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/architecture/conversion/design-log/index.md>)
