@@ -40,7 +40,9 @@ on the stack's network alone (TGF-12). The dev observability slice's Grafana is 
 **Decision.** Grafana takes no organization and no role from a person's token. The command makes each tenant
 member a Viewer of the tenant's Grafana organization when it adds them to the tenant, makes them in Grafana when
 they have never signed in, and takes them out when it removes them. `grafana sync` brings everyone in step with
-the realm. A person Grafana meets with no organization lands in an empty one, `No tenant`.
+the realm, and deletes the Grafana users the realm no longer gives a tenant (TGF-14). A person Grafana meets
+first at their sign-in joins only the main organization, with no role, and sees nothing until the command adds
+them.
 
 **Reason.** Grafana can map a token's organizations to its own (`org_mapping`), but the mapping is Grafana's
 configuration, read at its start: every new tenant would edit the stack's files and restart Grafana, which 15.7
@@ -104,3 +106,27 @@ dashboards travel with the command that makes them, on any deployment.
 
 **Consequences.** A dashboard change reaches a tenant at the next `grafana sync`, which replaces the tenant's
 copy with the package's.
+
+### DD-736. A person's first sign-in finds the Grafana user the command made, by email
+
+- **Status:** Proposed
+- **Increment:** 15.9
+- **Date:** 2026-11-20
+
+**Decision.** Grafana's generic OAuth looks a person up by email as well as by the realm's subject
+(`oauth_allow_insecure_email_lookup`). The first sign-in then finds the user the command made (TGF-07) and
+links it, with its organizations and roles; later sign-ins find it by the subject.
+
+**Reason.** Without the lookup, Grafana finds no user by the subject on a first sign-in, tries to make one, and
+refuses the sign-in because the login exists. Grafana has no API that links a user to a subject in advance.
+
+**Alternatives.**
+
+- Let the first sign-in make the user, and make the memberships at the next `grafana sync`: until then the
+  person sees only the main organization, where they have no role.
+- Let the first sign-in make the user and put it in its organizations with Grafana's `org_mapping`: a restart
+  of Grafana for each tenant (DD-733).
+
+**Consequences.** Grafana trusts the realm's email. The realm refuses duplicate emails and changes of username,
+both by default, so an email reaches only the person who holds it in the realm. A realm that allowed duplicate
+emails would need this decision revisited.

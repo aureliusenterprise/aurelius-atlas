@@ -9,9 +9,9 @@ request; it reworks the unmerged commit 303fcf80d, whose dashboards it keeps.
 2. **Grafana behind the proxy** (TGF-02, TGF-03): in `docker/observability/compose.yaml`, Grafana in the
    proxy's network with `root_url` `https://localhost:9000/grafana/` and `serve_from_sub_path`, its port
    unpublished, anonymous access and the login form off, generic OAuth on `grafana`, no role or organization
-   taken from the token, new users assigned to `No tenant`, the local administrator's password from
-   `GRAFANA_ADMIN_PASSWORD`; in `docker/gateway/nginx.conf`, the route `/grafana/` to it. The files of
-   303fcf80d's data sources and dashboards leave its mounts.
+   taken from the token, new users joining the main organization with the role `None`, the local
+   administrator's password from `GRAFANA_ADMIN_PASSWORD`; in `docker/gateway/nginx.conf`, the route
+   `/grafana/` to it. The files of 303fcf80d's data sources and dashboards leave its mounts.
 3. **Grafana's API in the server** (TGF-04 to TGF-09, TGF-11, TGF-12): `grafana_tenants.py`, a client of the
    organizations, users, members, data sources, dashboards and folders the spec names; the settings
    `grafana_url`, `grafana_admin_user` and `grafana_admin_password`; the dashboards as package data,
