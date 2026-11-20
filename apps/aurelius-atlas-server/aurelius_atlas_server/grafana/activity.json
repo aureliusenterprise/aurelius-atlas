@@ -47,7 +47,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-audits"
+                        "uid": "tenant-audits"
                     },
                     "metrics": [
                         {
@@ -105,7 +105,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-audits"
+                        "uid": "tenant-audits"
                     },
                     "metrics": [
                         {
@@ -163,7 +163,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-audits"
+                        "uid": "tenant-audits"
                     },
                     "metrics": [
                         {
@@ -234,7 +234,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-audits"
+                        "uid": "tenant-audits"
                     },
                     "metrics": [
                         {
@@ -288,7 +288,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-audits"
+                        "uid": "tenant-audits"
                     },
                     "metrics": [
                         {
@@ -342,7 +342,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-audits"
+                        "uid": "tenant-audits"
                     },
                     "metrics": [
                         {
@@ -361,7 +361,7 @@
     ],
     "refresh": "",
     "schemaVersion": 39,
-    "tags": ["aurelius-atlas", "demo-tenant"],
+    "tags": ["aurelius-atlas", "tenant"],
     "templating": {
         "list": []
     },
@@ -370,7 +370,7 @@
         "to": "now"
     },
     "timezone": "browser",
-    "title": "Demo tenant - activity",
-    "uid": "demo-tenant-activity",
+    "title": "Activity",
+    "uid": "tenant-activity",
     "version": 1
 }

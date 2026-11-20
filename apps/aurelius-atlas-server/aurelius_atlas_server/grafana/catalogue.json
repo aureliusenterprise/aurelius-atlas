@@ -2,7 +2,7 @@
     "annotations": {
         "list": []
     },
-    "description": "The demo tenant's catalogue: its entities by type, state, domain, owner and steward, as created over time. Atlas's internal types, whose names start with __, are left out.",
+    "description": "The tenant's catalogue: its entities by type, state, domain, owner and steward, as created over time. Atlas's internal types, whose names start with __, are left out.",
     "editable": false,
     "panels": [
         {
@@ -47,7 +47,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -105,7 +105,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -163,7 +163,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -221,7 +221,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -275,7 +275,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -329,7 +329,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -383,7 +383,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -437,7 +437,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -508,7 +508,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -562,7 +562,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -616,7 +616,7 @@
                     ],
                     "datasource": {
                         "type": "elasticsearch",
-                        "uid": "demo-tenant-entities"
+                        "uid": "tenant-entities"
                     },
                     "metrics": [
                         {
@@ -635,7 +635,7 @@
     ],
     "refresh": "",
     "schemaVersion": 39,
-    "tags": ["aurelius-atlas", "demo-tenant"],
+    "tags": ["aurelius-atlas", "tenant"],
     "templating": {
         "list": []
     },
@@ -644,7 +644,7 @@
         "to": "now"
     },
     "timezone": "browser",
-    "title": "Demo tenant - catalogue",
-    "uid": "demo-tenant-catalogue",
+    "title": "Catalogue",
+    "uid": "tenant-catalogue",
     "version": 1
 }

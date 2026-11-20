@@ -341,6 +341,16 @@ class ServerSettings(StoreAccessSettings):
     tenancy_admin_client_secret: SecretStr | None = None
     """Its secret; unset, the command leaves the realm as it is (TRM-01, DD-603)."""
 
+    grafana_url: str | None = None
+    """Grafana's API, which the tenant command keeps each tenant's organization in; none leaves Grafana alone
+    (TGF-11, TGF-12)."""
+
+    grafana_admin_user: str = "admin"
+    """Grafana's local administrator, as whom the command calls its API (TGF-12)."""
+
+    grafana_admin_password: SecretStr | None = None
+    """Its password; unset, the command leaves Grafana alone (TGF-11)."""
+
     sample_dir: Path | None = None
     """The folder of the samples ``provisioning add --sample <name>`` imports, ``<name>.zip`` each; none offers no
     sample (TAD-02, TAD-10)."""

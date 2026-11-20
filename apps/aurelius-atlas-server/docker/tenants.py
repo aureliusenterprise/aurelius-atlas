@@ -26,12 +26,6 @@ from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.tenant_people import Role, ensure_person, standard_email, standard_username
 from elasticsearch import Elasticsearch
 
-DEMO_READER_ROLE = "aurelius_atlas_demo_reader"
-"""The standalone Grafana's role in the store: the demo tenant's indices read, the cluster's status, nothing else."""
-
-DEMO_READER = "grafana_demo_reader"
-"""The store user Grafana's demo-tenant data sources sign in as."""
-
 STORE_ADMIN_ROLE = "aurelius_atlas_store_admin"
 """The operator's role in the store: the cluster managed and every index, every tenant's among them."""
 
@@ -46,7 +40,8 @@ def provision() -> None:
             sys.exit(1)
         if asyncio.run(with_realm(alias)) and main(["admin", alias, "add", f"{alias}_atlas"]) != 0:
             sys.exit(1)
-    if main(["list"]) != 0:
+    # Each tenant's Grafana organization, data sources, dashboards and members, and the platform's (TGF-13).
+    if main(["grafana", "sync"]) != 0 or main(["list"]) != 0:
         sys.exit(1)
 
 
@@ -114,29 +109,6 @@ def store_operator() -> None:
     print(f"The store's user operator holds {STORE_ADMIN_ROLE}")
 
 
-def store_grafana_reader() -> None:
-    """The user ``grafana_demo_reader`` in the store, reading the demo tenant's indices alone, for the standalone
-    Grafana's dashboards; without ``GRAFANA_ES_READER_PASSWORD``, none.
-    """  # noqa: D205 - one sentence
-    password = os.environ.get("GRAFANA_ES_READER_PASSWORD", "")
-    if not password:
-        print(f"No GRAFANA_ES_READER_PASSWORD: the store has no {DEMO_READER}")
-        return
-    store = Elasticsearch(
-        json.loads(os.environ["AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS"]),
-        basic_auth=("elastic", os.environ["AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD"]),
-        ca_certs=os.environ["AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS"],
-    )
-    store.security.put_role(
-        name=DEMO_READER_ROLE,
-        cluster=["monitor"],  # the cluster's status, which Grafana's data source check reads
-        indices=[{"names": ["aurelius-atlas-tenant-demo-*"], "privileges": ["read", "view_index_metadata"]}],
-    )
-    store.security.put_user(username=DEMO_READER, password=password, roles=[DEMO_READER_ROLE], full_name="Grafana")
-    print(f"The store's user {DEMO_READER} reads the demo tenant's indices")
-
-
 if __name__ == "__main__":
     provision()
     store_operator()
-    store_grafana_reader()

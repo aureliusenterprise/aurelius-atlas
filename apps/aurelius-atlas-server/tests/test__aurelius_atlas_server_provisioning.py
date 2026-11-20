@@ -10,7 +10,7 @@ from typing import Any
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings
-from aurelius_atlas_server.provisioning import NO_REALM, ProvisioningError, main, parser, run
+from aurelius_atlas_server.provisioning import NO_GRAFANA, NO_REALM, ProvisioningError, main, parser, run
 from aurelius_atlas_server.tenant_stores import store_aliases, tenant_prefix
 from aurelius_atlas_server.tenants import TENANTS_INDEX, TenantState
 from aurelius_atlas_store_es import ElasticsearchStore
@@ -51,7 +51,7 @@ class Command:
             sleep=sleep,
             user="op",
         )
-        return [line for line in self.lines if line != NO_REALM]
+        return [line for line in self.lines if line not in {NO_REALM, NO_GRAFANA}]
 
 
 @pytest.fixture

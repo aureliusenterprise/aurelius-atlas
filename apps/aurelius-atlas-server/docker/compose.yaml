@@ -105,6 +105,8 @@ services:
                 condition: service_healthy
             elasticsearch:
                 condition: service_healthy
+            grafana:
+                condition: service_started
         restart: "no"
         environment:
             <<: *server-environment
@@ -112,8 +114,9 @@ services:
             # The image's packages are in its working directory, which a script's own path leaves out.
             PYTHONPATH: /application
             OPERATOR_PASSWORD: ${DEMO_USER_OPERATOR_PASSWORD:?}
-            # The standalone Grafana's read-only store user, reading the demo tenant's indices.
-            GRAFANA_ES_READER_PASSWORD: ${GRAFANA_ES_READER_PASSWORD:-}
+            # Grafana's API, where the command keeps each tenant's organization (TGF-12): the proxy's network.
+            AURELIUS_ATLAS_SERVER_GRAFANA_URL: http://127.0.0.1:3000
+            AURELIUS_ATLAS_SERVER_GRAFANA_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?}
             # Each tenant's users, made when their tenant is provisioned (DD-700); a tenant without them has none.
             DEMO_USER_ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:-}
             DEMO_USER_STEWARD_PASSWORD: ${DEMO_USER_STEWARD_PASSWORD:-}
