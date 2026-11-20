@@ -298,7 +298,7 @@
     // transient and a state cannot be confused. White ink on it measures 4.9:1.
     // Bulma's own default here is the link-blue plate, and the brand blue is
     // the accent the links and the footer own; it stays refused on fit — the
-    // plate says "this panel is open", not "this is the current route" (DD-734).
+    // plate says "this panel is open", not "this is the current route" (DD-740).
     --bulma-navbar-item-selected-h: 0deg;
     --bulma-navbar-item-selected-s: 0%;
     --bulma-navbar-item-selected-l: 44%;
@@ -364,7 +364,7 @@
     // The hover ink. Bulma 1 has no hover-colour token, and the light rule
     // below pins the demo's legacy black (#000), which is invisible on this
     // band. Unlike the light band, there is no darker ink to lift toward, so
-    // a hover keeps the bar's own ink and only its plate lights (DD-734). The
+    // a hover keeps the bar's own ink and only its plate lights (DD-740). The
     // override lives in this mixin, not in the host block, because it must
     // reach both dark hosts: the light rule has no `data-theme` scope, so the
     // OS-dark host needs the same guard the explicit one does.
