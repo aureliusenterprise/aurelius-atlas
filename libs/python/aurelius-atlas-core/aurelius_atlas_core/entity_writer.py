@@ -120,7 +120,8 @@ class EntityWriter:
     """Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04).
 
     ``tasks`` defers propagation to tasks (TSK-02); ``notifier`` is told what each request changed (DD-084);
-    ``authorizer`` checks each entity created, updated or deleted (AUZ-07).
+    ``authorizer`` checks each entity created, updated or deleted (AUZ-07). ``unsafe_reparent`` lets a
+    parent-side save move a child it does not own, and skips the refusal RPS-01 makes (DD-755, DD-757).
     """
 
     def __init__(  # noqa: PLR0913 - the request's options, each a keyword
@@ -132,6 +133,7 @@ class EntityWriter:
         tasks: bool = False,
         notifier: EntityChangeNotifier | None = None,
         authorizer: Authorizer = ALLOW_ALL,
+        unsafe_reparent: bool = False,
     ) -> None:
         self._store = store
         self._user = user
@@ -139,6 +141,7 @@ class EntityWriter:
         self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
         self._tasks = tasks
         self._notifier = notifier
+        self._unsafe_reparent = unsafe_reparent
         self._record = RequestRecord()
         self._importing = False
         self._hold: TaskHold | None = None
@@ -470,6 +473,7 @@ class EntityWriter:
             touched=mapper.touched,
             dropped=mapper.dropped,
             importing=self._importing,
+            unsafe_reparent=self._unsafe_reparent,
         )
         written: dict[str, StoredEntity] = {}
         classified: list[ClassificationChange] = []
@@ -639,6 +643,7 @@ class EntityWriter:
                 discovery.validate_and_normalize(entity, for_update=partial)
                 await discovery.validate_parent_groups(entity, entity_type, stored)
                 entity.guid = found
+                await self._refuse_held(discovery, entity, entity_type, found)
                 if partial and stored.entity.is_incomplete:
                     continue  # Atlas leaves an incomplete entity out of a partial update
                 if stored.entity.is_incomplete:
@@ -654,8 +659,17 @@ class EntityWriter:
                 context.resolved_guids[request_guid] = guid
                 context.add_resolved_by_unique(_object_id(entity, entity_type), guid)
                 entity.guid = guid
+                await self._refuse_held(discovery, entity, entity_type, guid)
                 mutation.add_created(request_guid, entity, entity_type)
         return mutation
+
+    async def _refuse_held(
+        self, discovery: EntityDiscovery, entity: AtlasEntity, entity_type: EntityType, guid: str
+    ) -> None:
+        """The parent-safe check (RPS-01): an import is exempt, and so is a request that opted in (RPS-08, RPS-04)."""
+        if self._importing or self._unsafe_reparent:
+            return
+        await discovery.validate_parent_safe(entity, entity_type, guid)
 
     def _resolved_entity(
         self, context: DiscoveryContext, entity: AtlasEntity, entity_type: EntityType

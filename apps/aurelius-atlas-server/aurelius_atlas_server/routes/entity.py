@@ -40,6 +40,7 @@ from aurelius_atlas_model.params import (
     EntityGuidParams,
     EntityHeadersParams,
     EntityReadParams,
+    EntityWriteParams,
     PartialAttributeParams,
     UniqueAttributeParams,
     parse_flag,
@@ -128,13 +129,17 @@ def writer(request: Request, store: EntityStore) -> EntityWriter:
 
 
 def updater(request: Request, store: EntityStore) -> EntityWriter:
-    """A writer creating and updating as the request's user, audited and checked (EWR-02, AUZ-07)."""
+    """A writer creating and updating as the request's user, audited and checked (EWR-02, AUZ-07).
+
+    The request may opt in to moving a child it does not own with ``unsafeReparent`` (RPS-04, DD-756).
+    """
     return EntityWriter(
         store,
         user=acting_user(request),
         tasks=tasks_enabled(request),
         notifier=notifier(request, store),
         authorizer=authorizer(request),
+        unsafe_reparent=read_query(EntityWriteParams, request).unsafe_reparent,
     )
 
 

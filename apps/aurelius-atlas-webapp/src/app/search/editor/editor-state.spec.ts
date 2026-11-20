@@ -283,7 +283,7 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         httpMock.verify();
     });
 
-    it("the three slices feed the tag box, the enums, and the picker (VDE-02, DD-611)", () => {
+    it("the four slices feed the tag box, the enums, the pickers, and the type picker (VDE-02, DD-611)", () => {
         const { state, httpMock } = setup();
 
         state.loadSlices();
@@ -291,12 +291,23 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
             .expectOne("/api/atlas/v2/types/typedefs?type=CLASSIFICATION")
             .flush({ classificationDefs: [{ name: "PII", entityTypes: ["DataSet"] }, { name: "FINANCE" }] });
         httpMock.expectOne("/api/atlas/v2/types/typedefs?type=ENUM").flush({ enumDefs: [{ name: "RiskLevel" }] });
+        httpMock.expectOne("/api/atlas/v2/types/typedefs?type=RELATIONSHIP").flush({
+            relationshipDefs: [
+                {
+                    name: "m4i_dataset_parent_assignment",
+                    endDef1: { type: "m4i_dataset", name: "parentDataset", cardinality: "SINGLE" },
+                    endDef2: { type: "m4i_dataset", name: "childDataset", cardinality: "SET" },
+                },
+            ],
+        });
         httpMock
             .expectOne("/api/atlas/v2/types/typedefs/headers?type=ENTITY")
             .flush([{ name: "m4i_dataset" }, { name: "DataSet" }, { name: "AtlasGlossary" }, { name: "__Internal" }]);
 
         expect(state.classificationDefs().map((def) => def.name)).toEqual(["PII", "FINANCE"]);
         expect(state.enumsByName().has("RiskLevel")).toBe(true);
+        // The relationship slice rides the picker's parent-side test (RPS-07).
+        expect(state.relationshipDefs().map((def) => def.name)).toEqual(["m4i_dataset_parent_assignment"]);
         // The picker keeps the metamodel type and drops the base supertype with
         // it (EDT-04 as scoped by MMS-07), the glossary types and the internals
         // (EDT-04).
@@ -312,6 +323,7 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
             .expectOne("/api/atlas/v2/types/typedefs?type=CLASSIFICATION")
             .flush({}, { status: 500, statusText: "Server Error" });
         httpMock.expectOne("/api/atlas/v2/types/typedefs?type=ENUM").flush({ enumDefs: [] });
+        httpMock.expectOne("/api/atlas/v2/types/typedefs?type=RELATIONSHIP").flush({ relationshipDefs: [] });
         httpMock.expectOne("/api/atlas/v2/types/typedefs/headers?type=ENTITY").flush([]);
 
         expect(state.classificationDefs()).toEqual([]);

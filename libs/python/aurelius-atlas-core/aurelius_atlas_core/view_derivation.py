@@ -72,6 +72,7 @@ def view_of(stored: StoredEntity, entity_type: EntityType, *, ends: RelationEnds
         "quality": _quality(stored.quality_totals) if stored.quality_totals else [],
         "governed": stored.governed,
         "stale": stale,
+        "has_parent": bool(document.hasparent) if document else False,
         "attributes": _own_attributes(stored, entity_type),
         "business_metadata": _business_metadata(stored, entity_type),
         "sections": _sections(document, ends),

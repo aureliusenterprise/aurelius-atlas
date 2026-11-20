@@ -301,6 +301,12 @@ class EntityReadParams(BaseModel):
     ignore_relationships: Annotated[bool, FlagParam("ignoreRelationships")]
 
 
+class EntityWriteParams(BaseModel):
+    """The writing parameters of the entity endpoints: ``unsafeReparent`` (RPS-04, DD-756)."""
+
+    unsafe_reparent: Annotated[bool, FlagParam("unsafeReparent")]
+
+
 class EntityDeleteParams(BaseModel):
     """``deleteType`` as a request asks for it; the server's setting decides what it means (EDL-04, DD-059)."""
 

@@ -179,10 +179,9 @@ def _add_field_fields(
         relationship_attributes=ends,
     )
     into.append(node)
-    references = [{"guid": guid, "typeName": FIELD_TYPE}]
     for child in spec.children:
-        references.extend(_add_field_fields(child, dataset_guid, dataset_qualified, (guid, qualified), into))
-    return references
+        _add_field_fields(child, dataset_guid, dataset_qualified, (guid, qualified), into)
+    return [{"guid": guid, "typeName": FIELD_TYPE}]
 
 
 def entity_line(entity: AtlasEntity) -> str:

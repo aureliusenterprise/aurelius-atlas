@@ -13,6 +13,7 @@ import {
     type AtlasEntity,
     type AtlasEntityDef,
     type AtlasEnumDef,
+    type AtlasRelationshipDef,
     type AtlasTypeDefHeader,
     type EntityView,
     type ViewSaveRequest,
@@ -105,6 +106,10 @@ export class EditorState {
 
     /** The enum defs the form's enum fields read (VDE-02, DD-611's slice). */
     readonly enumDefs = signal<readonly AtlasEnumDef[]>([]);
+
+    /** The relationship defs the pickers read the opposite end from, so a
+     * parent-side picker can filter its search (RPS-07). */
+    readonly relationshipDefs = signal<readonly AtlasRelationshipDef[]>([]);
 
     /** The entity typedef headers the create picker lists (VDE-02, TYR-08). */
     readonly entityHeaders = signal<readonly AtlasTypeDefHeader[]>([]);
@@ -233,10 +238,11 @@ export class EditorState {
     }
 
     /**
-     * Fetch the three small slices the form's material rides (VDE-02, DD-611):
-     * the classification defs, the enum defs, and the entity headers — once,
-     * on the editor's open. A failed slice alerts with the retrieval line
-     * EDT-04 kept and leaves its list empty; the drawer stays usable.
+     * Fetch the four small slices the form's material rides (VDE-02, DD-611):
+     * the classification defs, the enum defs, the relationship defs and the
+     * entity headers — once, on the editor's open. A failed slice alerts with
+     * the retrieval line EDT-04 kept and leaves its list empty; the drawer
+     * stays usable.
      */
     loadSlices(): void {
         this.typedefs.getTypedefs({ type: "CLASSIFICATION" }).subscribe({
@@ -245,6 +251,10 @@ export class EditorState {
         });
         this.typedefs.getTypedefs({ type: "ENUM" }).subscribe({
             next: (answer) => this.enumDefs.set(answer.enumDefs ?? []),
+            error: () => this.typesFailed(),
+        });
+        this.typedefs.getTypedefs({ type: "RELATIONSHIP" }).subscribe({
+            next: (answer) => this.relationshipDefs.set(answer.relationshipDefs ?? []),
             error: () => this.typesFailed(),
         });
         this.typedefs.getTypedefHeaders({ type: "ENTITY" }).subscribe({

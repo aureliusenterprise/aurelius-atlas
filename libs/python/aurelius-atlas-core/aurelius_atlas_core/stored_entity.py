@@ -59,6 +59,12 @@ class StoredAppSearch(AtlasModel):
     breadcrumbname: list[str | None] = Field(default_factory=list)
     breadcrumbtype: list[str] = Field(default_factory=list)
     parentguid: str | None = None
+    hasparent: bool = False
+    """Whether the entity holds any parent (RPS-06, DD-758).
+
+    ``parentguid`` alone cannot answer a search filter for it: an entity with no parent has no
+    ``parentguid`` in the document, and Elasticsearch reads a missing field as neither true nor false.
+    """
     deriveddatadomain: list[str | None] = Field(default_factory=list)
     deriveddatadomainguid: list[str] = Field(default_factory=list)
     deriveddataentity: list[str | None] = Field(default_factory=list)

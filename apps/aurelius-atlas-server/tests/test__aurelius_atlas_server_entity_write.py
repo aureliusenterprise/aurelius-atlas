@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx2 as httpx
 import pytest
-from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES, WRITE_TYPES
+from aurelius_atlas_core.testing.entity_samples import RELATIONSHIP_TYPES, SAMPLE_TYPES, WRITE_TYPES
 
 E = "aurelius_atlas_server.routes.entity"
 ENTITY = "/api/atlas/v2/entity"
@@ -175,3 +175,58 @@ async def test__one_attribute_is_set_by_guid(typed: httpx.AsyncClient) -> None:
         400,
         error("ATLAS-400-00-023", "Attribute nothing not found for type s_table"),
     )
+
+
+@pytest.mark.covers(f"{E}.create_or_update", rules=["RPS-04"])
+async def test__unsafe_reparent_is_read_as_a_query_flag(client: httpx.AsyncClient) -> None:
+    """``unsafeReparent`` on the write: true only for ``true`` in any case; absent or any other is false (RPS-04)."""
+    for types in (SAMPLE_TYPES, WRITE_TYPES, RELATIONSHIP_TYPES):
+        assert (await client.post("/api/atlas/v2/types/typedefs", json=types)).status_code == 200
+
+    async def held_note(suffix: str) -> tuple[str, str, dict[str, Any]]:
+        """A boxed choice and a note asking to list it, as one POST body (RPS-01's held save)."""
+        made = (
+            await client.post(
+                f"{ENTITY}/bulk",
+                json={
+                    "entities": [
+                        {"typeName": "s_box", "guid": "-1", "attributes": {"qualifiedName": f"b{suffix}"}},
+                        {"typeName": "s_note", "guid": "-2", "attributes": {"qualifiedName": f"n{suffix}"}},
+                        {
+                            "typeName": "s_choice",
+                            "guid": "-3",
+                            "attributes": {"qualifiedName": f"c{suffix}"},
+                            "relationshipAttributes": {"box": {"guid": "-1", "typeName": "s_box"}},
+                        },
+                    ]
+                },
+            )
+        ).json()
+        ids = made["guidAssignments"]
+        body = {
+            "entity": {
+                "typeName": "s_note",
+                "guid": ids["-2"],
+                "attributes": {},
+                "relationshipAttributes": {"noted": [{"guid": ids["-3"], "typeName": "s_choice"}]},
+            }
+        }
+        return ids["-2"], ids["-3"], body
+
+    # absent: false, refused (RPS-01)
+    _, _, body = await held_note("@absent")
+    refused = await client.post(ENTITY, json=body)
+    assert (refused.status_code, refused.json()["errorCode"]) == (404, "ATLAS-404-00-007")
+
+    # any other value is false too, refused
+    _, _, body = await held_note("@other")
+    other = await client.post(ENTITY, json=body, params={"unsafeReparent": "yes"})
+    assert other.status_code == 404
+
+    # ?unsafeReparent=TRUE is true: the move lands and the choice reads back under the note (RPS-05)
+    note, choice, body = await held_note("@true")
+    moved = await client.post(ENTITY, json=body, params={"unsafeReparent": "TRUE"})
+    found = await client.get(f"{ENTITY}/guid/{choice}")
+
+    assert moved.status_code == 200, moved.text
+    assert found.json()["entity"]["relationshipAttributes"]["note"]["guid"] == note

@@ -205,13 +205,15 @@ export class EntityEditor {
     protected readonly form = signal(this.newForm());
 
     /** The relationship pickers the form renders (EDT-13, DD-338), from the
-     * def's `relationshipAttributeDefs` and its supertype chain. */
+     * def's `relationshipAttributeDefs` and its supertype chain. The
+     * relationship defs ride along so a parent-side picker is recognised and
+     * can filter its search (RPS-07). */
     protected readonly relationshipFields = computed(() => {
         const typeName = this.state.typeName();
         const defs = this.state.entityDefsByName();
         const def = typeName ? defs.get(typeName) : undefined;
 
-        return def ? buildRelationshipFields(def, defs, this.labels) : [];
+        return def ? buildRelationshipFields(def, defs, this.labels, this.state.relationshipDefs()) : [];
     });
 
     /** The picker values the form holds (EDT-15's seed, EDT-14's edits). They

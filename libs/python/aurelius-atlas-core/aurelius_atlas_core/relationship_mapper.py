@@ -11,6 +11,7 @@ from typing import Any
 
 from aurelius_atlas_model.instance import (
     AtlasEntity,
+    AtlasObjectId,
     AtlasRelatedObjectId,
     AtlasRelationship,
     EntityOperation,
@@ -19,6 +20,7 @@ from aurelius_atlas_model.instance import (
 from aurelius_atlas_model.typedef import Cardinality, TypeCategory
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
+from aurelius_atlas_typesystem.builtin.object_id_type import is_assigned_guid
 from aurelius_atlas_typesystem.edge_direction import EdgeDirection
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.struct_type import struct_attributes
@@ -29,6 +31,10 @@ from aurelius_atlas_core.entity_store import EntityStore, RelationshipChange
 from aurelius_atlas_core.graph_helper import (
     collection_elements,
     edge_for_label,
+    held_parent_edges,
+    other_end,
+    parent_family,
+    parent_side_children,
     referenced_end,
     relationship_type_name,
 )
@@ -53,7 +59,8 @@ class RelationshipMapper:
     relationships rather than marking them ``DELETED`` (REL-15), as an entity of an internal type always does
     (GTM-08); owned entities whose relationships were deleted are added to ``dropped`` (OWN-01). ``importing``
     keeps the relationship GUIDs given, finds existing relationships by label alone and leaves out a reference to
-    an entity that is not there (IMP-05).
+    an entity that is not there (IMP-05). ``unsafe_reparent`` clears a child's other parent edge of its family
+    when a parent-side write reaches it, the move RPS-05 (DD-757).
     """
 
     def __init__(  # noqa: PLR0913 - the request's context, as ``EntityMutationContext`` and ``RequestContext``
@@ -69,9 +76,11 @@ class RelationshipMapper:
         touched: list[str],
         dropped: list[str],
         importing: bool = False,
+        unsafe_reparent: bool = False,
     ) -> None:
         self._store = store
         self._importing = importing
+        self._unsafe_reparent = unsafe_reparent
         self._resolve = resolve
         self._known = known
         self._created = created
@@ -139,7 +148,34 @@ class RelationshipMapper:
             if attribute.attribute_type.category is TypeCategory.OBJECT_ID_TYPE:
                 await self._single(attribute, value, guid)
             elif isinstance(attribute.attribute_type, ArrayType):
+                if self._unsafe_reparent and not self._importing:
+                    await self._move_held_children(entity_type, str(name), value, guid)
                 await self._array(entity_type, attribute, value, guid, operation)
+
+    async def _move_held_children(self, entity_type: EntityType, name: str, value: object, guid: str) -> None:
+        """The opt-in's move: a parent-side write clears each named child's other parent edge (RPS-05, DD-757).
+
+        The mapper replaces an edge only of the attribute written, so a child that holds a parent of its family
+        through another attribute would keep it. With the opt-in that edge goes first, marked ``DELETED`` as the
+        mapper deletes any reference it replaces (REL-15).
+        """
+        child_attribute = parent_side_children(self._store.registry, entity_type).get(name)
+        if child_attribute is None:
+            return
+        items = value if isinstance(value, list | tuple | set) else []
+        for item in items:
+            candidate = _candidate_guid(item)
+            if candidate is None:
+                continue
+            stored = await self._store.get(candidate)
+            entity = None if stored is None else stored.entity
+            candidate_type = None if entity is None else self._store.registry.entity_type(entity.type_name)
+            if entity is None or candidate_type is None or not entity.relationship_guids:
+                continue
+            family = parent_family(self._store.registry, candidate_type, child_attribute)
+            for relationship, _ in held_parent_edges(candidate, await self._of(candidate), family, guid):
+                await self._delete(relationship)
+                self._touch(other_end(relationship, candidate))
 
     async def _single(self, attribute: AtlasAttribute, value: object, guid: str) -> None:
         """``mapToVertexByTypeCategory`` for a reference: REL-12."""
@@ -419,6 +455,16 @@ class RelationshipMapper:
             for guid, found in (await self._store.get_relationships(guids)).items():
                 self._relationships[guid] = found.relationship
                 self._versions[guid] = found.version
+
+
+def _candidate_guid(value: object) -> str | None:
+    """The GUID the parent-side item names, None when it names an unassigned or no entity."""
+    if isinstance(value, AtlasObjectId):
+        return None if value.guid is None or not is_assigned_guid(value.guid) else str(value.guid)
+    if isinstance(value, Mapping):
+        found = value.get("guid")
+        return None if found is None or not is_assigned_guid(str(found)) else str(found)
+    return None
 
 
 def _appends_relationships(entity_type: EntityType, name: str) -> bool:

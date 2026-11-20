@@ -36,6 +36,7 @@ from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
+from aurelius_atlas_core.entity_discovery import HeldParent, held_parent_message, held_parents_of
 from aurelius_atlas_core.entity_documents import DocumentVersion, LinkedKind, VersionedEntity
 from aurelius_atlas_core.entity_labels import EntityLabels
 from aurelius_atlas_core.entity_store import (
@@ -48,7 +49,12 @@ from aurelius_atlas_core.entity_store import (
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.glossary_service import GlossaryService
 from aurelius_atlas_core.glossary_term_utils import TERM_ASSIGNMENT
-from aurelius_atlas_core.graph_helper import collection_elements, referenced_end, relationship_type_name
+from aurelius_atlas_core.graph_helper import (
+    collection_elements,
+    parent_side_children,
+    referenced_end,
+    relationship_type_name,
+)
 from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -251,10 +257,11 @@ class ViewMutationDoor:
     The door is the Aurelius surface over the internals of 2.4 (attributes, EVL validation), 3.3a (own tags),
     5.3a (labels), 5.2c (term assignments) and 3.1a (relationship ends); Atlas's own endpoints behave as before
     (AVW-12). ``authorizer`` is what those internals check with, ``notifier`` records what a finished apply
-    changed (AVW-10), and ``tasks`` defers propagation as the server's setting says.
+    changed (AVW-10), and ``tasks`` defers propagation as the server's setting says. ``unsafe_reparent`` lets a
+    section reach an already-parented child and moves it; without it such a save is refused (RPS-01, RPS-05).
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - the request's options, each a keyword
         self,
         store: EntityStore,
         *,
@@ -262,12 +269,14 @@ class ViewMutationDoor:
         authorizer: Authorizer = ALLOW_ALL,
         notifier: EntityChangeNotifier | None = None,
         tasks: bool = False,
+        unsafe_reparent: bool = False,
     ) -> None:
         self._store = store
         self._user = user
         self._authorizer = authorizer
         self._notifier = notifier
         self._tasks = tasks
+        self._unsafe_reparent = unsafe_reparent
 
     async def apply(self, body: object) -> EntityView:
         """Apply the view and answer the entity's live view: derived fresh, ``updateTime`` new (AVW-07).
@@ -475,6 +484,12 @@ class ViewMutationDoor:
             for relationship in collection_elements(guid, relationships, attribute)
             if relationship.state is RelationshipStatus.ACTIVE
         }
+        new = [end for end, wanted in ends.items() if not wanted.deleted and end not in current]
+        if not self._unsafe_reparent:
+            held = [entry for end in new for entry in await self._held_child_parents(guid, entity_type, attribute, end)]
+            if held:
+                messages = [held_parent_message(entry) for entry in held]
+                raise AtlasError(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages)
         for end, wanted in ends.items():
             if wanted.deleted:
                 if end in current:
@@ -482,10 +497,32 @@ class ViewMutationDoor:
                 continue
             if end in current:
                 continue
+            if self._unsafe_reparent:
+                await self._clear_held_child(store, guid, entity_type, attribute, end)
             await self._create_end(store, guid, type_name, end, attribute, relationships)
         for end, relationship in current.items():
             if end not in ends:
                 await store.delete_by_id(relationship.guid, DeleteType.HARD)
+
+    async def _clear_held_child(
+        self, store: RelationshipStore, guid: str, entity_type: EntityType | None, attribute: AtlasAttribute, end: str
+    ) -> None:
+        """Clear a held child's other parent edges of the family, so the new end moves it (RPS-05, DD-757)."""
+        held = await self._held_child_parents(guid, entity_type, attribute, end)
+        for entry in held:
+            if entry.edge_guid is not None:
+                await store.delete_by_id(entry.edge_guid, DeleteType.HARD)
+
+    async def _held_child_parents(
+        self, guid: str, entity_type: EntityType | None, attribute: AtlasAttribute, end: str
+    ) -> list[HeldParent]:
+        """The held state of one wanted parent-side end: empty of an attribute that is no parent side."""
+        if entity_type is None:
+            return []
+        child_attribute = parent_side_children(self._store.registry, entity_type).get(str(attribute.name))
+        if child_attribute is None:
+            return []
+        return await held_parents_of(self._store, end, child_attribute, guid)
 
     async def _create_end(  # noqa: PLR0913, PLR0917 - the edge's parts, as one create needs them
         self,
@@ -521,6 +558,7 @@ class ViewMutationDoor:
             tasks=self._tasks,
             notifier=cast("EntityChangeNotifier", buffer),
             authorizer=self._authorizer,
+            unsafe_reparent=self._unsafe_reparent,
         )
 
     async def _check_taken(self, write: _Write, entity_type: EntityType) -> None:

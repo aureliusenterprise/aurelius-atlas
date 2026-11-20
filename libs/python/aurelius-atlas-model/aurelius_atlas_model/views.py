@@ -86,6 +86,8 @@ class EntityCard(AtlasModel):
     quality: list[CardQuality] = Field(default_factory=list)
     governed: bool | None = None
     stale: bool = False
+    has_parent: bool = False
+    """Whether the entity holds any parent, from its document (RPS-06, DD-758); false without a document."""
 
     @classmethod
     def of(cls, view: EntityView) -> EntityCard:

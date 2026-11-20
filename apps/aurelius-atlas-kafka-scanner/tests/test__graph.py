@@ -128,6 +128,9 @@ def test_a_nested_field_names_its_parent_end_and_keeps_its_rendered_type() -> No
     assert child.relationship_attributes == {
         "parentField": {"guid": parent.guid, "typeName": "m4i_field"},
     }
+    # RPS-01: the dataset's fields hold the root alone — a nested field hangs one parent, its field.
+    dataset = entities[2]
+    assert (dataset.relationship_attributes or {})["fields"] == [{"guid": parent.guid, "typeName": "m4i_field"}]
 
 
 @pytest.mark.covers("aurelius_atlas_kafka_scanner.graph.build_graph", rules=["KSC-05", "KSC-07"])
