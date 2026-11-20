@@ -278,3 +278,130 @@ mismatch the review flagged.
 as the demo. The media block is the brand's first responsive emission;
 the chevron rule documents the upstream regression it mirrors. Pinned by
 `test__burger_menu_matches_the_legacy_mobile_chrome`.
+
+### DD-734. The dark navbar takes the page's near-black, and the chrome follows
+
+- **Status:** Proposed
+- **Increment:** 7.12 (a fix, 2026-11-20)
+- **Date:** 2026-11-20
+
+**Decision.** In dark mode the navbar band becomes `#232323`
+(hsl(0, 0 %, 14 %)), the neutral of the page and one step over its surface.
+This supersedes DD-168's slate (`#72757d`). The header sinks into the
+background instead of reading as its own band.
+
+DD-168 chose a mid grey so the logo's navy wordmark stayed legible. The
+user kept the mark as it is and named `#232323`, so the wordmark falls to
+1.1:1 on the band. It is the known open seam of this pass and is flagged
+in the SCSS block. A dark-mode variant of the mark is the follow-up.
+
+Every piece of bar chrome that read off the slate now follows the scheme,
+because a near-black band hides anything pinned for a mid grey:
+
+- the bar ink and the burger take `var(--bulma-text)` (the light block's
+  `#4a4a4a` out-cascades Bulma's derived navbar ink, so it re-pins)
+- the plates keep Bulma's dark deltas over the band (+5 %/+10 %), and the
+  lightness they compose against re-pins with the band: the token pair
+  `--bulma-navbar-background-color` and
+  `--bulma-navbar-item-background-l` (13.73 %) moves together, or a hover
+  flashes the slate's 47 % plate
+- the dropdown chevron and the navbar's `<strong>` take the scheme ink
+- the `is-dark` Documentation button swaps its pinned `#363636` pair for
+  `var(--bulma-text-strong)`. The brand pins `dark` at `#363636`
+  (SHM-04), which measures 1.3:1 here against 13.4:1 for the scheme ink
+- the open-drawer plate leaves DD-152's white pair for a muted mid-grey:
+  the selected channels re-pin to 44 % lightness (`#707070`), which sits
+  3.2:1 off the band — above the 3:1 state floor, and clear of the +10 %
+  press plate (`#3d3d3d`), so a transient and a state cannot be confused.
+  White ink on it measures 4.9:1. Bulma's own default here is the
+  link-blue plate, which the brand overrode for legacy parity (DD-152);
+  reviving the blue was weighed and refused (Alternatives).
+- the plate's ink is set explicitly, twice. `.is-active` re-registers only
+  its lightness token, so the literal ink pin above it survives and needs
+  its own rule; and the light hover-ink rule further down the sheet
+  (`.navbar .aurelius-navbar-utility > .navbar-item:hover`) ties the plain
+  active rule's specificity and comes later, so it printed black on the
+  grey plate for a hovered open control. Naming the hover/focus twins
+  lifts the pair above it, and freezes the hover delta there — Bulma
+  would otherwise lift the state plate 5 % more under the pointer
+- a hover keeps the bar's own ink and lights only its plate (measured ink
+  `rgb(181,181,181)` on a plate of `rgb(48,48,48)`). Bulma 1 has no
+  hover-ink token, and the light rule pins the demo's black (`#000`), which
+  is invisible on this band. The override lives in the shared chrome mixin,
+  so both dark hosts carry it
+
+The gear and the bell (SPL-01, ALR-01) join the brand bar in an
+always-visible utility group rather than the collapsible menu. The ui-lib
+`Header` projects `[navbar-utility]` into `.navbar-brand`, and the brand
+lib right-aligns `.aurelius-navbar-utility` against the burger on a narrow
+screen or against the menu on a wide one. Each layout rule keys on
+`:has(> .aurelius-navbar-utility)`, so a navbar without the group keeps
+Bulma's shrink-wrap and the ui-lib stories are unchanged. Two Bulma
+defaults needed a hand: the brand needs `flex: 1 1 auto` to reach the
+right edge, and at the desktop breakpoint the collapsible menu must drop
+its own `flex-grow`, or the two split the free space and strand the group
+mid-header.
+
+Closing a drawer hands focus back to the button that opened it, which the
+ui-lib `Drawer` does on purpose. Bulma paints navbar focus as its hover
+plate, not an outline, so the gear sat lit after a mouse dismiss. The
+plate clears for `:focus:not(:focus-visible):not(:hover)`, which is that
+case alone. Hover keeps its plate, keyboard focus keeps the plate and the
+ring a11y needs, and `is-active` still marks the open drawer. The dark
+hover-ink rule excludes `.is-active`, because it outranks the plate's ink
+rule and would print the hover ink on the state plate.
+
+**Reason.** The user asked for the header to match the app background.
+The slate read as a separate band, and the first attempt at the page
+colour left the logo, the burger, the chevron and the Documentation button
+unreadable, because DD-168 had composed all of them on the slate. The
+utility group answers the mobile complaint that the settings and alerts
+controls disappear into the burger menu.
+
+The dark navbar is emitted on two hosts. `[data-theme="dark"]` is the
+stored choice, and `:root:not([data-theme])` under
+`prefers-color-scheme: dark` is the OS preference with no stored choice. DD-
+156's ink ramp already rides both, and the band and the state plate sit in
+shared mixins, so both hosts carried them. The first cut of this pass put
+the hover-ink override in the stored-choice block alone. The light hover
+rule carries no `data-theme` scope, so under the OS preference it still
+printed its black on the near-black band. A review of the running app
+caught it, and the fix moves the override into the shared chrome mixin.
+
+**Alternatives.** Keep the slate (refused, the user named the colour).
+Set the band to `var(--bulma-scheme-main)`, which is what "same as the
+page" suggests: the indirection drops the `hsl()` channel form Bulma
+composes the plates from, so the hover plate breaks.
+Take the band all the way to the surface, `#171717` (9 %) — tried on
+request, then refused: it is `--bulma-scheme-main` exactly, so the header
+loses its last edge to the page and reads as a row of controls with no
+container. The open-drawer plate as Aurelius blue (Bulma's default, and
+what the settings panel's active locale and the footer use): measured on
+this band the pair holds (white ink 4.7:1, plate 3.4:1), so it was
+refused on fit rather than contrast — the plate would then share the
+accent the badge and every link own, on a control whose state is "this
+panel is open" and not "this is the current route". Collapse the group
+into the menu at the burger breakpoint: Bulma hides the whole
+`.navbar-menu` there, so a mobile-only utility group cannot exist in it,
+and hoisting it into the brand bar moves it on the desktop too. Suppress
+the focus state with `outline: none`: it changes nothing, because the
+artifact is a `background-color`. Lift a dark hover to
+`var(--bulma-text-strong)`, the step the first cut used: refused. The band
+has no inkier value to lift toward, and the bar ink already reads 7.7:1 on
+it, so the plate carries the hover.
+
+**Consequences.** Dark mode now carries a near-black header, and the logo
+is the one element that no longer clears contrast. The utility group is
+the brand lib's first `:has()` layout, so it needs a browser that
+supports it (baseline since 2023). The focus-plate rule is a narrow
+exception, and the `:not(.is-active)` guard on the dark hover ink is the
+second case where the brand must outrank its own hover rule. The hover-ink
+override must stay inside the shared chrome mixin. The light hover rule is
+never scoped to a theme, so an override added to one dark host alone leaves
+the other one on black ink. The
+projection is pinned by the ui-lib Header's
+`projects the utility group into the brand bar, before the burger`, and
+the webapp side by `sits the gear and the bell in the always-visible
+utility group`. The band itself has no automated pin: it is a measured
+colour, checked by eye against the app (the SCSS block records the
+numbers).

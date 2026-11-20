@@ -88,10 +88,27 @@ describe("ShellHeader", () => {
         expect(normalize(link?.textContent)).toBe("Documentation");
     });
 
+    it("sits the gear and the bell in the always-visible utility group", () => {
+        // The brand lib right-aligns `.aurelius-navbar-utility` inside the
+        // brand bar, so the two drawer controls stay put at every width
+        // instead of collapsing into the burger menu. The class and its
+        // home are the contract with that lib, so they are pinned here.
+        const compiled = render();
+        const utility = compiled.querySelector(".navbar-brand > .aurelius-navbar-utility");
+
+        expect(utility).toBeTruthy();
+        for (const label of ["Settings", "Alerts"]) {
+            expect(utility?.querySelector(`a.navbar-item[aria-label="${label}"]`)).toBeTruthy();
+        }
+        // Out of the collapsible menu, and ahead of the Documentation link.
+        expect(compiled.querySelector("nav.navbar-menu .aurelius-navbar-utility")).toBeNull();
+        expect(compiled.querySelector('[navbar-end] a.navbar-item[aria-label="Settings"]')).toBeNull();
+    });
+
     it("opens the settings panel from the gear (SPL-01, SPL-14, DD-166)", () => {
-        // The gear replaces the language dropdown in navbar-end and opens
-        // the panel by navigating the `drawer` aux outlet — the panel is a
-        // routed component, no longer the header's child (SPL-14).
+        // The gear replaces the language dropdown and opens the panel by
+        // navigating the `drawer` aux outlet — the panel is a routed
+        // component, no longer the header's child (SPL-14).
         const compiled = render();
         const gear = compiled.querySelector<HTMLAnchorElement>('a.navbar-item[aria-label="Settings"]');
 
@@ -135,8 +152,9 @@ describe("ShellHeader", () => {
     });
 
     it("no longer carries the language dropdown (SPL-01, SPL-06)", () => {
-        // The language control moved into the panel; the navbar-end set is
-        // Documentation, the gear, the bell, and the account dropdown.
+        // The language control moved into the panel; the navbar's right side
+        // is Documentation and the account dropdown, with the gear and the
+        // bell in the utility group to their left.
         const compiled = render();
 
         expect(compiled.querySelector("[hreflang]")).toBeNull();
@@ -234,10 +252,22 @@ describe("ShellHeader", () => {
     it("greets the signed-in identity in the account dropdown (SHC-05)", () => {
         // The account dropdown is the last navbar-link: language comes first.
         const links = [...render().querySelectorAll<HTMLElement>("a.navbar-link")];
-        const welcome = normalize(links.at(-1)?.textContent);
+        const link = links.at(-1);
+        const welcome = normalize(link?.textContent);
 
         // "Logged in as" is the shell.header.welcome bridge leaf (SHC-07).
         expect(welcome).toBe("Logged in as aurelius-writer");
+
+        // The legacy renders the name bold (SHC-05): the port keeps its
+        // shape — one inline run, the identity in a <strong>. The run must
+        // stay one child of the anchor: `.navbar-link` is `display: flex`
+        // with `gap: 0.75rem` above the burger breakpoint, which widens the
+        // word space between two separate children (measured 12px against a
+        // 4px space).
+        const name = link?.querySelector("strong");
+
+        expect(name?.textContent).toBe("aurelius-writer");
+        expect(name?.parentElement?.parentElement).toBe(link ?? undefined);
     });
 
     it("links Account-security to the Keycloak account console (SHC-05)", () => {
