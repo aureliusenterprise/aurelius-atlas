@@ -2202,6 +2202,8 @@
       
         
       
+        
+      
     
     
     
@@ -4082,6 +4084,33 @@
     
   
   067. The standalone stack ships as one generated release bundle
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
 
     
   </span>
@@ -7944,8 +7973,8 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>DV-167</td>
 <td>Webapp</td>
 <td>The demo card body leads with a breadcrumb trail and names each person in the body with their role (Data Owner(s), Domain Lead(s)); its badge can show a type alias. The demo resolves the roles through an entity read per card (amended by 16.5f, DD-626)</td>
-<td>The shared card shows the trail (the card's stored breadcrumb, VCF-01) and names each person with their role in labelled rows (ASD-06, AVS-10, VCF-15), the roles riding the stored document the indexer fills rather than a per-card read; a document still awaiting its re-derive round shows the flat row meanwhile (VCF-16). Its badge never shows an alias: the card shape carries no <code>typeAlias</code> (DD-626)</td>
-<td>The card stays one door round (ADR 064 R1), so a new role edge shows on a card only after the indexer's next round; the opened entity's People box keeps its labelled rows from the view's sections (VDR-03); the alias would need a card-shape field nobody asked for</td>
+<td>The shared card shows the trail (the card's stored breadcrumb, VCF-01) and names each person with their role in labelled rows (ASD-06, AVS-10, VCF-15), the roles riding the stored document the indexer fills rather than a per-card read; a document still awaiting its re-derive round shows the flat row meanwhile (VCF-16). Its badge shows the card's <code>typeAlias</code> when present, else the type name alone (18.1, MMS-09, DD-721)</td>
+<td>The card stays one door round (ADR 064 R1), so a new role edge shows on a card only after the indexer's next round; the opened entity's People box keeps its labelled rows from the view's sections (VDR-03); the alias needed a card-shape field, which 18.1 added with the user asking for the badge (MMS-09, DD-721)</td>
 <td>16.5d</td>
 </tr>
 <tr>
@@ -8003,6 +8032,38 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The rule is an OR pair too - <code>length('collections', 1) \| length('childSystem', 1)</code> - so a system that groups its content through subsystems answers as data (12.7e, DD-639). The oracle falsifies for exactly the edited rule: 13 verdict documents carry the old description and the record carries a new name; no verdict moves, as no sample system holds a subsystem.</td>
 <td>The metamodel carries both ends of the system edge (<code>m4i_system_parent_assignment</code>) and the webapp shows <code>childSystem</code> as the subsystems a system owns, so the one-sided warning is wrong on a system the subsystem edge places - the same contention class as DV-171 and DV-172, on the user's product call (DD-637's audit had tested only the parent end). The three 14.6 gates re-baseline with the damage named per document (the user's decision, DD-639). Every other oracle verdict still answers as it was.</td>
 <td>12.7e</td>
+</tr>
+<tr>
+<td>DV-178</td>
+<td>Types</td>
+<td>A new catalogue bootstraps every model of <code>addons/models</code>: the Hadoop, Hive, Kafka, Sqoop, Falcon, Avro, Storm, Impala, Spark, FS, RDBMS, S3, ADLS, Ozone, GCP, ML and Couchbase types included (DV-139 restated for the domain models).</td>
+<td>It bootstraps the base model, the glossary model and the m4i types only (ADR 068, MMS-01, MMS-02). The shipped models directory holds <code>0000-Area0</code> alone; <code>AURELIUS_ATLAS_SERVER_MODELS_DIR</code> still restores the full set (MMS-03).</td>
+<td>170 of the 207 vendored definitions name systems no Aurelius product reads or writes; they clutter every tenant store's type listings and facets.</td>
+<td>18.1</td>
+</tr>
+<tr>
+<td>DV-179</td>
+<td>Import/export</td>
+<td><code>AuditsWriter.ReplKeyGuidFinder</code> keys a replication audit's server details on the GUID of a Hive tables or columns <code>hive_db</code>, found through its qualified name.</td>
+<td>It keys on the entity GUID for every type (MMS-04). The Hive database lookup is deleted with the Hive types.</td>
+<td>Aurelius holds no Hive entity for the lookup to match, so it always fell through to the GUID at the cost of an entity read per export (DV-128 removed the rest of the Hive replication machinery for the same reason).</td>
+<td>18.1</td>
+</tr>
+<tr>
+<td>DV-180</td>
+<td>Webapp</td>
+<td>The editor's type select lists every non-internal entity typedef, so an author picks <code>DataSet</code>, <code>Process</code>, or <code>Referenceable</code> directly and sees the whole type list (EDT-04's verbatim port).</td>
+<td>The create picker lists the types the icon map names: the twelve metamodel types (MMS-07, DD-719). Edit mode keeps its static type text, so a stored entity outside the list still opens.</td>
+<td>Twenty-one of the shipped 33 entity definitions are scaffolding no author creates: the base supertypes the m4i types inherit and the scaffold m4i types. The sample corpus creates entities of exactly the twelve mapped types, and the picker is an authoring surface, not a browser (ADR 068).</td>
+<td>18.1</td>
+</tr>
+<tr>
+<td>DV-181</td>
+<td>Webapp</td>
+<td>The legacy dashboard resolves every editor field label through its own catalogue (<code>search.components.editor.attribute.*</code> in its <code>en-US.json</code>/<code>nl-NL.json</code>), before the typedef <code>displayName</code></td>
+<td>Every editor field label is the Aurelius catalogue string <code>search.components.editor.attribute.&lt;name&gt;</code>, in both locales, else the typedef <code>displayName</code>, else the raw name (EDT-33/EDT-34). The map covers the shipped metamodel; an installed type's name keeps today's raw fallback. The m4i dictionary's two typo displayNames are corrected at the source</td>
+<td>Area0 is vendored and names no attribute; the m4i dictionary leaves names raw or missing. The legacy chose the catalogue, which Aurelius already bridges (SHL-08) and the completeness spec proves. The dictionary is Aurelius-owned, so its typos go at the source</td>
+<td>7.33</td>
 </tr>
 <tr>
 <td>DV-182</td>

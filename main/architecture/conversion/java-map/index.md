@@ -17,7 +17,7 @@ Where each part of Apache Atlas 2.4.0 goes. Updated by every increment; the stat
 | `notification` | Kafka hook and entity notifications | – | dropped |
 | `client` | Java client libraries | – | dropped |
 | `addons/*-bridge`, `*-shim` | Hooks for Hive, HBase, Kafka, Sqoop, Storm, … | – | dropped |
-| `addons/models` | Built-in type definitions (JSON) | `aurelius_atlas_core.models` (unchanged, DD-032) | in progress |
+| `addons/models` | Built-in type definitions (JSON) | `aurelius_atlas_core.models` (the `0000-Area0` subset ships unchanged, DD-032, DD-715; the domain model directories are dropped, DV-178) | in progress |
 | `distro`, `build-tools`, `docs` | Packaging, build and site | template workflow | replaced |
 | `tools/*` | Index repair, classification updater, analyzers | – | dropped |
 

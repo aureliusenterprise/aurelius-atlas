@@ -286,6 +286,9 @@
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/template/</loc>
       </url>
       <url>
