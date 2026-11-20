@@ -641,22 +641,6 @@
                 },
                 {
                     "cardinality": "SET",
-                    "description": "The functional name of the collection that the dataset belongs to",
-                    "displayName": "Collection",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "collections",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_collection>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
                     "description": "The functional names of the dataset that belong to the dataset",
                     "displayName": "Child Dataset",
                     "includeInNotification": true,
@@ -676,7 +660,7 @@
             "name": "m4i_dataset",
             "options": {},
             "superTypes": ["DataSet", "m4i_referenceable"],
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [
@@ -1471,7 +1455,15 @@
             "attributeDefs": [],
             "description": "The relationship between the collection and the dataset",
             "endDef1": {
-                "cardinality": "SET",
+                "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_dataset_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "collections",
@@ -1488,13 +1480,21 @@
             "options": {},
             "propagateTags": "ONE_TO_TWO",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],
             "description": "The relationship between the dataset to other datasets",
             "endDef1": {
                 "cardinality": "SINGLE",
+                "constraints": [
+                    {
+                        "params": {
+                            "group": "m4i_dataset_parent"
+                        },
+                        "type": "mutuallyExclusive"
+                    }
+                ],
                 "isContainer": false,
                 "isLegacyAttribute": false,
                 "name": "parentDataset",
@@ -1511,7 +1511,7 @@
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [],

@@ -194,9 +194,21 @@ def test__the_breadcrumbs_are_the_legacy_ones_but_two_datasets() -> None:
 
 @pytest.mark.covers("aurelius_atlas_core.app_search_indexer.AppSearchIndexer.derive", rules=["LAS-05", "LAS-06"])
 def test__the_derived_relations_are_the_legacy_ones_but_five_datasets() -> None:
-    """Every relation field, as sets of GUID and name; five datasets list the 18 relations the legacy lost."""
+    """Every relation field, as sets of GUID and name; five datasets list the 18 relations the legacy lost.
+
+    DCP-07 and DD-766: two datasets also lose one legacy parent each. The frozen oracle walked both sides
+    of the edge, so it holds a dataset under a parent that disagrees with the child's own single-valued
+    ``parentDataset``; one parent per dataset drops the phantom pair (the sibling's own breadcrumbs already
+    diverge the same way).
+    """
     derived = indexed().derived()
     gained: list[tuple[str, str]] = []
+    # DCP-07/DD-766: the child's own ``parentDataset`` and the phantom parent's listing are the same edge
+    # seen from both sides, and the oracle carried both.
+    phantom = {
+        frozenset(("a3d5ab59-783e-4bdb-868d-bfff41181745", "2337c1fc-e3d7-4e04-a5f5-181df03e113d")),
+        frozenset(("e4cb40df-f287-4ce0-9819-303995c50949", "d830db18-40ab-4d4e-ac1d-d2ff085915cf")),
+    }
     for guid, document in legacy().items():
         for field in RELATION_FIELDS:
             mine = getattr(derived[guid], field + "guid")
@@ -204,6 +216,10 @@ def test__the_derived_relations_are_the_legacy_ones_but_five_datasets() -> None:
             assert len(mine) == len(set(mine)) == len(names), (guid, field)
             pairs = set(zip(mine, names, strict=True))
             theirs = set(zip(document[field + "guid"], document[field], strict=True))
+            if field == "deriveddataset":
+                lost = {frozenset((guid, other)) for other, _ in theirs - pairs}
+                assert lost <= phantom, (guid, field, theirs - pairs)
+                theirs -= {(other, name) for other, name in theirs if frozenset((guid, other)) in phantom}
             assert theirs <= pairs, (guid, field)
             gained += [(document["typename"], field)] * len(pairs - theirs)
 
@@ -357,6 +373,22 @@ async def test__an_entity_already_in_the_chain_ends_it() -> None:
 
     assert catalogue.keys(documents["x"].breadcrumbguid) == ["y"]
     assert catalogue.keys(documents["y"].breadcrumbguid) == ["x"]
+
+
+@pytest.mark.covers(f"{X}.derive", rules=["LAS-04", "DCP-08"])
+async def test__a_dataset_in_a_collection_is_held_at_the_current_derivation_version() -> None:
+    """The one collection end derives the same held document as any other parent does: ``hasparent`` true, the
+    collection first in the breadcrumb, and the derivation version unmoved at 3 (DCP-08, DD-764).
+    """  # noqa: D205 - one sentence
+    catalogue = await Catalogue.of(m4i("m4i_collection", "c"), m4i("m4i_dataset", "s", collections="c"))
+
+    documents = await catalogue.documents_of()
+
+    dataset = documents["s"]
+    assert dataset.hasparent is True
+    assert dataset.parentguid == catalogue.guids["c"]
+    assert catalogue.keys(dataset.breadcrumbguid) == ["c"]
+    assert dataset.derivation_version == 3
 
 
 @pytest.mark.covers(f"{X}.derive", rules=["LAS-04", "LAS-05"])

@@ -806,6 +806,140 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(navigate).toHaveBeenCalled();
     });
 
+    /** 18.5's dataset parent choice on the same DataSet stand-in (DCP-05): a
+     * dataset hangs under a collection (`collections`) or under another dataset
+     * (`parentDataset`), never both — the group the server refuses on save
+     * (DCP-03), mirrored here from `m4i_dataset`'s two ends.
+     */
+    const datasetChain = (): ViewForTypeAnswer => {
+        const group = [{ type: "mutuallyExclusive", params: { group: "m4i_dataset_parent" } }];
+
+        return chainFor(
+            withDataSetRelationships(TYPEDEFS, [
+                {
+                    name: "collections",
+                    typeName: "m4i_collection",
+                    cardinality: "SINGLE",
+                    relationshipTypeName: "m4i_dataset_assignment",
+                    constraints: group,
+                },
+                {
+                    name: "parentDataset",
+                    typeName: "m4i_dataset",
+                    cardinality: "SINGLE",
+                    relationshipTypeName: "m4i_dataset_parent_assignment",
+                    constraints: group,
+                },
+            ]),
+            "DataSet",
+        );
+    };
+
+    /** The stored view the DCP-05 probes edit: the dataset under one parent. */
+    const datasetAnswer = (underCollection: boolean): EntityView => ({
+        ...ANSWER,
+        attributes: { name: "genomic_variants", owner: "analyst-3" },
+        sections: underCollection
+            ? [
+                  {
+                      attribute: "collections",
+                      entities: [{ guid: "c1", name: "finance", typeName: "m4i_collection", status: "ACTIVE" }],
+                  },
+                  { attribute: "parentDataset", entities: [] },
+              ]
+            : [
+                  { attribute: "collections", entities: [] },
+                  {
+                      attribute: "parentDataset",
+                      entities: [{ guid: "d1", name: "raw_orders", typeName: "m4i_dataset", status: "ACTIVE" }],
+                  },
+              ],
+    });
+
+    /** The DCP-05 search answer for the dataset's parent picker: one candidate. */
+    const datasetParentSearchResult = (): Record<string, unknown> => ({
+        cards: [{ guid: "d7", typeName: "m4i_dataset", displayText: "orders_daily", status: "ACTIVE", stale: false }],
+        facets: {},
+        total: 1,
+    });
+
+    it("a held collection disables the dataset's parent picker (DCP-05, PME-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, datasetAnswer(true), datasetChain());
+
+        const collections = compiled.querySelector<HTMLElement>('[data-field="collections"]')!;
+        const parent = compiled.querySelector<HTMLElement>('[data-field="parentDataset"]')!;
+
+        // The member holding the edge stays live; the empty one cannot be
+        // filled — the form cannot make the choice PME-07 refuses.
+        expect(collections.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(false);
+        expect(parent.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(true);
+        expect(parent.querySelector<HTMLInputElement>(".aurelius-token-input")?.disabled).toBe(true);
+    });
+
+    it("a held parent dataset disables the collection picker (DCP-05, PME-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, datasetAnswer(false), datasetChain());
+
+        const collections = compiled.querySelector<HTMLElement>('[data-field="collections"]')!;
+        const parent = compiled.querySelector<HTMLElement>('[data-field="parentDataset"]')!;
+
+        // The reverse of the rule: whichever of the two ends holds the parent,
+        // the other picker is shut.
+        expect(parent.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(false);
+        expect(parent.querySelectorAll("aurelius-atlas-ui-classification-chip")).toHaveLength(1);
+        expect(collections.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(true);
+    });
+
+    it("clearing the dataset's collection frees the parent picker (DCP-05, PME-08)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, datasetAnswer(true), datasetChain());
+
+        // Deleting the collection edge moves the dataset between the group's
+        // members, PME-08's other half.
+        compiled
+            .querySelector<HTMLButtonElement>('[data-field="collections"] .aurelius-classification-chip-delete')!
+            .click();
+        fixture.detectChanges();
+
+        expect(compiled.querySelector('[data-field="collections"] .aurelius-token-box.is-disabled')).toBeNull();
+        expect(compiled.querySelector('[data-field="parentDataset"] .aurelius-token-box.is-disabled')).toBeNull();
+
+        vi.useFakeTimers();
+        const parentInput = compiled.querySelector<HTMLInputElement>(
+            '[data-field="parentDataset"] .aurelius-token-input',
+        )!;
+        parentInput.dispatchEvent(new Event("focusin", { bubbles: true }));
+        parentInput.value = "orders";
+        parentInput.dispatchEvent(new Event("input"));
+        vi.advanceTimersByTime(250);
+        httpMock.expectOne((request) => request.url === "/api/aurelius/v1/search").flush(datasetParentSearchResult());
+        fixture.detectChanges();
+        compiled
+            .querySelector<HTMLButtonElement>('[data-field="parentDataset"] [role="option"]')!
+            .dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        fixture.detectChanges();
+        expect(
+            compiled.querySelectorAll('[data-field="parentDataset"] aurelius-atlas-ui-classification-chip'),
+        ).toHaveLength(1);
+        expect(compiled.querySelector('[data-field="collections"] .aurelius-token-box.is-disabled')).toBeTruthy();
+        vi.useRealTimers();
+
+        // The save carries exactly the one parent the group allows (DCP-03's
+        // shape, posted willingly).
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        expect((post.request.body as ViewSaveRequest).sections).toEqual([
+            { attribute: "collections", entities: [] },
+            { attribute: "parentDataset", entities: ["d7"] },
+        ]);
+        post.flush(savedView());
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalled();
+    });
+
     it("edit mode renders the entity's type as a static badge, not a picker (EDT-04, DD-330)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);

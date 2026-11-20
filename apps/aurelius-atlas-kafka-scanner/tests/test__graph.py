@@ -86,7 +86,7 @@ def test_the_graph_hangs_system_collection_datasets_and_fields() -> None:
     ]
 
 
-@pytest.mark.covers("aurelius_atlas_kafka_scanner.graph.build_graph", rules=["KSC-07"])
+@pytest.mark.covers("aurelius_atlas_kafka_scanner.graph.build_graph", rules=["KSC-07", "DCP-04"])
 def test_every_entity_carries_a_distinct_temp_guid_and_ends_through_them() -> None:
     """DD-466: request-local temp guids, ends by guid — the webapp suite's idiom, one bulk request (KSC-07)."""
     entities = build_graph(
@@ -103,7 +103,8 @@ def test_every_entity_carries_a_distinct_temp_guid_and_ends_through_them() -> No
         "datasets": [{"guid": dataset.guid, "typeName": "m4i_dataset"}],
     }
     assert dataset.relationship_attributes == {
-        "collections": [{"guid": collection.guid, "typeName": "m4i_collection"}],
+        # the single parent end is one object, the way a field names its dataset (DCP-04)
+        "collections": {"guid": collection.guid, "typeName": "m4i_collection"},
         "fields": [{"guid": field.guid, "typeName": "m4i_field"}],
     }
     assert field.relationship_attributes == {
@@ -140,7 +141,7 @@ def test_a_topic_with_no_fields_still_becomes_a_dataset() -> None:
     assert [entity.type_name for entity in entities] == ["m4i_system", "m4i_collection", "m4i_dataset"]
     assert (entities[2].attributes or {})["name"] == "mystery"
     assert entities[2].relationship_attributes == {
-        "collections": [{"guid": entities[1].guid, "typeName": "m4i_collection"}],
+        "collections": {"guid": entities[1].guid, "typeName": "m4i_collection"},
         "fields": [],
     }
 
