@@ -4,19 +4,25 @@
 # the builder rides the -dev variant of the same tag: it is the hardened
 # image plus apk and the distro's build tree (DD-239). The runtime stage is
 # the hardened image proper.
+FROM dhi.io/nginx:1.30-alpine3.24 AS runtime-base
+
 FROM dhi.io/nginx:1.30-alpine3.24-dev AS otel-builder
 
 # The python-3.14 pin is apk arithmetic, not taste: the image's xcb-proto is
 # resolved against 3.14 and bare `python` now means 3.15, which breaks it.
 # nginx-stable-mod-dev ships the source kit the running binary was built
-# from (/usr/src/nginx-<version>); the rest is the nginx-otel build recipe. The cache
+# from (/usr/src/nginx-<version>), pinned (~) to that binary's version: apk's
+# newest kit can run ahead of the image, and a dhi patch bump can reach the
+# image before its kit does, which then fails at the test -d below. The rest
+# is the nginx-otel build recipe. The cache
 # mount carries apk's index + package tarballs across builds (plain `apk add`,
 # not --no-cache: the flag is what discards them; a cold pass is ~300 MB of
 # downloads).
 RUN --mount=type=cache,id=webapp-otel-apk,target=/var/cache/apk \
-    apk add \
+    NGINX_VER=$(nginx -v 2>&1 | sed 's|.*/||') \
+    && apk add \
     c-ares-dev cmake g++ gcc \
-    git grpc-dev make nginx-stable-mod-dev \
+    git grpc-dev make "nginx-stable-mod-dev~$NGINX_VER" \
     ninja openssl-dev protobuf-dev python-3.14 \
     re2-dev zlib-dev
 
@@ -71,7 +77,21 @@ RUN git clone --depth 1 --branch v0.1.2 https://github.com/nginx/nginx-otel.git 
 # config needed).
 COPY apps/aurelius-atlas-webapp/etc/nginx/modules/otel.conf /out-stage/otel.conf
 
-FROM dhi.io/nginx:1.30-alpine3.24
+# The module loads only into the nginx it was built against: a different patch
+# level stops the container at start ("module ... version 1030007 instead of
+# 1030006"). The runtime base has no shell, so its binary is run here, in the
+# builder, and compared with the one the module was built for. The runtime
+# stage copies the module from this stage, so the check can't be skipped.
+FROM otel-builder AS otel-verified
+COPY --from=runtime-base /usr/sbin/nginx /tmp/runtime-nginx
+RUN BUILT=$(nginx -v 2>&1 | sed 's|.*/||') \
+    && RUNTIME=$(/tmp/runtime-nginx -v 2>&1 | sed 's|.*/||') \
+    && if [ "$BUILT" != "$RUNTIME" ]; then \
+    echo "the OTel module is built for nginx $BUILT, the runtime base runs $RUNTIME:" \
+    "pull both bases (docker pull) and build again" >&2; exit 1; fi \
+    && echo "nginx $BUILT in both stages"
+
+FROM runtime-base
 
 ARG VERSION=local
 
@@ -87,9 +107,9 @@ LABEL org.opencontainers.image.version="${VERSION}"
 # image's configured modules dir, its library closure into /usr/lib, and the
 # loader snippet into the main-context include. All root-owned: the runtime
 # nginx user (65532) reads them, never writes.
-COPY --from=otel-builder --chown=root:root /out-stage/usr/lib/ /usr/lib/
-COPY --from=otel-builder --chown=root:root /out-stage/ngx_otel_module.so /usr/lib/nginx/modules/ngx_otel_module.so
-COPY --from=otel-builder --chown=root:root /out-stage/otel.conf /etc/nginx/modules/otel.conf
+COPY --from=otel-verified --chown=root:root /out-stage/usr/lib/ /usr/lib/
+COPY --from=otel-verified --chown=root:root /out-stage/ngx_otel_module.so /usr/lib/nginx/modules/ngx_otel_module.so
+COPY --from=otel-verified --chown=root:root /out-stage/otel.conf /etc/nginx/modules/otel.conf
 
 # Copy the built application files (one directory per locale) to the Nginx HTML directory
 COPY --chown=root:root --chmod=0755 dist/apps/aurelius-atlas-webapp/browser /usr/share/nginx/html
