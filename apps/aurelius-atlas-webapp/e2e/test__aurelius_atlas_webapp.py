@@ -1065,7 +1065,7 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
                 relationshipAttributes={
                     "inputs": [{"guid": "-5", "typeName": "m4i_dataset"}],
                     "outputs": [{"guid": "-5", "typeName": "m4i_dataset"}],
-                    "system": [{"guid": "-8", "typeName": "m4i_system"}],
+                    "system": {"guid": "-8", "typeName": "m4i_system"},
                 },
             ),
             entity("-10", "m4i_generic_process", "lonely"),
@@ -1086,11 +1086,13 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
 
 
 def _active_edge(entity: dict, key: str, guid: str) -> bool:
-    """Whether an entity read holds an ACTIVE relationship edge to ``guid``."""
-    return any(
-        entry["guid"] == guid and entry.get("relationshipStatus") == "ACTIVE"
-        for entry in entity.get("relationshipAttributes", {}).get(key, [])
-    )
+    """Whether an entity read holds an ACTIVE relationship edge to ``guid``.
+
+    A single-valued end (18.3) reads back as one map, not a list, so it is held as the one edge.
+    """
+    value = entity.get("relationshipAttributes", {}).get(key, [])
+    ends = [value] if isinstance(value, dict) else value
+    return any(entry["guid"] == guid and entry.get("relationshipStatus") == "ACTIVE" for entry in ends)
 
 
 def _wait_search_cards(page: Page, root_url: str, token: str, guids: list[str], *, timeout: float = 90) -> None:

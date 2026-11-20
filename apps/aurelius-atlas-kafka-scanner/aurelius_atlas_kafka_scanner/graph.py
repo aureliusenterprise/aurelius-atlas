@@ -162,9 +162,13 @@ def _add_field_fields(
     """
     guid = next_internal_id()
     qualified = join_qualified(parent[1] if parent else dataset_qualified, qualified_component(spec.name))
-    ends: dict[str, list[dict[str, str]]] = {"datasets": [{"guid": dataset_guid, "typeName": DATASET_TYPE}]}
-    if parent is not None:
-        ends["parentField"] = [{"guid": parent[0], "typeName": FIELD_TYPE}]
+    # KSC-06: a field hangs under its dataset or its parent field, never both — the ends are one
+    # parent group (PME-03), so a nested field names only parentField (18.3).
+    ends: dict[str, object] = (
+        {"parentField": {"guid": parent[0], "typeName": FIELD_TYPE}}
+        if parent is not None
+        else {"datasets": {"guid": dataset_guid, "typeName": DATASET_TYPE}}
+    )
     attributes: dict[str, str] = {"name": spec.name, "qualifiedName": qualified, "fieldType": spec.type_name}
     if spec.definition is not None:
         attributes["definition"] = spec.definition

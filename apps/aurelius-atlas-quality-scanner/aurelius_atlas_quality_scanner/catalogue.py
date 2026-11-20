@@ -140,10 +140,13 @@ def rule_attributes(attributes: dict[str, Any]) -> dict[str, Any]:
 
 
 def _related_refs(value: object) -> list[tuple[str, str]]:
-    """The ``(guid, qualifiedName)`` pairs of a SET relationship attribute, in order.
+    """The ``(guid, qualifiedName)`` pairs of a relationship attribute, in order.
 
-    Nothing for a value that is not a list, or for entries without a GUID or a qualified name.
+    A single-valued end (18.3) reads back as one map, held as the one pair; a set end reads back as
+    a list. Nothing for a value that is neither, or for entries without a GUID or a qualified name.
     """
+    if isinstance(value, dict):
+        value = [value]
     if not isinstance(value, list):
         return []
     return [

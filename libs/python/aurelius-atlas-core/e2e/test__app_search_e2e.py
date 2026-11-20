@@ -22,16 +22,24 @@ from aurelius_atlas_typesystem.registry import TypeRegistry
 pytestmark = pytest.mark.asyncio(loop_scope="module")
 
 
-def m4i(type_name: str, key: str, **relations: list[str]) -> AtlasEntity:
-    """An entity named after ``key``, with relationship attributes naming other entities of the request by key."""
+def m4i(type_name: str, key: str, **relations: list[str] | str) -> AtlasEntity:
+    """An entity named after ``key``, with relationship attributes naming other entities of the request by key.
+
+    A single-valued end names its one parent by key; a set end lists the keys it holds (18.3).
+    """
     return AtlasEntity(
         type_name=type_name,
         guid=f"-{key}",
         attributes={"qualifiedName": f"e2e--{key}", "name": key.upper()},
-        relationship_attributes={
-            name: [AtlasObjectId(guid=f"-{other}") for other in others] for name, others in relations.items()
-        },
+        relationship_attributes={name: _related(others) for name, others in relations.items()},
     )
+
+
+def _related(others: list[str] | str) -> object:
+    """One object id for a key naming the one parent of a single end, the ids of each key for a set end."""
+    if isinstance(others, str):
+        return AtlasObjectId(guid=f"-{others}")
+    return [AtlasObjectId(guid=f"-{other}") for other in others]
 
 
 async def hits(dev_store: ElasticsearchStore, prefix: str, field: str, value: str) -> list[str]:
@@ -61,9 +69,9 @@ async def test__the_indexer_writes_documents_a_term_query_finds_and_keeps_them_u
         AtlasEntitiesWithExtInfo(
             entities=[
                 m4i("m4i_data_entity", "e"),
-                m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+                m4i("m4i_data_attribute", "a", dataEntity="e"),
                 m4i("m4i_dataset", "s"),
-                m4i("m4i_field", "f", datasets=["s"], attributes=["a"]),
+                m4i("m4i_field", "f", datasets="s", attributes=["a"]),
             ]
         )
     )

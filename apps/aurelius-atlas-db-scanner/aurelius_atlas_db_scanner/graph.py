@@ -188,7 +188,7 @@ def build_graph(
                     guid=field_guid,
                     type_name=FIELD_TYPE,
                     attributes=attributes,
-                    relationship_attributes={"datasets": [{"guid": guid, "typeName": DATASET_TYPE}]},
+                    relationship_attributes={"datasets": {"guid": guid, "typeName": DATASET_TYPE}},
                 )
             )
         attributes = {"name": table.name, "qualifiedName": qualified}

@@ -24,16 +24,24 @@ from aurelius_atlas_typesystem.registry import TypeRegistry
 pytestmark = pytest.mark.asyncio(loop_scope="module")
 
 
-def m4i(type_name: str, key: str, values: dict[str, object] | None = None, **relations: list[str]) -> AtlasEntity:
-    """An entity named after ``key`` with ``values``, and relationship attributes naming others of the request."""
+def m4i(type_name: str, key: str, values: dict[str, object] | None = None, **relations: list[str] | str) -> AtlasEntity:
+    """An entity named after ``key`` with ``values``, and relationship attributes naming others of the request.
+
+    A single-valued end names its one parent by key; a set end lists the keys it holds (18.3).
+    """
     return AtlasEntity(
         type_name=type_name,
         guid=f"-{key}",
         attributes={"qualifiedName": f"e2e--{key}", "name": key.title()} | (values or {}),
-        relationship_attributes={
-            name: [AtlasObjectId(guid=f"-{other}") for other in others] for name, others in relations.items()
-        },
+        relationship_attributes={name: _related(others) for name, others in relations.items()},
     )
+
+
+def _related(others: list[str] | str) -> object:
+    """One object id for a key naming the one parent of a single end, the ids of each key for a set end."""
+    if isinstance(others, str):
+        return AtlasObjectId(guid=f"-{others}")
+    return [AtlasObjectId(guid=f"-{other}") for other in others]
 
 
 @pytest.mark.critical
@@ -56,10 +64,10 @@ async def test__a_scored_rule_s_result_answers_the_field_page_and_its_totals_sor
             entities=[
                 m4i("m4i_data_domain", "sales"),
                 m4i("m4i_data_domain", "finance"),
-                m4i("m4i_data_entity", "order", dataDomain=["sales"]),
-                m4i("m4i_data_attribute", "order_id", dataEntity=["order"]),
+                m4i("m4i_data_entity", "order", dataDomain="sales"),
+                m4i("m4i_data_attribute", "order_id", dataEntity="order"),
                 m4i("m4i_dataset", "orders"),
-                m4i("m4i_field", "id", datasets=["orders"], attributes=["order_id"]),
+                m4i("m4i_field", "id", datasets="orders", attributes=["order_id"]),
                 m4i("m4i_data_quality", "rule", rule, fields=["id"]),
             ]
         )

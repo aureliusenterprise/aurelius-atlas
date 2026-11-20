@@ -107,7 +107,7 @@ def test_every_entity_carries_a_distinct_temp_guid_and_ends_through_them() -> No
         "fields": [{"guid": field.guid, "typeName": "m4i_field"}],
     }
     assert field.relationship_attributes == {
-        "datasets": [{"guid": dataset.guid, "typeName": "m4i_dataset"}],
+        "datasets": {"guid": dataset.guid, "typeName": "m4i_dataset"},
     }
 
 
@@ -126,8 +126,7 @@ def test_a_nested_field_names_its_parent_end_and_keeps_its_rendered_type() -> No
     assert (parent.attributes or {})["definition"] == "where"
     assert (child.attributes or {})["qualifiedName"].endswith("--address--city")
     assert child.relationship_attributes == {
-        "datasets": [{"guid": entities[2].guid, "typeName": "m4i_dataset"}],
-        "parentField": [{"guid": parent.guid, "typeName": "m4i_field"}],
+        "parentField": {"guid": parent.guid, "typeName": "m4i_field"},
     }
 
 
