@@ -299,10 +299,14 @@ describe("Details data spine (DET-08..DET-13)", () => {
     it("routes the details screen when a property link is clicked (DET-11, DET-06)", () => {
         const { fixture, compiled, httpMock } = setup();
         // VDR-04: the section's ends merge into the table as a link array —
-        // the row the Atlas GET's merged relationshipAttributes answered.
+        // the row the Atlas GET's merged relationshipAttributes answered. A read
+        // end carries its type and state (AVS-04), which is what marks it as the
+        // entity's own relationship attribute rather than a card's derived pair.
         arrive(fixture, httpMock, {
             ...ANSWER,
-            sections: [ends("upstreamDatasets", [{ guid: "linked-1", displayText: "Upstream" }])],
+            sections: [
+                ends("upstreamDatasets", [{ guid: "linked-1", displayText: "Upstream", typeName: "m4i_dataset" }]),
+            ],
         });
 
         // Sorted rows: description, owner, upstreamDatasets — the link is
