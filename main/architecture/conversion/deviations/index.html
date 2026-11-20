@@ -8002,6 +8002,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>16.5f</td>
 </tr>
 <tr>
+<td>DV-177</td>
+<td>Webapp</td>
+<td>The stock dashboard's picker searches <code>GET /api/atlas/v2/search/attribute</code> (<code>typeName</code>, <code>attrName</code> <code>name</code>, <code>attrValuePrefix</code>) and shows each found header's <code>displayText</code> on its row.</td>
+<td>The picker asks the view door (<code>POST /api/aurelius/v1/search</code>) for the target type and its sub types, and each row shows the card's name, its type badge and its stored trail (EDT-14 amended, EDT-33, DD-711). The name-prefix rule moves client-side: the door matches whole tokens, so the text carries a trailing <code>*</code> and the panel keeps the cards whose display text starts with it. The Atlas endpoint stays for every other client (ADR 046).</td>
+<td>A breadcrumb is App Search derived data (LAS-04) and the Atlas search and header answers carry nothing trail-like, so the trail is unreachable on DD-339's endpoint; the view door answers the cards the catalogue shows (AVR-08). A qualified name is no substitute: sanitised tokens, and equal to the name for a created entity.</td>
+<td>7.31</td>
+</tr>
+<tr>
 <td>DV-171</td>
 <td>App Search</td>
 <td>The frozen <code>atlas-dev</code> oracle judged the sample corpus's two dataset rules as one-name rules: <code>length('fields', 1)</code> and <code>length('collections', 1)</code>, beside the two presence rules over <code>childDataset</code> and <code>parentDataset</code> (DV-146's read set).</td>

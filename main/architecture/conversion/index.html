@@ -7662,6 +7662,20 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.31</td>
+<td>Editor drawer room and richer relationship rows</td>
+<td>Two pieces of editor feedback: the <code>Drawer</code> grows a <code>size</code> input (<code>narrow</code> 28rem default, <code>wide</code> 44rem, UIC-43, DD-712) and the editor asks <code>wide</code>; a relationship picker's suggestion search moves to the view family's door (EDT-14 amended, DD-711, DV-177) so each row can print the card's fields - name, type badge, and stored trail (EDT-33) - and names that repeat stop being indistinguishable before the pick.</td>
+<td>Aurelius <code>.scratch/aurelius</code> relationships-input (a details card per row) + 16.5d's card (DV-177)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.32</td>
+<td>A dumb relationship picker in the ui library</td>
+<td>The editor's chip-and-suggest box becomes a dumb ui-lib component (<code>TokenPicker</code>, UIC-44, DD-713): chips, input, panel, and the DD-335/DD-336 keyboard and ARIA model, with a row's name, badge and trail handed to it whole — the trail printed by the <code>Breadcrumbs</code> component with its links off (UIC-11 amended, DD-714). The relationship picker keeps only the data wiring (DD-341) and the box's element classes move to <code>.aurelius-token-*</code>.</td>
+<td>Aurelius <code>.scratch/aurelius</code> relationships-input (box + search in one) + 7.7a's classification box (DD-335)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>7.33</td>
 <td>Editor label localization</td>
 <td>Every editor field label is the Aurelius catalogue string <code>search.components.editor.attribute.&lt;name&gt;</code> in both locales, else the typedef displayName, else the name (EDT-33/EDT-34, DD-722/DD-723): the map covers the shipped metamodel, an installed type keeps today's fallback, and the dictionary's two typo displayNames are corrected at the source (DV-181)</td>
