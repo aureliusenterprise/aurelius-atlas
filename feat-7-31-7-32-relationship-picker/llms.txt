@@ -2,6 +2,7 @@
 
 ## User Guide
 
+- [Deploy to Kubernetes](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/user-guide/deployment/index.md>)
 - [User Guide](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/user-guide/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/user-guide/standalone-server/index.md>)
 - [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/feat-7-31-7-32-relationship-picker/user-guide/standalone-tenants/index.md>)

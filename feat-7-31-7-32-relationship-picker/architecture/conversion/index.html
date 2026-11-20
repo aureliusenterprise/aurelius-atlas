@@ -229,6 +229,8 @@
       
         
       
+        
+      
     
     
     
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -8237,6 +8268,20 @@ checks a PR must pass:</p>
 <td>The webapp's organization scope, its current tenant shown, and switching tenant by signing in again (ADR 063)</td>
 <td>none</td>
 <td>in progress</td>
+</tr>
+<tr>
+<td>15.7</td>
+<td>Adding a tenant by command</td>
+<td><code>add &lt;tenant&gt;</code> provisions a tenant with its people, <code>--sample</code> and <code>--users atlas\|all</code> choosing what it starts with, each person with a temporary password printed once; <code>user</code> adds and removes one person; <code>docker/bin/tenant.sh</code> runs it against the standalone stack, no file edited (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>15.8</td>
+<td>Adding a tenant on Kubernetes</td>
+<td><code>helm/bin/tenant.sh</code> runs 15.7's command as a Job made from the operators CronJob, the passwords handed in through a short-lived Secret and printed on the terminal alone; the samples in the server's image; the chart's realm with the client scopes, account clients and <code>roles</code> mappers tenancy needs (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
 </tr>
 <tr>
 <td>16.1</td>
