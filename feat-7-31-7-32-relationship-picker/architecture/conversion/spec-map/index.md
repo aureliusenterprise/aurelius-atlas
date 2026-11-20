@@ -80,6 +80,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.30 | Overlay, scheme and accessibility platform fixes | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SPL-15/16, UIC-40/41, a11y sweep (DD-542..547) |
 | 7.31 | Editor drawer room and richer relationship rows | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | UIC-43, EDT-33 (EDT-14 amended, DD-711/712) |
 | 7.32 | A dumb relationship picker in the ui library | `libs/angular/aurelius-atlas-ui` + `apps/aurelius-atlas-webapp` | UIC-44 (DD-713/714; EDT-14/33 unchanged) |
+| 7.34 | Version and copyright leave the config | `apps/aurelius-atlas-webapp` | VER (DD-725/726, DV-182) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
