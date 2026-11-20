@@ -539,8 +539,8 @@ class Provisioner:
             await self._realm.delete(alias)
         else:
             self._no_realm()
-        if self._grafana is not None:
-            await self._grafana.remove_tenant(alias)
+        if self._grafana is not None and not await self._grafana.remove_tenant(alias):
+            self._out(f"Grafana refused to delete {alias}'s organization: it is left empty (TGF-15)")
         await self._tenants.delete(alias)
         self._out(f"Removed {alias}: {len(deleted)} indices deleted")
 

@@ -205,13 +205,32 @@ class GrafanaTenants:
             if user["role"] != role:
                 await self.grafana.call("PATCH", f"/api/orgs/{MAIN_ORG}/users/{user['userId']}", body={"role": role})
 
-    async def remove_tenant(self, alias: str) -> None:
-        """Delete the tenant's organization, with its data sources and dashboards, and its store reader (TGF-08)."""
+    async def remove_tenant(self, alias: str) -> bool:
+        """Delete the tenant's organization, with its data sources and dashboards, and its store reader (TGF-08);
+        whether the organization went. One Grafana refuses to delete is emptied instead, its members, data sources
+        and dashboards gone, and is found again by name when the tenant is added back (TGF-15, DD-765).
+        """  # noqa: D205 - one sentence
         org = await self._org_id(alias)
+        deleted = True
         if org is not None:
-            await self.grafana.call("DELETE", f"/api/orgs/{org}")
+            try:
+                await self.grafana.call("DELETE", f"/api/orgs/{org}")
+            except GrafanaError:
+                await self._empty(org)
+                deleted = False
         await self._store.options(ignore_status=404).security.delete_user(username=reader_name(alias))
         await self._store.options(ignore_status=404).security.delete_role(name=reader_role(alias))
+        return deleted
+
+    async def _empty(self, org: int) -> None:
+        """Take every member but Grafana's administrator, and the data sources and dashboards, out of ``org``."""
+        for user in await self.grafana.call("GET", f"/api/orgs/{org}/users"):
+            if user["login"] != ADMIN_LOGIN:
+                await self.grafana.call("DELETE", f"/api/orgs/{org}/users/{user['userId']}")
+        for uid in DATA_SOURCES:
+            await self.grafana.call("DELETE", f"/api/datasources/uid/{uid}", org=org, missing=True)
+        for name in DASHBOARDS:
+            await self.grafana.call("DELETE", f"/api/dashboards/uid/tenant-{name}", org=org, missing=True)
 
     async def cleanup(self, keep: Iterable[str]) -> list[str]:
         """Delete every Grafana user whose login ``keep`` doesn't name, Grafana's administrators aside (TGF-14);
