@@ -29,6 +29,11 @@ has (the 7.24 trace run's DTM-08 conflict came from a copy under ``tmp/``).
 
 _RULE_ROW_PATTERN = re.compile(rf"^\|\s*({RULE_ID_PATTERN.pattern})\s*\|")
 
+REFERENCE_TABLE_COLUMNS = ("proven by", "unit proof", "file", "area")
+"""The second header cell of a table that *names* rule ids instead of defining them: a spec's Acceptance table
+(12.2, 13.1, 13.3), its Test map (12.4a), a test map, or a deviations list. Their rows are not definitions, so
+reading them as definitions reports the same id twice (DD-702)."""
+
 DUPLICATE_RULE_ERROR = "rule {rule} is defined in both {first} and {second}"
 CONFLICTING_RULE_ERROR = "rule {rule} is {first_row} in {first} and {second_row} in {second}"
 
@@ -70,6 +75,35 @@ class Rule:
 def _display(spec: Path) -> str:
     """Name a specification file for an error message; ``spec.md`` needs its increment directory."""
     return f"{spec.parent.name}/{spec.name}" if spec.name == SPEC_FILE_NAME else spec.name
+
+
+def _table_cells(line: str) -> list[str]:
+    """A table row's cells, stripped and lower-cased, for comparing a table's header."""
+    return [cell.strip().lower() for cell in line.strip().strip("|").split("|")]
+
+
+def _rule_lines(text: str) -> Iterator[str]:
+    """The lines of a specification that can define rules.
+
+    A specification names rule ids in tables that prove or list them rather than define them: an Acceptance
+    table (12.2, 13.1, 13.3), a Test map (12.4a), a test map, or the deviations list. Reading their rows as
+    definitions reports every id they name a second time (DD-702), so each such table is skipped by its
+    header.
+    """
+    lines = text.splitlines()
+    index = 0
+    while index < len(lines):
+        if not lines[index].startswith("|"):
+            yield lines[index]
+            index += 1
+            continue
+        end = index
+        while end < len(lines) and lines[end].startswith("|"):
+            end += 1
+        header = _table_cells(lines[index])
+        if not (len(header) > 1 and header[1] in REFERENCE_TABLE_COLUMNS):
+            yield from lines[index:end]
+        index = end
 
 
 def _spec_files(root: Path) -> Iterator[tuple[Path, Increment]]:
@@ -121,7 +155,7 @@ def read_rules(spec_roots: Iterable[Path], enforce_from: Increment) -> dict[str,
     for spec, increment in specs:
         if increment < enforce_from:
             continue
-        for line in spec.read_text().splitlines():
+        for line in _rule_lines(spec.read_text()):
             if (row := _RULE_ROW_PATTERN.match(line)) is not None:
                 definitions.setdefault(row[1], []).append((increment, spec, _normalize(line)))
 

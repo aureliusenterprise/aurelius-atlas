@@ -42,7 +42,7 @@ extends ASD-04's listing.
 | ASU-06 | The server runs the indexer in the background of every process: a round at start, then one after each write (ASU-07), and at the latest every poll interval. A failed round is logged and the next one tries again. The worker is on unless `AURELIUS_ATLAS_SERVER_APP_SEARCH_ENABLED` is false; `..._APP_SEARCH_BATCH_SIZE` and `..._APP_SEARCH_POLL_SECONDS` set its page and pace                                                                                                                                                                                                                                                                                                       |
 | ASU-07 | Every committed write of a store set wakes its indexer: the round starts once the settle time has passed (`..._APP_SEARCH_SETTLE_SECONDS`, 0.5 s by default), so a burst of writes lands in one round. A write during a round starts the next round as soon as it ends, so many changes are derived page after page without waiting for the poll. Another process's writes reach the indexer at its next poll (DD-678)                                                                                                                                                                                                                                                                     |
 | ASU-08 | A request whose writes reach a store set's entity store answers only once that set's indexer and governance round has ended, so the page that reloads after a save reads the derived breadcrumbs, relations and verdicts. The data quality is left to the background rounds (ASU-07). The view door, which answers the entity's view itself, runs those rounds before it reads that answer, and the writes of its rewind store reach the real store's listeners. Rounds run one at a time. The answer waits at most `..._APP_SEARCH_ANSWER_SECONDS` (5 s by default; 0 doesn't wait); a round still running then ends in the background. A request that wrote nothing is not held (DD-679) |
-| ASU-07 | No answer of Apache Atlas's API shows a relationship's recorded state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ASU-09 | No answer of Apache Atlas's API shows a relationship's recorded state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## Aurelius origin
 
@@ -58,7 +58,7 @@ from the catalogue's state (DD-486).
 
 ## Deviations
 
-None against Apache Atlas: its API answers as before (ASD-05, ASU-07). None against the legacy documents:
+None against Apache Atlas: its API answers as before (ASD-05, ASU-09). None against the legacy documents:
 for a given catalogue they hold what 14.2's do.
 
 ## Acceptance
@@ -73,7 +73,7 @@ for a given catalogue they hold what 14.2's do.
       ends' relations, and their record follows (ASU-04);
     - a field joined to an attribute shows the dataset on the data entity, two hops away (ASU-03, LAS-06);
     - an affected entity changed in between keeps the page listed (ASU-05);
-    - a relationship's answer leaves out its recorded state (ASU-07).
+    - a relationship's answer leaves out its recorded state (ASU-09).
 - `libs/python/aurelius-atlas-core/tests/test__app_search_document.py`: the stale mark (ASU-01), and the
   listings in both stores (ASU-02, ASU-04).
 - `apps/aurelius-atlas-server/tests/test__aurelius_atlas_server_app_search.py`: the worker's rounds, a failed

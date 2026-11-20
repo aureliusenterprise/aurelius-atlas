@@ -49,13 +49,13 @@ Not in scope:
 
 ### The check
 
-| Id     | Rule                                                                                                                                                                                                 |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TRC-06 | The public functions are the functions, methods and properties defined in the packages of the Atlas projects, except names starting with `_` (in any part of the path) and the `testing` subpackages |
-| TRC-07 | The Atlas projects are the uv workspace members, except those the configuration excludes; a new project is checked unless it is excluded on purpose                                                  |
-| TRC-08 | The rules are the ids in the first column of the tables of every specification from increment 0.2 on; an id defined twice is an error                                                                |
-| TRC-09 | `check` exits non-zero and lists every public function no test names, every rule no test names, and every test that names a rule no specification defines; otherwise it exits zero                   |
-| TRC-10 | `check` reads the markers by collecting the tests of every Atlas project, including end-to-end tests, without running them, so its answer does not depend on which projects a change affects         |
+| Id     | Rule                                                                                                                                                                                                                   |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TRC-06 | The public functions are the functions, methods and properties defined in the packages of the Atlas projects, except names starting with `_` (in any part of the path) and the `testing` subpackages                   |
+| TRC-07 | The Atlas projects are the uv workspace members, except those the configuration excludes; a new project is checked unless it is excluded on purpose                                                                    |
+| TRC-08 | The rules are the ids in the first column of the tables of every specification from increment 0.2 on; an id defined twice is an error                                                                                  |
+| TRC-09 | `check` exits non-zero and lists every public function no test names, every rule no test names, and every test that names a rule no specification defines; otherwise it exits zero                                     |
+| TRC-10 | `check` reads the markers by collecting the tests of every Atlas project and of the workspace root, including end-to-end tests, without running them, so its answer does not depend on which projects a change affects |
 
 ### The report
 
