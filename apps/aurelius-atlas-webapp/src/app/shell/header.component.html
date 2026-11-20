@@ -12,26 +12,11 @@
 <!-- The legacy navbar is pinned (SHM-05, `navbar is-fixed-top`); the body
      carries the matching has-navbar-fixed-top padding (index.html). -->
 <aurelius-atlas-ui-header fixed [name]="appName" [logo]="appLogo" logoCssClass="logo">
-    <ng-container navbar-end>
-        <!-- Documentation (SHC-03) -->
-        <div class="navbar-item">
-            <div class="buttons">
-                <!-- Legacy navbar-documentation: icon + word, opens in a new tab. -->
-                <a
-                    class="button is-outlined is-dark"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    [href]="documentationUrl"
-                >
-                    <span class="icon">
-                        <fa-icon aria-hidden="true" [icon]="faBook"></fa-icon>
-                    </span>
-                    <!-- Documentation. -->
-                    <span i18n="@@shell.header.documentation">Documentation</span>
-                </a>
-            </div>
-        </div>
-
+    <!-- Settings and Alerts sit in the always-visible utility group: the ui-lib
+         Header projects them into the brand bar (left of the burger on a
+         narrow screen, left of Documentation on a wide one), so the two drawer
+         controls never collapse into the burger menu. -->
+    <div class="aurelius-navbar-utility" navbar-utility>
         <!-- Settings gear (SPL-01, SPL-14, DD-166, DD-167): opens the panel
              by navigating the `drawer` aux outlet — the open state rides the
              URL, so the locale switch's reload keeps it. RouterLinkActive
@@ -75,13 +60,48 @@
                 </span>
             </aurelius-atlas-ui-badge>
         </a>
+    </div>
+
+    <ng-container navbar-end>
+        <!-- Documentation (SHC-03) -->
+        <div class="navbar-item">
+            <div class="buttons">
+                <!-- Legacy navbar-documentation: icon + word, opens in a new tab. -->
+                <a
+                    class="button is-outlined is-dark"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    [href]="documentationUrl"
+                >
+                    <span class="icon">
+                        <fa-icon aria-hidden="true" [icon]="faBook"></fa-icon>
+                    </span>
+                    <!-- Documentation. -->
+                    <span i18n="@@shell.header.documentation">Documentation</span>
+                </a>
+            </div>
+        </div>
 
         <!-- Account dropdown (SHC-05): welcome / Account-security / Logout. -->
         <div class="navbar-item has-dropdown is-hoverable">
             <a class="navbar-link">
-                <!-- Logged in as. -->
-                <span i18n="@@shell.header.welcome">Logged in as</span>
-                {{ session.identity() }}
+                <!-- The legacy's one inline run, bold name (SHC-05, DD-735).
+                     Two Bulma/Angular facts shape this markup and neither is
+                     visible in the rendered line:
+                     - the wrapper span is load-bearing. Above the burger
+                       breakpoint `.navbar-link` is `display: flex` with
+                       `gap: 0.75rem`, so two children of the anchor become two
+                       flex items and the word space widens to 12px.
+                     - the gap between the label and the name is an explicit
+                       `&nbsp;` because Angular's default whitespace mode drops
+                       a whitespace-only node that holds a newline, which glues
+                       the two words together. The legacy names that seam with
+                       its own `<span>&nbsp;</span>`. -->
+                <span>
+                    <span i18n="@@shell.header.welcome">Logged in as</span>
+                    <span>&nbsp;</span>
+                    <strong>{{ session.identity() }}</strong>
+                </span>
             </a>
             <div class="navbar-dropdown is-right">
                 @if (tenancy.enabled) {

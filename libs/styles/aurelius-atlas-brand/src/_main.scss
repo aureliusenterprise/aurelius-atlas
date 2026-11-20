@@ -201,10 +201,10 @@
  * Bulma's dark hosts (its themes/_index.scss pattern): the explicit
  * `[data-theme=dark]` and the OS-dark `:root:not([data-theme])`.
  *
- * The chrome: the navbar follows the scheme (DD-168 — the slate band
- * mixin below); the footer stays pinned (SHM-07: the blue/white reads
- * the same in either scheme). The accent values stay pinned too
- * (SHM-04); only the text-role link follows Bulma's dark adaptation.
+ * The chrome: the navbar follows the scheme (the page band mixin below);
+ * the footer stays pinned (SHM-07: the blue/white reads the same in either
+ * scheme). The accent values stay pinned too (SHM-04); only the text-role
+ * link follows Bulma's dark adaptation.
  */
 @mixin dark-ink {
     --bulma-text-l: 71%;
@@ -255,51 +255,137 @@
 }
 
 /*
- * The dark navbar — the slate band (DD-168, the user's choice after the
- * logo was measured): in dark mode the navbar leaves the pinned light
- * (#f5f5f5) for a neutral slate, #72757d — hsl(224, 4%, 47%), the faint
- * cool cast of $blue, one step under the wordmark's 3:1 floor. The mark
- * leads: the logo's navy wordmark (#151487) reads 3.1:1 on the slate
- * against 1.0:1 on the scheme's dark surfaces, where navy and dark
- * collide — no darker neutral clears it, and no darker saturated tint
- * keeps the navy legible; the logo keeps its brand size (a logotype
- * carries no WCAG text contrast, and the enlargement the first draft
- * tried read as a defect).
+ * The dark navbar — the near-black band (supersedes DD-168's slate): in dark
+ * mode the navbar leaves the slate for #232323 — hsl(0, 0%, 14%), the same
+ * neutral as the page and a hair over its surface (9%), so the header sinks
+ * into the background instead of reading as its own band.
  *
- * The bar's chrome composes on the slate: ink #000 (5.6:1 — the navbar
- * items and the hover plate both keep it, DD-152's hover rule already
- * pins #000 and the slate's lighter plate keeps it legible), hover/
- * active the light plate (Bulma's +8%/+12% deltas — the DD-152 deltas
- * inverted for a dark band: the light band's plate darkens, the slate's
- * lightens), the gear's `is-active` the white plate (selected 100%/0%,
- * DD-152's pair). The `is-dark` Documentation button flips to black
- * ink/border — its pinned #363636 rides at 2.5:1 on the slate; its
- * hover (the #363636 plate, $dark-invert ink) is untouched. The account
- * dropdown stays the scheme's own plate (dark in dark) — Bulma composes
- * it from the scheme tokens, the legacy dropdown idiom.
+ * The bar's chrome follows the scheme the same way. The ink and the burger
+ * are the scheme text — the light block's `#4a4a4a` out-cascades Bulma's
+ * derived navbar ink, so it re-pins here — and the hover/active plates take
+ * Bulma's own dark deltas over the band (+5%/+10%, the DD-152 deltas inverted
+ * for a dark band). The burger's plate rides its channels (the light block
+ * pins them black for the light band's rgba plate), and the dropdown chevron
+ * the scheme text. The open drawer's `is-active` plate leaves DD-152's white
+ * pair, which reads as a hole punched in this band, for a muted mid-grey
+ * (#707070, 3.2:1 off the band) carrying white ink (4.9:1). The `is-dark`
+ * Documentation button swaps DD-168's black pair for the scheme ink: the brand
+ * pins `dark` at #363636 (SHM-04), which measures 1.3:1 on this band and
+ * vanishes.
+ *
+ * The logo is the open half of this pass: the navy wordmark measures 3.1:1
+ * on DD-168's slate and 1.1:1 here, so the mark needs a dark-mode variant
+ * (DD-168's alternatives already named that seam).
  *
  * Emitted on both of Bulma's dark hosts, like DD-156's ramp. Specificity
  * 0,2,0 beats the `.navbar` chrome block (0,1,0), so it out-cascades the
  * light pins it replaces.
  */
 @mixin dark-navbar {
-    --bulma-navbar-background-color: #72757d;
-    --bulma-navbar-item-background-l: 47%; // the slate, for the composed plates
-    --bulma-navbar-item-color: #000;
-    --bulma-navbar-item-hover-background-l-delta: 8%;
-    --bulma-navbar-item-active-background-l-delta: 12%;
-    --bulma-navbar-burger-color: #000;
-    --bulma-navbar-dropdown-arrow: #000;
+    --bulma-navbar-background-color: #232323;
+    --bulma-navbar-item-background-l: 13.73%; // the band, for the composed plates
+    --bulma-navbar-item-color: var(--bulma-text);
+    --bulma-navbar-item-hover-background-l-delta: 5%;
+    --bulma-navbar-item-active-background-l-delta: 10%;
+
+    // The open-drawer plate. Bulma composes `.is-active` from the *selected*
+    // tokens — it re-registers `navbar-item-background-l` from
+    // `navbar-item-selected-background-l` — and the light block pins those to
+    // white/black for Atlas legacy parity (DD-152). On this band that white
+    // plate is a hole punched in the header, so the selected pair is re-pinned
+    // to a muted mid-grey: #707070 lifts 3.2:1 off the band (above the 3:1
+    // state floor) and stays clear of the +10% press plate (#3d3d3d), so a
+    // transient and a state cannot be confused. White ink on it measures 4.9:1.
+    // Bulma's own default here is the link-blue plate, and the brand blue is
+    // the accent the links and the footer own; it stays refused on fit — the
+    // plate says "this panel is open", not "this is the current route" (DD-734).
+    --bulma-navbar-item-selected-h: 0deg;
+    --bulma-navbar-item-selected-s: 0%;
+    --bulma-navbar-item-selected-l: 44%;
+    --bulma-navbar-item-selected-background-l: 44%;
+
+    --bulma-navbar-burger-color: var(--bulma-text);
+    --bulma-burger-h: 0deg;
+    --bulma-burger-s: 0%;
+    --bulma-burger-l: 71%;
+    --bulma-navbar-dropdown-arrow: var(--bulma-text);
+
+    // The light block pins the navbar's <strong> to the body ink (the demo's
+    // locale badge) — on a dark band that ink is invisible.
+    --bulma-strong-color: var(--bulma-text-strong);
 }
 
 @mixin dark-navbar-chrome {
-    // The is-dark outlined button (SHC-03, the Documentation link): the
-    // pinned #363636 ink/border is 2.5:1 on the slate; the black pair
-    // lands at 5.6:1. Bulma 1's outlined hover thickens the border and
-    // keeps the ink — the pair applies to it as-is.
+    // The is-dark outlined button (SHC-03, the Documentation link): its
+    // pinned #363636 ink/border is 1.3:1 on the band; the scheme ink lands
+    // at 13:1. Bulma 1's outlined hover thickens the border and keeps the
+    // ink, so the pair applies to it as-is.
     .button.is-dark.is-outlined {
-        border-color: #000;
-        color: #000;
+        border-color: var(--bulma-text-strong);
+        color: var(--bulma-text-strong);
+    }
+
+    // The open-drawer plate's ink. Bulma re-registers only the plate's
+    // lightness on `.is-active` and `dark-navbar` above pins the item ink as a
+    // literal, so the plate has to carry its own ink: white on the grey,
+    // 4.9:1. (The light band needs no ink rule here — the same literal pin
+    // leaves its active item at the body ink, which the white plate carries.)
+    //
+    // The hover/focus twins are stated because the light hover-ink rule below
+    // (`.navbar .aurelius-navbar-utility > .navbar-item:hover`, 0,4,0) ties the
+    // plain active rule's specificity and comes later in the sheet, so it would
+    // ink the hovered open control black on a grey plate. Naming them lifts the
+    // pair to 0,5,0 and out-cascades it. The hover delta is frozen for an open
+    // control: Bulma would otherwise lift the selected plate 5% more under the
+    // pointer (44% -> 49%), and a state plate should not flicker under hover.
+    .navbar-item.is-active,
+    .navbar-item.is-selected,
+    .navbar-link.is-active,
+    .navbar-link.is-selected {
+        color: #fff;
+    }
+
+    .navbar-item.is-active:hover,
+    .navbar-item.is-selected:hover,
+    .navbar-link.is-active:hover,
+    .navbar-link.is-selected:hover,
+    .navbar-item.is-active:focus,
+    .navbar-item.is-selected:focus,
+    .navbar-link.is-active:focus,
+    .navbar-link.is-selected:focus,
+    .navbar-item.is-active:focus-visible,
+    .navbar-item.is-selected:focus-visible,
+    .navbar-link.is-active:focus-visible,
+    .navbar-link.is-selected:focus-visible {
+        --bulma-navbar-item-hover-background-l-delta: 0%;
+        color: #fff;
+    }
+
+    // The hover ink. Bulma 1 has no hover-colour token, and the light rule
+    // below pins the demo's legacy black (#000), which is invisible on this
+    // band. Unlike the light band, there is no darker ink to lift toward, so
+    // a hover keeps the bar's own ink and only its plate lights (DD-734). The
+    // override lives in this mixin, not in the host block, because it must
+    // reach both dark hosts: the light rule has no `data-theme` scope, so the
+    // OS-dark host needs the same guard the explicit one does.
+    //
+    // The open control is excluded, and it has to be: this selector is one
+    // step more specific than `dark-navbar-chrome`'s plain active rule, so a
+    // hovered open gear would take the bar ink off its grey plate and lose
+    // its white ink. The active `:hover` twins above outrank it and hold the
+    // white.
+    .navbar-link:focus,
+    .navbar-link:focus-within,
+    .navbar-link:hover,
+    .navbar-start > .navbar-item:focus,
+    .navbar-start > .navbar-item:focus-within,
+    .navbar-start > .navbar-item:hover,
+    .navbar-end > .navbar-item:focus,
+    .navbar-end > .navbar-item:focus-within,
+    .navbar-end > .navbar-item:hover,
+    .aurelius-navbar-utility > .navbar-item:focus-visible:not(.is-active),
+    .aurelius-navbar-utility > .navbar-item:hover:not(.is-active) {
+        color: var(--bulma-navbar-item-color);
     }
 }
 
@@ -409,8 +495,61 @@
 .navbar .navbar-start > .navbar-item:hover,
 .navbar .navbar-end > .navbar-item:focus,
 .navbar .navbar-end > .navbar-item:focus-within,
-.navbar .navbar-end > .navbar-item:hover {
+.navbar .navbar-end > .navbar-item:hover,
+.navbar .aurelius-navbar-utility > .navbar-item:focus-visible,
+.navbar .aurelius-navbar-utility > .navbar-item:hover {
     color: #000;
+}
+
+/*
+ * The always-visible navbar utility group (the ui-lib Header's `[navbar-utility]`
+ * projection — the gear and the bell): it lives in the brand bar, not the
+ * collapsible menu, so it stays reachable at every width. The brand grows to
+ * fill the row and the group takes the free space on its left, parking it at
+ * the right edge — left of the burger on a narrow screen, left of the menu's
+ * Documentation/account on a wide one. The burger's own auto margin is dropped
+ * while a utility group is present so the two sit flush. Every rule keys on
+ * `:has(> .aurelius-navbar-utility)`, so a navbar without the group keeps its
+ * legacy shrink-wrap (the ui-lib's plain stories are unchanged).
+ */
+.aurelius-navbar-utility {
+    display: flex;
+}
+
+.navbar-brand:has(> .aurelius-navbar-utility) {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.navbar-brand:has(> .aurelius-navbar-utility) .navbar-burger {
+    margin-inline-start: 0;
+}
+
+.navbar-brand:has(> .aurelius-navbar-utility) .aurelius-navbar-utility {
+    margin-left: auto;
+}
+
+// Desktop only: Bulma's collapsible menu grows to fill the row
+// (`flex-grow: 1`), which would split the free space with the grown brand and
+// strand the utility group mid-header. Once a utility group owns the push, the
+// menu shrinks to its content so the brand does the pushing and the account
+// cluster stays flush right, just right of the group.
+@media screen and (min-width: 1024px) {
+    .navbar-brand:has(> .aurelius-navbar-utility) ~ .navbar-menu {
+        flex-grow: 0;
+    }
+}
+
+// The gear and bell hand focus back to themselves when the drawer they open
+// closes (the ui-lib Drawer returns focus to its opener, correctly). Bulma
+// paints that focus as its hover plate (`a.navbar-item:focus`, not an
+// outline), so after a mouse dismiss the gear sits lit with nothing open —
+// a stuck highlight. The state to blank is narrow: focused, unfelt by the
+// keyboard (`:not(:focus-visible)`), and not hovered — hover still earns its
+// plate, and keyboard focus keeps the full plate the ring a11y needs.
+// `is-active` (the open drawer's route) still lights above.
+.navbar .aurelius-navbar-utility > .navbar-item:focus:not(:focus-visible):not(:hover) {
+    background-color: transparent;
 }
 
 /*

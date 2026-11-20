@@ -1,8 +1,8 @@
 /*
  * The badge's dot (ALR-02): a 0.6rem circle pinned to the content's
  * top-right. The ring is the surrounding ink — Bulma emits
- * `--bulma-navbar-item-color` on navbar items (black on DD-168's slate,
- * the legacy grey on the light band), and currentColor serves the rest,
+ * `--bulma-navbar-item-color` on navbar items (the scheme ink on the dark
+ * band, the legacy grey on the light band), and currentColor serves the rest,
  * so the dot keeps a visible edge on any surface (the 3:1 graphics
  * floor a bare dot on a navbar band misses, warning especially).
  *

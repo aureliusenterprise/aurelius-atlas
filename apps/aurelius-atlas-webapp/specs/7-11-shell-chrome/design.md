@@ -158,3 +158,66 @@ webapp's language loads the other build, which saves the other language at once.
 as the account console already lets that user do. A realm that doesn't grant the client those roles, such as
 the dev and chart realms today, keeps Keycloak's own choice of language. The token's `locale` claim catches
 up at the next refresh, until then the profile read prevents a second write.
+
+### DD-735. The welcome line keeps the legacy's one inline run and bold name
+
+- **Status:** Proposed
+- **Increment:** 7.11 (a fix, 2026-11-20)
+- **Date:** 2026-11-20
+- **Supersedes:** none
+
+**Decision.** The account dropdown renders the welcome line the way the legacy
+header did (SHC-05): the label, an explicit `<span>&nbsp;</span>`, and the
+identity in a `<strong>` all sit inside one `<span>`. The `<span>` wrapper and the
+explicit space are both part of the decision, not decoration. All three restore
+what the port dropped.
+
+**Reason.** A review of the running app noticed the username was no longer bold
+and that the gap in front of it looked like two spaces. The legacy header wraps
+the run the same way: `header.component.html` in `.scratch/aurelius/libs/shell`
+has the `<span>` around `<span translate>shell.header.welcome</span>`, a
+`<span>&nbsp;</span>`, and `<strong>`.
+
+The wide gap is not a stray space in the string. Above the burger breakpoint
+Bulma sets `.navbar-item` and `.navbar-link` to `display: flex` with
+`gap: 0.75rem`, and the ported template put the label and the identity in the
+anchor as two direct children. Flex turns each into an item and discards the
+whitespace text node, so the space between them is the 12px gap, about three
+word spaces. Below 1024px `.navbar-link` is `display: block`, the whitespace
+collapses, and the same template shows one normal space. One wrapper makes both
+breakpoints agree, because the anchor then has a single item.
+
+The explicit `&nbsp;` is not a stray space either, and it is why the legacy names
+the seam that way. Angular's default whitespace mode removes a whitespace-only
+text node that holds a newline, so the line break in the template between the
+label and the identity is not in the compiled component at all. A first cut of
+this fix kept the wrapper and the `<strong>` but let the template newline carry
+the space, and the compiled line read "Logged in asaurelius-writer". A
+`&nbsp;` is a real character node, so it survives.
+
+The name needs no colour rule. Bulma carries `a strong { color: currentColor }`,
+so the `<strong>` keeps the navbar ink and takes only the weight. The brand pins
+`--bulma-strong-weight` at 700 (DD-151), which is 0.9.4's bold, and the legacy's
+`<strong>` sat in the same anchor under the same Bulma.
+
+**Alternatives.**
+
+- Let the template newline carry the space: rejected because the compiler strips
+  it. The static HTML page used to measure the flex gap kept its whitespace and
+  looked correct, so only the unit test and the running app showed the flaw.
+  Measuring a fixture instead of the compiled component is DD-733's lesson again.
+- Put the space at the end of the label string: it saves the element, but the
+  translated label then carries layout, and a translation that drops the trailing
+  space re-glues the words.
+- Set the identity in a separate element with a margin: it fixes the gap and
+  leaves the run split in two, which is the shape that broke.
+- Set `gap: 0` on the account link: it changes a Bulma token that other navbar
+  links share, for one string.
+
+**Consequences.** The welcome line is pinned in
+`shell/header.component.spec.ts`: the text, the `<strong>`, and the fact that
+the run is one child of the anchor. The text assertion folds whitespace, and
+both JS and Playwright count `\u00a0` as whitespace, so the e2e greeting (SHC-09)
+still passes on the non-breaking space and still fails if the words glue together.
+Neither matcher can see the flex gap, so the unit test stays the only pin on the
+shape, and the gap it guards shows only above the burger breakpoint.

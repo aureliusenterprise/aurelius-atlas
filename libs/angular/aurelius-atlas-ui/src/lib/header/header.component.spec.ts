@@ -146,3 +146,54 @@ describe("Header with projected content (mobile burger)", () => {
         expect(menu().classList.contains("is-active")).toBe(true);
     });
 });
+
+describe("Header with a projected utility group", () => {
+    // The `[navbar-utility]` slot (the webapp's gear and bell): the brand lib
+    // positions `.aurelius-navbar-utility` at the brand bar's right edge, so
+    // the controls never collapse into the burger menu. The ui-lib owns the
+    // projection; the geometry is the brand lib's, verified against it.
+    @Component({
+        imports: [Header],
+        template: `
+            <aurelius-atlas-ui-header>
+                <div class="aurelius-navbar-utility" navbar-utility>
+                    <a class="navbar-item" aria-label="Settings">Gear</a>
+                    <a class="navbar-item" aria-label="Alerts">Bell</a>
+                </div>
+                <a navbar-end class="navbar-item">Logout</a>
+            </aurelius-atlas-ui-header>
+        `,
+    })
+    class UtilityHostComponent {}
+
+    let utilityFixture: ComponentFixture<UtilityHostComponent>;
+
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({ imports: [UtilityHostComponent] }).compileComponents();
+
+        utilityFixture = TestBed.createComponent(UtilityHostComponent);
+        utilityFixture.detectChanges();
+    });
+
+    it("projects the utility group into the brand bar, before the burger", () => {
+        const brand = utilityFixture.nativeElement.querySelector(".navbar-brand");
+        const utility = brand.querySelector(":scope > .aurelius-navbar-utility");
+
+        expect(utility).toBeTruthy();
+        expect([...utility.querySelectorAll("a.navbar-item")].map((item) => item.getAttribute("aria-label"))).toEqual([
+            "Settings",
+            "Alerts",
+        ]);
+        // Projected ahead of the burger, and never into the collapsible menu.
+        expect(
+            [...brand.children].indexOf(utility) < [...brand.children].indexOf(brand.querySelector(".navbar-burger")),
+        ).toBe(true);
+        expect(utilityFixture.nativeElement.querySelector("nav.navbar-menu .aurelius-navbar-utility")).toBeNull();
+    });
+
+    it("keeps the burger when only the utility group and menu content exist", () => {
+        // The burger's condition reads the projected menu slots, not the
+        // utility group; the Logout item alone still earns one.
+        expect(utilityFixture.nativeElement.querySelector("button.navbar-burger")).toBeTruthy();
+    });
+});

@@ -22,6 +22,12 @@
                     </a>
                 }
 
+                <!-- The always-visible utility group (gear/bell): projected here,
+                     inside the brand bar, so it never collapses into the burger
+                     menu. The brand lib right-aligns it against the burger
+                     (mobile) or the menu (desktop) through `.aurelius-navbar-utility`. -->
+                <ng-content select="[navbar-utility]"></ng-content>
+
                 @if (navbarStart.children.length || navbarEnd.children.length) {
                     <!-- NAV-CTRL-001: the burger names the collapsible region it
                          controls. -->
