@@ -150,10 +150,12 @@ export class TokenPicker {
 
     /** The placeholder the input shows, by cardinality and fullness. A
      * disabled box shows none: a muted "Select a relationship..." on a
-     * control that cannot take a pick invites the interaction it forbids. */
-    protected readonly shownPlaceholder = computed(() => {
+     * control that cannot take a pick invites the interaction it forbids. Null
+     * so the binding drops the attribute — an empty string would leave it on
+     * the input. */
+    protected readonly shownPlaceholder = computed<string | null>(() => {
         if (this.disabled()) {
-            return "";
+            return null;
         }
 
         return this.single() && !this.singleFull() ? this.singlePlaceholder() : this.placeholder();
