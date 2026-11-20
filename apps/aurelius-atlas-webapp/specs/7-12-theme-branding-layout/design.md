@@ -279,7 +279,7 @@ as the demo. The media block is the brand's first responsive emission;
 the chevron rule documents the upstream regression it mirrors. Pinned by
 `test__burger_menu_matches_the_legacy_mobile_chrome`.
 
-### DD-734. The dark navbar takes the page's near-black, and the chrome follows
+### DD-740. The dark navbar takes the page's near-black, and the chrome follows
 
 - **Status:** Proposed
 - **Increment:** 7.12 (a fix, 2026-11-20)
