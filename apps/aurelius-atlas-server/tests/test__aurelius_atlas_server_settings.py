@@ -101,6 +101,19 @@ def test__the_environment_defaults_to_production(environment: pytest.MonkeyPatch
         ServerSettings()  # pyright: ignore[reportCallIssue]
 
 
+@pytest.mark.covers("aurelius_atlas_server.uploads.read_upload", rules=["SRV-12"])
+def test__the_upload_limit_defaults_to_256_mebibytes_and_is_settable(environment: pytest.MonkeyPatch) -> None:
+    """Unset, an upload of at most 256 MiB is read (SRV-12); the prefixed variable sets another limit (DD-708)."""
+    assert ServerSettings().upload_max_bytes == 256 * 1024 * 1024  # pyright: ignore[reportCallIssue]
+
+    environment.setenv("AURELIUS_ATLAS_SERVER_UPLOAD_MAX_BYTES", "1048576")
+    assert ServerSettings().upload_max_bytes == 1024 * 1024  # pyright: ignore[reportCallIssue]
+
+    environment.setenv("AURELIUS_ATLAS_SERVER_UPLOAD_MAX_BYTES", "0")
+    with pytest.raises(ValidationError, match="upload_max_bytes"):
+        ServerSettings()  # pyright: ignore[reportCallIssue]
+
+
 @pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.tenancy", rules=["TEN-01", "TPR-07"])
 def test__tenancy_is_off_until_set_and_lists_no_tenants(environment: pytest.MonkeyPatch) -> None:
     """Off by default, no tenancy read; on, the claim and operators as set, the tenants left to the index."""

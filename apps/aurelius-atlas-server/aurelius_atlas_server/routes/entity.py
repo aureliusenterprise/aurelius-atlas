@@ -64,6 +64,7 @@ from aurelius_atlas_server.openapi import (
 )
 from aurelius_atlas_server.openapi import no_content as no_content_response
 from aurelius_atlas_server.tenant_stores import stores
+from aurelius_atlas_server.uploads import read_upload
 
 ENTITY = APIRouter(prefix="/api/atlas/v2/entity", tags=["Entity"])
 
@@ -725,7 +726,8 @@ async def import_bm_attributes(request: Request, store: Store) -> AtlasJSONRespo
     BMI-05); no file is a blank file name (DV-119).
     """  # noqa: D205 - one sentence
     upload = (await request.form()).get("file")
-    file_name, content = (upload.filename, await upload.read()) if isinstance(upload, UploadFile) else (None, b"")
+    file_name = upload.filename if isinstance(upload, UploadFile) else None
+    content = await read_upload(request, "file", "file")
     found = await business_metadata(request, store).bulk_create_or_update_business_attributes(file_name, content)
     return _json(found.to_json())
 
