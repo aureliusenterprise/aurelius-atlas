@@ -25,11 +25,6 @@
     "aliases": []
   },
   {
-    "version": "fix-renumber-dd-734-735-webapp",
-    "title": "fix-renumber-dd-734-735-webapp",
-    "aliases": []
-  },
-  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
