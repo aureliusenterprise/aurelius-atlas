@@ -27,7 +27,7 @@
       
       
       <link rel="icon" href="../../../assets/favicon.ico">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -223,6 +223,8 @@
       
         
           
+        
+      
         
       
         
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -2033,6 +2064,8 @@
       
         
           
+        
+      
         
       
         
@@ -4051,6 +4084,33 @@
     
   
   067. The standalone stack ships as one generated release bundle
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
 
     
   </span>
@@ -7266,6 +7326,24 @@ rule belongs to the project whose code it constrains.</p>
 <td>SPL-15/16, UIC-40/41, a11y sweep (DD-542..547)</td>
 </tr>
 <tr>
+<td>7.31</td>
+<td>Editor drawer room and richer relationship rows</td>
+<td><code>apps/aurelius-atlas-webapp</code> + <code>libs/angular/aurelius-atlas-ui</code></td>
+<td>UIC-43, EDT-33 (EDT-14 amended, DD-711/712)</td>
+</tr>
+<tr>
+<td>7.32</td>
+<td>A dumb relationship picker in the ui library</td>
+<td><code>libs/angular/aurelius-atlas-ui</code> + <code>apps/aurelius-atlas-webapp</code></td>
+<td>UIC-44 (DD-713/714; EDT-14/33 unchanged)</td>
+</tr>
+<tr>
+<td>7.34</td>
+<td>Version and copyright leave the config</td>
+<td><code>apps/aurelius-atlas-webapp</code></td>
+<td>VER (DD-725/726, DV-182)</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td><code>libs/python/aurelius-atlas-auth</code> + <code>libs/python/aurelius-atlas-otel</code></td>
@@ -7444,6 +7522,24 @@ rule belongs to the project whose code it constrains.</p>
 <td>The standalone stack simplified</td>
 <td><code>specs/17-4-standalone-simplification/</code> + <code>docker/</code></td>
 <td>SPC</td>
+</tr>
+<tr>
+<td>18.1</td>
+<td>Bootstrap only the metamodel the system serves</td>
+<td><code>specs/18-1-metamodel-scope/</code> + <code>libs/python/aurelius-atlas-core</code> + <code>apps/aurelius-atlas-server</code> + <code>apps/aurelius-atlas-webapp</code> + <code>apps/aurelius-atlas-lineage-model</code></td>
+<td>MMS</td>
+</tr>
+<tr>
+<td>18.2</td>
+<td>The metamodel gives every hierarchy child one parent</td>
+<td><code>specs/18-2-hierarchy-cardinality/</code> + <code>libs/python/aurelius-atlas-core</code> + <code>libs/python/aurelius-atlas-typesystem</code> + <code>apps/aurelius-atlas-server</code> + <code>apps/aurelius-atlas-webapp</code> + <code>data/atlas-sample</code></td>
+<td>HCA</td>
+</tr>
+<tr>
+<td>18.3</td>
+<td>A child that can sit under two parents picks one</td>
+<td><code>specs/18-3-parent-mutual-exclusion/</code> + <code>libs/python/aurelius-atlas-model</code> + <code>libs/python/aurelius-atlas-typesystem</code> + <code>libs/python/aurelius-atlas-core</code> + <code>apps/aurelius-atlas-server</code> + <code>data/atlas-sample</code></td>
+<td>PME</td>
 </tr>
 </tbody>
 </table>

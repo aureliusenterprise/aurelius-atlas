@@ -1,8 +1,6 @@
 # Deployment runbook
 
-> \[!WARNING\] **Skeleton (increment 10.1).** The charts in this tree render and lint in CI, and their workloads land in increments 10.2–10.3; the install steps below are the shape the runbook will take, and the publish + validated install arrive in 10.4–10.5. Do not follow this against production.
-
-Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the reasoning behind it are in the [deployment reference](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/deployment/index.md>); this page is the sequence to run.
+Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the reasoning behind it are in the [deployment reference](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/deployment/index.md>); this page is the sequence to run, including every DNS, certificate, and rename edge. For the shorter guided path, see [Deploy to Kubernetes](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/deployment/index.md>) in the user guide.
 
 ## 0\. Prerequisites
 
@@ -131,7 +129,7 @@ helm install atlas oci://ghcr.io/aureliusenterprise/charts/aurelius-atlas \
     --namespace atlas
 ```
 
-(10.4 replaces the registry URL with the published chart; until then, `helm install atlas helm -f …` from a checkout, after `helm dep update helm`.)
+From a repository checkout instead of the registry, resolve the component charts first, then install the local chart: `helm dep update helm`, followed by `helm install atlas helm -f …`.
 
 Before installing a version, verify the chart artifact carries this project's publish-workflow signature (CHT-95 — the same keyless identity the release's images carry):
 
@@ -155,8 +153,6 @@ kubectl -n atlas get gateway,gatewayclass,httproute
 curl -k https://app.<domain>/api/atlas/admin/liveness
 curl -k https://auth.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
-
-(The full smoke suite — login, entity write/read, lineage, telemetry — lands with increment 10.5.)
 
 ### Grafana
 
@@ -201,7 +197,7 @@ A release installed before 10.15 names its hosts `atlas`, `keycloak`, and `grafa
 
 ### Admin accounts
 
-The realm asset carries no users (CHT-80), so you create the first humans through the admin API. Three doors read three separate parts of the token: the `admin` role of the `grafana` client opens Grafana (CHT-136), the `realm-admin` role of the `realm-management` client opens the Keycloak console, and the four `atlas-*` client roles of the `aurelius-atlas-server` client open the Atlas API (AUZ-02). An admin grant opens only its own door, so the sequence below gives each account all of them, plus a temporary password with a forced change at first login, plus membership in the `aurelius` organization's read group. Server tenancy stays off until 15.x, so the organization membership stages the data and changes no access yet.
+The realm asset carries no users (CHT-80), so you create the first humans through the admin API. Three doors read three separate parts of the token: the `admin` role of the `grafana` client opens Grafana (CHT-136), the `realm-admin` role of the `realm-management` client opens the Keycloak console, and the four `atlas-*` client roles of the `aurelius-atlas-server` client open the Atlas API (AUZ-02). An admin grant opens only its own door, so the sequence below gives each account all of them, plus a temporary password with a forced change at first login, plus membership in the `aurelius` organization's read group. Server tenancy is off by default, so the organization membership stages the data and changes no access yet. Switching it on ([ADR 063](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/063-each-tenant-is-an-organization-with-its-own-store/index.md>)) makes every read and write consult what these groups and roles already hold.
 
 ```
 KC=https://localhost:8444   # after: kubectl port-forward svc/atlas-keycloak 8444:8443
@@ -219,12 +215,12 @@ TOKEN=$(curl -sk -X POST "$KC/realms/master/protocol/openid-connect/token" \
 For each account, create the user with the roles and required action (save the password to a file you delete after the handover, never to a log):
 
 ```
-USER=<username>                 # e.g. thijs.franck
+USER=<username>                 # e.g. jane.doe
 PASS=$(openssl rand -base64 15)
 curl -sk -X POST "$KC/admin/realms/aurelius-atlas/users" -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' -d "{
   \"username\": \"$USER\", \"enabled\": true,
-  \"email\": \"$USER@aureliusenterprise.com\", \"emailVerified\": true,
+  \"email\": \"$USER@<your-domain>\", \"emailVerified\": true,
   \"requiredActions\": [\"UPDATE_PASSWORD\"],
     \"credentials\": [{\"type\": \"password\", \"value\": \"$PASS\", \"temporary\": true}],
   \"clientRoles\": {\"grafana\": [\"admin\"],
@@ -233,9 +229,9 @@ curl -sk -X POST "$KC/admin/realms/aurelius-atlas/users" -H "Authorization: Bear
 echo "$USER $PASS" >>/tmp/admin-accounts.txt
 ```
 
-The console door needs one more call, because `realm-admin` is a client role of the internal `realm-management` client: fetch that client's id and `POST` the role object to `/users/<id>/role-mappings/clients/<rm-id>`. A user of that role signs in once with the temporary password, sets a real one, and reaches Grafana as Admin, the Keycloak console as administrator, and the Atlas API with its full four-role set. The `atlas-*` roles are client roles of `aurelius-atlas-server` today, and the organization's four groups carry the same names for the tenancy-on posture (TEN-02), so the 15.x switch re-reads what each account already holds. A realm user that holds no `grafana` client role shows the denial case: the strict mapping refuses it at the callback (CHT-136).
+The console door needs one more call, because `realm-admin` is a client role of the internal `realm-management` client: fetch that client's id and `POST` the role object to `/users/<id>/role-mappings/clients/<rm-id>`. A user of that role signs in once with the temporary password, sets a real one, and reaches Grafana as Admin, the Keycloak console as administrator, and the Atlas API with its full four-role set. The `atlas-*` roles are client roles of `aurelius-atlas-server` today, and the organization's four groups carry the same names for the tenancy-on posture (TEN-02), so a tenancy switch re-reads what each account already holds. A realm user that holds no `grafana` client role shows the denial case: the strict mapping refuses it at the callback (CHT-136).
 
-Finish with the organization, once per realm. The calls mirror what the server's provisioning module does when tenancy is on (`realm_tenants.py`, ADR 063), so 15.x finds the tenant already staged:
+Finish with the organization, once per realm. The calls mirror what the server's provisioning module does when tenancy is on (`realm_tenants.py`, ADR 063), so enabling tenancy finds the tenant already staged:
 
 ```
 ORG_ID=$(curl -sk -X POST "$KC/admin/realms/aurelius-atlas/organizations" \
@@ -249,7 +245,7 @@ for GROUP in atlas-read atlas-write atlas-types atlas-admin; do
 done
 READ_ID=$(curl -sk "$KC/admin/realms/aurelius-atlas/organizations/$ORG_ID/groups" \
     | uv run python -c 'import json,sys; print([g["id"] for g in json.load(sys.stdin) if g["name"]=="atlas-read"][0])')
-for USER in thijs.franck andreas.wombacher; do
+for USER in jane.doe john.smith; do
     UID_=$(curl -sk "$KC/admin/realms/aurelius-atlas/users?username=$USER&exact=true" \
         -H "Authorization: Bearer $TOKEN" \
         | uv run python -c 'import json,sys; print(json.load(sys.stdin)[0]["id"])')

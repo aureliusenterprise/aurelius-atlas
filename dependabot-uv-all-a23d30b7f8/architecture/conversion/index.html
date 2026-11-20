@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/">
+        <link rel="prev" href="../adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/">
       
       
         <link rel="next" href="./design-log/">
@@ -27,7 +27,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.ico">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -223,6 +223,8 @@
       
         
           
+        
+      
         
       
         
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -2033,6 +2064,8 @@
       
         
           
+        
+      
         
       
         
@@ -4051,6 +4084,33 @@
     
   
   067. The standalone stack ships as one generated release bundle
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
 
     
   </span>
@@ -7602,6 +7662,34 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.31</td>
+<td>Editor drawer room and richer relationship rows</td>
+<td>Two pieces of editor feedback: the <code>Drawer</code> grows a <code>size</code> input (<code>narrow</code> 28rem default, <code>wide</code> 44rem, UIC-43, DD-712) and the editor asks <code>wide</code>; a relationship picker's suggestion search moves to the view family's door (EDT-14 amended, DD-711, DV-177) so each row can print the card's fields - name, type badge, and stored trail (EDT-33) - and names that repeat stop being indistinguishable before the pick.</td>
+<td>Aurelius <code>.scratch/aurelius</code> relationships-input (a details card per row) + 16.5d's card (DV-177)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.32</td>
+<td>A dumb relationship picker in the ui library</td>
+<td>The editor's chip-and-suggest box becomes a dumb ui-lib component (<code>TokenPicker</code>, UIC-44, DD-713): chips, input, panel, and the DD-335/DD-336 keyboard and ARIA model, with a row's name, badge and trail handed to it whole — the trail printed by the <code>Breadcrumbs</code> component with its links off (UIC-11 amended, DD-714). The relationship picker keeps only the data wiring (DD-341) and the box's element classes move to <code>.aurelius-token-*</code>.</td>
+<td>Aurelius <code>.scratch/aurelius</code> relationships-input (box + search in one) + 7.7a's classification box (DD-335)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.33</td>
+<td>Editor label localization</td>
+<td>Every editor field label is the Aurelius catalogue string <code>search.components.editor.attribute.&lt;name&gt;</code> in both locales, else the typedef displayName, else the name (EDT-33/EDT-34, DD-722/DD-723): the map covers the shipped metamodel, an installed type keeps today's fallback, and the dictionary's two typo displayNames are corrected at the source (DV-181)</td>
+<td>Aurelius <code>apps/atlas/src/app/search/components/editor/</code> catalogue lookup (<code>search.components.editor.attribute.*</code> in <code>en-US.json</code>/<code>nl-NL.json</code>) (DV-181)</td>
+<td>done</td>
+</tr>
+<tr>
+<td>7.34</td>
+<td>Version and copyright leave the config</td>
+<td>The webapp's two last build-time values move to runtime (VER-01..04, DD-725/DD-726, DV-182): the footer, the settings About section and the lineage PNG's <code>Software</code> chunk read the version from <code>admin/version</code> (ADM-01, DV-03) over one shared fetch, the copyright prints the browser's year, and <code>appVersion</code>/<code>appCopyright</code> leave <code>/config.json</code>, <code>AppConfig</code>, the chart and the shipped configs.</td>
+<td>– (Aurelius origin; the version answer is 6.3's ADM-01)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
@@ -8232,6 +8320,20 @@ checks a PR must pass:</p>
 <td>planned</td>
 </tr>
 <tr>
+<td>15.8</td>
+<td>Adding a tenant on Kubernetes</td>
+<td><code>helm/bin/tenant.sh</code> runs 15.7's command as a Job made from the operators CronJob, the passwords handed in through a short-lived Secret and printed on the terminal alone; the samples in the server's image; the chart's realm with the client scopes, account clients and <code>roles</code> mappers tenancy needs (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>15.9</td>
+<td>Grafana per tenant</td>
+<td>The stack's Grafana behind the proxy, signing in through Keycloak; each tenant a Grafana organization of its own, with data sources that read its indices alone and the catalogue and activity dashboards; the tenant command keeping Grafana's organizations, data sources and members in step, and <code>grafana sync</code> (ADR 063)</td>
+<td>none</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td>16.1</td>
 <td>The view shape: the card and the view</td>
 <td>The one shape family of ADR 064 in the shared model library: the card of a result and the view of one entity, derived from the entity document's own fields and its derived App Search document (AVS-01..09, DD-580..583)</td>
@@ -8299,6 +8401,27 @@ checks a PR must pass:</p>
 <td>The standalone stack simplified</td>
 <td>The standalone stack sheds its render one-shots: the proxy's and the webapp's nginx configurations become static assets, the browser host is <code>localhost</code> with an optional external script, Keycloak starts in production mode with no build one-shot, and the demo one-shots move behind profiles with scripts of their own in <code>docker/bin/</code> (SPC-01..11, DD-694..699)</td>
 <td>none: no Atlas behaviour moves (ADR 065, ADR 067)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>18.1</td>
+<td>Bootstrap only the metamodel the system serves</td>
+<td>The shipped bootstrap keeps <code>models/0000-Area0</code> and <code>m4i_models</code> and loses the five Apache Atlas domain directories (Hadoop, RDBMS, Cloud, MachineLearning, Couchbase), and the m4i dictionary loses its ArchiMate scaffold: a new catalogue holds no domain type, <code>AURELIUS_ATLAS_SERVER_MODELS_DIR</code> still restores them, a replication audit keys on the entity GUID for every type, the icon map and the lineage process family keep metamodel names only, the editor's create picker lists the metamodel types, and the card shape carries the type alias every badge shows (MMS-01..09, DD-715..721, DV-167 amended, DV-178/179/180, ADR 068)</td>
+<td>Hive replication keying and the connector types (DV-128, DV-179; ADR 058 left the connectors with the legacy)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>18.2</td>
+<td>The metamodel gives every hierarchy child one parent</td>
+<td>The child-side end of the eight m4i hierarchy relationships becomes <code>SINGLE</code> and the child entity definitions lose the mirrored <code>array&lt;...&gt;</code> attribute, so the end def governs: the registry builds the child's attribute as one object reference, a save replaces the parent edge, the read answers one object, the editor shows one picker, and the sample bundles hold one parent each (the two datasets under two parents keep one). Breaking: the m4i types go to version <code>1.1</code> with no migration, since no catalogue runs this shape yet (HCA-01..10, DD-742..745)</td>
+<td>Migration of a store that already holds the <code>SET</code> shape (not planned, breaking); a mandatory parent (composition); cardinality on the base or glossary models</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>18.3</td>
+<td>A child that can sit under two parents picks one</td>
+<td>A child relationship end carries a <code>mutuallyExclusive</code> constraint naming a parent group, which every child end of one choice shares. The type system rejects it on a container end, the registry copies it onto the built child attribute, so the API and the write path read the rule in one place. The m4i model puts <code>dataDomain</code> and <code>parentEntity</code> in one group and <code>datasets</code> and <code>parentField</code> in another, and those four relationships go to <code>1.2</code> through the typedef update check, with no migration. A save that fills two members of one group is refused; filling neither stays legal. The editor disables the other picker of a filled group (PME-01..13, DD-746..754, DV-183/185).</td>
+<td>A must-choose-one variant. Mutual exclusion between anything other than hierarchical children. A hint sentence in the editor, since no new string may join the webapp's vendored catalogue.</td>
 <td>in progress</td>
 </tr>
 </tbody>

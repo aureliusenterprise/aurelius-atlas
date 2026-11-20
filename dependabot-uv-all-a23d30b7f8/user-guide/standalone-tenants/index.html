@@ -20,14 +20,14 @@
         <link rel="prev" href="../standalone-server/">
       
       
-        <link rel="next" href="../../contributor-guide/">
+        <link rel="next" href="../deployment/">
       
       
         
       
       
       <link rel="icon" href="../../assets/favicon.ico">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -225,6 +225,8 @@
       
         
           
+        
+      
         
       
         
@@ -450,6 +452,8 @@
       
         
       
+        
+      
     
     
     
@@ -645,6 +649,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-tenants-dashboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The tenant's dashboards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remove-a-tenant" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -670,6 +685,33 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2148,6 +2190,8 @@
       
         
           
+        
+      
         
       
         
@@ -4163,6 +4207,33 @@
     
   
   067. The standalone stack ships as one generated release bundle
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
 
     
   </span>
@@ -6759,6 +6830,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-tenants-dashboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The tenant's dashboards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remove-a-tenant" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6826,6 +6908,8 @@
       
         
           
+        
+      
         
       
         
@@ -6965,12 +7049,23 @@ Keycloak asks for a new one, then the webapp opens acme's catalogue without aski
 <p>A new Keycloak signs with new keys. The server reads them again within a minute of seeing a token it can't
 verify, so a sign-in in that minute can fail; try again.</p>
 </div>
+<h2 id="the-tenants-dashboards">The tenant's dashboards<a class="headerlink" href="#the-tenants-dashboards" title="Permanent link">&para;</a></h2>
+<p><code>add</code>, <code>user add</code> and <code>user remove</code> keep the tenant's Grafana organization in step: its data sources, which read
+the tenant's indices alone, its dashboards <em>catalogue</em> and <em>activity</em>, and its people as Viewers. Open
+<code>https://localhost:9000/grafana/</code> and sign in as <code>acme_atlas</code>: Grafana opens acme's organization. A person in
+more than one tenant switches between them with Grafana's organization menu; operators also see the main
+organization, with the stack's own telemetry.</p>
+<p>People added or removed in Keycloak's console, not with the command, reach Grafana with:</p>
+<div class="highlight"><pre><span></span><code>bash<span class="w"> </span>docker/bin/tenant.sh<span class="w"> </span>grafana<span class="w"> </span>sync
+</code></pre></div>
+<p>It also deletes the Grafana users who belong to no tenant any more and aren't operators.</p>
 <h2 id="remove-a-tenant">Remove a tenant<a class="headerlink" href="#remove-a-tenant" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>bash<span class="w"> </span>docker/bin/tenant.sh<span class="w"> </span>remove<span class="w"> </span>acme
 </code></pre></div>
-<p><code>remove</code> deletes the tenant's indices, about a minute after the server stops serving it, then its organization
-and its record. Its people stay in Keycloak, members of no tenant; delete them in Keycloak's admin console at
-<code>https://localhost:9000/auth/admin/</code> if they should go too.</p>
+<p><code>remove</code> deletes the tenant's indices, about a minute after the server stops serving it, then its
+organization, its Grafana organization and its record. Its people stay in Keycloak, members of no tenant;
+delete them in Keycloak's admin console at <code>https://localhost:9000/auth/admin/</code> if they should go too, and run
+<code>bash docker/bin/tenant.sh grafana sync</code> to delete them from Grafana.</p>
 <h2 id="the-seeded-tenants-demo-and-meyn">The seeded tenants demo and meyn<a class="headerlink" href="#the-seeded-tenants-demo-and-meyn" title="Permanent link">&para;</a></h2>
 <p><code>bash docker/bin/provision-tenants.sh</code> seeds the tenants demo, with the sample <code>sample_data</code>, and meyn, each
 with its three users. Unlike the tenants the command adds, their users have fixed passwords,

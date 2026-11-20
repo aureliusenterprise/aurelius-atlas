@@ -2,6 +2,7 @@
 
 ## User Guide
 
+- [Deploy to Kubernetes](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/deployment/index.md>)
 - [User Guide](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/standalone-server/index.md>)
 - [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/standalone-tenants/index.md>)
@@ -117,6 +118,7 @@
 - [065\. Compose stacks that deploy the whole system live at the root](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/index.md>)
 - [066\. Infrastructure components live at the repository root](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/066-infrastructure-components-live-at-the-repository-root/index.md>)
 - [067\. The standalone stack ships as one generated release bundle](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/index.md>)
+- [068\. A catalogue bootstraps only the metamodel it serves](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/design-log/index.md>)

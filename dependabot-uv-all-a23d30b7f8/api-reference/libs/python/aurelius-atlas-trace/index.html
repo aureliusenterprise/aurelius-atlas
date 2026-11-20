@@ -27,7 +27,7 @@
       
       
       <link rel="icon" href="../../../../assets/favicon.ico">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -223,6 +223,8 @@
       
         
           
+        
+      
         
       
         
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -3162,6 +3193,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_trace.rules.REFERENCE_TABLE_COLUMNS" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;REFERENCE_TABLE_COLUMNS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_trace.rules.SPEC_FILE_NAME" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3899,6 +3941,8 @@
       
         
           
+        
+      
         
       
         
@@ -5914,6 +5958,33 @@
     
   
   067. The standalone stack ships as one generated release bundle
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
 
     
   </span>
@@ -9819,6 +9890,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_trace.rules.REFERENCE_TABLE_COLUMNS" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;REFERENCE_TABLE_COLUMNS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_trace.rules.SPEC_FILE_NAME" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -11594,6 +11676,11 @@ through the class or a re-exporting package (TRC-04).</p>
     <div class="doc doc-contents ">
 
         <p>Collect a project's tests, without running them, and read their markers (TRC-10).</p>
+<p>Each test directory is collected by its own pytest run: pytest imports a
+<code>conftest.py</code> as the bare module <code>conftest</code>, so one run over <code>tests</code>
+and <code>e2e</code> lets the alphabetically first one answer the other's
+<code>from conftest import</code> (DD-701). One run per directory keeps each
+<code>conftest.py</code> the one pytest loads for its own tests.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -15049,6 +15136,18 @@ imported, so it is left out: a function no test calls has 0%, not a share for it
           </div>
         </li>
         <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            REFERENCE_TABLE_COLUMNS
+
+
+  
+      module-attribute
+   (aurelius_atlas_trace.rules.REFERENCE_TABLE_COLUMNS)" href="./#aurelius_atlas_trace.rules.REFERENCE_TABLE_COLUMNS">REFERENCE_TABLE_COLUMNS</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>The second header cell of a table that <em>names</em> rule ids instead of defining them: a spec's Acceptance table</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            SPEC_FILE_NAME
 
 
@@ -15176,6 +15275,32 @@ imported, so it is left out: a function no test calls has 0%, not a share for it
 <p>The scratch tree (<code>tmp/</code>, where local spikes and merge sandboxes live) holds
 stale copies of whole spec trees; entering it reports rules that no live spec
 has (the 7.24 trace run's DTM-08 conflict came from a copy under <code>tmp/</code>).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_trace.rules.REFERENCE_TABLE_COLUMNS" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">REFERENCE_TABLE_COLUMNS</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_trace.rules.REFERENCE_TABLE_COLUMNS" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">REFERENCE_TABLE_COLUMNS</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'proven by'</span><span class="p">,</span> <span class="s1">'unit proof'</span><span class="p">,</span> <span class="s1">'file'</span><span class="p">,</span> <span class="s1">'area'</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The second header cell of a table that <em>names</em> rule ids instead of defining them: a spec's Acceptance table
+(12.2, 13.1, 13.3), its Test map (12.4a), a test map, or a deviations list. Their rows are not definitions, so
+reading them as definitions reports the same id twice (DD-702).</p>
 
     </div>
 

@@ -27,7 +27,7 @@
       
       
       <link rel="icon" href="../../../assets/favicon.ico">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -223,6 +223,8 @@
       
         
           
+        
+      
         
       
         
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -2033,6 +2064,8 @@
       
         
           
+        
+      
         
       
         
@@ -4051,6 +4084,33 @@
     
   
   067. The standalone stack ships as one generated release bundle
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
 
     
   </span>
@@ -6997,16 +7057,11 @@
 
 
 <h1 id="deployment-runbook">Deployment runbook<a class="headerlink" href="#deployment-runbook" title="Permanent link">&para;</a></h1>
-<blockquote>
-<p>[!WARNING]
-<strong>Skeleton (increment 10.1).</strong> The charts in this tree render and lint in
-CI, and their workloads land in increments 10.2–10.3; the install steps
-below are the shape the runbook will take, and the publish + validated
-install arrive in 10.4–10.5. Do not follow this against production.</p>
-</blockquote>
 <p>Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the
 reasoning behind it are in the <a href="../">deployment reference</a>; this page is
-the sequence to run.</p>
+the sequence to run, including every DNS, certificate, and rename edge. For
+the shorter guided path, see
+<a href="../../../user-guide/deployment/">Deploy to Kubernetes</a> in the user guide.</p>
 <h2 id="0-prerequisites">0. Prerequisites<a class="headerlink" href="#0-prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>kubectl</strong> + a cluster context. Minikube: start it and run
@@ -7179,9 +7234,9 @@ escape hatch, not a cluster default.)</p>
 <span class="w">    </span>-f<span class="w"> </span>helm/environments/minikube.yaml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--namespace<span class="w"> </span>atlas
 </code></pre></div>
-<p>(10.4 replaces the registry URL with the published chart; until then,
-<code>helm install atlas helm -f …</code> from a checkout, after
-<code>helm dep update helm</code>.)</p>
+<p>From a repository checkout instead of the registry, resolve the component
+charts first, then install the local chart: <code>helm dep update helm</code>, followed
+by <code>helm install atlas helm -f …</code>.</p>
 <p>Before installing a version, verify the chart artifact carries this
 project's publish-workflow signature (CHT-95 — the same keyless identity
 the release's images carry):</p>
@@ -7232,8 +7287,6 @@ kubectl<span class="w"> </span>-n<span class="w"> </span>atlas<span class="w"> <
 curl<span class="w"> </span>-k<span class="w"> </span>https://app.&lt;domain&gt;/api/atlas/admin/liveness
 curl<span class="w"> </span>-k<span class="w"> </span>https://auth.&lt;domain&gt;/realms/aurelius-atlas<span class="w">    </span><span class="c1"># issuer reachable</span>
 </code></pre></div>
-<p>(The full smoke suite — login, entity write/read, lineage, telemetry — lands
-with increment 10.5.)</p>
 <h3 id="grafana">Grafana<a class="headerlink" href="#grafana" title="Permanent link">&para;</a></h3>
 <p>Grafana has no anonymous access: the login screen's <strong>Keycloak</strong> button goes
 to the <code>aurelius-atlas</code> realm (CHT-84, DD-275). The roles on the <code>grafana</code>
@@ -7319,8 +7372,10 @@ client open the Atlas API (AUZ-02). An admin grant opens only its own
 door, so the sequence
 below gives each account all of them, plus a temporary password with a
 forced change at first login, plus membership in the <code>aurelius</code>
-organization's read group. Server tenancy stays off until 15.x, so the
-organization membership stages the data and changes no access yet.</p>
+organization's read group. Server tenancy is off by default, so the
+organization membership stages the data and changes no access yet.
+Switching it on (<a href="../../adr/063-each-tenant-is-an-organization-with-its-own-store/">ADR 063</a>)
+makes every read and write consult what these groups and roles already hold.</p>
 <div class="highlight"><pre><span></span><code><span class="nv">KC</span><span class="o">=</span>https://localhost:8444<span class="w">   </span><span class="c1"># after: kubectl port-forward svc/atlas-keycloak 8444:8443</span>
 <span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sk<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"</span><span class="nv">$KC</span><span class="s2">/realms/master/protocol/openid-connect/token"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>-d<span class="w"> </span><span class="nv">grant_type</span><span class="o">=</span>password<span class="w"> </span>-d<span class="w"> </span><span class="nv">client_id</span><span class="o">=</span>admin-cli<span class="w"> </span><span class="se">\</span>
@@ -7340,12 +7395,12 @@ before you hand over the account. (The same endpoint answers a bare
 <code>[]</code>, not a <code>clientMappings</code> object, while the user holds no roles.)</p>
 <p>For each account, create the user with the roles and required action (save
 the password to a file you delete after the handover, never to a log):</p>
-<div class="highlight"><pre><span></span><code><span class="nv">USER</span><span class="o">=</span>&lt;username&gt;<span class="w">                 </span><span class="c1"># e.g. thijs.franck</span>
+<div class="highlight"><pre><span></span><code><span class="nv">USER</span><span class="o">=</span>&lt;username&gt;<span class="w">                 </span><span class="c1"># e.g. jane.doe</span>
 <span class="nv">PASS</span><span class="o">=</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">15</span><span class="k">)</span>
 curl<span class="w"> </span>-sk<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"</span><span class="nv">$KC</span><span class="s2">/admin/realms/aurelius-atlas/users"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span>-d<span class="w"> </span><span class="s2">"{</span>
 <span class="s2">  \"username\": \"</span><span class="nv">$USER</span><span class="s2">\", \"enabled\": true,</span>
-<span class="s2">  \"email\": \"</span><span class="nv">$USER</span><span class="s2">@aureliusenterprise.com\", \"emailVerified\": true,</span>
+<span class="s2">  \"email\": \"</span><span class="nv">$USER</span><span class="s2">@&lt;your-domain&gt;\", \"emailVerified\": true,</span>
 <span class="s2">  \"requiredActions\": [\"UPDATE_PASSWORD\"],</span>
 <span class="s2">    \"credentials\": [{\"type\": \"password\", \"value\": \"</span><span class="nv">$PASS</span><span class="s2">\", \"temporary\": true}],</span>
 <span class="s2">  \"clientRoles\": {\"grafana\": [\"admin\"],</span>
@@ -7360,13 +7415,13 @@ user of that role signs in once with the temporary password, sets a real
 one, and reaches Grafana as Admin, the Keycloak console as administrator,
 and the Atlas API with its full four-role set. The <code>atlas-*</code> roles are client roles of
 <code>aurelius-atlas-server</code> today, and the organization's four groups carry
-the same names for the tenancy-on posture (TEN-02), so the 15.x switch
+the same names for the tenancy-on posture (TEN-02), so a tenancy switch
 re-reads what each account already holds. A realm user that holds no
 <code>grafana</code> client role shows the denial case: the strict mapping refuses it
 at the callback (CHT-136).</p>
 <p>Finish with the organization, once per realm. The calls mirror what the
 server's provisioning module does when tenancy is on (<code>realm_tenants.py</code>,
-ADR 063), so 15.x finds the tenant already staged:</p>
+ADR 063), so enabling tenancy finds the tenant already staged:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">ORG_ID</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sk<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"</span><span class="nv">$KC</span><span class="s2">/admin/realms/aurelius-atlas/organizations"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"name": "aurelius", "alias": "aurelius", "enabled": true}'</span><span class="w"> </span><span class="se">\</span>
@@ -7378,7 +7433,7 @@ ADR 063), so 15.x finds the tenant already staged:</p>
 <span class="k">done</span>
 <span class="nv">READ_ID</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sk<span class="w"> </span><span class="s2">"</span><span class="nv">$KC</span><span class="s2">/admin/realms/aurelius-atlas/organizations/</span><span class="nv">$ORG_ID</span><span class="s2">/groups"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="p">|</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'import json,sys; print([g["id"] for g in json.load(sys.stdin) if g["name"]=="atlas-read"][0])'</span><span class="k">)</span>
-<span class="k">for</span><span class="w"> </span>USER<span class="w"> </span><span class="k">in</span><span class="w"> </span>thijs.franck<span class="w"> </span>andreas.wombacher<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="k">for</span><span class="w"> </span>USER<span class="w"> </span><span class="k">in</span><span class="w"> </span>jane.doe<span class="w"> </span>john.smith<span class="p">;</span><span class="w"> </span><span class="k">do</span>
 <span class="w">    </span><span class="nv">UID_</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-sk<span class="w"> </span><span class="s2">"</span><span class="nv">$KC</span><span class="s2">/admin/realms/aurelius-atlas/users?username=</span><span class="nv">$USER</span><span class="s2">&amp;exact=true"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span><span class="p">|</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'import json,sys; print(json.load(sys.stdin)[0]["id"])'</span><span class="k">)</span>

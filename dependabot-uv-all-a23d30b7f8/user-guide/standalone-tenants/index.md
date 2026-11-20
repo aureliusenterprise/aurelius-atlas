@@ -87,13 +87,25 @@ bash docker/bin/tenant.sh list
 >
 > A new Keycloak signs with new keys. The server reads them again within a minute of seeing a token it can't verify, so a sign-in in that minute can fail; try again.
 
+## The tenant's dashboards
+
+`add`, `user add` and `user remove` keep the tenant's Grafana organization in step: its data sources, which read the tenant's indices alone, its dashboards *catalogue* and *activity*, and its people as Viewers. Open `https://localhost:9000/grafana/` and sign in as `acme_atlas`: Grafana opens acme's organization. A person in more than one tenant switches between them with Grafana's organization menu; operators also see the main organization, with the stack's own telemetry.
+
+People added or removed in Keycloak's console, not with the command, reach Grafana with:
+
+```
+bash docker/bin/tenant.sh grafana sync
+```
+
+It also deletes the Grafana users who belong to no tenant any more and aren't operators.
+
 ## Remove a tenant
 
 ```
 bash docker/bin/tenant.sh remove acme
 ```
 
-`remove` deletes the tenant's indices, about a minute after the server stops serving it, then its organization and its record. Its people stay in Keycloak, members of no tenant; delete them in Keycloak's admin console at `https://localhost:9000/auth/admin/` if they should go too.
+`remove` deletes the tenant's indices, about a minute after the server stops serving it, then its organization, its Grafana organization and its record. Its people stay in Keycloak, members of no tenant; delete them in Keycloak's admin console at `https://localhost:9000/auth/admin/` if they should go too, and run `bash docker/bin/tenant.sh grafana sync` to delete them from Grafana.
 
 ## The seeded tenants demo and meyn
 

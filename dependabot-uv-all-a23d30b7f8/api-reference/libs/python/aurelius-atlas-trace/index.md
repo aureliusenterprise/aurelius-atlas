@@ -305,6 +305,8 @@ collect_project(project: Project) -> ProjectTests
 
 Collect a project's tests, without running them, and read their markers (TRC-10).
 
+Each test directory is collected by its own pytest run: pytest imports a `conftest.py` as the bare module `conftest`, so one run over `tests` and `e2e` lets the alphabetically first one answer the other's `from conftest import` (DD-701). One run per directory keeps each `conftest.py` the one pytest loads for its own tests.
+
 Raises:
 
 - `CollectionError` –
@@ -1086,6 +1088,9 @@ Attributes:
 - **`PRUNE_DIRECTORIES`** –
 
   Project directories the search for specifications never enters.
+- **`REFERENCE_TABLE_COLUMNS`** –
+
+  The second header cell of a table that *names* rule ids instead of defining them: a spec's Acceptance table
 - **`SPEC_FILE_NAME`** –
 
   A specification in the per-project layout: `<project>/specs/N-M-slug/spec.md` for increment N.M.
@@ -1124,6 +1129,14 @@ PRUNE_DIRECTORIES = frozenset(
 Project directories the search for specifications never enters.
 
 The scratch tree (`tmp/`, where local spikes and merge sandboxes live) holds stale copies of whole spec trees; entering it reports rules that no live spec has (the 7.24 trace run's DTM-08 conflict came from a copy under `tmp/`).
+
+### REFERENCE\_TABLE\_COLUMNS
+
+```
+REFERENCE_TABLE_COLUMNS = ('proven by', 'unit proof', 'file', 'area')
+```
+
+The second header cell of a table that *names* rule ids instead of defining them: a spec's Acceptance table (12.2, 13.1, 13.3), its Test map (12.4a), a test map, or a deviations list. Their rows are not definitions, so reading them as definitions reports the same id twice (DD-702).
 
 ### SPEC\_FILE\_NAME
 

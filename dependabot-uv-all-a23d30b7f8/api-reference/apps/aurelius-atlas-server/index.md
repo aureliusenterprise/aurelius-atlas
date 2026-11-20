@@ -285,6 +285,12 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": null,
 >       "title": "Import Folder"
 >     },
+>     "upload_max_bytes": {
+>       "default": 268435456,
+>       "exclusiveMinimum": 0,
+>       "title": "Upload Max Bytes",
+>       "type": "integer"
+>     },
 >     "cluster_name": {
 >       "default": "default",
 >       "title": "Cluster Name",
@@ -624,6 +630,37 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": null,
 >       "title": "Tenancy Admin Client Secret"
 >     },
+>     "grafana_url": {
+>       "anyOf": [
+>         {
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Grafana Url"
+>     },
+>     "grafana_admin_user": {
+>       "default": "admin",
+>       "title": "Grafana Admin User",
+>       "type": "string"
+>     },
+>     "grafana_admin_password": {
+>       "anyOf": [
+>         {
+>           "format": "password",
+>           "type": "string",
+>           "writeOnly": true
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Grafana Admin Password"
+>     },
 >     "sample_dir": {
 >       "anyOf": [
 >         {
@@ -689,6 +726,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `app_search_settle_seconds` (`float`)
 > - `hybrid_vector_weight` (`float`)
 > - `import_folder` (`Path | None`)
+> - `upload_max_bytes` (`int`)
 > - `cluster_name` (`str`)
 > - `lineage_on_demand_enabled` (`bool`)
 > - `lineage_on_demand_default_node_count` (`int`)
@@ -740,6 +778,9 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tenancy_refresh_seconds` (`float`)
 > - `tenancy_admin_client_id` (`str`)
 > - `tenancy_admin_client_secret` (`SecretStr | None`)
+> - `grafana_url` (`str | None`)
+> - `grafana_admin_user` (`str`)
+> - `grafana_admin_password` (`SecretStr | None`)
 > - `sample_dir` (`Path | None`)
 >
 > ### app\_search\_answer\_seconds
@@ -1134,6 +1175,30 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > Which peers may rewrite the client address through `X-Forwarded-For` (SRV-10, DD-238), passed to uvicorn. The default trusts only the loopback; behind a proxy the arrangement names the proxy network, so the access log and OTel peer attributes key on the browser's address, not the proxy's. The rate limit itself lives at the webapp's nginx edge, not here (SRV-09, DD-238).
 >
+> ### grafana\_admin\_password
+>
+> ```
+> grafana_admin_password: SecretStr | None = None
+> ```
+>
+> Its password; unset, the command leaves Grafana alone (TGF-11).
+>
+> ### grafana\_admin\_user
+>
+> ```
+> grafana_admin_user: str = 'admin'
+> ```
+>
+> Grafana's local administrator, as whom the command calls its API (TGF-12).
+>
+> ### grafana\_url
+>
+> ```
+> grafana_url: str | None = None
+> ```
+>
+> Grafana's API, which the tenant command keeps each tenant's organization in; none leaves Grafana alone (TGF-11, TGF-12).
+>
 > ### host
 >
 > ```
@@ -1467,6 +1532,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > How long the server answers from its type registry before it checks for another process's type change (TDS-13, DD-029).
+>
+> ### upload\_max\_bytes
+>
+> ```
+> upload_max_bytes: int = 256 * 1024 * 1024
+> ```
+>
+> The most bytes an upload's file may hold before `PAYLOAD_TOO_LARGE` refuses it: the import ZIP and the bulk import CSV or Excel alike (SRV-12, DD-708). The webapp's nginx edge lets a request of up to 1 GiB through, so an operator who raises this past 256 MiB raises `client_max_body_size` there too.
 >
 > ### audit\_aging\_config
 >
