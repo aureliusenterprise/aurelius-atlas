@@ -164,3 +164,62 @@ async def test__a_sample_export_imports_without_creating_a_type() -> None:
         assert result.operation_status.value == "SUCCESS", name
         assert created == {}, name
         assert types.registry.typedef_by_name("hive_table") is None, name
+
+
+# The eight hierarchy relationships: the child's end, its attribute and the child's type (HCA-01, HCA-02, HCA-08).
+HIERARCHIES: dict[str, tuple[str, str, str]] = {
+    "m4i_data_entity_assignment": ("endDef2", "dataDomain", "m4i_data_entity"),
+    "m4i_parent_entity_assignment": ("endDef1", "parentEntity", "m4i_data_entity"),
+    "m4i_data_entity_attribute_assignment": ("endDef2", "dataEntity", "m4i_data_attribute"),
+    "m4i_field_assignment": ("endDef2", "datasets", "m4i_field"),
+    "m4i_field_parent_assignment": ("endDef1", "parentField", "m4i_field"),
+    "m4i_system_parent_assignment": ("endDef1", "parentSystem", "m4i_system"),
+    "m4i_system_process_assignment": ("endDef2", "system", "m4i_generic_process"),
+    "m4i_dataset_parent_assignment": ("endDef1", "parentDataset", "m4i_dataset"),
+}
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["HCA-01", "HCA-02"])
+def test__every_hierarchy_child_end_is_single_and_holds_no_mirrored_attribute() -> None:
+    """The dictionary names SINGLE on the child end, keeps SET on the parent end, and declares no mirrored
+    attribute on the child entity (HCA-01, HCA-02).
+    """  # noqa: D205 - one sentence
+    model = json.loads(MODEL.read_text(encoding="utf-8"))
+    relationships = {definition["name"]: definition for definition in model["relationshipDefs"]}
+    entities = {definition["name"]: definition for definition in model["entityDefs"]}
+
+    for name, (end, attribute, child) in HIERARCHIES.items():
+        other = "endDef2" if end == "endDef1" else "endDef1"
+        definition = relationships[name]
+        child_attributes = [a["name"] for a in entities[child]["attributeDefs"]]
+
+        assert (definition[end]["name"], definition[end]["cardinality"]) == (attribute, "SINGLE"), name
+        assert definition[other]["cardinality"] == "SET", name
+        assert definition[end]["type"] == child, name
+        assert child_attributes, name
+        assert attribute not in child_attributes, name  # no mirrored attribute (HCA-02)
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["HCA-08"])
+def test__every_bundle_holds_at_most_one_value_per_hierarchy_child() -> None:
+    """Each bundle keeps the model's child ends, and every entity holds at most one value per child attribute
+    (HCA-08).
+    """  # noqa: D205 - one sentence
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        children: dict[str, list[str]] = {}
+        for _end, attribute, child in HIERARCHIES.values():
+            children.setdefault(child, []).append(attribute)
+        with zipfile.ZipFile(sample) as archive:
+            types = m4i_of(_typesdef(sample))
+            for name, (end, _attribute, _child) in HIERARCHIES.items():
+                assert types[name][end]["cardinality"] == "SINGLE", (sample.name, name)
+            for entry in archive.namelist():
+                if not entry.endswith(".json") or entry.startswith("atlas-"):
+                    continue
+                entity = json.loads(archive.read(entry)).get("entity")
+                if not entity:
+                    continue
+                for attribute in children.get(entity["typeName"], []):
+                    assert (entity.get("attributes") or {}).get(attribute) is None, (sample.name, entry, attribute)
+                    value = (entity.get("relationshipAttributes") or {}).get(attribute)
+                    assert not isinstance(value, list), (sample.name, entry, attribute)

@@ -458,6 +458,79 @@ describe("buildRelationshipFields (EDT-13, DD-338)", () => {
     });
 });
 
+describe("a hierarchy child picker (HCA-06, 18.2)", () => {
+    const DATASET = raDef(
+        "m4i_dataset",
+        [
+            ra({
+                name: "parentDataset",
+                typeName: "m4i_dataset",
+                cardinality: "SINGLE",
+                relationshipTypeName: "m4i_dataset_parent_assignment",
+            }),
+            ra({
+                name: "badgeOf",
+                typeName: "m4i_data_domain",
+                cardinality: "SET",
+                relationshipTypeName: "m4i_data_entity_assignment",
+            }),
+        ],
+        ["Asset"],
+    );
+    const fields = buildRelationshipFields(DATASET, new Map([["m4i_dataset", DATASET]]));
+
+    it("a SINGLE child end renders the one picker", () => {
+        const parent = fields.find((field) => field.name === "parentDataset");
+
+        expect(parent?.single).toBe(true);
+        expect(parent?.targetType).toBe("m4i_dataset");
+    });
+
+    it("a read of the old shape still seeds the one chip", () => {
+        const entity = {
+            relationshipAttributes: {
+                parentDataset: [
+                    { guid: "p1", typeName: "m4i_dataset", relationshipStatus: "ACTIVE" },
+                    { guid: "p2", typeName: "m4i_dataset", relationshipStatus: "ACTIVE" },
+                ],
+            },
+        };
+
+        expect(seedRelationshipValues(entity, fields)["parentDataset"]).toEqual([
+            { guid: "p1", typeName: "m4i_dataset" },
+        ]);
+    });
+
+    it("the save answers the one parent object, or null when cleared", () => {
+        const named = mergeRelationshipsOntoEntity(
+            { attributes: {}, relationshipAttributes: {} },
+            fields,
+            new Map([
+                [
+                    "parentDataset",
+                    [
+                        { guid: "p1", typeName: "m4i_dataset" },
+                        { guid: "p2", typeName: "m4i_dataset" },
+                    ],
+                ],
+            ]),
+        );
+        const cleared = mergeRelationshipsOntoEntity(
+            { attributes: {}, relationshipAttributes: {} },
+            fields,
+            new Map([["parentDataset", []]]),
+        );
+
+        expect(named.relationshipAttributes?.["parentDataset"]).toEqual({
+            guid: "p1",
+            typeName: "m4i_dataset",
+            relationshipType: "m4i_dataset_parent_assignment",
+            relationshipStatus: "ACTIVE",
+        });
+        expect(cleared.relationshipAttributes?.["parentDataset"]).toBeNull();
+    });
+});
+
 describe("seedRelationshipValues (EDT-15)", () => {
     const fields = buildRelationshipFields(
         raDef("DataSet", [

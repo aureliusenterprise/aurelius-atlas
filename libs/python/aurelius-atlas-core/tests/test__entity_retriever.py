@@ -9,11 +9,12 @@ from typing import Any
 import pytest
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
+from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.testing.entity_samples import sample_entities, sample_entity, sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
-from aurelius_atlas_model.instance import EntityStatus
+from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasObjectId, EntityStatus
 from aurelius_atlas_typesystem.entity_type import EntityType
 
 R = "aurelius_atlas_core.entity_retriever.EntityRetriever"
@@ -244,3 +245,39 @@ async def test__display_text_falls_back_to_the_qualified_name(store: EntityStore
 
     assert (await EntityRetriever(store).header("c1")).display_text == "c1@cl"
     assert (await EntityRetriever(store).header("bare")).display_text is None
+
+
+@pytest.mark.covers(f"{R}.entity_with_ext_info", rules=["HCA-05"])
+async def test__a_hierarchy_child_attribute_reads_as_one_object() -> None:
+    """A ``SINGLE`` end answers one related object, never a list; an entity with no parent answers none."""
+    relationship_store = EntityStore(sample_registry(relationships=True), MemoryEntityDocuments())
+    await relationship_store.prepare()
+    writer = EntityWriter(relationship_store, user="u")
+    request = AtlasEntitiesWithExtInfo.model_validate(
+        {
+            "entities": [
+                {"typeName": "s_column", "guid": "-col", "attributes": {"qualifiedName": "c@cl"}},
+                {
+                    "typeName": "r_node",
+                    "guid": "-child",
+                    "attributes": {"qualifiedName": "n@cl"},
+                    "relationshipAttributes": {"badge": {"guid": "-col", "typeName": "s_column"}},
+                },
+                {"typeName": "r_node", "guid": "-orphan", "attributes": {"qualifiedName": "o@cl"}},
+            ]
+        }
+    )
+
+    answer = await writer.create_or_update(request)
+    assigned = answer.guid_assignments or {}
+    retriever = EntityRetriever(relationship_store)
+
+    owned = await retriever.entity_with_ext_info(assigned["-child"])
+    orphan = await retriever.entity_with_ext_info(assigned["-orphan"])
+
+    assert owned.entity is not None
+    badge = (owned.entity.relationship_attributes or {})["badge"]
+    assert isinstance(badge, AtlasObjectId)
+    assert badge.guid == assigned["-col"]
+    assert orphan.entity is not None
+    assert (orphan.entity.relationship_attributes or {}).get("badge") is None

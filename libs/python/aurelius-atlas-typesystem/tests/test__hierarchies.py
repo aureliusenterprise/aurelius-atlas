@@ -556,6 +556,40 @@ def test__relationship_attributes_are_inherited_and_written_back() -> None:
     )
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_typesystem.relationship_type.RelationshipType._add_to_end",
+    rules=["HCA-02", "HCA-03"],
+)
+def test__a_single_child_end_without_an_attribute_builds_a_single_reference() -> None:
+    """A `SINGLE` child end with no mirrored attribute: the registry builds a single object reference (HCA-02),
+    cardinality `SINGLE`, and writes it back non-array and non-legacy (HCA-03).
+    """  # noqa: D205 - one sentence
+    registry = resolve(
+        entity("domain"),
+        entity("member"),  # no "domain" attribute of its own
+        relationship(
+            "member_domain", end("member", "domain", cardinality="SINGLE"), end("domain", "members", cardinality="SET")
+        ),
+    )
+    member = entity_type(registry, "member")
+    child = member.relationship_attribute("domain", "member_domain")
+
+    assert [attribute.name for attribute in member.entity_def.attribute_defs or []] == []
+    assert child is not None
+    assert not child.is_legacy_attribute
+    assert not isinstance(child.attribute_type, ArrayType)
+    assert isinstance(child.attribute_type, ObjectIdType)
+    assert child.attribute_type.object_type == "domain"
+    assert child.attribute_def.type_name == "domain"
+    assert child.attribute_def.cardinality is Cardinality.SINGLE
+    written = member.entity_def.to_json()["relationshipAttributeDefs"][0]
+    assert (written["typeName"], written["cardinality"], written["isLegacyAttribute"]) == (
+        "domain",
+        "SINGLE",
+        False,
+    )
+
+
 @pytest.mark.covers(rules=["THY-11"])
 @pytest.mark.parametrize(
     ("propagation", "edges_on_1", "edges_on_2"),

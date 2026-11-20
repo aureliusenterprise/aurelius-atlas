@@ -45,16 +45,28 @@ async def m4i_types() -> TypedefStore:
     return _LOADED["m4i"]
 
 
-def m4i(type_name: str, key: str, values: dict[str, Any] | None = None, **relations: list[str]) -> AtlasEntity:
-    """An entity named after ``key`` with ``values``, and relationship attributes naming others of the request."""
+def m4i(
+    type_name: str, key: str, values: dict[str, Any] | None = None, **relations: list[str] | str | None
+) -> AtlasEntity:
+    """An entity named after ``key`` with ``values``, and relationship attributes naming others of the request.
+
+    A hierarchy child names its one parent by key (HCA-03); a parent lists the children it holds.
+    """
     return AtlasEntity(
         type_name=type_name,
         guid=f"-{key}",
         attributes={"qualifiedName": key, "name": key.upper()} | (values or {}),
-        relationship_attributes={
-            name: [AtlasObjectId(guid=f"-{other}") for other in others] for name, others in relations.items()
-        },
+        relationship_attributes={name: _related(others) for name, others in relations.items()},
     )
+
+
+def _related(others: list[str] | str | None) -> object:
+    """One object id for a single parent, the ids of each key for a list, null for none."""
+    if others is None:
+        return None
+    if isinstance(others, str):
+        return AtlasObjectId(guid=f"-{others}")
+    return [AtlasObjectId(guid=f"-{other}") for other in others]
 
 
 def rule(key: str, dimension: str, *fields: str, **attributes: Any) -> AtlasEntity:  # noqa: ANN401
@@ -76,13 +88,13 @@ def catalogue_entities() -> list[AtlasEntity]:
     """
     return [
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e", dataDomain=["d"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_data_entity", "e", dataDomain="d"),
+        m4i("m4i_data_attribute", "a", dataEntity="e"),
         m4i("m4i_dataset", "s"),
         m4i("m4i_dataset", "t"),
-        m4i("m4i_field", "f", datasets=["s"], attributes=["a"]),
-        m4i("m4i_field", "g", datasets=["s"]),
-        m4i("m4i_field", "h", datasets=["t"]),
+        m4i("m4i_field", "f", datasets="s", attributes=["a"]),
+        m4i("m4i_field", "g", datasets="s"),
+        m4i("m4i_field", "h", datasets="t"),
         rule("r", "Accuracy", "f", "g", "h", id=7),
         rule("p", "Validity", "f"),
     ]
@@ -191,7 +203,7 @@ async def test__a_rule_without_a_name_id_text_or_domain_answers_the_defaults() -
     """  # noqa: D205 - one sentence
     catalogue = await Catalogue.indexed(
         m4i("m4i_dataset", "s"),
-        m4i("m4i_field", "g", datasets=["s"]),
+        m4i("m4i_field", "g", datasets="s"),
         rule("r", "Uniqueness", "g", expression=None, ruleDescription=None),
     )
     found = (await catalogue.documents.get([catalogue.guids["r"]]))[catalogue.guids["r"]]
@@ -295,7 +307,7 @@ async def test__a_second_round_writes_nothing_and_a_change_shows_after_the_next(
     moved = m4i("m4i_field", "g").model_copy(
         update={
             "guid": catalogue.guids["g"],
-            "relationship_attributes": {"datasets": [AtlasObjectId(guid=catalogue.guids["t"])]},
+            "relationship_attributes": {"datasets": AtlasObjectId(guid=catalogue.guids["t"])},
         }
     )
     await catalogue.create(moved)

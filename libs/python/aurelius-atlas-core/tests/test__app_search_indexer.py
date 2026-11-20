@@ -273,16 +273,26 @@ class Catalogue:
         return [by_guid[guid] for guid in guids]
 
 
-def m4i(type_name: str, key: str, **relations: list[str]) -> AtlasEntity:
-    """An entity named after ``key``, with relationship attributes naming other entities of the request by key."""
+def m4i(type_name: str, key: str, **relations: list[str] | str | None) -> AtlasEntity:
+    """An entity named after ``key``, with relationship attributes naming other entities of the request by key.
+
+    A hierarchy child names its one parent by key (HCA-03); a parent lists the children it holds.
+    """
     return AtlasEntity(
         type_name=type_name,
         guid=f"-{key}",
         attributes={"qualifiedName": key, "name": key.upper()},
-        relationship_attributes={
-            name: [AtlasObjectId(guid=f"-{other}") for other in others] for name, others in relations.items()
-        },
+        relationship_attributes={name: _related(others) for name, others in relations.items()},
     )
+
+
+def _related(others: list[str] | str | None) -> object:
+    """One object id for a single parent, the ids of each key for a list, null for none."""
+    if others is None:
+        return None
+    if isinstance(others, str):
+        return AtlasObjectId(guid=f"-{others}")
+    return [AtlasObjectId(guid=f"-{other}") for other in others]
 
 
 @pytest.mark.covers(f"{X}.derive", rules=["LAS-04"])
@@ -290,9 +300,9 @@ async def test__a_breadcrumb_follows_the_first_parent_of_the_type_s_order_up() -
     """An entity's parent entity comes before its domain; the chain from the top, its parent last."""
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e1", dataDomain=["d"]),
-        m4i("m4i_data_entity", "e2", parentEntity=["e1"], dataDomain=["d"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e2"]),
+        m4i("m4i_data_entity", "e1", dataDomain="d"),
+        m4i("m4i_data_entity", "e2", parentEntity="e1", dataDomain="d"),
+        m4i("m4i_data_attribute", "a", dataEntity="e2"),
     )
 
     documents = await catalogue.documents_of()
@@ -310,7 +320,7 @@ async def test__a_breadcrumb_follows_the_first_parent_of_the_type_s_order_up() -
 async def test__an_entity_already_in_the_chain_ends_it() -> None:
     """Two entities each the other's parent: each has the other as its whole breadcrumb."""
     catalogue = await Catalogue.of(
-        m4i("m4i_data_entity", "x", parentEntity=["y"]), m4i("m4i_data_entity", "y", parentEntity=["x"])
+        m4i("m4i_data_entity", "x", parentEntity="y"), m4i("m4i_data_entity", "y", parentEntity="x")
     )
 
     documents = await catalogue.documents_of()
@@ -324,8 +334,8 @@ async def test__a_deleted_parent_is_passed_over_and_listed_nowhere() -> None:
     """With its parent entity deleted, an entity's first parent is its domain; no document lists the deleted one."""
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e1", dataDomain=["d"]),
-        m4i("m4i_data_entity", "e2", parentEntity=["e1"], dataDomain=["d"]),
+        m4i("m4i_data_entity", "e1", dataDomain="d"),
+        m4i("m4i_data_entity", "e2", parentEntity="e1", dataDomain="d"),
     )
     await EntityWriter(catalogue.store, user="u").delete_by_id(catalogue.guids["e1"])
 
@@ -346,9 +356,9 @@ async def test__the_relations_list_both_ends_and_a_field_joins_its_dataset_and_d
     catalogue = await Catalogue.of(
         m4i("m4i_person", "p"),
         m4i("m4i_data_entity", "e", steward=["p"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_data_attribute", "a", dataEntity="e"),
         m4i("m4i_dataset", "s"),
-        m4i("m4i_field", "f", datasets=["s"], attributes=["a"]),
+        m4i("m4i_field", "f", datasets="s", attributes=["a"]),
         quality,
     )
 
@@ -379,8 +389,8 @@ async def test__the_role_fields_list_the_people_of_each_role_attribute() -> None
         m4i("m4i_person", "alice"),
         m4i("m4i_person", "bob"),
         m4i("m4i_data_domain", "d", domainLead=["alice", "bob"]),
-        m4i("m4i_data_entity", "e", dataDomain=["d"], businessOwner=["alice"], steward=["bob", "alice"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"], businessOwner=["bob"], steward=["bob"]),
+        m4i("m4i_data_entity", "e", dataDomain="d", businessOwner=["alice"], steward=["bob", "alice"]),
+        m4i("m4i_data_attribute", "a", dataEntity="e", businessOwner=["bob"], steward=["bob"]),
         m4i("m4i_field", "f", attributes=["a"], steward=["alice"]),
     )
 
@@ -448,7 +458,7 @@ async def test__an_entity_changed_while_its_document_was_derived_gets_it_in_a_la
     """The write that met a change leaves the entity for the next round; sources and deleted entities get none."""
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e", dataDomain=["d"]),
+        m4i("m4i_data_entity", "e", dataDomain="d"),
         m4i("m4i_system", "y"),
         m4i("m4i_source", "src"),
         m4i("m4i_data_entity", "gone"),
@@ -474,8 +484,8 @@ async def test__a_renamed_neighbour_embeds_the_entities_naming_it_again() -> Non
     """  # noqa: D205 - one sentence
     catalogue = await Catalogue.of(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e", dataDomain=["d"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_data_entity", "e", dataDomain="d"),
+        m4i("m4i_data_attribute", "a", dataEntity="e"),
         m4i("m4i_system", "y"),
     )
     embedder = FakeEmbedder()
@@ -512,7 +522,7 @@ async def test__a_renamed_neighbour_embeds_the_entities_naming_it_again() -> Non
 @pytest.mark.covers("aurelius_atlas_core.entity_retriever.EntityRetriever.entity_with_ext_info", rules=["ASD-05"])
 async def test__no_atlas_answer_shows_an_entity_s_document() -> None:
     """An indexed entity reads through the retriever as before: none of its document's fields in its JSON."""
-    catalogue = await Catalogue.of(m4i("m4i_data_domain", "d"), m4i("m4i_data_entity", "e", dataDomain=["d"]))
+    catalogue = await Catalogue.of(m4i("m4i_data_domain", "d"), m4i("m4i_data_entity", "e", dataDomain="d"))
     await catalogue.indexer().run_once()
     guid = catalogue.guids["e"]
     assert (await catalogue.documents.get([guid]))[guid].entity.app_search is not None

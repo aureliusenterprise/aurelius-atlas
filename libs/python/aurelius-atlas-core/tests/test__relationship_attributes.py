@@ -198,6 +198,39 @@ async def test__a_replaced_single_end_deletes_its_relationship_softly_or_hard(st
     ]
 
 
+@pytest.mark.covers(f"{M}.map", rules=["HCA-04", "HCA-07"])
+async def test__a_saved_hierarchy_child_attribute_keeps_one_parent_edge(store: EntityStore) -> None:
+    """The ``badge`` end of ``r_badge`` is the shape of a m4i hierarchy child: ``SINGLE``, built from the end def.
+
+    Every save of it replaces the edge, so the entity holds at most one parent (HCA-04), and leaving it out is
+    valid because the end is optional (HCA-07).
+    """
+    parentless = await write(store, entity("r_node", "-0", qualifiedName="p@cl"))
+    await write(
+        store,
+        entity("s_column", "-1", qualifiedName="c1@cl"),
+        entity("s_column", "-2", qualifiedName="c2@cl"),
+        entity("r_node", "-3", {"badge": ref("-1", "s_column")}, qualifiedName="n@cl"),
+    )
+    one = await relationships(store, g("-3"))
+
+    moved = await write(store, entity("r_node", g("-3"), {"badge": ref("-2", "s_column")}, qualifiedName="n@cl"))
+    after_move = await relationships(store, g("-3"))
+    cleared = await write(store, entity("r_node", g("-3"), {"badge": None}, qualifiedName="n@cl"))
+    after_clear = await relationships(store, g("-3"))
+    read_parentless = await read(store, g("-0"))
+
+    assert mutated(parentless, "CREATE") == [g("-0")]
+    assert read_parentless["entity"]["relationshipAttributes"].get("badge") is None
+    assert ends(one) == [(g("-1"), g("-3"), "ACTIVE")]
+    assert one[0].label == "badge"
+    assert mutated(moved, "UPDATE") == [g("-3"), g("-2"), g("-1")]
+    assert ends(after_move) == [(g("-1"), g("-3"), "DELETED"), (g("-2"), g("-3"), "ACTIVE")]
+    assert [found for found in after_move if found.state.value == "ACTIVE"] == [after_move[-1]]
+    assert mutated(cleared, "UPDATE") == [g("-3"), g("-2")]
+    assert [found for found in after_clear if found.state.value == "ACTIVE"] == []
+
+
 @pytest.mark.covers(f"{M}.map", rules=["REL-13", "REL-14", "REL-15"])
 async def test__an_array_end_maps_by_position_reuses_and_deletes_what_it_drops(store: EntityStore) -> None:
     """``[c1, c2]`` then ``[c2, c3]``: c2's relationship is reused, c3's created, c1's deleted and kept first."""

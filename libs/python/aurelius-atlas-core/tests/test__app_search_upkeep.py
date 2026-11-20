@@ -34,16 +34,26 @@ async def m4i_types() -> TypedefStore:
     return _LOADED["m4i"]
 
 
-def m4i(type_name: str, key: str, **relations: list[str]) -> AtlasEntity:
-    """An entity named after ``key``, with relationship attributes naming other entities of the request by key."""
+def m4i(type_name: str, key: str, **relations: list[str] | str | None) -> AtlasEntity:
+    """An entity named after ``key``, with relationship attributes naming other entities of the request by key.
+
+    A hierarchy child names its one parent by key (HCA-03); a parent lists the children it holds.
+    """
     return AtlasEntity(
         type_name=type_name,
         guid=f"-{key}",
         attributes={"qualifiedName": key, "name": key.upper()},
-        relationship_attributes={
-            name: [AtlasObjectId(guid=f"-{other}") for other in others] for name, others in relations.items()
-        },
+        relationship_attributes={name: _related(others) for name, others in relations.items()},
     )
+
+
+def _related(others: list[str] | str | None) -> object:
+    """One object id for a single parent, the ids of each key for a list, null for none."""
+    if others is None:
+        return None
+    if isinstance(others, str):
+        return AtlasObjectId(guid=f"-{others}")
+    return [AtlasObjectId(guid=f"-{other}") for other in others]
 
 
 class Catalogue:
@@ -103,8 +113,8 @@ async def test__a_rename_shows_in_the_breadcrumbs_below_and_the_relations_at_the
     """The entity's new name on its document, its attribute's breadcrumb and its domain's relation; nothing else."""
     catalogue = await Catalogue.indexed(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e", dataDomain=["d"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_data_entity", "e", dataDomain="d"),
+        m4i("m4i_data_attribute", "a", dataEntity="e"),
         m4i("m4i_system", "y"),
     )
 
@@ -121,7 +131,7 @@ async def test__a_rename_shows_in_the_breadcrumbs_below_and_the_relations_at_the
 @pytest.mark.covers(f"{X}.run_once", rules=["LAS-08", "ASU-03"])
 async def test__a_changed_definition_shows_on_the_entity_s_own_document_only() -> None:
     """One document written: no other document holds a definition."""
-    catalogue = await Catalogue.indexed(m4i("m4i_data_domain", "d"), m4i("m4i_data_entity", "e", dataDomain=["d"]))
+    catalogue = await Catalogue.indexed(m4i("m4i_data_domain", "d"), m4i("m4i_data_entity", "e", dataDomain="d"))
 
     await catalogue.writer.update_attribute_by_guid(catalogue.guids["d"], "definition", "What d is")
     written = await catalogue.indexer.run_once()
@@ -138,9 +148,9 @@ async def test__a_deleted_entity_leaves_every_document_and_those_below_get_their
     """  # noqa: D205 - one sentence
     catalogue = await Catalogue.indexed(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e1", dataDomain=["d"]),
-        m4i("m4i_data_entity", "e2", parentEntity=["e1"], dataDomain=["d"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e2"]),
+        m4i("m4i_data_entity", "e1", dataDomain="d"),
+        m4i("m4i_data_entity", "e2", parentEntity="e1", dataDomain="d"),
+        m4i("m4i_data_attribute", "a", dataEntity="e2"),
     )
 
     await catalogue.writer.delete_by_id(catalogue.guids["e1"])
@@ -157,7 +167,7 @@ async def test__a_deleted_entity_leaves_every_document_and_those_below_get_their
 @pytest.mark.covers("aurelius_atlas_core.relationship_store.RelationshipStore.get_by_id", rules=["ASU-09"])
 async def test__a_relationship_deleted_on_its_own_leaves_its_ends_and_its_answer_shows_no_record() -> None:
     """Neither end hash changes; the relationship's own listing reaches both, and Atlas's answer is as before."""
-    catalogue = await Catalogue.indexed(m4i("m4i_dataset", "s"), m4i("m4i_field", "f", datasets=["s"]))
+    catalogue = await Catalogue.indexed(m4i("m4i_dataset", "s"), m4i("m4i_field", "f", datasets="s"))
     guid = await catalogue.relationship("f", "s")
 
     await RelationshipStore(catalogue.store, user="u").delete_by_id(guid)
@@ -173,11 +183,11 @@ async def test__a_relationship_deleted_on_its_own_leaves_its_ends_and_its_answer
 @pytest.mark.covers(f"{X}.run_once", rules=["ASU-04"])
 async def test__a_relationship_an_update_drops_leaves_its_ends() -> None:
     """A field updated without its dataset: the soft-deleted relationship is unseen until the round."""
-    catalogue = await Catalogue.indexed(m4i("m4i_dataset", "s"), m4i("m4i_field", "f", datasets=["s"]))
+    catalogue = await Catalogue.indexed(m4i("m4i_dataset", "s"), m4i("m4i_field", "f", datasets="s"))
 
     field = m4i("m4i_field", "f")
     field.guid = catalogue.guids["f"]
-    field.relationship_attributes = {"datasets": []}
+    field.relationship_attributes = {"datasets": None}
     await catalogue.writer.create_or_update(AtlasEntitiesWithExtInfo(entities=[field]))
     assert len(await catalogue.documents.unseen_relationships(10)) == 1
     await catalogue.indexer.run_once()
@@ -193,15 +203,15 @@ async def test__a_field_joined_to_an_attribute_and_parted_again_reaches_the_data
     """  # noqa: D205 - one sentence
     catalogue = await Catalogue.indexed(
         m4i("m4i_data_entity", "e"),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_data_attribute", "a", dataEntity="e"),
         m4i("m4i_dataset", "s"),
-        m4i("m4i_field", "f", datasets=["s"]),
+        m4i("m4i_field", "f", datasets="s"),
     )
 
-    field = m4i("m4i_field", "f", datasets=["s"], attributes=["a"])
+    field = m4i("m4i_field", "f", datasets="s", attributes=["a"])
     field.guid = catalogue.guids["f"]
     field.relationship_attributes = {
-        "datasets": [AtlasObjectId(guid=catalogue.guids["s"])],
+        "datasets": AtlasObjectId(guid=catalogue.guids["s"]),
         "attributes": [AtlasObjectId(guid=catalogue.guids["a"])],
     }
     await catalogue.writer.create_or_update(AtlasEntitiesWithExtInfo(entities=[field]))
@@ -224,8 +234,8 @@ async def test__an_affected_entity_changed_in_between_keeps_the_page_listed_for_
     """The attribute's write meets a conflict: the renamed entity stays stale, and the next round finishes."""
     catalogue = await Catalogue.indexed(
         m4i("m4i_data_domain", "d"),
-        m4i("m4i_data_entity", "e", dataDomain=["d"]),
-        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_data_entity", "e", dataDomain="d"),
+        m4i("m4i_data_attribute", "a", dataEntity="e"),
     )
     await catalogue.writer.update_attribute_by_guid(catalogue.guids["e"], "name", "Renamed")
     catalogue.documents.fail[catalogue.guids["a"]] = "conflict"
