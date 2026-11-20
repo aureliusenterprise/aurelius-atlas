@@ -35,11 +35,6 @@
     "aliases": []
   },
   {
-    "version": "feat-standalone-grafana-demo-dashboards",
-    "title": "feat-standalone-grafana-demo-dashboards",
-    "aliases": []
-  },
-  {
     "version": "feat-infra-root",
     "title": "feat-infra-root",
     "aliases": []
