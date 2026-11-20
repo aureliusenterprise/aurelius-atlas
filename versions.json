@@ -30,11 +30,6 @@
     "aliases": []
   },
   {
-    "version": "fix-trace-checker-blind-report",
-    "title": "fix-trace-checker-blind-report",
-    "aliases": []
-  },
-  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
