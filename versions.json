@@ -25,11 +25,6 @@
     "aliases": []
   },
   {
-    "version": "fix-webapp-ca-secret-gate",
-    "title": "fix-webapp-ca-secret-gate",
-    "aliases": []
-  },
-  {
     "version": "fix-trace-checker-blind-report",
     "title": "fix-trace-checker-blind-report",
     "aliases": []
