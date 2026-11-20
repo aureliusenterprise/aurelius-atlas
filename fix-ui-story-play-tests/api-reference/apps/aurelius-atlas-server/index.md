@@ -285,6 +285,12 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": null,
 >       "title": "Import Folder"
 >     },
+>     "upload_max_bytes": {
+>       "default": 268435456,
+>       "exclusiveMinimum": 0,
+>       "title": "Upload Max Bytes",
+>       "type": "integer"
+>     },
 >     "cluster_name": {
 >       "default": "default",
 >       "title": "Cluster Name",
@@ -689,6 +695,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `app_search_settle_seconds` (`float`)
 > - `hybrid_vector_weight` (`float`)
 > - `import_folder` (`Path | None`)
+> - `upload_max_bytes` (`int`)
 > - `cluster_name` (`str`)
 > - `lineage_on_demand_enabled` (`bool`)
 > - `lineage_on_demand_default_node_count` (`int`)
@@ -1467,6 +1474,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > How long the server answers from its type registry before it checks for another process's type change (TDS-13, DD-029).
+>
+> ### upload\_max\_bytes
+>
+> ```
+> upload_max_bytes: int = 256 * 1024 * 1024
+> ```
+>
+> The most bytes an upload's file may hold before `PAYLOAD_TOO_LARGE` refuses it: the import ZIP and the bulk import CSV or Excel alike (SRV-12, DD-708). The webapp's nginx edge lets a request of up to 1 GiB through, so an operator who raises this past 256 MiB raises `client_max_body_size` there too.
 >
 > ### audit\_aging\_config
 >
