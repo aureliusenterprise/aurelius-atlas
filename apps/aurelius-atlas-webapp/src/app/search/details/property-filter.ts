@@ -153,7 +153,11 @@ export function viewProperties(view: EntityView, shownDescription: string | null
     const links: Record<string, unknown> = {};
     for (const section of view.sections ?? []) {
         const entities = (section.entities ?? []).filter((end) => typeof end?.guid === "string");
-        if (entities.length > 0) {
+        // Only the door's read ends are the entity's own relationship attributes (AVS-04,
+        // DD-732): a stored derived pair answers `{guid, name}` with neither `typeName` nor
+        // `status`, and those pairs (LAS-05, keyed by the end's type) are the card's, not the
+        // entity's — the Atlas GET's merge never saw them.
+        if (entities.length > 0 && entities.some((end) => end.typeName != null || end.status != null)) {
             links[section.attribute] = entities.map((end) => ({ guid: end.guid, name: end.name ?? undefined }));
         }
     }
