@@ -25,11 +25,6 @@
     "aliases": []
   },
   {
-    "version": "fix-webapp-nginx-module-match",
-    "title": "fix-webapp-nginx-module-match",
-    "aliases": []
-  },
-  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
