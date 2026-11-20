@@ -2,6 +2,7 @@
 
 ## User Guide
 
+- [Deploy to Kubernetes](<https://aureliusenterprise.github.io/fix-webapp-ca-secret-gate/user-guide/deployment/index.md>)
 - [User Guide](<https://aureliusenterprise.github.io/fix-webapp-ca-secret-gate/user-guide/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/fix-webapp-ca-secret-gate/user-guide/standalone-server/index.md>)
 - [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/fix-webapp-ca-secret-gate/user-guide/standalone-tenants/index.md>)
