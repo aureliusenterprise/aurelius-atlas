@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from test__app_search_engine import DROPPED_RULES
 
 FIXTURES = Path(__file__).parent / "fixtures"
 SAMPLE = Path(__file__).parents[4] / "data" / "atlas-sample" / "sample_data.zip"
@@ -60,11 +61,14 @@ def attribute(guid: str, name: str) -> object:
 
 
 def mismatches(field: str, expected: dict[str, object]) -> dict[str, str]:
-    """The ``atlas-dev`` documents whose ``field`` is not the expected value, by GUID, with their type."""
+    """The ``atlas-dev`` documents whose ``field`` is not the expected value, by GUID, with their type.
+
+    DV-185: the 29 documents of the rules the corpus deleted are skipped; their entity is gone.
+    """
     return {
         document["guid"]: document["typename"]
         for document in engine("atlas-dev")
-        if (document[field] or None) != (expected[document["guid"]] or None)
+        if document["guid"] not in DROPPED_RULES and (document[field] or None) != (expected[document["guid"]] or None)
     }
 
 
@@ -83,8 +87,11 @@ def test__one_document_per_m4i_entity_but_the_sources() -> None:
 
 @pytest.mark.covers(rules=["LAS-02"])
 def test__the_identity_fields_are_the_entity_s_but_the_listed_differences() -> None:
-    """Type, super types and email hold everywhere; name, qualified name and definition but for DD-485's list."""
-    documents = engine("atlas-dev")
+    """Type, super types and email hold everywhere; name, qualified name and definition but for DD-485's list.
+
+    DV-185: the 29 documents of the rules the corpus deleted are skipped, as their entity is gone.
+    """
+    documents = [document for document in engine("atlas-dev") if document["guid"] not in DROPPED_RULES]
     names = {guid: attribute(guid, "name") or attribute(guid, "qualifiedName") for guid in entities()}
     qualified = {guid: attribute(guid, "qualifiedName") or guid for guid in entities()}
     definitions = {guid: attribute(guid, "definition") for guid in entities()}

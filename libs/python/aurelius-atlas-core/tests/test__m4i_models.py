@@ -5,9 +5,12 @@ classification definitions as the sample exports in ``data/atlas-sample/`` carry
 definition adds.
 """
 
+import asyncio
 import json
+import re
 import shutil
 import zipfile
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +23,12 @@ from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryType
 from aurelius_atlas_core.typedef_change_listener import ChangedTypeDefs
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.impexp import AtlasImportRequest
-from aurelius_atlas_model.typedef import AtlasEntityDef
+from aurelius_atlas_model.typedef import (
+    AtlasEntityDef,
+    AtlasRelationshipDef,
+    AtlasStructDef,
+    TypeCategory,
+)
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 SAMPLES = Path(__file__).parents[4] / "data" / "atlas-sample"
@@ -315,3 +323,122 @@ def test__every_bundle_words_its_single_parent_rule_for_one_parent_of_each_kind(
                     assert companion[attribute] == PARENT_RULE_SENTENCES[attribute], attribute
 
     assert holding == 2  # both rules bundles carry it
+
+
+# A bare camelCase identifier (no m4i_ prefix glued to it) reads as developer-speak in a sentence.
+_BARE_CAMEL = re.compile(r"\b[a-z]+(?:[A-Z][a-z0-9]*)+\b")
+# The three fields the banner and the rule page print verbatim (GQ-06).
+_RULE_PROSE = ("ruleDescription", "compliantMessage", "nonCompliantMessage")
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["PME-12"])
+def test__no_bundle_words_its_governance_rules_in_camel_case() -> None:
+    """Every governance rule sentence in every bundle is plain English (PME-12, DD-751).
+
+    The banner prints what the rule stores (GQ-06), so a field name left in camel case would show a reader
+    ``parentDataset`` instead of "parent dataset". A snake-case Atlas type name a relation sentence quotes
+    (``m4i_indexPattern``) stays: it names a type, not a field, and carries no separate word to split.
+    """
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        with zipfile.ZipFile(sample) as archive:
+            for entry in archive.namelist():
+                if not entry.endswith(".json") or entry.startswith("atlas-"):
+                    continue
+                entity = json.loads(archive.read(entry)).get("entity")
+                if not entity or entity["typeName"] != "m4i_gov_data_quality":
+                    continue
+                attributes = entity["attributes"]
+                for field in _RULE_PROSE:
+                    sentence = str(attributes.get(field) or "")
+                    leaked = _BARE_CAMEL.findall(sentence)
+                    assert not leaked, (sample.name, entry, field, sentence, leaked)
+
+
+# The check functions a governance rule calls name one attribute of the type it governs.
+_RULE_ATTRIBUTE = re.compile(r"\b(?:completeness|length|uniqueness)\(\s*'([^']+)'")
+# A relation rule maps one relationship definition to the type the author must reach.
+_RELATION_BLOCK = re.compile(r"conditional_value\([^,]+,[^,]+,\s*\{([^}]*)\}")
+_RELATION_ENTRY = re.compile(r"'([^']+)'\s*:\s*'([^']+)'")
+
+
+@cache
+def m4i_registry() -> TypeRegistry:
+    """The loaded typesystem (Atlas's models then the m4i dictionary) the governance rules answer to."""
+    return asyncio.run(loaded(BUILTIN_MODELS_DIR, M4I_MODELS_DIR)).registry
+
+
+def type_names(registry: TypeRegistry, kind: TypeCategory) -> set[str]:
+    """The names of every definition of one kind."""
+    return {name for definition in registry.typedefs(kind) if (name := definition.name)}
+
+
+def answerable_names(registry: TypeRegistry, rule_type: str) -> set[str]:
+    """Every attribute a type answers to, from its own definitions, its supertypes, and its relationship ends."""
+    supertypes: set[str] = set()
+    pending = [rule_type]
+    while pending:
+        current = pending.pop()
+        if current in supertypes:
+            continue
+        supertypes.add(current)
+        definition = registry.typedef_by_name(current)
+        if isinstance(definition, AtlasEntityDef):
+            pending.extend(definition.super_types)
+    owned = {
+        attribute.name
+        for name in supertypes
+        if isinstance(definition := registry.typedef_by_name(name), AtlasStructDef)
+        for attribute in definition.attribute_defs
+        if attribute.name
+    }
+    owned |= {
+        end.name
+        for definition in registry.typedefs(TypeCategory.RELATIONSHIP)
+        if isinstance(definition, AtlasRelationshipDef)
+        for end in (definition.end_def1, definition.end_def2)
+        if end is not None and end.name and end.type in supertypes
+    }
+    return {name for name in owned if name}
+
+
+def missing_rule_names(registry: TypeRegistry, rule_type: str, expression: str) -> list[str]:
+    """The names ``expression`` needs that the model does not define; empty when the model answers it."""
+    entities = type_names(registry, TypeCategory.ENTITY)
+    if rule_type not in entities:
+        return [f"type {rule_type}"]
+    owned = answerable_names(registry, rule_type)
+    relationships = type_names(registry, TypeCategory.RELATIONSHIP)
+    missing = [f"attribute {name}" for name in _RULE_ATTRIBUTE.findall(expression) if name not in owned]
+    for block in _RELATION_BLOCK.findall(expression):
+        for key, value in _RELATION_ENTRY.findall(block):
+            if key not in relationships:
+                missing.append(f"relationship {key}")
+            if value not in entities:
+                missing.append(f"type {value}")
+    return missing
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["PME-13"])
+def test__every_bundle_ships_only_governance_rules_the_model_can_answer() -> None:
+    """Every governance rule of every bundle names only a type, attribute or relationship the model defines.
+
+    PME-13, DD-752. A rule over a name the model lacks is false on every entity of its type forever, so 18.3
+    drops its 29 records from the corpus (DV-185). The attribute a check names is one the subject type owns
+    or gains from a relationship end. The key of a relation rule names a relationship definition, and its
+    value a type. ``small.zip`` ships no governance rule, so only the two rules bundles carry it.
+    """
+    registry = m4i_registry()
+
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        with zipfile.ZipFile(sample) as archive:
+            for entry in archive.namelist():
+                if not entry.endswith(".json") or entry.startswith("atlas-"):
+                    continue
+                entity = json.loads(archive.read(entry)).get("entity")
+                if not entity or entity["typeName"] != "m4i_gov_data_quality":
+                    continue
+                attributes = entity["attributes"]
+                qualified_name = str(attributes.get("qualifiedName") or "")
+                rule_type = qualified_name.split("--", maxsplit=1)[0]
+                missing = missing_rule_names(registry, rule_type, str(attributes.get("expression") or ""))
+                assert not missing, (sample.name, qualified_name, missing)

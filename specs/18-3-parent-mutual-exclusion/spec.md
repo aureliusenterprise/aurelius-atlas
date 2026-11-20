@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** –
-- **Records:** DD-744 to DD-750 (here), DV-183 and DV-184 (deviations). Relies on
+- **Records:** DD-744 to DD-752 (here), DV-183 to DV-185 (deviations). Relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
   (the m4i types ship and version with the server), increment 1.5 (MDL, the loader), and
   [increment 18.2](../18-2-hierarchy-cardinality/spec.md) (HCA-01 to HCA-10, the single parent).
@@ -30,7 +30,10 @@ In scope:
 5. The editor disables a parent picker whose sibling in the same group already holds a pick, so the author
    cannot enter the pair the server rejects.
 6. The sample corpus words its parent rules for one parent of each kind, and not for "at least one" of a
-   single kind.
+   single kind. The corpus also words every governance rule sentence in plain English, with no bare
+   camel-case field name left in a description or message.
+7. The sample corpus drops the governance rules its m4i model cannot answer, so every rule it ships names a
+   type, attribute or relationship the model defines.
 
 Out of scope:
 
@@ -61,6 +64,8 @@ a group changes nothing, so it stays valid. Each rule is enforced by a test that
 | PME-09 | Filling neither member, or exactly one, succeeds. An entity saved with one parent reads back with exactly one parent of that type.                                                                                                                                                              |
 | PME-10 | The editor reads the group off the relationship attribute definitions (PME-05). When one member of a group holds a pick, every other member of that group is disabled, and a disabled picker starts no search and never holds the save. Clearing the pick enables them again.                   |
 | PME-11 | The corpus governance rules over a single-cardinality parent state one parent of each kind in their name, description and both messages. A SET attribute keeps the "at least one" wording. The rule expressions do not change.                                                                  |
+| PME-12 | The corpus words every governance rule sentence in plain English. No bare camel-case field name remains in a description or message, and a quoted Atlas type name such as `m4i_indexPattern` keeps its spelling.                                                                                |
+| PME-13 | The corpus ships a governance rule only when the m4i model defines every type, attribute and relationship its expression names. A rule over a name the model lacks is false on every entity of its type, so the corpus holds none (DV-185).                                                     |
 
 ## Java origin
 
@@ -76,6 +81,10 @@ validation all come from this increment. See [DV-183](../../docs/architecture/co
 - **DV-184 (App Search):** The sample corpus states the data-entity parent rule as "at least one data
   domain or data entity". Aurelius rewrites its name, description and both messages to one data domain or
   parent entity, and the frozen `atlas-dev` oracle keeps the old sentences. See the damage in DV-184.
+- **DV-185 (App Search):** The sample corpus ships 66 governance rules, not the 95 the frozen `atlas-dev`
+  oracle recorded. Aurelius deletes the 29 whose expression names a type, attribute or relationship the m4i
+  model does not define, because such a rule fails on every entity of its type forever. The oracle keeps a
+  document for each, so the 14.6 gates drop those 29 documents from the oracle side.
 
 ## Acceptance
 
@@ -92,7 +101,10 @@ validation all come from this increment. See [DV-183](../../docs/architecture/co
   on the end def and on the entity's relationship attribute definitions).
 - Data: the `atlas-typesdef.json` of each bundle in `data/atlas-sample/` changes with the model, which
   `test__m4i_models.py` compares (PME-04). The rule records of `sample_data.zip` and
-  `only_gov_quality.zip` carry the new sentences, which `test__m4i_models.py` reads back (PME-11).
+  `only_gov_quality.zip` carry the new sentences, which `test__m4i_models.py` reads back (PME-11). No
+  governance rule sentence of any bundle names a field in camel case, which `test__m4i_models.py` checks
+  field by field (PME-12). Every governance rule of any bundle names a type, attribute or relationship the
+  model defines, which `test__m4i_models.py` checks against the loaded model (PME-13, DV-185).
 - E2E: `nx e2e aurelius-atlas-server` (the registry bootstraps the constraints on a real store, PME-05).
 - Webapp: `apps/aurelius-atlas-webapp/src/app/search/editor/entity-editor.component.spec.ts` (PME-10: a
   filled parent disables its sibling, clearing frees it, and a blocked mandatory picker never holds the

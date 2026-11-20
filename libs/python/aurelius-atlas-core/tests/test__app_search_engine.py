@@ -52,6 +52,45 @@ X = f"{E}.AppSearchEngine.search"
 FIXTURES = Path(__file__).parent / "fixtures"
 SAMPLE = Path(__file__).parents[4] / "data" / "atlas-sample" / "sample_data.zip"
 
+DROPPED_RULES = frozenset(
+    {
+        "12422c14-069b-4f1b-959c-e38350fb6d26",
+        "1399b945-12cd-4516-896a-9509fbd70a0c",
+        "149e3995-b5e4-48af-a52a-8b3a04c0bb0a",
+        "1ad6de8f-848d-4b17-9c11-730f80d95295",
+        "1bd2af42-d926-43e4-ace1-18f440426c2a",
+        "2aff6737-7772-4427-b73a-7779ea768c7f",
+        "30ba6684-eced-4715-8352-1663040dab2d",
+        "3b3845c0-e45f-4095-9b4b-4ac8ac24c09e",
+        "4201e4d2-ac7d-4230-896a-b37b66c76bbc",
+        "59aa161c-d9e9-4dbd-8a82-f924bc20e906",
+        "5c8021fa-d439-4884-a5e5-fd2e28c7d567",
+        "6d6d4a9e-b3c5-4715-9f18-eb31064a5505",
+        "7ade7cbb-474f-40c0-b248-27054bafe90f",
+        "7b6e0d31-c40b-4f8e-bbde-e9a7266b2093",
+        "7dced880-0fea-4f39-8dc4-fd7dcdf844e3",
+        "86d3889f-846d-4bbe-917f-83ded5ac61db",
+        "87f57c39-d028-4a6a-ac04-f60a102f20f6",
+        "8c28f722-5353-4437-89bb-aebf84821ba9",
+        "936435d5-d306-406c-81a7-6bdd06f8ed6e",
+        "9867d72e-3343-4e92-905f-5ee893490162",
+        "998381f7-d71f-4a97-b281-3027b8aa5ed3",
+        "9b7d63dc-0246-4bff-9019-c2407b4f4bb5",
+        "9d3475fb-b128-4cba-bca5-a0cf62125911",
+        "9ffd44bf-97a8-456c-8eb9-d7dbe9b9810e",
+        "c211f4bd-9aaf-4979-a68a-64493a06fc54",
+        "c7e40cce-507c-4d30-86cb-7fa97b5ec3f5",
+        "d1b03810-ca83-44bd-a887-ac639dda69b3",
+        "ea4cb0a1-b98c-4eee-8bf8-410b024ff0d9",
+        "ff5b8927-b38b-4516-9c20-b2d68a28b14f",
+    }
+)
+"""The 29 governance rules the corpus no longer ships (DV-185). Increment 18.3 (PME-13) deletes every
+``m4i_gov_data_quality`` record whose expression names a type, attribute or relationship the m4i model does
+not define, because such a rule fails on every entity of its type forever. The frozen ``atlas-dev``
+recording still holds a document for each, so every sample-to-oracle comparison drops these GUIDs from the
+oracle side."""
+
 ENTITY_SEARCH_FIELDS = {
     name: {"raw": {}}
     for name in (
@@ -488,8 +527,9 @@ def sample() -> AppSearchEngine:
 
 @cache
 def legacy() -> list[dict[str, Any]]:
-    """``atlas-dev``'s documents."""
-    return json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev.json").read_text())
+    """``atlas-dev``'s documents, minus the 29 a deleted rule still has (DV-185)."""
+    documents = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev.json").read_text())
+    return [document for document in documents if document["guid"] not in DROPPED_RULES]
 
 
 def legacy_counts(field: str) -> dict[str, int]:
@@ -503,7 +543,7 @@ def legacy_counts(field: str) -> dict[str, int]:
 
 @pytest.mark.covers(X, rules=["ASE-03", "ASE-07", "ASE-09"])
 def test__the_search_page_s_first_request_answers_the_sample_as_atlas_dev_did() -> None:
-    """All 684 documents; the type and source type facets count what ``atlas-dev`` counted."""
+    """All 655 documents (DV-185); the type and source type facets count what ``atlas-dev`` counted."""
     answer = asyncio.run(
         sample().search(
             {
@@ -515,7 +555,7 @@ def test__the_search_page_s_first_request_answers_the_sample_as_atlas_dev_did() 
         )
     )
 
-    assert answer["meta"]["page"] == {"current": 1, "total_pages": 137, "total_results": 684, "size": 5}
+    assert answer["meta"]["page"] == {"current": 1, "total_pages": 131, "total_results": 655, "size": 5}
     assert len(answer["results"]) == 5
     for field in ("supertypenames", "sourcetype"):
         (facet,) = answer["facets"][field]

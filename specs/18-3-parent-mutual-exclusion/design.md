@@ -234,3 +234,74 @@ other hierarchy rules measure SET attributes, and the rest already read singular
   do for the five earlier rule edits.
 - **Retire the rule and ship a new one.** A new GUID strands every stored verdict and every saved report
   that names the old rule, for no gain over an edit to the sentences.
+
+### DD-751. The corpus words every governance rule sentence in plain English
+
+- **Status:** Proposed
+- **Increment:** 18.3
+- **Date:** 2026-11-20
+- **Relates to:** DD-750, PME-11, PME-12, GQ-06.
+
+**Decision.** The sample corpus words each governance rule sentence in plain English (PME-12). A bare
+camel-case field name in a description or a message becomes its words, with the article and the number to
+match the reading, so `parentDataset` reads "parent dataset" and `kafkaClusters` reads "Kafka clusters".
+A quoted Atlas type name keeps its spelling, because it names a type and not a field, so
+`m4i_indexPattern` stays. The qualified name, the expression, the dimension and the verdicts do not change.
+
+**Reason.** The banner and the rule page print what the rule stores, and `aurelius_atlas_quality.governance`
+passes it through untouched (GQ-06), so a reader sees `This entity is missing a parentDataset` on a details
+page today. The field name is developer-speak, and the reader asked for the plain form. The change is data
+in the two rule bundles of `data/atlas-sample/`, with no code and no wire change. The frozen `atlas-dev`
+oracle is untouched, because none of its 27 governance rules carries a camel-case sentence, so its four
+text counters hold and no deviation record joins this increment.
+
+**Alternatives.**
+
+- **Rewrite the banner text in the webapp.** The banner prints what the rule stores, and rewriting it in
+  code splits the shown sentence from the rule page that shows the stored text (EDT-24). It also needs a
+  name-to-phrase table to maintain in a second place.
+- **Split the camel case mechanically, grammar unchanged.** A bare split is not enough. It leaves a broken
+  article on `Elasticsearch cluster` and turns the predicate `hasContent` into the words "has content"
+  inside a sentence that already has a verb. The reader asked for plain English, so those sentences get
+  fixed where a split falls short.
+- **Change the rule's qualified name or attribute too.** The qualified name drives the rule-to-type join
+  (VEV-07) and `atlas-export-order.json` names the GUIDs, so a rename breaks the walk and the import. Only
+  the three printed fields change.
+
+### DD-752. The corpus ships only governance rules the m4i model can answer
+
+- **Status:** Proposed
+- **Increment:** 18.3
+- **Date:** 2026-11-20
+- **Relates to:** DD-750, DD-751, ADR 058 (the m4i types ship with the server), ADR 060 (a frozen oracle is
+  never edited), PME-13, DV-185, DV-173.
+
+**Decision.** The sample corpus deletes the 29 governance rules whose expression names a type, attribute or
+relationship the m4i model does not define (PME-13). The rule records go, from `sample_data.zip` and from
+`only_gov_quality.zip`, and their GUIDs leave each bundle's `atlas-export-order.json`. The corpus ships 66
+rules after the pass, down from 95. A rule that names a missing type, a missing attribute, or a missing
+relationship definition is dead, so `test__m4i_models.py` rejects any bundle that carries one.
+
+**Reason.** The corpus carried these rules in from the legacy product, whose metamodel had types the m4i data
+dictionary does not define, such as `m4i_elastic_field`, a `kibanaSpace` attribute, or a
+`m4i_system_assignment` relationship. Each dead rule stamps a noncompliant verdict on every entity of its
+type forever, so the quality banner reports a permanent failure for a property no entity can hold. 15 of
+the 29 read today and hold 245 of those always-false verdicts. The frozen `atlas-dev` oracle records a
+document for every one of the 95 rules, so five gates of series 14.6 now drop the 29 GUIDs from the oracle
+side. One shared list in `test__app_search_engine.py` names them, because all five gates read the same
+recording. The oracle's governance verdict fixture covers 27 rules, none of them in the 29, so the verdict
+comparison keeps its kept, moved and lost counts untouched.
+
+**Alternatives.**
+
+- **Retire the rules with `active` false.** 12.7b and 12.7d retired two rules that way, and DV-173 counts
+  that damage. Rejected here because the name the rule points at no longer exists, so no data change revives
+  the rule. A retired record still ships in every bundle, still loads into every tenant catalogue, and still
+  prints a dead row on the rules page.
+- **Add the 13 missing types and attributes to the model.** They left the m4i data dictionary on purpose, and
+  the model scope recorded that (increment 18.1). Restoring them to rescue 29 always-false rules lets the
+  rules drive the model.
+- **Keep the rules and accept the failures.** Every entity of the type keeps a noncompliant verdict for as
+  long as the corpus ships. A score that can never reach its target tells the reader nothing.
+- **Edit the frozen oracle fixtures too.** They record the legacy product (ADR 060), so the gates subtract
+  the 29 GUIDs instead, as DV-173 does for its two inactive rules.

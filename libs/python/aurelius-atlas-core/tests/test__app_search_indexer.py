@@ -36,6 +36,7 @@ from aurelius_atlas_model.instance import (
     EntityStatus,
 )
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from test__app_search_engine import DROPPED_RULES
 
 FIXTURES = Path(__file__).parent / "fixtures"
 SAMPLE = Path(__file__).parents[4] / "data" / "atlas-sample" / "sample_data.zip"
@@ -131,10 +132,11 @@ def indexed() -> Indexed:
 
 @cache
 def legacy() -> dict[str, Document]:
-    """``atlas-dev``'s documents by GUID."""
+    """``atlas-dev``'s documents by GUID, minus the 29 a deleted rule still has (DV-185)."""
     return {
         document["guid"]: document
         for document in json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev.json").read_text())
+        if document["guid"] not in DROPPED_RULES
     }
 
 
@@ -150,11 +152,11 @@ def differing(field: str) -> dict[str, str]:
 
 @pytest.mark.covers("aurelius_atlas_core.app_search_indexer.AppSearchIndexer.run_once", rules=["LAS-01", "ASD-04"])
 def test__every_entity_of_atlas_dev_gets_its_document_and_no_other() -> None:
-    """The 684 documents of ``atlas-dev``, written in one round; the three sources have none."""
+    """The 655 documents of ``atlas-dev`` (DV-185), written in one round; the three sources have none."""
     found = indexed()
 
     assert set(found.derived()) == set(legacy())
-    assert found.written == 684
+    assert found.written == 655
     assert {entity.type_name for guid, entity in found.entities().items() if guid not in legacy()} == {"m4i_source"}
 
 
