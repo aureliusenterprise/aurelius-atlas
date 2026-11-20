@@ -7354,6 +7354,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>9.3</td>
 </tr>
 <tr>
+<td>DV-177</td>
+<td>Server</td>
+<td>An upload's size is measured by no Atlas code. Jetty's servlet container refused a body past its own limit and answered its plain HTML page.</td>
+<td>The three endpoints that read an upload (<code>admin/import</code>, <code>v2/businessmetadata/import</code>, <code>v2/glossary/import</code>) refuse a file past <code>upload_max_bytes</code> (default 256 MiB) with <code>AURELIUS-413-00-001</code> and Atlas's JSON error body, naming the field and the limit. The webapp's nginx edge lets 1 GiB through so the server's refusal is what a caller sees.</td>
+<td>Atlas never answered an oversized upload, so it has no code for one. The refusal belongs in the endpoint, where it can answer Atlas's error body, and it caps the memory a whole in-memory ZIP read needed (SRV-12, DD-708).</td>
+<td>9.2</td>
+</tr>
+<tr>
 <td>DV-88</td>
 <td>Search</td>
 <td>A <code>limit</code> or <code>offset</code> Java's <code>Integer.parseInt</code> cannot read (<code>limit 1e3</code>) escapes as an internal error</td>

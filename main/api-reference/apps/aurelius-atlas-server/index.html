@@ -2249,6 +2249,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.upload_max_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;upload_max_bytes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.audit_aging_config" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -9537,6 +9548,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.upload_max_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;upload_max_bytes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.audit_aging_config" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -10669,6 +10691,12 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Import Folder"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"upload_max_bytes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mi">268435456</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"exclusiveMinimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Upload Max Bytes"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"cluster_name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Cluster Name"</span><span class="p">,</span>
@@ -11354,6 +11382,15 @@ Elasticsearch settings; it does not start without its store.</p>
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.import_folder)" href="./#aurelius_atlas_server.settings.ServerSettings.import_folder">import_folder</a></code>
                 (<code><span title="pathlib.Path">Path</span> | None</code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            upload_max_bytes
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.upload_max_bytes)" href="./#aurelius_atlas_server.settings.ServerSettings.upload_max_bytes">upload_max_bytes</a></code>
+                (<code><span title="int">int</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            cluster_name
@@ -14054,6 +14091,32 @@ the way the store's password is required (SRV-01, SRV-02).</p>
 
         <p>How long the server answers from its type registry before it checks for another process's type change
 (TDS-13, DD-029).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.upload_max_bytes" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">upload_max_bytes</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.upload_max_bytes" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">upload_max_bytes</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">256</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The most bytes an upload's file may hold before <code>PAYLOAD_TOO_LARGE</code> refuses it: the import ZIP and the
+bulk import CSV or Excel alike (SRV-12, DD-708). The webapp's nginx edge lets a request of up to 1 GiB
+through, so an operator who raises this past 256 MiB raises <code>client_max_body_size</code> there too.</p>
 
     </div>
 
