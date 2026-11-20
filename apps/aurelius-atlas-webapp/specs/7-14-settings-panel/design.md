@@ -423,7 +423,7 @@ ink; the panel scss comment follows. No string ids change.
 ### DD-168. The navbar follows the scheme: the dark slate band
 
 - **Status:** Accepted (superseded by
-  [DD-734](../7-12-theme-branding-layout/design.md#dd-734-the-dark-navbar-takes-the-pages-near-black-and-the-chrome-follows))
+  [DD-740](../7-12-theme-branding-layout/design.md#dd-740-the-dark-navbar-takes-the-pages-near-black-and-the-chrome-follows))
 - **Increment:** 7.14
 - **Date:** 2026-10-21
 

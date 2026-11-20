@@ -159,7 +159,7 @@ as the account console already lets that user do. A realm that doesn't grant the
 the dev and chart realms today, keeps Keycloak's own choice of language. The token's `locale` claim catches
 up at the next refresh, until then the profile read prevents a second write.
 
-### DD-735. The welcome line keeps the legacy's one inline run and bold name
+### DD-741. The welcome line keeps the legacy's one inline run and bold name
 
 - **Status:** Proposed
 - **Increment:** 7.11 (a fix, 2026-11-20)
