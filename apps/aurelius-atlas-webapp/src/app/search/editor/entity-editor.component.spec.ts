@@ -2626,6 +2626,49 @@ describe("EntityEditor history tab (HST-01..HST-07)", () => {
         expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(0);
     });
 
+    it("a re-read shows no rows while it runs, so the line never sits above stale ones (HST-05)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(2);
+
+        // Every visit re-reads (HST-03), and a re-read starts from an empty
+        // list: the loading line alone, not the previous answer under it.
+        openEntityTab(compiled, fixture);
+        openHistoryTab(compiled, fixture);
+        fixture.detectChanges();
+
+        expect(normalize(compiled.querySelector("#editor-history-pane .aurelius-editor-loading")?.textContent)).toBe(
+            "Retrieving the audit log",
+        );
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(0);
+
+        httpMock.expectOne(AUDIT_URL).flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(2);
+    });
+
+    it("a failed re-read leaves the list empty rather than the stale rows (HST-06)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(2);
+
+        openEntityTab(compiled, fixture);
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush({}, { status: 500, statusText: "Server Error" });
+        fixture.detectChanges();
+
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(0);
+        expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
+    });
+
     it("a failed audit read adds one alert, leaves the list empty and keeps the drawer (HST-06)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);

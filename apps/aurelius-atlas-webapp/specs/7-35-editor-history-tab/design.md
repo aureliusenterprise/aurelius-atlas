@@ -68,3 +68,32 @@ state no sibling uses. A paged, infinite-scroll list: refused, the legacy
 page-fetched the whole trail and no product need asks past the newest page; the
 limit is recorded as DV-190. A `startKey` Load-more button: refused, nothing in the
 product asks for it and HST-03's re-read keeps the newest page correct instead.
+
+### DD-819. A re-read clears the audit list before it starts
+
+- **Status:** Proposed
+- **Increment:** 7.35 (a fix, 2026-11-21)
+- **Date:** 2026-11-21
+
+**Decision.** `loadAudits` empties the audit list when it starts a read, beside
+setting the loading flag (HST-05, HST-06).
+
+**Reason.** HST-03 re-reads the trail on every switch to History, and 7.35 as
+written left the previous answer in the signal while the new read ran. The pane
+showed the loading line above the old rows for as long as the read took, which
+reads as a screen that has both loaded and not loaded. Every other loading pane
+in the app hides its content while it loads — the details page asks
+`state.loading() && !entity()`, the quality fields switch on their loading
+state, the editor's form hides through `formVisible()`, and the browse store
+clears its entries on a restart (SRH-04). Clearing once at the start of the read
+gives the History pane the same shape, and it also makes a failed re-read leave
+the list empty, which HST-06 already required.
+
+**Alternatives.** Keep the rows and hide the line while data exists: the reader
+would see no sign that the list is stale, and a slow re-read looks settled.
+Gate the rows on `!auditsLoading()` in the template: the same screen, with the
+pane's data signal now lying about what is shown.
+
+**Consequences.** A switch to History shows an empty pane with the line, then
+the rows. The read's own answer is unchanged, and the in-flight guard means an
+empty pane never shows a second request.
