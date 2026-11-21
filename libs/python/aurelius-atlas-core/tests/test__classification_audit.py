@@ -272,6 +272,30 @@ async def test__tasks_record_what_they_propagate_and_remove(
     assert [a for a, _ in await events(audits, "b")] == [PADD, PDELETE]
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_core.classification_tasks.ClassificationTasks._tell",
+    rules=["CAU-06"],
+)
+async def test__a_task_records_nothing_on_an_entity_deleted_while_it_waited(
+    store: EntityStore, audits: InMemoryEntityAuditRepository, notifier: EntityChangeNotifier
+) -> None:
+    """``b`` deleted after the ``ADD`` propagated to it; the ``DELETE`` task tells ``p1``, not ``b`` (DV-191)."""
+    await lineage(store)
+    classifier = EntityClassifications(store, tasks=True, notifier=notifier)
+    manager = TaskManagement(store, notifier=notifier)
+
+    await classifier.add_classifications(GUIDS["a"], [tag()])
+    await manager.run_pending()
+    assert [a for a, _ in await events(audits, "b")] == [PADD]
+
+    await EntityWriter(store, notifier=notifier).delete_by_id(GUIDS["b"])
+    await classifier.update_classifications(GUIDS["a"], [tag(propagate=False)])
+    await manager.run_pending()
+
+    assert await actions(audits, "b") == [PADD, "ENTITY_DELETE"]
+    assert [a for a, _ in await events(audits, "p1")] == [PADD, PDELETE]
+
+
 async def _listed(store: EntityStore, name: str) -> list[str]:
     found = await store.get(GUIDS[name])
     return [] if found is None else list(found.entity.relationship_guids or [])
