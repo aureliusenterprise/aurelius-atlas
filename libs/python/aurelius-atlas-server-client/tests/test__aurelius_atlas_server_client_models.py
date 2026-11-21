@@ -45,7 +45,7 @@ def test__the_session_body_carries_the_settings_and_the_csrf_token() -> None:
     assert session.user_name == "analyst"
     assert session.groups == ["atlas"]
     assert session.timezones == ["UTC"]
-    assert session.csrf_token == "token-1"  # noqa: S105 - a fixed fake token in a test, not a secret
+    assert session.csrf_token == "token-1"  # noqa: S105 - a fixed fake token in a test; not a secret
 
 
 @pytest.mark.covers(rules=["CLW-13"])

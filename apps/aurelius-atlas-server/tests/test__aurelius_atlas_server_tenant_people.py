@@ -299,7 +299,7 @@ async def test__a_failed_step_stops_and_the_same_command_finishes_the_rest(
     """The realm refusing the steward's creation stops ``add`` after the administrator was made; the same command
     again, once the realm takes it, makes the steward and the scientist, the administrator found as it was.
     """  # noqa: D205 - one sentence
-    original = keycloak._route  # noqa: SLF001 - the fake's router, refusing one user
+    original = keycloak._route  # noqa: SLF001 - the fake's router; refusing one user
 
     def refusing(method: str, path: str, query: dict[str, str], body: Any) -> httpx.Response:  # noqa: ANN401
         if method == "POST" and path == "/users" and body["username"] == "acme_steward":

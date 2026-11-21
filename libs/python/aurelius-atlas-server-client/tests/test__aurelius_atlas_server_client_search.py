@@ -33,7 +33,7 @@ SUGGESTIONS: dict[str, Any] = {"prefixString": "pi", "suggestions": ["PII", "Pii
 ERROR_BODY: dict[str, Any] = {"errorCode": "ATLAS-400-00-006", "errorMessage": "no type name"}
 
 
-def _client(recorder: Recorder, token: str = "tok") -> AtlasClient:  # noqa: S107 - a fixed fake credential, not a secret
+def _client(recorder: Recorder, token: str = "tok") -> AtlasClient:  # noqa: S107 - a fixed fake credential; not a secret
     """The client under test: an externally built httpx client on the recorder (CL-02, CL-01)."""
     return AtlasClient(httpx.AsyncClient(base_url="https://atlas.test", transport=recorder.transport()), token)
 

@@ -70,7 +70,7 @@ class _TagLoader(yaml.SafeLoader):
     """SafeLoader that reads compose's `!reset`/`!override` as `Tagged` markers."""
 
 
-def _tagged(kind: str) -> Any:  # noqa: ANN401 - returns a constructor, typed loosely by PyYAML
+def _tagged(kind: str) -> Any:  # noqa: ANN401 - returns a constructor; typed loosely by PyYAML
     def build(loader: _TagLoader, node: yaml.Node) -> Tagged:
         if isinstance(node, yaml.SequenceNode):
             return Tagged(kind, loader.construct_sequence(node, deep=True))

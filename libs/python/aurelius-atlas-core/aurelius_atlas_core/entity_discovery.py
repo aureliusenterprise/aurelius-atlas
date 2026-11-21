@@ -229,25 +229,34 @@ class EntityDiscovery:
         it is dropped there (RPS-02). Candidates named by placeholder are resolved, so a move made in one
         request -- the child added under the new parent and dropped from the old one -- is read as deliberate.
         """
-        registry = self._store.registry
         keeps: dict[tuple[str, str], set[str]] = {}
         for entity in self.stream.entities:
-            entity_type = None if entity is None else registry.entity_type(str(entity.type_name))
-            if entity is None or entity_type is None:
-                continue
-            parent_guid = self._resolve_guid(str(entity.guid))
-            for parent_attribute, child_attribute in parent_side_children(registry, entity_type).items():
-                if not entity.has_relationship_attribute(parent_attribute):
-                    continue
-                value = entity.get_relationship_attribute(parent_attribute)
-                items = value if isinstance(value, list | tuple | set) else []
-                kept: set[str] = set()
-                for item in items:
-                    object_id = object_id_of(item)
-                    if object_id is not None and object_id.guid is not None:
-                        kept.add(self._resolve_guid(str(object_id.guid)))
-                keeps[(parent_guid, child_attribute)] = kept
+            keeps.update(self._parent_keeps_of(entity))
         return keeps
+
+    def _parent_keeps_of(self, entity: AtlasEntity | None) -> dict[tuple[str, str], set[str]]:
+        """The parent sides one request entity writes, with the candidates each keeps (RPS-02)."""
+        registry = self._store.registry
+        entity_type = None if entity is None else registry.entity_type(str(entity.type_name))
+        if entity is None or entity_type is None:
+            return {}
+        parent_guid = self._resolve_guid(str(entity.guid))
+        keeps: dict[tuple[str, str], set[str]] = {}
+        for parent_attribute, child_attribute in parent_side_children(registry, entity_type).items():
+            if entity.has_relationship_attribute(parent_attribute):
+                value = entity.get_relationship_attribute(parent_attribute)
+                keeps[(parent_guid, child_attribute)] = self._kept_candidates(value)
+        return keeps
+
+    def _kept_candidates(self, value: object) -> set[str]:
+        """The candidate GUIDs a parent-side value names, each resolved through the request's placeholders (RPS-02)."""
+        items = value if isinstance(value, list | tuple | set) else []
+        kept: set[str] = set()
+        for item in items:
+            object_id = object_id_of(item)
+            if object_id is not None and object_id.guid is not None:
+                kept.add(self._resolve_guid(str(object_id.guid)))
+        return kept
 
     async def validate_parent_groups(
         self,
@@ -394,24 +403,42 @@ class EntityDiscovery:
         assigned = [guid for guid in context.referenced_guids if guid is not None and is_assigned_guid(guid)]
         context.stored.update(await self._store.get_many(assigned))
         for guid in context.referenced_guids:
-            found = context.stored.get(guid) if guid is not None and is_assigned_guid(guid) else None
-            if found is None:
-                entity = self.stream.get_by_guid(guid)
-                if self._importing and is_assigned_guid(guid):
-                    pass  # an import keeps its GUIDs: its entity is not looked up by its values (IMP-03)
-                elif entity is not None:
-                    found = await self._store.find_by_unique_attributes(
-                        self.entity_type(entity.type_name), entity.attributes or {}
-                    )
-                elif not is_assigned_guid(guid):
-                    raise AtlasError(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid)
-            if found is not None:
-                context.stored[found.entity.guid] = found
-                context.resolved_guids[guid] = as_assigned_guid(found.entity.guid)
-            elif is_assigned_guid(guid) and not self._importing:
-                raise AtlasError(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid)
-            else:
-                context.local_guids.add(guid)
+            await self._resolve_guid_one(guid)
+
+    async def _resolve_guid_one(self, guid: str | None) -> None:
+        """One referenced GUID: its stored entity by GUID or unique values, or it joins the request's own (EWR-05).
+
+        Raises:
+            AtlasError: ``REFERENCED_ENTITY_NOT_FOUND`` for a reference that names no entity.
+        """
+        context = self.context
+        found = context.stored.get(guid) if guid is not None and is_assigned_guid(guid) else None
+        if found is None:
+            found = await self._resolve_by_values(guid)
+        if found is not None:
+            context.stored[found.entity.guid] = found
+            context.resolved_guids[guid] = as_assigned_guid(found.entity.guid)
+        elif is_assigned_guid(guid) and not self._importing:
+            raise AtlasError(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid)
+        else:
+            context.local_guids.add(guid)
+
+    async def _resolve_by_values(self, guid: str | None) -> VersionedEntity | None:
+        """The stored entity of a GUID the store does not have, by the request entity's unique values (EWR-05).
+
+        Raises:
+            AtlasError: ``REFERENCED_ENTITY_NOT_FOUND`` for a valueless reference outside an import.
+        """
+        entity = self.stream.get_by_guid(guid)
+        if self._importing and is_assigned_guid(guid):
+            return None  # an import keeps its GUIDs: its entity is not looked up by its values (IMP-03)
+        if entity is not None:
+            return await self._store.find_by_unique_attributes(
+                self.entity_type(entity.type_name), entity.attributes or {}
+            )
+        if not is_assigned_guid(guid):
+            raise AtlasError(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid)
+        return None
 
     async def _resolve_unique_attributes(self) -> None:
         """``UniqAttrBasedEntityResolver``: the stored entity of the type or a sub type holding the values."""
@@ -514,7 +541,7 @@ def held_parent_message(held: HeldParent) -> str:
     )
 
 
-async def held_parent_sides(  # noqa: PLR0913, PLR0917 - the save's parts, each needed once
+async def held_parent_sides(  # noqa: PLR0913, PLR0917 - the save's parts; each needed once
     store: WriteStore,
     stream: EntityStream,
     entity: AtlasEntity,
@@ -550,7 +577,7 @@ async def held_parent_sides(  # noqa: PLR0913, PLR0917 - the save's parts, each 
     return held
 
 
-async def _declared_parents_held(  # noqa: PLR0913, PLR0917 - the candidate's parts, each needed once
+async def _declared_parents_held(  # noqa: PLR0913, PLR0917 - the candidate's parts; each needed once
     store: WriteStore,
     stream: EntityStream,
     candidate: AtlasEntity,
@@ -580,8 +607,7 @@ async def _declared_parents_held(  # noqa: PLR0913, PLR0917 - the candidate's pa
             if candidate.has_relationship_attribute(name)
             else candidate.get_attribute(name)
         )
-        items = value if isinstance(value, list | tuple | set) else [value] if value is not None else []
-        for item in items:
+        for item in _as_many(value):
             parent = _reference_guid(item)
             if parent is not None and (resolve is None or resolve(parent)) != parent_guid:
                 held.append(
@@ -636,6 +662,13 @@ async def held_parents_of(
             )
         )
     return held
+
+
+def _as_many(value: Any) -> list[Any]:  # noqa: ANN401 - a relationship value as given; read as one or more references
+    """A relationship attribute's value as a list of references: many as itself, one as a single item, none as empty."""
+    if isinstance(value, list | tuple | set):
+        return list(value)
+    return [] if value is None else [value]
 
 
 def _reference_guid(value: Any) -> str | None:  # noqa: ANN401 - a reference as given

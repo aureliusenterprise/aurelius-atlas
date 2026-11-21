@@ -730,7 +730,12 @@ def _references_of(values: Mapping[str, Any], attributes: Iterable[AtlasAttribut
         if type_.category in _REFERENCES:
             guids.append(str(value))
         elif contained is not None and contained.category in _REFERENCES:
-            items = value.values() if isinstance(value, Mapping) else value if isinstance(value, list) else []
+            if isinstance(value, Mapping):
+                items: list[Any] = list(value.values())
+            elif isinstance(value, list):
+                items = value
+            else:
+                items = []
             guids += [str(item) for item in items if item is not None]
     return guids
 

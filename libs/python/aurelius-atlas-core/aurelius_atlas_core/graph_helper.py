@@ -116,7 +116,7 @@ def _end_of(
     attribute: AtlasAttribute | None,
     entity_type: EntityType | None = None,
     name: str | None = None,
-) -> Any:  # noqa: ANN401 - the end definition the attribute sits on, or None
+) -> Any:  # noqa: ANN401 - the end definition the attribute sits on; or None
     """The end definition the attribute sits on, or None when the relationship has none for it.
 
     The owning type and name default to the attribute's own, which is where a relationship-added attribute sits.
@@ -225,7 +225,7 @@ def relationship_type_name(
     attribute's, else the attribute's first.
     """
     names = list(entity_type.relationship_attributes.get(name, {}))
-    if len(names) < 2:  # noqa: PLR2004 - one relationship type, or none
+    if len(names) < 2:  # noqa: PLR2004 - one relationship type; or none
         return names[0] if names else None
     found = (r.type_name for r in relationships if r.end2_guid == guid and r.type_name in names)
     return next(found, names[0])

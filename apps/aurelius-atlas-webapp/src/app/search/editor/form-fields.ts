@@ -318,6 +318,31 @@ function unwrapArrayType(typeName: string): string {
 }
 
 /**
+ * The definition and its supertype chain, first-wins by relationship-attribute
+ * name — the same walk and merge the plain attributes get (EDT-13, DD-338).
+ * A dropped attribute and a name two definitions carry are left to the first.
+ * @param def the entity definition to walk
+ * @param defsByName every entity definition by name (for the supertype links)
+ * @returns the merged relationship-attribute definitions, by name
+ */
+function collectRelationshipAttributeDefs(
+    def: AtlasEntityDef,
+    defsByName: ReadonlyMap<string, AtlasEntityDef>,
+): Map<string, AtlasRelationshipAttributeDef> {
+    const merged = new Map<string, AtlasRelationshipAttributeDef>();
+
+    for (const current of walkDefChain(def, defsByName)) {
+        for (const attribute of current.relationshipAttributeDefs ?? []) {
+            if (attribute.name && !merged.has(attribute.name) && !DROPPED_ATTRIBUTES.has(attribute.name)) {
+                merged.set(attribute.name, attribute);
+            }
+        }
+    }
+
+    return merged;
+}
+
+/**
  * The relationship-attribute fields for an entity definition, from its own
  * `relationshipAttributeDefs` and its supertype chain — the same walk and the
  * same first-wins merge EDT-03 makes (EDT-13, DD-338). A name two definitions
@@ -335,15 +360,7 @@ export function buildRelationshipFields(
     labels: EditorLabels = {},
     relationshipDefs: readonly AtlasRelationshipDef[] = [],
 ): RelationshipField[] {
-    const merged = new Map<string, AtlasRelationshipAttributeDef>();
-
-    for (const current of walkDefChain(entityDef, defsByName)) {
-        for (const def of current.relationshipAttributeDefs ?? []) {
-            if (def.name && !merged.has(def.name) && !DROPPED_ATTRIBUTES.has(def.name)) {
-                merged.set(def.name, def);
-            }
-        }
-    }
+    const merged = collectRelationshipAttributeDefs(entityDef, defsByName);
 
     const byRelationship = new Map<string, AtlasRelationshipDef>();
     for (const def of relationshipDefs) {

@@ -128,17 +128,21 @@ def _facet(name: str, facet: object, errors: Errors) -> Facet:
     if not isinstance(size, int) or isinstance(size, bool) or not 1 <= size <= MAX_FACET_SIZE:
         errors.add(f"Facet size for {name} must be between 1 and {MAX_FACET_SIZE}")
         size = 10
-    order = {"_count": "desc"}
-    if (sort := facet.get("sort")) is not None:
-        if isinstance(sort, dict) and len(sort) == 1 and next(iter(sort)) in ("count", "value"):
-            ((key, direction),) = sort.items()
-            if direction in _DIRECTIONS:
-                order = {"_count" if key == "count" else "_key": direction}
-            else:
-                errors.add(f"Facet sort for {name} must be asc or desc")
-        else:
-            errors.add(f"Facet sort for {name} must be by count or by value")
-    return Facet(size, order)
+    return Facet(size, _facet_order(name, facet.get("sort"), errors))
+
+
+def _facet_order(name: str, sort: object, errors: Errors) -> dict[str, str]:
+    """A facet's Elasticsearch order from its ``sort``: by count or by value, asc or desc (ASE-07)."""
+    if sort is None:
+        return {"_count": "desc"}
+    if not (isinstance(sort, dict) and len(sort) == 1 and next(iter(sort)) in ("count", "value")):
+        errors.add(f"Facet sort for {name} must be by count or by value")
+        return {"_count": "desc"}
+    ((key, direction),) = sort.items()
+    if direction not in _DIRECTIONS:
+        errors.add(f"Facet sort for {name} must be asc or desc")
+        return {"_count": "desc"}
+    return {"_count" if key == "count" else "_key": direction}
 
 
 def parse_sort(sort: object, errors: Errors) -> list[tuple[str, str]]:
@@ -185,25 +189,35 @@ def _result_fields(result_fields: object, errors: Errors) -> dict[str, _ResultFi
         if not isinstance(options, dict):
             errors.add(f"Result field {name} must be an object")
             continue
-        raw, snippet = options.get("raw"), options.get("snippet")
-        result = _ResultField(raw=raw is not None or snippet is None)
-        if isinstance(raw, dict) and "size" in raw:
-            result.raw_size = _size(raw["size"], f"Raw size for {name}", MIN_SNIPPET, None, errors)
-        if snippet is not None:
-            if engine_field.kind is not Kind.TEXT:
-                errors.add(f"Snippets are only for text fields: {name}")
-            snippet_options = snippet if isinstance(snippet, dict) else {}
-            result.snippet = True
-            result.snippet_size = _size(
-                snippet_options.get("size", DEFAULT_SNIPPET),
-                f"Snippet size for {name}",
-                MIN_SNIPPET,
-                MAX_SNIPPET,
-                errors,
-            )
-            result.fallback = snippet_options.get("fallback") is True
-        parsed[name] = result
+        parsed[name] = _result_field(name, options, engine_field, errors)
     return parsed
+
+
+def _result_field(name: str, options: dict[str, Any], engine_field: EngineField, errors: Errors) -> _ResultField:
+    """One result field's raw value and snippet, with their sizes (ASE-10)."""
+    raw, snippet = options.get("raw"), options.get("snippet")
+    result = _ResultField(raw=raw is not None or snippet is None)
+    if isinstance(raw, dict) and "size" in raw:
+        result.raw_size = _size(raw["size"], f"Raw size for {name}", MIN_SNIPPET, None, errors)
+    if snippet is not None:
+        _apply_snippet(result, name, engine_field, snippet, errors)
+    return result
+
+
+def _apply_snippet(result: _ResultField, name: str, engine_field: EngineField, snippet: object, errors: Errors) -> None:
+    """Fill in one result field's snippet: text fields only, with its size and fallback (ASE-10)."""
+    if engine_field.kind is not Kind.TEXT:
+        errors.add(f"Snippets are only for text fields: {name}")
+    snippet_options = snippet if isinstance(snippet, dict) else {}
+    result.snippet = True
+    result.snippet_size = _size(
+        snippet_options.get("size", DEFAULT_SNIPPET),
+        f"Snippet size for {name}",
+        MIN_SNIPPET,
+        MAX_SNIPPET,
+        errors,
+    )
+    result.fallback = snippet_options.get("fallback") is True
 
 
 def _size(value: object, what: str, least: int, most: int | None, errors: Errors) -> int:

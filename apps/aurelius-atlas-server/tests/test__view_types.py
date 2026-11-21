@@ -114,7 +114,7 @@ async def test__the_door_needs_type_read(
     assert created.status_code == 200, created.text
 
     reader = httpx.AsyncClient(
-        transport=client._transport,  # noqa: SLF001 - the same app, another token
+        transport=client._transport,  # noqa: SLF001 - the same app; another token
         base_url="https://aurelius-atlas",
         headers=as_roles(issuer, "reader", "atlas-read"),
     )

@@ -58,7 +58,7 @@ def _settings(**overrides: Any) -> ValidateEntitySettings:  # noqa: ANN401 - the
 
 def _leg_bearer(atlas: AtlasClient) -> str:
     """The bearer the leg's client carries: the token source it was built with (the seam under test)."""
-    token = atlas._token  # noqa: SLF001 - the bearer source is the seam, as the scanner's tests read it
+    token = atlas._token  # noqa: SLF001 - the bearer source is the seam; as the scanner's tests read it
     return token() if callable(token) else token
 
 

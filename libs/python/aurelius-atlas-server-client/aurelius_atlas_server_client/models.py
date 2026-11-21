@@ -38,7 +38,7 @@ class AtlasVersion(AtlasModel):
     description: str = Field(alias="Description", description="A description of the software.")
 
 
-# ADM-02; CL-10.
+# ADM-02; CL-10. The service's state, as the admin status endpoint answers it.
 class AtlasStatus(AtlasModel):
     """The body of ``GET /api/atlas/admin/status``."""
 

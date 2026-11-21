@@ -56,7 +56,7 @@ class UserToken:
     when it is about to expire (6.1a, AUT-02). The writer by default; the reader holds ``atlas-read`` only (6.2a).
     """  # noqa: D205 - one sentence
 
-    def __init__(self, username: str = USERNAME, password_variable: str = "DEV_USER_WRITER_PASSWORD") -> None:  # noqa: S107 - the name of the variable, not a password
+    def __init__(self, username: str = USERNAME, password_variable: str = "DEV_USER_WRITER_PASSWORD") -> None:  # noqa: S107 - the name of the variable; not a password
         self._username = username
         self._password_variable = password_variable
         self._token = ""

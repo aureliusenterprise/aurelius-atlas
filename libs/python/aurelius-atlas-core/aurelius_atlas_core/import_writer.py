@@ -76,7 +76,7 @@ class ImportWriter(WritePipeline):
             found_entity = await self._store.get(guid)
             if found_entity is None:  # pragma: no cover - an updated entity is stored
                 continue
-            for name in list(dict.fromkeys(own_classifications(found_entity.entity))):
+            for name in dict.fromkeys(own_classifications(found_entity.entity)):
                 await classifications.delete_classification(guid, name)
             given = [
                 imported_classification(classification)

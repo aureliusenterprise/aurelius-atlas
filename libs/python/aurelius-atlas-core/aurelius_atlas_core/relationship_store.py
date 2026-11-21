@@ -52,7 +52,7 @@ class RelationshipStore:
     ``authorizer`` checks each relationship added, updated or removed (AUZ-09).
     """
 
-    def __init__(  # noqa: PLR0913 - the request's options, each a keyword
+    def __init__(  # noqa: PLR0913 - the request's options; each a keyword
         self,
         store: WriteStore,
         *,

@@ -19,7 +19,7 @@ from aurelius_atlas_embedder.settings import EmbedderSettings
 
 MODEL_FILE = "model.onnx"
 TOKENIZER_FILE = "tokenizer.json"
-PAD_TOKEN = "<pad>"  # noqa: S105 - the tokenizer's padding token, not a secret
+PAD_TOKEN = "<pad>"  # noqa: S105 - the tokenizer's padding token; not a secret
 WARM_UP = "Aurelius Atlas"
 """The text embedded once at load, so the first request does not pay for the session's start (EMB-07)."""
 

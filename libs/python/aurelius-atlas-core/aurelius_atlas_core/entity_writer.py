@@ -155,7 +155,7 @@ class WritePipeline:
     field (WRS-07, DD-778).
     """
 
-    def __init__(  # noqa: PLR0913 - the request's options, each a keyword
+    def __init__(  # noqa: PLR0913 - the request's options; each a keyword
         self,
         store: WriteStore,
         *,
@@ -250,7 +250,8 @@ class WritePipeline:
         self, notifier: EntityChangeNotifier, pending: dict[str, dict[str, dict[str, Any]]], *, before: str | None
     ) -> None:
         """The business attributes of the created entities ahead of ``before``, or of all, in creation order."""
-        for guid in list(pending):
+        snapshot = list(pending)  # the loop pops from pending, so it reads a copy
+        for guid in snapshot:
             if guid == before:
                 return
             await notifier.on_business_attributes_updated(guid, pending.pop(guid), user=self._user)
@@ -312,9 +313,37 @@ class WritePipeline:
         skipped = await self._unchanged(mutation, txn)
         self._verify_changes(mutation, skipped, txn)
         now = self._store.now()
+        mapper, relationships = self._mappers(context, mutation, txn, now)
+        written, classified = await self._apply_created(txn, mapper, relationships, mutation)
+        written.update(await self._apply_updated(txn, mapper, relationships, mutation, skipped, partial=partial))
+        reported = await self._touch(mapper, context, written, skipped)
+        self._relist(written, context, relationships, mapper, mutation)
+        changes: dict[str, EntityChange] = {}
+        for guid, new in written.items():
+            stored = context.stored.get(guid)
+            changes[guid] = EntityChange(new, None if stored is None else stored.version)
+        tasks = await self._propagate(txn, relationships, changes, classified)
+        relationship_changes = {change.relationship.guid: change for change in relationships.relationship_changes()}
+        relationship_changes.update(await self._reactivated_relationships(mutation, relationship_changes))
+        deleted = await self._drop_owned(txn, mapper.dropped, relationships, changes, relationship_changes, now=now)
+        classified += deleted.classification_changes
+        tasks += deleted.task_changes
+        if changes or relationship_changes or classified:
+            await self._store.write(list(changes.values()), list(relationship_changes.values()), classified, tasks)
+        response = await self._response(mutation, skipped, reported + deleted.updated, partial=partial, deleted=deleted)
+        return response, txn
+
+    def _mappers(
+        self, context: DiscoveryContext, mutation: _Mutation, txn: WriteTransaction, now: int
+    ) -> tuple[EntityMapper, RelationshipMapper]:
+        """The request's entity and relationship mappers, resolving references through the context (EWR-11)."""
+
+        def resolve(value: object) -> str | None:
+            return self._resolve(context, mutation, txn, value)
+
         mapper = EntityMapper(
             self._store.registry,
-            resolve=lambda value: self._resolve(context, mutation, txn, value),
+            resolve=resolve,
             guid_assignments=mutation.guid_assignments,
             now=now,
             user=self._user,
@@ -324,7 +353,7 @@ class WritePipeline:
         )
         relationships = RelationshipMapper(
             self._store,
-            resolve=lambda value: self._resolve(context, mutation, txn, value),
+            resolve=resolve,
             known=context.stored,
             created={
                 str(entity.guid): StoredEntity(
@@ -342,43 +371,60 @@ class WritePipeline:
             importing=txn.importing,
             unsafe_reparent=self._unsafe_reparent,
         )
+        return mapper, relationships
+
+    async def _apply_created(
+        self, txn: WriteTransaction, mapper: EntityMapper, relationships: RelationshipMapper, mutation: _Mutation
+    ) -> tuple[dict[str, StoredEntity], list[ClassificationChange]]:
+        """Map and create each request entity that is new: its edges, attributes, labels and tags (EWR-09, CLS-10)."""
         written: dict[str, StoredEntity] = {}
         classified: list[ClassificationChange] = []
         for entity, entity_type in mutation.created:
             await relationships.map(entity, entity_type, str(entity.guid), EntityOperation.CREATE)
             written[str(entity.guid)], added = self._created(txn, mapper, entity, entity_type)
             classified += [ClassificationChange(instance) for instance in added]
+        return written, classified
+
+    async def _apply_updated(  # noqa: PLR0913 - the request's update set; each part needed to map one update
+        self,
+        txn: WriteTransaction,
+        mapper: EntityMapper,
+        relationships: RelationshipMapper,
+        mutation: _Mutation,
+        skipped: set[str],
+        *,
+        partial: bool,
+    ) -> dict[str, StoredEntity]:
+        """Map and update each request entity that is stored, skipping the unchanged ones (EWR-07, CMP-02)."""
+        written: dict[str, StoredEntity] = {}
         operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
         for entity, entity_type, stored in mutation.updated:
-            if entity.guid not in skipped:
-                await relationships.map(entity, entity_type, str(entity.guid), operation)
-                new = mapper.update(entity, entity_type, stored.entity, partial=partial)
-                if not partial and stored.entity.is_incomplete:
-                    new = new.model_copy(update={"is_incomplete": False})
-                written[str(entity.guid)] = self._imported_update(
-                    txn, mapper, new=new, entity=entity, entity_type=entity_type, stored=stored.entity
-                )
-        reported = await self._touch(mapper, context, written, skipped)
+            if entity.guid in skipped:
+                continue
+            await relationships.map(entity, entity_type, str(entity.guid), operation)
+            new = mapper.update(entity, entity_type, stored.entity, partial=partial)
+            if not partial and stored.entity.is_incomplete:
+                new = new.model_copy(update={"is_incomplete": False})
+            written[str(entity.guid)] = self._imported_update(
+                txn, mapper, new=new, entity=entity, entity_type=entity_type, stored=stored.entity
+            )
+        return written
+
+    def _relist(
+        self,
+        written: dict[str, StoredEntity],
+        context: DiscoveryContext,
+        relationships: RelationshipMapper,
+        mapper: EntityMapper,
+        mutation: _Mutation,
+    ) -> None:
+        """Put the relationship listings and revived states on the written entities (OWN-04, IMP-04)."""
         for guid, listed in relationships.listings().items():
             current = written[guid] if guid in written else context.stored[guid].entity
             written[guid] = current.model_copy(update={"relationship_guids": listed or None})
         for guid in [*mapper.revived, *mutation.reactivated]:
             current = written[guid] if guid in written else context.stored[guid].entity
             written[guid] = current.model_copy(update={"state": EntityStatus.ACTIVE})  # OWN-04, IMP-04
-        changes: dict[str, EntityChange] = {}
-        for guid, new in written.items():
-            stored = context.stored.get(guid)
-            changes[guid] = EntityChange(new, None if stored is None else stored.version)
-        tasks = await self._propagate(txn, relationships, changes, classified)
-        relationship_changes = {change.relationship.guid: change for change in relationships.relationship_changes()}
-        relationship_changes.update(await self._reactivated_relationships(mutation, relationship_changes))
-        deleted = await self._drop_owned(txn, mapper.dropped, relationships, changes, relationship_changes, now=now)
-        classified += deleted.classification_changes
-        tasks += deleted.task_changes
-        if changes or relationship_changes or classified:
-            await self._store.write(list(changes.values()), list(relationship_changes.values()), classified, tasks)
-        response = await self._response(mutation, skipped, reported + deleted.updated, partial=partial, deleted=deleted)
-        return response, txn
 
     async def _propagate(
         self,
@@ -435,7 +481,7 @@ class WritePipeline:
                 raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.type_name)
         return EntityClassifications(self._store, user=self._user).attached(entity, classifications)
 
-    async def _drop_owned(  # noqa: PLR0913 - the request's write set, each part needed to delete what it dropped
+    async def _drop_owned(  # noqa: PLR0913 - the request's write set; each part needed to delete what it dropped
         self,
         txn: WriteTransaction,
         dropped: list[str],
@@ -501,31 +547,62 @@ class WritePipeline:
             compact_attributes(entity, entity_type)
             found = self._resolved_entity(context, entity, entity_type)
             if found is not None:
-                stored = context.stored[found]
-                if txn.importing and stored.entity.is_incomplete and entity.is_incomplete:
-                    continue  # an import leaves a shell entity it gives as a shell (IMP-04)
-                discovery.validate_and_normalize(entity, for_update=partial)
-                await discovery.validate_parent_groups(entity, entity_type, stored)
-                entity.guid = found
-                await self._refuse_held(discovery, entity, entity_type, found, txn)
-                if partial and stored.entity.is_incomplete:
-                    continue  # Atlas leaves an incomplete entity out of a partial update
-                if stored.entity.is_incomplete:
-                    entity.is_incomplete = False
-                mutation.add_updated(request_guid, entity, entity_type, stored)
-                if txn.importing:
-                    _import_status(mutation, entity, stored.entity)
+                await self._to_updated(
+                    discovery, mutation, context, txn, entity, entity_type, found, request_guid, partial=partial
+                )
             else:
-                discovery.validate_and_normalize(entity, for_update=False)
-                await discovery.validate_parent_groups(entity, entity_type, None)
-                kept = txn.importing and entity.guid is not None and is_assigned_guid(entity.guid)
-                guid = as_assigned_guid(str(entity.guid)) if kept else self._store.new_guid()
-                context.resolved_guids[request_guid] = guid
-                context.add_resolved_by_unique(_object_id(entity, entity_type), guid)
-                entity.guid = guid
-                await self._refuse_held(discovery, entity, entity_type, guid, txn)
-                mutation.add_created(request_guid, entity, entity_type)
+                await self._to_created(discovery, mutation, context, txn, entity, entity_type, request_guid)
         return mutation
+
+    async def _to_updated(  # noqa: PLR0913, PLR0917 - the discovery set; each part needed to place one update
+        self,
+        discovery: EntityDiscovery,
+        mutation: _Mutation,
+        context: DiscoveryContext,
+        txn: WriteTransaction,
+        entity: AtlasEntity,
+        entity_type: EntityType,
+        found: AssignedGuid,
+        request_guid: str | None,
+        *,
+        partial: bool,
+    ) -> None:
+        """``preCreateOrUpdate`` of a request entity resolving to a stored one, or leaving it out (EWR-06, IMP-04)."""
+        stored = context.stored[found]
+        if txn.importing and stored.entity.is_incomplete and entity.is_incomplete:
+            return  # an import leaves a shell entity it gives as a shell (IMP-04)
+        discovery.validate_and_normalize(entity, for_update=partial)
+        await discovery.validate_parent_groups(entity, entity_type, stored)
+        entity.guid = found
+        await self._refuse_held(discovery, entity, entity_type, found, txn)
+        if partial and stored.entity.is_incomplete:
+            return  # Atlas leaves an incomplete entity out of a partial update
+        if stored.entity.is_incomplete:
+            entity.is_incomplete = False
+        mutation.add_updated(request_guid, entity, entity_type, stored)
+        if txn.importing:
+            _import_status(mutation, entity, stored.entity)
+
+    async def _to_created(  # noqa: PLR0913, PLR0917 - the discovery set; each part needed to place one create
+        self,
+        discovery: EntityDiscovery,
+        mutation: _Mutation,
+        context: DiscoveryContext,
+        txn: WriteTransaction,
+        entity: AtlasEntity,
+        entity_type: EntityType,
+        request_guid: str | None,
+    ) -> None:
+        """``preCreateOrUpdate`` of a request entity with no stored one: mint or keep its GUID, then create (EWR-06)."""
+        discovery.validate_and_normalize(entity, for_update=False)
+        await discovery.validate_parent_groups(entity, entity_type, None)
+        kept = txn.importing and entity.guid is not None and is_assigned_guid(entity.guid)
+        guid = as_assigned_guid(str(entity.guid)) if kept else self._store.new_guid()
+        context.resolved_guids[request_guid] = guid
+        context.add_resolved_by_unique(_object_id(entity, entity_type), guid)
+        entity.guid = guid
+        await self._refuse_held(discovery, entity, entity_type, guid, txn)
+        mutation.add_created(request_guid, entity, entity_type)
 
     async def _refuse_held(
         self, discovery: EntityDiscovery, entity: AtlasEntity, entity_type: EntityType, guid: str, txn: WriteTransaction
@@ -565,7 +642,7 @@ class WritePipeline:
         created = self._business_attributes(txn, mapper, created, entity, entity_type)
         return (with_system_attributes(created, entity) if txn.importing else created), added
 
-    def _imported_update(  # noqa: PLR0913 - the entity before and after an import's update, with its type
+    def _imported_update(  # noqa: PLR0913 - the entity before and after an import's update; with its type
         self,
         txn: WriteTransaction,
         mapper: EntityMapper,
@@ -828,17 +905,14 @@ class EntityWriter(WritePipeline):
             )
         if attribute is None:
             raise AtlasError(AtlasErrorCode.UNKNOWN_ATTRIBUTE, name, type_name)
-        match attribute.attribute_type.category:
-            case TypeCategory.PRIMITIVE:
-                pass
-            case TypeCategory.OBJECT_ID_TYPE if isinstance(value, str):
+        if attribute.attribute_type.category is TypeCategory.OBJECT_ID_TYPE:
+            if isinstance(value, str):
                 value = AtlasObjectId(guid=value, type_name=attribute.attribute_def.type_name)
-            case TypeCategory.OBJECT_ID_TYPE:
+            else:
                 value = attribute.attribute_type.get_normalized_value(value)
-            case _:
-                raise AtlasError(
-                    AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, name, attribute.attribute_type.type_name
-                )
+        elif attribute.attribute_type.category is not TypeCategory.PRIMITIVE:
+            # A primitive needs no conversion: it travels as given (EWR-15).
+            raise AtlasError(AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, name, attribute.attribute_type.type_name)
         entity = AtlasEntity(guid=guid, type_name=type_name, attributes={str(name): value})
         response, _ = await self._run(EntityStream([entity], AtlasEntityExtInfo()), partial=True)
         return response

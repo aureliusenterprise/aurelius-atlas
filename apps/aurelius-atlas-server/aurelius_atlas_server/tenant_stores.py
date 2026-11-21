@@ -200,7 +200,8 @@ class TenantStoreSets(Mapping[str, TenantStores]):
     async def close(self) -> None:
         """Close every store set, the default's too: the server stops (WPT-02)."""
         async with self._lock:
-            for prefix in list(self._opened):
+            snapshot = list(self._opened)  # the loop drops from _opened, so it reads a copy
+            for prefix in snapshot:
                 await self._drop(prefix)
 
     async def _keep(self, stores: TenantStores) -> None:

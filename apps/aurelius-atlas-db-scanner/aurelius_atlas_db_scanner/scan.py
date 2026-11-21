@@ -57,7 +57,7 @@ class ScanReport:
     """The tables that landed without columns, each with its notice (DBS-05)."""
 
 
-async def run_scan(  # noqa: PLR0913 - the two doors, the settings, and the run's own switches
+async def run_scan(  # noqa: PLR0913 - the two doors; the settings; and the run's own switches
     door: DatabaseDoor,
     client: ScanDoor,
     settings: ScannerSettings,

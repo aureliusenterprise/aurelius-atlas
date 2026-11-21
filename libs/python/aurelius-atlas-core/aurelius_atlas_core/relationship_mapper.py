@@ -63,7 +63,7 @@ class RelationshipMapper:
     when a parent-side write reaches it, the move RPS-05 (DD-757).
     """
 
-    def __init__(  # noqa: PLR0913 - the request's context, as ``EntityMutationContext`` and ``RequestContext``
+    def __init__(  # noqa: PLR0913 - the request's context; as ``EntityMutationContext`` and ``RequestContext``
         self,
         store: WriteStore,
         *,
@@ -139,18 +139,24 @@ class RelationshipMapper:
             return
         self._internal = entity_type.is_internal
         for name in entity_type.relationship_attributes:
-            if operation is not EntityOperation.CREATE and not entity.has_relationship_attribute(name):
-                continue
-            value = entity.get_relationship_attribute(name)
-            attribute = entity_type.relationship_attribute(name, relationship_type_of(value))
-            if attribute is None or (operation is EntityOperation.CREATE and value is None):
-                continue
-            if attribute.attribute_type.category is TypeCategory.OBJECT_ID_TYPE:
-                await self._single(attribute, value, guid)
-            elif isinstance(attribute.attribute_type, ArrayType):
-                if self._unsafe_reparent and not self._importing:
-                    await self._move_held_children(entity_type, str(name), value, guid)
-                await self._array(entity_type, attribute, value, guid, operation)
+            await self._map_attribute(entity, entity_type, str(name), guid, operation)
+
+    async def _map_attribute(
+        self, entity: AtlasEntity, entity_type: EntityType, name: str, guid: str, operation: EntityOperation
+    ) -> None:
+        """One relationship attribute: its single reference or its array; create maps what is absent (REL-11)."""
+        if operation is not EntityOperation.CREATE and not entity.has_relationship_attribute(name):
+            return
+        value = entity.get_relationship_attribute(name)
+        attribute = entity_type.relationship_attribute(name, relationship_type_of(value))
+        if attribute is None or (operation is EntityOperation.CREATE and value is None):
+            return
+        if attribute.attribute_type.category is TypeCategory.OBJECT_ID_TYPE:
+            await self._single(attribute, value, guid)
+        elif isinstance(attribute.attribute_type, ArrayType):
+            if self._unsafe_reparent and not self._importing:
+                await self._move_held_children(entity_type, name, value, guid)
+            await self._array(entity_type, attribute, value, guid, operation)
 
     async def _move_held_children(self, entity_type: EntityType, name: str, value: object, guid: str) -> None:
         """The opt-in's move: a parent-side write clears each named child's other parent edge (RPS-05, DD-757).
@@ -179,23 +185,39 @@ class RelationshipMapper:
 
     async def _single(self, attribute: AtlasAttribute, value: object, guid: str) -> None:
         """``mapToVertexByTypeCategory`` for a reference: REL-12."""
-        direction = attribute.relationship_edge_direction
+        current = await self._current_single_edge(attribute, value, guid)
+        if value is None:
+            await self._finish_single(attribute, guid, current, None, None)
+            return
+        target = self._resolve(value)
+        if target is None:
+            return  # an import leaves out a reference to an entity not there (IMP-05)
+        new = await self._map_object_id(attribute, value, guid, target, current)
+        if attribute.inverse_ref_attribute is not None:
+            await self._inverse(attribute.inverse_ref_attribute, new, _relationship_attributes(value))
+        await self._finish_single(attribute, guid, current, new, target)
+
+    async def _current_single_edge(
+        self, attribute: AtlasAttribute, value: object, guid: str
+    ) -> StoredRelationship | None:
+        """The relationship a single reference writes over: the given one, or the edge of its label (REL-12)."""
         relationship_guid = _relationship_guid(value)
         if relationship_guid and not self._importing:
-            current = await self._relationship(relationship_guid)
-        else:
-            current = edge_for_label(
-                guid, await self._of(guid), attribute.relationship_edge_label, attribute.relationship_edge_direction
-            )
-        new = None
-        target = None
-        if value is not None:
-            target = self._resolve(value)
-            if target is None:
-                return  # an import leaves out a reference to an entity not there (IMP-05)
-            new = await self._map_object_id(attribute, value, guid, target, current)
-            if attribute.inverse_ref_attribute is not None:
-                await self._inverse(attribute.inverse_ref_attribute, new, _relationship_attributes(value))
+            return await self._relationship(relationship_guid)
+        return edge_for_label(
+            guid, await self._of(guid), attribute.relationship_edge_label, attribute.relationship_edge_direction
+        )
+
+    async def _finish_single(
+        self,
+        attribute: AtlasAttribute,
+        guid: str,
+        current: StoredRelationship | None,
+        new: StoredRelationship | None,
+        target: str | None,
+    ) -> None:
+        """Touch the entity the single reference reached, and remove the edge it replaced (REL-12, REL-15)."""
+        direction = attribute.relationship_edge_direction
         if current is None and new is not None:
             self._touch(new.end1_guid if direction is EdgeDirection.IN else new.end2_guid)
         if current is not None and (new is None or new.guid != current.guid):
@@ -221,6 +243,23 @@ class RelationshipMapper:
         items = list(value) if isinstance(value, list | tuple | set) else []
         if attribute.attribute_def.cardinality is Cardinality.SET:
             items = java_distinct(items)
+        mapped = await self._map_array_items(attribute, items, guid, current, appending=appending)
+        kept = await self._kept_array_edges(entity_type, attribute, guid, current, mapped, appending=appending)
+        for index, relationship_guid in enumerate(dict.fromkeys(kept + mapped)):
+            relationship = self._relationships[relationship_guid]
+            if relationship.state is RelationshipStatus.ACTIVE and relationship.index != index:
+                self._put(relationship.model_copy(update={"index": index}))
+
+    async def _map_array_items(
+        self,
+        attribute: AtlasAttribute,
+        items: list[Any],
+        guid: str,
+        current: list[StoredRelationship],
+        *,
+        appending: bool,
+    ) -> list[str]:
+        """The relationships an array's items map to, skipping references an import drops (REL-14, IMP-05)."""
         mapped: list[str] = []
         for index, item in enumerate(items):
             existing = None if appending or index >= len(current) else current[index]
@@ -231,6 +270,19 @@ class RelationshipMapper:
             if attribute.inverse_ref_attribute is not None:
                 await self._inverse(attribute.inverse_ref_attribute, new, None)  # Java passes the whole array
             mapped.append(new.guid)
+        return mapped
+
+    async def _kept_array_edges(  # noqa: PLR0913 - the array's parts; each needed to keep one edge
+        self,
+        entity_type: EntityType,
+        attribute: AtlasAttribute,
+        guid: str,
+        current: list[StoredRelationship],
+        mapped: list[str],
+        *,
+        appending: bool,
+    ) -> list[str]:
+        """The array's stored edges that stay: mapped, or those append or a held edge keeps (REL-14)."""
         kept: list[str] = []
         for relationship in current:
             if relationship.guid in mapped:
@@ -243,10 +295,7 @@ class RelationshipMapper:
                 )
             ):
                 kept.append(relationship.guid)
-        for index, relationship_guid in enumerate(dict.fromkeys(kept + mapped)):
-            relationship = self._relationships[relationship_guid]
-            if relationship.state is RelationshipStatus.ACTIVE and relationship.index != index:
-                self._put(relationship.model_copy(update={"index": index}))
+        return kept
 
     async def _map_object_id(
         self,

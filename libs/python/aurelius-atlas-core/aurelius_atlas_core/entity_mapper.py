@@ -41,7 +41,7 @@ class EntityMapper:
     entries keep naming (OWN-04); ``is_deleted`` tells whether an entity is ``DELETED``.
     """
 
-    def __init__(  # noqa: PLR0913 - the request's context, as ``EntityMutationContext``
+    def __init__(  # noqa: PLR0913 - the request's context; as ``EntityMutationContext``
         self,
         registry: TypeRegistry,
         *,
@@ -142,7 +142,7 @@ class EntityMapper:
         elif mapped is not _KEEP:
             target[name] = mapped
 
-    def _attribute(self, attribute: AtlasAttribute, value: object, current: object, operation: EntityOperation) -> Any:  # noqa: ANN401, PLR0911 - one case per kind, as Java's switch
+    def _attribute(self, attribute: AtlasAttribute, value: object, current: object, operation: EntityOperation) -> Any:  # noqa: ANN401, PLR0911 - one case per kind; as Java's switch
         """``mapAttribute`` and ``mapToVertexByTypeCategory``: the value to store, or ``_KEEP``."""
         type_ = attribute.attribute_type
         category = type_.category

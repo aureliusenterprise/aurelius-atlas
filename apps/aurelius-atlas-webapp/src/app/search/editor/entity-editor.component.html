@@ -126,9 +126,7 @@
                  pickers re-seeded around them, and a second Save rides the
                  stored version. -->
             @if (conflictShown()) {
-                <p class="help is-warning aurelius-editor-conflict" role="status">
-                    {{ conflictLine }}
-                </p>
+                <output class="help is-warning aurelius-editor-conflict">{{ conflictLine }}</output>
             }
             <!-- The required-fields notification (EDT-07): shown at the top of
                  the form when a Save was attempted and the form is invalid —

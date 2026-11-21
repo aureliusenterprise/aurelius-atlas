@@ -229,11 +229,12 @@ class RewindStore:
         self._new_task = self._new_task or any(change.expected is None and not change.remove for change in task_changes)
         await self._quiet(changes, relationship_changes, classification_changes, task_changes)
 
-    async def flush(self) -> None:
+    def flush(self) -> None:
         """Wake the real store's listeners for the writes made through this wrapper, once (ASU-07, ASU-08).
 
         The door calls it after the whole apply has succeeded, beside replaying the change records (AVW-10). A
-        write that never reached here - one the apply rolled back - wakes nothing (WRS-08).
+        write that never reached here - one the apply rolled back - wakes nothing (WRS-08). The listeners are
+        sync callables, so there is nothing to await here.
         """
         wrote, new_task = self._wrote, self._new_task
         self._wrote = self._new_task = False
@@ -319,9 +320,9 @@ class RewindStore:
         current = await self.documents.get_linked(kind, list(recorded))
 
         def change(
-            before: Any,  # noqa: ANN401 - the kind's stored document, or none when it did not exist
+            before: Any,  # noqa: ANN401 - the kind's stored document; or none when it did not exist
             found: tuple[Any, DocumentVersion] | None,
-        ) -> Any:  # noqa: ANN401 - one kind's change, or none when there is nothing to undo
+        ) -> Any:  # noqa: ANN401 - one kind's change; or none when there is nothing to undo
             if before is None:
                 return None if found is None else _linked_change(kind, found[0], found[1], remove=True)
             if found is None:
@@ -364,9 +365,11 @@ class _BufferedNotifier:
         self._real = real
         self._calls: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
 
-    def __getattr__(self, name: str) -> Any:  # noqa: ANN401 - the recorded call, replayable later
+    def __getattr__(self, name: str) -> Any:  # noqa: ANN401 - the recorded call; replayable later
 
-        async def record(*args: Any, **kwargs: Any) -> None:  # noqa: ANN401 - any notifier call, replayed unchanged
+        # Async on purpose: the notifier protocol's methods are coroutines, so a replayed call must be
+        # awaitable by _BufferedNotifier.replay even though recording is instant.
+        async def record(*args: Any, **kwargs: Any) -> None:  # noqa: ANN401 - any notifier call; replayed unchanged  # NOSONAR
             self._calls.append((name, args, kwargs))
 
         return record
@@ -389,7 +392,7 @@ class ViewMutationDoor:
     section reach an already-parented child and moves it; without it such a save is refused (RPS-01, RPS-05).
     """
 
-    def __init__(  # noqa: PLR0913 - the request's options, each a keyword
+    def __init__(  # noqa: PLR0913 - the request's options; each a keyword
         self,
         store: WriteStore,
         *,
@@ -443,7 +446,7 @@ class ViewMutationDoor:
         except Exception:
             await rewind.undo()
             raise
-        await rewind.flush()
+        rewind.flush()
         await buffer.replay()
         return await self._view(guid)
 
@@ -471,7 +474,7 @@ class ViewMutationDoor:
         except Exception:
             await rewind.undo()
             raise
-        await rewind.flush()
+        rewind.flush()
         await buffer.replay()
         return await self._view(guid)
 
@@ -617,26 +620,43 @@ class ViewMutationDoor:
             for relationship in collection_elements(guid, relationships, attribute)
             if relationship.state is RelationshipStatus.ACTIVE
         }
-        new = [end for end, wanted in ends.items() if not wanted.deleted and end not in current]
-        if not self._unsafe_reparent:
-            # The door has no same-request parent release (DV-189): a held child is refused, not moved.
-            held = [entry for end in new for entry in await self._held_child_parents(guid, entity_type, attribute, end)]
-            if held:
-                messages = [held_parent_message(entry) for entry in held]
-                raise AtlasError(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages)
+        await self._refuse_held_children(guid, entity_type, attribute, ends, current)
         for end, wanted in ends.items():
             if wanted.deleted:
-                if end in current:
-                    await store.delete_by_id(current[end].guid, DeleteType.HARD)
-                continue
-            if end in current:
-                continue
-            if self._unsafe_reparent:
-                await self._clear_held_child(store, guid, entity_type, attribute, end)
-            await self._create_end(store, guid, type_name, end, label, direction, relationships)
+                await self._remove_end(store, current.get(end))
+            elif end not in current:
+                if self._unsafe_reparent:
+                    await self._clear_held_child(store, guid, entity_type, attribute, end)
+                await self._create_end(store, guid, type_name, end, label, direction, relationships)
         for end, relationship in current.items():
             if end not in ends:
                 await store.delete_by_id(relationship.guid, DeleteType.HARD)
+
+    async def _refuse_held_children(
+        self,
+        guid: str,
+        entity_type: EntityType | None,
+        attribute: AtlasAttribute,
+        ends: dict[str, _End],
+        current: dict[str, StoredRelationship],
+    ) -> None:
+        """A wanted end that is a child another parent holds is refused, not moved (RPS-01, DV-189).
+
+        Without ``unsafe_reparent`` the door has no same-request parent release, so each new end is checked and
+        the held ones answer together.
+        """
+        if self._unsafe_reparent:
+            return
+        new = [end for end, wanted in ends.items() if not wanted.deleted and end not in current]
+        held = [entry for end in new for entry in await self._held_child_parents(guid, entity_type, attribute, end)]
+        if held:
+            messages = [held_parent_message(entry) for entry in held]
+            raise AtlasError(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages)
+
+    async def _remove_end(self, store: RelationshipStore, existing: StoredRelationship | None) -> None:
+        """Delete the edge of an end the entity still holds, when the view asks for it gone (AVW-05)."""
+        if existing is not None:
+            await store.delete_by_id(existing.guid, DeleteType.HARD)
 
     async def _clear_held_child(
         self, store: RelationshipStore, guid: str, entity_type: EntityType | None, attribute: AtlasAttribute, end: str
@@ -658,7 +678,7 @@ class ViewMutationDoor:
             return []
         return await held_parents_of(self._store, end, child_attribute, guid)
 
-    async def _create_end(  # noqa: PLR0913, PLR0917 - the edge's parts, as one create needs them
+    async def _create_end(  # noqa: PLR0913, PLR0917 - the edge's parts; as one create needs them
         self,
         store: RelationshipStore,
         guid: str,
@@ -923,20 +943,23 @@ def _parse_sections(sections: object, errors: list[str]) -> list[_Section] | Non
         if not isinstance(entry, dict) or not isinstance(entry.get("attribute"), str) or not entry["attribute"]:
             errors.append("Each sections entry names an attribute and its ends")
             continue
-        ends: list[_End] = []
         wanted = entry.get("entities") or []
         if not isinstance(wanted, list):
             errors.append(f"The sections entry {entry['attribute']} names its ends as a list")
             continue
-        for end in wanted:
-            guid = end.get("guid") if isinstance(end, dict) else end if isinstance(end, str) else None
-            if not isinstance(guid, str) or not guid:
-                errors.append(f"The sections entry {entry['attribute']} names an end by its GUID")
-                continue
-            deleted = isinstance(end, dict) and str(end.get("status") or "").upper() == "DELETED"
-            ends.append(_End(guid=guid, deleted=deleted))
-        parsed.append(_Section(attribute=str(entry["attribute"]), ends=ends))
+        ends = [_end_of(entry["attribute"], end, errors) for end in wanted]
+        parsed.append(_Section(attribute=str(entry["attribute"]), ends=[end for end in ends if end is not None]))
     return parsed
+
+
+def _end_of(attribute: str, end: object, errors: list[str]) -> _End | None:
+    """One sections end as an ``_End``: a GUID string, or an object with it and its ``status`` (AVW-09)."""
+    guid = end.get("guid") if isinstance(end, dict) else end
+    if not isinstance(guid, str) or not guid:
+        errors.append(f"The sections entry {attribute} names an end by its GUID")
+        return None
+    status = str(end.get("status") or "").upper() if isinstance(end, dict) else ""
+    return _End(guid=guid, deleted=status == "DELETED")
 
 
 def _refuse(messages: list[str]) -> NoReturn:

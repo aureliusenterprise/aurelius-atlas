@@ -88,7 +88,7 @@ async def test_a_rule_of_no_next_marker_page_is_still_read(settings: Callable[..
 @pytest.mark.covers("aurelius_atlas_quality_scanner.catalogue.is_active", rules=["DQS-02"])
 def test_only_the_boolean_false_is_not_active(
     active: Any,  # noqa: ANN401 - attribute values are untyped JSON
-    expected: bool,  # noqa: FBT001 - the parametrised pair is (given, expected)
+    expected: bool,  # noqa: FBT001 - the parametrised pair is given and expected
 ) -> None:
     """DQS-02: a missing, text or wrapped-active rule still runs; only the boolean false does not."""
     attributes = _attrs() if active is None else _attrs(active=active)

@@ -116,19 +116,7 @@ class EntityBusinessMetadata:
             found = await self._entity(guid)
             entity_type = self._entity_type(found.entity)
             current = await EntityRetriever(self._store).business_attributes(found.entity) or {}
-            for name in entity_type.business_attributes:
-                values = given.get(name)
-                if values is None and not is_overwrite:
-                    continue
-                if (not values and not current.get(name)) or values == current.get(name):
-                    continue
-                self._authorizer.verify_access(
-                    AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA,
-                    "add/update business-metadata: guid=",
-                    guid,
-                    ", business-metadata-name=",
-                    name,
-                )
+            self._verify_writable(guid, entity_type, given, current, is_overwrite=is_overwrite)
             validate_business_attributes(found.entity, entity_type, given, is_overwrite=is_overwrite)
             mapper = self._mapper()
             entity, updated = (
@@ -141,6 +129,36 @@ class EntityBusinessMetadata:
             return updated
 
         await self._run(guid, attempt)
+
+    def _verify_writable(
+        self,
+        guid: str,
+        entity_type: EntityType,
+        given: BusinessAttributes,
+        current: BusinessAttributes,
+        *,
+        is_overwrite: bool,
+    ) -> None:
+        """The update's privilege on each business metadata the request actually changes (BMD-03, AUZ-17).
+
+        A metadata with no values given, that changes nothing, or that already holds the same values is not checked.
+
+        Raises:
+            AtlasError: ``UNAUTHORIZED_ACCESS`` for the first the user may not change.
+        """
+        for name in entity_type.business_attributes:
+            values = given.get(name)
+            if values is None and not is_overwrite:
+                continue
+            if (not values and not current.get(name)) or values == current.get(name):
+                continue
+            self._authorizer.verify_access(
+                AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA,
+                "add/update business-metadata: guid=",
+                guid,
+                ", business-metadata-name=",
+                name,
+            )
 
     async def remove_business_attributes(self, guid: str, given: BusinessAttributes | None) -> None:
         """``removeBusinessAttributes``: the given attributes, or all of a business metadata given none, removed
@@ -165,21 +183,32 @@ class EntityBusinessMetadata:
                     ", business-metadata=",
                     name,
                 )
-            attributes = dict(found.entity.attributes)
-            updated: Updated = {}
-            for name, business_attributes in entity_type.business_attributes.items():
-                if name not in given:
-                    continue
-                values = given[name]
-                for attribute in business_attributes.values():
-                    if not values or str(attribute.name) in values:
-                        attributes.pop(attribute.qualified_name, None)
-                        updated.setdefault(name, {})[str(attribute.name)] = None
+            attributes, updated = self._removed(found.entity, entity_type, given)
             if updated:
                 await self._write(found, found.entity.model_copy(update={"attributes": attributes}))
             return updated
 
         await self._run(guid, attempt)
+
+    @staticmethod
+    def _removed(
+        stored: StoredEntity, entity_type: EntityType, given: BusinessAttributes
+    ) -> tuple[dict[str, Any], Updated]:
+        """The stored attributes with the given ones gone, and the values that went (BMD-05).
+
+        A business metadata given no values loses all of its attributes; given values, only those.
+        """
+        attributes = dict(stored.attributes)
+        updated: Updated = {}
+        for name, business_attributes in entity_type.business_attributes.items():
+            if name not in given:
+                continue
+            values = given[name]
+            for attribute in business_attributes.values():
+                if not values or str(attribute.name) in values:
+                    attributes.pop(attribute.qualified_name, None)
+                    updated.setdefault(name, {})[str(attribute.name)] = None
+        return attributes, updated
 
     async def bulk_create_or_update_business_attributes(
         self, file_name: str | None, content: bytes
@@ -231,26 +260,38 @@ class EntityBusinessMetadata:
             unique_value, name = str(row[UNIQUE_ATTR_VALUE_COLUMN_INDEX]), str(row[BM_ATTR_NAME_COLUMN_INDEX])
             key = f"{unique.qualified_name}_{unique_value}"
             if key not in found:
-                entity = await self._store.find_by_unique_attributes(entity_type, {unique_name: unique_value})
-                if entity is None or entity.entity.type_name != entity_type.type_name:
+                entity = await self._entity_named(entity_type, unique_name, unique_value)
+                if entity is None:
                     failed.append(f"{line}no {entity_type.type_name} entity found with {unique_name}={unique_value}")
                     continue
-                current = await EntityRetriever(self._store).business_attributes(entity.entity) or {}
-                found[key] = (entity.entity.guid, current)
-            metadata_name, _, attribute_name = name.partition(".")
-            attribute = entity_type.business_attribute(metadata_name, attribute_name) if "." in name else None
-            if attribute is None:
+                current = await EntityRetriever(self._store).business_attributes(entity) or {}
+                found[key] = (entity.guid, current)
+            named_attribute = self._named_attribute(entity_type, name)
+            if named_attribute is None:
                 failed.append(f"{line}invalid business-metadata '{name}' for entity type '{entity_type.type_name}'")
                 continue
-            value: object = str(row[BM_ATTR_VALUE_COLUMN_INDEX])
-            if isinstance(attribute.attribute_type, ArrayType):
-                value = _values(str(value), attribute.attribute_type, failed, index + 1)
+            metadata_name, attribute_name, attribute = named_attribute
+            value = _row_value(attribute, str(row[BM_ATTR_VALUE_COLUMN_INDEX]), failed, index + 1)
             found[key][1].setdefault(metadata_name, {})[attribute_name] = value
         response.failed_import_info_list += [
             ImportInfo(parent_object_name="", child_object_name="", import_status=ImportStatus.FAILED, remarks=message)
             for message in failed
         ]
         return list(found.values())
+
+    async def _entity_named(self, entity_type: EntityType, unique_name: str, unique_value: str) -> StoredEntity | None:
+        """The stored entity of ``entity_type`` holding the row's unique value, none when no entity does (BMI-02)."""
+        entity = await self._store.find_by_unique_attributes(entity_type, {unique_name: unique_value})
+        return None if entity is None or entity.entity.type_name != entity_type.type_name else entity.entity
+
+    @staticmethod
+    def _named_attribute(entity_type: EntityType, name: str) -> tuple[str, str, BusinessAttribute] | None:
+        """The business attribute a row names as ``<metadata>.<attribute>``, or none for a name that is not (BMI-03)."""
+        if "." not in name:
+            return None
+        metadata_name, _, attribute_name = name.partition(".")
+        attribute = entity_type.business_attribute(metadata_name, attribute_name)
+        return None if attribute is None else (metadata_name, attribute_name, attribute)
 
     async def _entity(self, guid: str) -> VersionedEntity:
         found = await self._store.get(guid)
@@ -301,18 +342,39 @@ def validate_business_attributes(
             messages.append(f"{name}: invalid business-metadata for entity type {type_name}")
             continue
         for attribute in business_attributes.values():
-            value = (values or {}).get(str(attribute.name))
-            field = f"{type_name}.{name}.{attribute.name}"
-            if value is not None:
-                attribute.attribute_type.validate_value(value, field, messages)
-                if not _valid_length(attribute, value):
-                    messages.append(f"{field}:  Business attribute-value exceeds maximum length limit")
-            elif not attribute.attribute_def.is_optional and (
-                is_overwrite or stored.attributes.get(attribute.qualified_name) is None
-            ):
-                messages.append(f"{field}: mandatory business-metadata attribute value missing in type {type_name}")
+            _validate_one(
+                stored,
+                attribute,
+                (values or {}).get(str(attribute.name)),
+                type_name,
+                name,
+                is_overwrite=is_overwrite,
+                messages=messages,
+            )
     if messages:
         raise AtlasError(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages)
+
+
+def _validate_one(  # noqa: PLR0913 - a value's rule; each part of one message
+    stored: StoredEntity,
+    attribute: BusinessAttribute,
+    value: object,
+    type_name: str,
+    metadata_name: str,
+    *,
+    is_overwrite: bool,
+    messages: list[str],
+) -> None:
+    """One business attribute's value: valid, short enough, and given when mandatory (BMD-03)."""
+    field = f"{type_name}.{metadata_name}.{attribute.name}"
+    if value is not None:
+        attribute.attribute_type.validate_value(value, field, messages)
+        if not _valid_length(attribute, value):
+            messages.append(f"{field}:  Business attribute-value exceeds maximum length limit")
+    elif not attribute.attribute_def.is_optional and (
+        is_overwrite or stored.attributes.get(attribute.qualified_name) is None
+    ):
+        messages.append(f"{field}: mandatory business-metadata attribute value missing in type {type_name}")
 
 
 def add_or_update_business_attributes(
@@ -331,15 +393,8 @@ def add_or_update_business_attributes(
         if not values:
             continue
         for attribute in business_attributes.values():
-            if attribute.name not in values:
-                continue
-            value = values[str(attribute.name)]
-            existing = attributes.get(attribute.qualified_name)
-            if existing is None and value is None:
-                continue
-            operation = EntityOperation.CREATE if existing is None else EntityOperation.UPDATE
-            if _changed(mapper, attributes, attribute, value, operation):
-                updated.setdefault(name, {})[str(attribute.name)] = value
+            if attribute.name in values:
+                _add_one(mapper, attributes, updated, name, attribute, values[str(attribute.name)])
     return stored.model_copy(update={"attributes": attributes}), updated
 
 
@@ -354,17 +409,45 @@ def set_business_attributes(
     for name, business_attributes in entity_type.business_attributes.items():
         values = (given or {}).get(name) or {}
         for attribute in business_attributes.values():
-            value = values.get(str(attribute.name))
-            existing = attributes.get(attribute.qualified_name)
-            if value is None:
-                if existing is not None:
-                    attributes.pop(attribute.qualified_name)
-                    updated.setdefault(name, {})[str(attribute.name)] = None
-                continue
-            operation = EntityOperation.CREATE if existing is None else EntityOperation.UPDATE
-            if _changed(mapper, attributes, attribute, value, operation):
-                updated.setdefault(name, {})[str(attribute.name)] = value
+            _set_one(mapper, attributes, updated, name, attribute, values.get(str(attribute.name)))
     return stored.model_copy(update={"attributes": attributes}), updated
+
+
+def _add_one(  # noqa: PLR0913, PLR0917 - the attribute's write; the parts one map needs
+    mapper: EntityMapper,
+    attributes: dict[str, Any],
+    updated: Updated,
+    metadata_name: str,
+    attribute: BusinessAttribute,
+    value: object,
+) -> None:
+    """``addOrUpdateBusinessAttributes`` of one given attribute: a null with nothing stored is left out (BMD-02)."""
+    existing = attributes.get(attribute.qualified_name)
+    if existing is None and value is None:
+        return
+    operation = EntityOperation.CREATE if existing is None else EntityOperation.UPDATE
+    if _changed(mapper, attributes, attribute, value, operation):
+        updated.setdefault(metadata_name, {})[str(attribute.name)] = value
+
+
+def _set_one(  # noqa: PLR0913, PLR0917 - the attribute's write; the parts one map needs
+    mapper: EntityMapper,
+    attributes: dict[str, Any],
+    updated: Updated,
+    metadata_name: str,
+    attribute: BusinessAttribute,
+    value: object,
+) -> None:
+    """``setBusinessAttributes`` of one attribute: a null removes what is stored, else the value is mapped (BMD-04)."""
+    existing = attributes.get(attribute.qualified_name)
+    if value is None:
+        if existing is not None:
+            attributes.pop(attribute.qualified_name)
+            updated.setdefault(metadata_name, {})[str(attribute.name)] = None
+        return
+    operation = EntityOperation.CREATE if existing is None else EntityOperation.UPDATE
+    if _changed(mapper, attributes, attribute, value, operation):
+        updated.setdefault(metadata_name, {})[str(attribute.name)] = value
 
 
 def _changed(
@@ -389,6 +472,13 @@ def _valid_length(attribute: BusinessAttribute, value: object) -> bool:
     if type_name == "array<string>" and isinstance(value, list | set | tuple):
         return all(element is None or len(str(element)) <= limit for element in value)
     return True
+
+
+def _row_value(attribute: BusinessAttribute, text: str, failed: list[str], line: int) -> object:
+    """One row's value for one attribute: an array attribute parses its list, a plain one keeps its text (BMI-04)."""
+    if isinstance(attribute.attribute_type, ArrayType):
+        return _values(text, attribute.attribute_type, failed, line)
+    return text
 
 
 def _unresolved(value: object) -> str:  # pragma: no cover - business attributes hold no references

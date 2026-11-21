@@ -571,17 +571,20 @@ class EntityStore:
             if written or (found is None and guid in entry.removed):
                 await self._documents.restore(guid, entry.before_entity(guid))
         for name, befores in entry.linked_before.items():
-            kind = LinkedKind(name)
-            current_linked = await self._documents.get_linked(kind, list(befores))
-            for guid in befores:
-                found_linked = current_linked.get(guid)
-                written = found_linked is not None and found_linked[0].write_id == entry.write_id
-                if written or (found_linked is None and guid in entry.removed_linked.get(name, [])):
-                    await self._documents.restore_linked(kind, guid, entry.before_linked(kind, guid))
+            await self._undo_linked(entry, LinkedKind(name), befores)
         held = await self._documents.reservations(entry.reserved)
         for reservation in held.values():
             if reservation.write_id == entry.write_id:
                 await self._documents.release(reservation.key, reservation.guid)
+
+    async def _undo_linked(self, entry: JournalEntry, kind: LinkedKind, befores: Mapping[str, Any]) -> None:
+        """``_undo`` of one linked kind: restore what the write wrote and what it removed that stayed gone (DD-056)."""
+        current_linked = await self._documents.get_linked(kind, list(befores))
+        for guid in befores:
+            found_linked = current_linked.get(guid)
+            written = found_linked is not None and found_linked[0].write_id == entry.write_id
+            if written or (found_linked is None and guid in entry.removed_linked.get(kind.value, [])):
+                await self._documents.restore_linked(kind, guid, entry.before_linked(kind, guid))
 
     async def _finish_releases(self, entry: JournalEntry) -> None:
         current = await self._documents.get(list(entry.before))
