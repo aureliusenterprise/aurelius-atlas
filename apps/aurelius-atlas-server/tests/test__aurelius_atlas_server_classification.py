@@ -153,7 +153,11 @@ async def test__the_bulk_add_refuses_a_guid_that_is_no_uuid(client: httpx.AsyncC
     ) == (400, {"errorCode": "ATLAS-400-00-021", "errorMessage": "ObjectId is not valid nope"})
 
 
-@pytest.mark.covers(f"{E}.set_classifications", rules=["CLA-01", "CLA-02", "CLA-03", "CLA-04"])
+@pytest.mark.covers(
+    f"{E}.set_classifications",
+    "aurelius_atlas_server.services.associator",
+    rules=["CLA-01", "CLA-02", "CLA-03", "CLA-04"],
+)
 async def test__set_classifications_answers_the_summary_array(client: httpx.AsyncClient, table: str) -> None:
     """The entity found by ``qualifiedName`` gets the header's classification; no body answers ``[]``."""
     body = {

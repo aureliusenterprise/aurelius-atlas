@@ -13,13 +13,14 @@ from aurelius_atlas_model.errors import validate_guid
 from aurelius_atlas_model.params import SimilarSearchParams, read_params
 from fastapi import APIRouter, Depends, Request
 
-from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, verify_access
+from aurelius_atlas_server.authorization import AtlasPrivilege, verify_access
 from aurelius_atlas_server.bodies import json_model
+from aurelius_atlas_server.deps import Authorizer, Settings
 from aurelius_atlas_server.embedding import embed_query, query_embedder
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.models import SemanticSearchParameters
 from aurelius_atlas_server.openapi import json_response, request_body
-from aurelius_atlas_server.routes.entity import READ_ENTITY_GUID, Store
+from aurelius_atlas_server.services import READ_ENTITY_GUID, Store
 
 SEARCH_BY_MEANING = APIRouter(prefix="/api/aurelius/v1", tags=["Search by meaning"])
 
@@ -37,20 +38,22 @@ SEMANTIC_BODY = request_body(
 
 
 @SEARCH_BY_MEANING.post("/search/semantic", responses=QUICK_SEARCH_RESULT, **SEMANTIC_BODY)
-async def search_by_meaning(request: Request, meaning_body: MeaningBody, store: Store) -> AtlasJSONResponse:
+async def search_by_meaning(
+    request: Request, meaning_body: MeaningBody, store: Store, settings: Settings, authorized: Authorizer
+) -> AtlasJSONResponse:
     """Quick search by meaning, ``semantic`` or ``hybrid`` (SBM-01 to SBM-04, SBM-06, SBM-07)."""
     parameters = meaning_body or SemanticSearchParameters()
     hybrid = parameters.checked()
     vector = await embed_query(query_embedder(request), str(parameters.query))
-    weight = request.app.state.settings.hybrid_vector_weight if hybrid else 1.0
-    result = await EntityDiscoveryService(store, authorizer=authorizer(request)).search_by_meaning(
+    weight = settings.hybrid_vector_weight if hybrid else 1.0
+    result = await EntityDiscoveryService(store, authorizer=authorized).search_by_meaning(
         parameters, vector, hybrid=hybrid, weight=weight
     )
     return AtlasJSONResponse(content=result.to_json())
 
 
 @SEARCH_BY_MEANING.get("/entity/guid/{guid}/similar", responses=QUICK_SEARCH_RESULT)
-async def similar_entities(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def similar_entities(guid: str, request: Request, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
     """The entities nearest to one entity's embedding, itself left out (SBM-05 to SBM-07).
 
     Raises:
@@ -62,7 +65,7 @@ async def similar_entities(guid: str, request: Request, store: Store) -> AtlasJS
     found = await store.get(guid)
     if found is None:
         raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
-    verify_access(request, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
+    verify_access(authorized, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
     if found.entity.embedding is None:
         raise AtlasError(AtlasErrorCode.NO_EMBEDDING, guid)
     asked = read_params(SimilarSearchParams, request.query_params)
@@ -73,7 +76,7 @@ async def similar_entities(guid: str, request: Request, store: Store) -> AtlasJS
         offset=asked.offset,
         limit=asked.limit,
     )
-    result = await EntityDiscoveryService(store, authorizer=authorizer(request)).search_by_meaning(
+    result = await EntityDiscoveryService(store, authorizer=authorized).search_by_meaning(
         parameters, found.entity.embedding.vector, exclude_guids=frozenset({guid})
     )
     return AtlasJSONResponse(content=result.to_json())

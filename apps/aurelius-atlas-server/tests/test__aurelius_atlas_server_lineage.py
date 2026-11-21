@@ -10,6 +10,7 @@ from typing import Any
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
+from aurelius_atlas_server.deps import read_settings
 from fastapi import FastAPI
 
 D = "aurelius_atlas_server.routes.lineage"
@@ -122,10 +123,21 @@ async def test__lineage_on_demand_is_disabled_by_default(client: httpx.AsyncClie
     )
 
 
-@pytest.mark.covers(f"{D}.get_lineage_graph_on_demand", f"{D}.lineage_service", rules=["LIN-06", "LIN-07"])
-async def test__lineage_on_demand_when_enabled(app: FastAPI, client: httpx.AsyncClient, flow: dict[str, str]) -> None:
+@pytest.mark.covers(
+    f"{D}.get_lineage_graph_on_demand",
+    f"{D}.lineage_service",
+    "aurelius_atlas_server.deps.read_settings",
+    rules=["LIN-06", "LIN-07", "SVC-02"],
+)
+async def test__lineage_on_demand_when_enabled(
+    app: FastAPI, client: httpx.AsyncClient, flow: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The body's constraints per GUID, defaults filled in, answered as the payload."""
-    app.state.settings = app.state.settings.model_copy(update={"lineage_on_demand_enabled": True})
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        read_settings,
+        lambda: app.state.settings.model_copy(update={"lineage_on_demand_enabled": True}),
+    )
     status, found = await send(client, "POST", f"{LINEAGE}/{flow['dst']}", json={flow["dst"]: {"direction": "INPUT"}})
     assert (status, found["lineageDirection"], found["lineageDepth"]) == (200, "INPUT", 3)
     assert found["lineageOnDemandPayload"] == {

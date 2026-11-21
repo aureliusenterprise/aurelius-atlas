@@ -17,11 +17,12 @@ from fastapi import APIRouter, Request
 
 from aurelius_atlas_server.app_search import derive_written
 from aurelius_atlas_server.authentication import acting_user
-from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, is_access_allowed
+from aurelius_atlas_server.authorization import AtlasPrivilege, is_access_allowed
 from aurelius_atlas_server.bodies import Body
+from aurelius_atlas_server.deps import Authorizer, Settings, StoreSet
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import json_response, request_body
-from aurelius_atlas_server.routes.entity import Store, notifier, read_query, tasks_enabled
+from aurelius_atlas_server.services import Store, notifier, read_query, tasks_enabled
 
 VIEW_ENTITY = APIRouter(prefix="/api/aurelius/v1", tags=["View family"])
 
@@ -31,10 +32,10 @@ VIEW_BODY = request_body(EntityView, required=False, description="The entity's d
 
 
 @VIEW_ENTITY.get("/entity/guid/{guid}", responses=VIEW_RESULT)
-async def read(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def read(guid: str, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
     """The live view of one entity: one read, derived fresh (AVR-10)."""
-    if not is_access_allowed(request, AtlasPrivilege.ENTITY_READ):
-        raise AtlasError(AtlasErrorCode.VIEW_FORBIDDEN, authorizer(request).user)
+    if not is_access_allowed(authorized, AtlasPrivilege.ENTITY_READ):
+        raise AtlasError(AtlasErrorCode.VIEW_FORBIDDEN, authorized.user)
     validate_guid("guid", guid)
     view = await _live_view(store, guid)
     if view is None:
@@ -55,7 +56,9 @@ async def _live_view(store: Store, guid: str) -> EntityView | None:
 
 
 @VIEW_ENTITY.post("/entity", responses=VIEW_RESULT, **VIEW_BODY)
-async def write(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
+async def write(  # noqa: PLR0913, PLR0917 - FastAPI dependencies
+    request: Request, body: Body, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``POST /entity``: the view as desired state, applied in one request, the new live view out (AVW-01 to AVW-10).
 
     The create needs ``ENTITY_CREATE`` and the update ``ENTITY_UPDATE``, answered ``VIEW_FORBIDDEN_WRITE``
@@ -64,14 +67,14 @@ async def write(request: Request, body: Body, store: Store) -> AtlasJSONResponse
     """
     creating = isinstance(body, dict) and body.get("guid") is None
     needed = AtlasPrivilege.ENTITY_CREATE if creating else AtlasPrivilege.ENTITY_UPDATE
-    if not is_access_allowed(request, needed):
-        raise AtlasError(AtlasErrorCode.VIEW_FORBIDDEN_WRITE, authorizer(request).user)
+    if not is_access_allowed(authorized, needed):
+        raise AtlasError(AtlasErrorCode.VIEW_FORBIDDEN_WRITE, authorized.user)
     door = ViewMutationDoor(
         store,
         user=acting_user(request),
-        authorizer=authorizer(request),
-        notifier=notifier(request, store),
-        tasks=tasks_enabled(request),
+        authorizer=authorized,
+        notifier=notifier(store, found),
+        tasks=tasks_enabled(settings),
         unsafe_reparent=read_query(EntityWriteParams, request).unsafe_reparent,
     )
     try:
@@ -79,7 +82,7 @@ async def write(request: Request, body: Body, store: Store) -> AtlasJSONResponse
     except ViewVersionConflictError as conflict:
         return _conflict(conflict)
     # The breadcrumb and the other derived fields of the answer, derived from this write first (ASU-08, DD-679).
-    if await derive_written(request.app.state.settings.app_search_answer_seconds) and view.guid is not None:
+    if await derive_written(settings.app_search_answer_seconds) and view.guid is not None:
         view = await _live_view(store, view.guid) or view
     return AtlasJSONResponse(view.to_json())
 

@@ -10,6 +10,7 @@ from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionServi
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
+from aurelius_atlas_server.deps import read_settings
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.tenant_workers import audit_aging
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -19,9 +20,17 @@ from fastapi import FastAPI
 AGEOUT = "/api/atlas/admin/audits/ageout"
 
 
-@pytest.mark.covers("aurelius_atlas_server.routes.admin.ageout_audit_data", rules=["AGE-01", "AGE-02", "AGE-03"])
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.admin.ageout_audit_data",
+    "aurelius_atlas_server.bodies.validate_body",
+    rules=["AGE-01", "AGE-02", "AGE-03", "SVC-05"],
+)
 async def test__an_ageout_queues_the_agings_it_asks_for(
-    app: FastAPI, client: httpx.AsyncClient, issuer: FakeIssuer, settings: ServerSettings
+    app: FastAPI,
+    client: httpx.AsyncClient,
+    issuer: FakeIssuer,
+    settings: ServerSettings,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The criteria's agings as pending tasks; none asked for, or aging off, is 204; ``ADMIN_AUDITS`` needed."""
     criteria = {"auditAgingEnabled": True, "defaultAgeoutEnabled": True, "customAgeoutAuditCount": 60}
@@ -30,7 +39,9 @@ async def test__an_ageout_queues_the_agings_it_asks_for(
     off = await client.post(AGEOUT, json={"defaultAgeoutEnabled": True})
     empty = await client.post(AGEOUT)
     by_config_off = await client.post(AGEOUT, params={"useAuditConfig": "true"})
-    app.state.settings = settings.model_copy(update={"audit_aging_enabled": True})
+    monkeypatch.setitem(
+        app.dependency_overrides, read_settings, lambda: settings.model_copy(update={"audit_aging_enabled": True})
+    )
     by_config = await client.post(AGEOUT, params={"useAuditConfig": "TRUE"})
     reader = {"Authorization": f"Bearer {issuer.token('reader', atlas_roles=('atlas-read',))}"}
     refused = await client.post(AGEOUT, json=criteria, headers=reader)

@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx2 as httpx
 import pytest
+from aurelius_atlas_server.deps import read_settings
 from fake_issuer import FakeIssuer
 from fastapi import FastAPI
 
@@ -49,7 +50,7 @@ async def business(client: httpx.AsyncClient, guid: str) -> dict[str, Any] | Non
 
 
 @pytest.mark.covers(
-    f"{R}.business_metadata",
+    "aurelius_atlas_server.services.business_metadata",
     "aurelius_atlas_model.maps.BusinessAttributesMap._json_object_of_value_maps",
     "aurelius_atlas_model.maps.AttributeValues._json_object",
     f"{R}.add_or_update_business_attributes",
@@ -101,7 +102,7 @@ async def test__a_body_that_is_no_map_of_values_is_refused(client: httpx.AsyncCl
     assert (await client.post(f"{ENTITY}/guid/missing/businessmetadata", json={"bm_a": {}})).status_code == 400
 
 
-@pytest.mark.covers(f"{R}.business_metadata", rules=["AUZ-17"])
+@pytest.mark.covers("aurelius_atlas_server.services.business_metadata", rules=["AUZ-17"])
 async def test__a_reader_changes_no_business_attributes(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
     """``atlas-read`` may not update or remove business metadata; nothing changes."""
     guid = await entity(client, bm_a={"n": 1})
@@ -160,10 +161,16 @@ async def test__business_attributes_are_imported_from_an_upload(client: httpx.As
 
 
 @pytest.mark.covers(f"{R}.import_bm_attributes", "aurelius_atlas_server.uploads.read_upload", rules=["SRV-12"])
-async def test__a_file_past_the_upload_limit_is_refused(app: FastAPI, client: httpx.AsyncClient) -> None:
+async def test__a_file_past_the_upload_limit_is_refused(
+    app: FastAPI, client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A CSV past the limit answers the refusal naming the file and the limit, and changes nothing (SRV-12)."""
     guid = await entity(client)
-    app.state.settings = app.state.settings.model_copy(update={"upload_max_bytes": 1024})
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        read_settings,
+        lambda: app.state.settings.model_copy(update={"upload_max_bytes": 1024}),
+    )
     csv = b"EntityType,EntityUniqueAttributeValue,BusinessAttributeName,BusinessAttributeValue\nt_bmd,q,bm_a.n,"
 
     refused = await client.post(f"{ENTITY}/businessmetadata/import", files={"file": ("bm.csv", csv + b"9" * 4096)})

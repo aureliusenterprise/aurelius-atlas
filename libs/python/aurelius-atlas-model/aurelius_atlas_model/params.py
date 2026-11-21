@@ -110,7 +110,8 @@ def _list(params: RequestParams, name: str) -> list[str]:
     return list(value) if isinstance(value, list) else [value]
 
 
-def _first(params: RequestParams, name: str) -> str | None:
+def first_value(params: RequestParams, name: str) -> str | None:
+    """A parameter's first value, as JAX-RS reads one; ``None`` when the name is absent (DV-39)."""
     values = _list(params, name)
     return values[0] if values else None
 
@@ -138,7 +139,7 @@ class Param:
 
     def read(self, params: RequestParams, name: str) -> Any:  # noqa: ANN401 - the field's value
         """The parameter's value for a model field."""
-        value = _first(params, name)
+        value = first_value(params, name)
         return self.default if value is None else value
 
 
@@ -150,7 +151,7 @@ class NumberParam(Param):
 
     def read(self, params: RequestParams, name: str) -> Any:  # noqa: ANN401 - the field's value
         """The parameter as a Java number of ``bounds``; ``default`` when absent (DV-39)."""
-        value = _first(params, name)
+        value = first_value(params, name)
         return self.default if value is None else parse_number(name, value, self.bounds)
 
 
@@ -160,7 +161,7 @@ class LongParam(Param):
 
     def read(self, params: RequestParams, name: str) -> Any:  # noqa: ANN401 - the field's value
         """The parameter as a Java ``long``; ``default`` when absent (DV-39)."""
-        value = _first(params, name)
+        value = first_value(params, name)
         return self.default if value is None else parse_number(name, value, LONG_RANGE)
 
 
@@ -172,7 +173,7 @@ class FlagParam(Param):
 
     def read(self, params: RequestParams, name: str) -> Any:  # noqa: ANN401 - the field's value
         """The parameter as ``Boolean.valueOf`` reads it; ``default`` when absent."""
-        return parse_flag(_first(params, name), default=self.default)
+        return parse_flag(first_value(params, name), default=self.default)
 
 
 @dataclass(frozen=True)
@@ -183,7 +184,7 @@ class EnumParam(Param):
 
     def read(self, params: RequestParams, name: str) -> Any:  # noqa: ANN401 - the field's value
         """The parameter as ``parse`` reads it; ``default`` when absent (DV-39)."""
-        value = _first(params, name)
+        value = first_value(params, name)
         return self.default if value is None else parse_choice(name, value, self.parse)
 
 
@@ -255,7 +256,7 @@ def read_params[M: BaseModel](model: type[M], params: RequestParams) -> M:
             values[field_name] = marker.read(params, marker.lookup(field_name))
         else:
             default = None if info.is_required() else info.default
-            value = _first(params, info.alias or to_camel(field_name))
+            value = first_value(params, info.alias or to_camel(field_name))
             values[field_name] = default if value is None else value
     return model.model_validate(values)
 

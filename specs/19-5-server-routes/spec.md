@@ -1,7 +1,7 @@
 # 19.5 A server whose routes state their dependencies
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** [#431](https://github.com/aureliusenterprise/aurelius-atlas/pull/431)
 - **Records:** DD-793 to DD-801, plan in [plan.md](./plan.md), design in [design.md](./design.md)
 
 ## Scope

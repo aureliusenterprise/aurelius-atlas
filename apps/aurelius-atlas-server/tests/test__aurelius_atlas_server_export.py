@@ -62,7 +62,11 @@ async def test__an_export_answers_a_zip_of_the_entities(client: httpx.AsyncClien
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_server.routes.admin.export", "aurelius_atlas_server.routes.admin._export_request", rules=["EXP-01"]
+    "aurelius_atlas_server.routes.admin.export",
+    "aurelius_atlas_server.routes.admin._export_request",
+    "aurelius_atlas_server.routes.admin._exclusively",
+    "aurelius_atlas_server.bodies.validate_body",
+    rules=["EXP-01", "SVC-05", "SVC-06"],
 )
 async def test__an_export_needs_the_admin_role_the_lock_and_a_request(
     app: FastAPI, client: httpx.AsyncClient, issuer: FakeIssuer

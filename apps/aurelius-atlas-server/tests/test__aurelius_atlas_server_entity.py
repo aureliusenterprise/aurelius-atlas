@@ -247,7 +247,7 @@ async def test__entities_are_read_in_bulk_by_sets_of_unique_attributes(seeded: h
     )
 
 
-@pytest.mark.covers(f"{E}.entity_store", rules=["ERD-10"])
+@pytest.mark.covers("aurelius_atlas_server.services.entity_store", rules=["ERD-10"])
 async def test__reads_see_types_another_server_stored(
     settings: ServerSettings, fake_es: FakeClient, auth_headers: dict[str, str]
 ) -> None:

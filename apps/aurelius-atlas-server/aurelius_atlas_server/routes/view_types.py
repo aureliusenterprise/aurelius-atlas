@@ -9,9 +9,10 @@ same ``UNAUTHORIZED_ACCESS`` the Atlas type endpoints answer (TYR-01); an unknow
 
 from aurelius_atlas_model.errors import validate_param_length
 from aurelius_atlas_model.typedef import AtlasBaseTypeDef
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 
 from aurelius_atlas_server.authorization import AtlasPrivilege, verify_access
+from aurelius_atlas_server.deps import Authorizer
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.models import ViewForTypeAnswer
 from aurelius_atlas_server.openapi import json_response
@@ -25,7 +26,7 @@ FOR_TYPE_RESULT = json_response(
 
 
 @VIEW_TYPES.get("/types/for-type/{name}", responses=FOR_TYPE_RESULT)
-async def for_type(name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def for_type(name: str, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
     """``for-type/{name}``: the named entity type and its supertypes, each typedef whole (AVW-11).
 
     Raises:
@@ -33,7 +34,7 @@ async def for_type(name: str, request: Request, store: Store) -> AtlasJSONRespon
             entity type - the editor only ever asks for one it read from a live view.
     """
     validate_param_length("name", name)
-    verify_access(request, AtlasPrivilege.TYPE_READ, READ_TYPE, name)
+    verify_access(authorized, AtlasPrivilege.TYPE_READ, READ_TYPE, name)
     entity_type = store.registry.entity_type(name)
     if entity_type is None:
         raise AtlasError(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name)

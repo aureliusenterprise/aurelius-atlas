@@ -88,8 +88,8 @@ async def test__a_guid_or_type_name_over_4096_characters_is_refused(
 @pytest.mark.covers(
     f"{E}.delete_by_guid",
     f"{E}.delete_by_guids",
-    f"{E}.writer",
-    f"{E}.delete_type",
+    "aurelius_atlas_server.services.writer",
+    "aurelius_atlas_server.services.delete_type",
     "aurelius_atlas_server.routes.admin.purge_by_ids",
     rules=["EDL-02", "EDL-03", "EDL-04", "EDL-06", "EDL-08"],
 )
@@ -120,7 +120,11 @@ async def test__entities_are_soft_deleted_then_purged(typed: httpx.AsyncClient) 
     )
 
 
-@pytest.mark.covers(f"{E}.delete_by_unique_attribute", f"{E}.delete_type", rules=["EDL-02", "EDL-04", "EDL-06"])
+@pytest.mark.covers(
+    f"{E}.delete_by_unique_attribute",
+    "aurelius_atlas_server.services.delete_type",
+    rules=["EDL-02", "EDL-04", "EDL-06"],
+)
 async def test__a_request_chooses_a_hard_delete_when_the_override_is_on(overridable: httpx.AsyncClient) -> None:
     """``deleteType=HARD`` removes the entity at once; no ``attr:`` values fail with Java's message."""
     guids = await create(overridable, database("-1", "a@cl"))

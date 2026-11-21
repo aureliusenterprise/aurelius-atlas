@@ -13,9 +13,9 @@ from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from fastapi import APIRouter, Request
 
 from aurelius_atlas_server.authentication import User
+from aurelius_atlas_server.deps import Settings
 from aurelius_atlas_server.errors import AtlasJSONResponse
 from aurelius_atlas_server.openapi import json_response
-from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.tenancy import Tenancy
 from aurelius_atlas_server.tenants import TenantDirectory
 
@@ -69,7 +69,7 @@ async def tenancy(request: Request) -> AtlasJSONResponse:
     "/tenancy/dashboards",
     responses=json_response(DashboardsAnswer, description="The link to the tenant's catalogue dashboard."),
 )
-async def dashboards(request: Request) -> AtlasJSONResponse:
+async def dashboards(request: Request, settings: Settings) -> AtlasJSONResponse:
     """The signed-in user's link to their tenant's catalogue dashboard, for its stewards, administrators and the
     operators its trust made members (TDL-06, TDL-07).
 
@@ -79,7 +79,6 @@ async def dashboards(request: Request) -> AtlasJSONResponse:
             none of the operators its trust made members.
     """  # noqa: D205 - one sentence
     user: User = request.state.user
-    settings: ServerSettings = request.app.state.settings
     tenancy: Tenancy | None = request.app.state.tenancy
     directory: TenantDirectory | None = request.app.state.tenant_directory
     if tenancy is None or directory is None or user.tenant is None or settings.grafana_public_url is None:

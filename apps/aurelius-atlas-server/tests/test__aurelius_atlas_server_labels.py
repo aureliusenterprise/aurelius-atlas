@@ -34,7 +34,7 @@ async def labels_of(client: httpx.AsyncClient, guid: str) -> list[str]:
 
 
 @pytest.mark.covers(
-    f"{R}.labels",
+    "aurelius_atlas_server.services.labels",
     "aurelius_atlas_model.lists.Labels._json_array_of_labels",
     f"{R}.set_labels",
     f"{R}.add_labels",
@@ -102,7 +102,7 @@ async def test__a_body_that_is_no_array_of_labels_is_refused(client: httpx.Async
     assert (await client.post(f"{ENTITY}/guid/nope/labels", json=["a"])).status_code == 400  # no GUID text (DV-161)
 
 
-@pytest.mark.covers(f"{R}.labels", rules=["AUZ-16"])
+@pytest.mark.covers("aurelius_atlas_server.services.labels", rules=["AUZ-16"])
 async def test__a_reader_changes_no_labels(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
     """``atlas-read`` may not add or remove a label; nothing changes."""
     guid = await entity(client, "a")

@@ -75,7 +75,12 @@ async def test__a_parameter_that_is_no_value_of_its_type_is_a_bad_request(
     )
 
 
-@pytest.mark.covers(f"{E}.get_audit_events", f"{E}.notifier", f"{E}.writer", rules=["AUD-03", "AUD-06"])
+@pytest.mark.covers(
+    f"{E}.get_audit_events",
+    "aurelius_atlas_server.services.notifier",
+    "aurelius_atlas_server.services.writer",
+    rules=["AUD-03", "AUD-06"],
+)
 async def test__a_purged_entity_keeps_its_audit_and_an_unknown_one_has_none(
     client: httpx.AsyncClient, table: str
 ) -> None:
@@ -90,7 +95,9 @@ async def test__a_purged_entity_keeps_its_audit_and_an_unknown_one_has_none(
     assert (await actions(client, "99999999-9999-4999-8999-999999999999"))[1]["errorCode"] == "ATLAS-404-00-005"
 
 
-@pytest.mark.covers(f"{E}.get_entity_headers", f"{E}.classifications", rules=["CAU-02", "CAU-07", "CAU-08"])
+@pytest.mark.covers(
+    f"{E}.get_entity_headers", "aurelius_atlas_server.services.classifications", rules=["CAU-02", "CAU-07", "CAU-08"]
+)
 async def test__entities_whose_classifications_changed_are_listed_with_their_headers(
     client: httpx.AsyncClient, table: str
 ) -> None:

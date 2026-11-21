@@ -42,6 +42,7 @@ from aurelius_atlas_model.instance import AtlasEntityHeader, AtlasObjectId, Enti
 from aurelius_atlas_model.lists import Guids
 from aurelius_atlas_model.metrics import AtlasMetrics, AtlasMetricsCharts, AtlasMetricsStat
 from aurelius_atlas_model.params import (
+    INVALID_PARAMETER,
     AuditDetailsParams,
     EntityGuidParams,
     ExportImportAuditParams,
@@ -56,8 +57,9 @@ from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import PlainTextResponse
 
 from aurelius_atlas_server.authentication import Session, User, acting_user, csrf_token
-from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, privileges, verify_access
-from aurelius_atlas_server.bodies import json_root
+from aurelius_atlas_server.authorization import AtlasPrivilege, privileges, verify_access
+from aurelius_atlas_server.bodies import Body, json_root, validate_body
+from aurelius_atlas_server.deps import Authorizer, Settings, StoreSet
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import (
     array_of,
@@ -68,11 +70,9 @@ from aurelius_atlas_server.openapi import (
     text_response,
 )
 from aurelius_atlas_server.openapi import no_content as no_content_response
-from aurelius_atlas_server.routes.entity import INVALID_PARAMETER, Body, Store, importer, writer
 from aurelius_atlas_server.routes.types import typedef_store as refreshed_typedef_store
 from aurelius_atlas_server.routes.types import validate_param_length
-from aurelius_atlas_server.settings import ServerSettings
-from aurelius_atlas_server.tenant_stores import stores
+from aurelius_atlas_server.services import Store, Writer, importer
 from aurelius_atlas_server.uploads import read_upload
 
 OPERATION_STATUS = "operationStatus"
@@ -106,9 +106,8 @@ def time_zones() -> list[str]:
     "/version",
     responses=json_response(AtlasVersionInfo, description="The server's name, release and revision (ADM-01, DV-03)."),
 )
-async def get_version(request: Request) -> dict[str, Any]:
+async def get_version(settings: Settings) -> dict[str, Any]:
     """The server's name, release and revision (ADM-01, DV-03)."""
-    settings: ServerSettings = request.app.state.settings
     return AtlasVersionInfo.model_validate(
         {
             "version": version("aurelius-atlas-server"),
@@ -137,7 +136,7 @@ async def get_status() -> dict[str, Any]:
         description="The UI settings, permissions, userName, groups, timezones and _csrfToken (ADM-05, AUT-09).",
     ),
 )
-async def get_session(request: Request) -> dict[str, Any]:
+async def get_session(request: Request, settings: Settings) -> dict[str, Any]:
     """The user interface settings and the user of this session (ADM-05, AUT-09).
 
     The CSRF token is the session's, made on first ask; a request without a session gets a new one. The entity
@@ -150,7 +149,7 @@ async def get_session(request: Request) -> dict[str, Any]:
     if session is not None and session.csrf_token is None:
         session.csrf_token = csrf_token()
     profile = AtlasSessionProfile()
-    profile.tasks_enabled = request.app.state.settings.tasks_enabled
+    profile.tasks_enabled = settings.tasks_enabled
     profile.entity_update_allowed = AtlasPrivilege.ENTITY_UPDATE in allowed
     profile.entity_create_allowed = AtlasPrivilege.ENTITY_CREATE in allowed
     profile.user_name = None if user is None else user.name
@@ -165,9 +164,9 @@ async def get_session(request: Request) -> dict[str, Any]:
     "/patches",
     responses=json_response(AtlasPatches, description="The typedef patch records, sorted by id (ENS-10, DV-14)."),
 )
-async def get_patches(request: Request) -> dict[str, Any]:
+async def get_patches(found: StoreSet) -> dict[str, Any]:
     """``getAtlasPatches``: the typedef patch records, sorted by id (ENS-10, DV-14)."""
-    typedef_store = stores(request).typedef_store
+    typedef_store = found.typedef_store
     await typedef_store.refresh()
     return AtlasPatches(patches=typedef_store.patches()).to_json()
 
@@ -203,13 +202,15 @@ async def get_readiness(request: Request) -> str:
         description="The counts of types, entities and classifications, and the server's stats (MET-01 to MET-04).",
     ),
 )
-async def get_metrics(request: Request, store: Store) -> dict[str, Any]:
+async def get_metrics(request: Request, store: Store, settings: Settings, authorized: Authorizer) -> dict[str, Any]:
     """``getMetrics``: the counts of the types, entities and classifications the user may read, the server's stats
     and its system details; a store that is not healthy is ``not-connected`` (MET-01 to MET-04).
     """  # noqa: D205 - one sentence
     search_store: ElasticsearchStore = request.app.state.store
     report = await search_store.health()
-    metrics = await _metrics_service(request, store).get_metrics(store_connected=report.status is HealthStatus.UP)
+    metrics = await _metrics_service(request, store, settings, authorized).get_metrics(
+        store_connected=report.status is HealthStatus.UP
+    )
     return metrics.to_json()
 
 
@@ -217,13 +218,14 @@ LONG_RANGE = (-(2**63), 2**63 - 1)
 JAVA_LONG = re.compile(r"[+-]?\d+")
 
 
-def _metrics_service(request: Request, store: EntityStore) -> MetricsService:
+def _metrics_service(
+    request: Request, store: EntityStore, settings: Settings, authorized: Authorizer
+) -> MetricsService:
     """The metrics of ``store`` as the request's user reads them, kept as the settings say (MHS-01)."""
-    settings: ServerSettings = request.app.state.settings
     return MetricsService(
         store,
         request.app.state.metrics_util,
-        authorizer=authorizer(request),
+        authorizer=authorized,
         namespace=settings.cluster_name,
         ttl_hours=settings.metrics_ttl_hours,
     )
@@ -254,12 +256,14 @@ def _time_range(request: Request) -> tuple[int, int, list[str]]:
     "/metricsstats",
     responses=json_response(array_of(AtlasMetricsStat), description="Every stored metric, the latest first (MHS-02)."),
 )
-async def get_all_metrics(request: Request, store: Store) -> list[dict[str, Any]]:
+async def get_all_metrics(
+    request: Request, store: Store, settings: Settings, authorized: Authorizer
+) -> list[dict[str, Any]]:
     """``getAllMetrics``: every stored metric, the latest first; with ``mininfo``, the default, without the metrics
     (MHS-02).
     """  # noqa: D205 - one sentence
     min_info = read_params(MetricsListParams, request.query_params).min_info
-    found = await _metrics_service(request, store).get_all_metrics_stats(min_info=min_info)
+    found = await _metrics_service(request, store, settings, authorized).get_all_metrics_stats(min_info=min_info)
     return [stat.to_json() for stat in found]
 
 
@@ -267,10 +271,12 @@ async def get_all_metrics(request: Request, store: Store) -> list[dict[str, Any]
     "/metricsstat/{collection_time}",
     responses=json_response(AtlasMetricsStat, description="The metric stored at that time (MHS-02)."),
 )
-async def get_metrics_by_collection_time(request: Request, store: Store, collection_time: str) -> dict[str, Any]:
+async def get_metrics_by_collection_time(
+    request: Request, store: Store, collection_time: str, settings: Settings, authorized: Authorizer
+) -> dict[str, Any]:
     """``getMetricsByCollectionTime``: the metric stored at that time (MHS-02)."""
     validate_param_length("collectionTime", collection_time)
-    service = _metrics_service(request, store)
+    service = _metrics_service(request, store, settings, authorized)
     found = await service.get_metrics_stat_by_collection_time(_java_long("collectionTime", collection_time))
     return found.to_json()
 
@@ -279,10 +285,14 @@ async def get_metrics_by_collection_time(request: Request, store: Store, collect
     "/metricsstats/range",
     responses=json_response(array_of(AtlasMetricsStat), description="The metrics stored in the range (MHS-03)."),
 )
-async def get_metrics_in_time_range(request: Request, store: Store) -> list[dict[str, Any]]:
+async def get_metrics_in_time_range(
+    request: Request, store: Store, settings: Settings, authorized: Authorizer
+) -> list[dict[str, Any]]:
     """``getMetricsInTimeRange``: the metrics stored in the range, with the type data of the type names (MHS-03)."""
     start, end, type_names = _time_range(request)
-    found = await _metrics_service(request, store).get_metrics_in_range_by_type_names(start, end, type_names)
+    found = await _metrics_service(request, store, settings, authorized).get_metrics_in_range_by_type_names(
+        start, end, type_names
+    )
     return [stat.to_json() for stat in found]
 
 
@@ -292,10 +302,14 @@ async def get_metrics_in_time_range(request: Request, store: Store) -> list[dict
         AtlasMetricsCharts, description="Per type name, its counts in the range by state (MHS-04)."
     ),
 )
-async def get_metrics_for_chart_by_type_names(request: Request, store: Store) -> dict[str, list[dict[str, Any]]]:
+async def get_metrics_for_chart_by_type_names(
+    request: Request, store: Store, settings: Settings, authorized: Authorizer
+) -> dict[str, list[dict[str, Any]]]:
     """``getMetricsForChartByTypeNames``: per type name, its counts in the range by state (MHS-04)."""
     start, end, type_names = _time_range(request)
-    charts = await _metrics_service(request, store).get_metrics_for_chart_by_type_names(start, end, type_names)
+    charts = await _metrics_service(request, store, settings, authorized).get_metrics_for_chart_by_type_names(
+        start, end, type_names
+    )
     return {name: [chart.to_json() for chart in found] for name, found in charts.items()}
 
 
@@ -304,7 +318,9 @@ async def get_metrics_for_chart_by_type_names(request: Request, store: Store) ->
     responses=json_response(EntityMutationResponse, description="The purged entities (EDL-01 to EDL-03)."),
     **request_body(array_of(str), required=False, description="The GUIDs of the DELETED entities to purge."),
 )
-async def purge_by_ids(request: Request, store: Store, guids_body: PurgeBody) -> AtlasJSONResponse:
+async def purge_by_ids(
+    store: Store, guids_body: PurgeBody, entity_writer: Writer, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``purgeByIds``: remove the ``DELETED`` entities of a JSON array of GUIDs (EDL-01 to EDL-03).
 
     Raises:
@@ -312,9 +328,9 @@ async def purge_by_ids(request: Request, store: Store, guids_body: PurgeBody) ->
     """
     guids = list(dict.fromkeys(guids_body or []))
     if guids:
-        verify_access(request, AtlasPrivilege.ADMIN_PURGE, "purge entity: guids=", guids)  # AUZ-05
+        verify_access(authorized, AtlasPrivilege.ADMIN_PURGE, "purge entity: guids=", guids)  # AUZ-05
     EntityGuidParams(guids=guids).checked()  # the access check comes first, as Atlas checks it first (DV-161)
-    response = await writer(request, store).purge_by_ids(guids)
+    response = await entity_writer.purge_by_ids(guids)
     purged = response.get_purged_entities()
     if purged:  # ADA-02
         params = "[" + ", ".join(guids) + "]"  # List.toString
@@ -336,7 +352,9 @@ async def purge_by_ids(request: Request, store: Store, guids_body: PurgeBody) ->
         AtlasExportRequest, required=False, description="What to export: the items to export and the options."
     ),
 )
-async def export(request: Request, store: Store, body: Body) -> Response:
+async def export(  # noqa: PLR0913, PLR0917 - FastAPI dependencies
+    request: Request, store: Store, body: Body, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> Response:
     """``export``: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
 
     One export or import runs at a time in the request's store set (WPT-06) unless the request's options name
@@ -346,27 +364,17 @@ async def export(request: Request, store: Store, body: Body) -> Response:
         AtlasError: ``UNAUTHORIZED_ACCESS``; ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK`` while another runs;
             ``BAD_REQUEST`` for a body that is no export request (DV-10).
     """
-    verify_access(request, AtlasPrivilege.ADMIN_EXPORT, "export")
+    verify_access(authorized, AtlasPrivilege.ADMIN_EXPORT, "export")
     export_request = _export_request(body)
     exclusive = (
         OPTION_SKIP_LINEAGE not in export_request.options and OPTION_KEY_REPLICATED_TO not in export_request.options
     )
-    lock = stores(request).import_export_lock
-    if exclusive:
-        if lock.locked():
-            raise AtlasError(AtlasErrorCode.FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK)
-        await lock.acquire()
-    try:
+    async with _exclusively(found, exclusive=exclusive):
         sink = ZipSink()
-        service = ExportService(
-            store, cluster_name=request.app.state.settings.cluster_name, audits=_audits(request, store)
-        )
+        service = ExportService(store, cluster_name=settings.cluster_name, audits=_audits(request, store, settings))
         client = "" if request.client is None else request.client.host
         result = await service.run(sink, export_request, acting_user(request), socket.gethostname(), client)
         content = sink.close()
-    finally:
-        if exclusive:
-            lock.release()
     if "options" in export_request.model_fields_set and export_request.items_to_export:
         options = {**export_request.options, OPERATION_STATUS: result.operation_status.value}
         await _audit_items(store, AuditOperation.EXPORT, export_request.items_to_export, options)
@@ -383,14 +391,9 @@ def _export_request(body: Any) -> AtlasExportRequest:  # noqa: ANN401 - any JSON
     """The body as an export request; no body is an empty one (DV-120).
 
     Raises:
-        AtlasError: ``BAD_REQUEST`` for a body that is no export request (DV-10).
+        AtlasError: ``BAD_REQUEST`` for a body that is no export request (DV-10, SVC-05).
     """
-    if body is None:
-        return AtlasExportRequest()
-    try:
-        return AtlasExportRequest.model_validate(body)
-    except ValueError as error:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AtlasExportRequest: {error}") from error
+    return AtlasExportRequest() if body is None else validate_body(AtlasExportRequest, body)
 
 
 @ADMIN.post(
@@ -401,7 +404,9 @@ def _export_request(body: Any) -> AtlasExportRequest:  # noqa: ANN401 - any JSON
         text=("request",),
     ),
 )
-async def import_data(request: Request, store: Store) -> AtlasJSONResponse:
+async def import_data(
+    request: Request, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``importData``: the form's ``data``, an export ZIP, imported as its ``request`` asks (IMS-01 to IMS-05).
 
     One export or import runs at a time unless the request names ``replicatedFrom``; an empty ZIP answers an empty
@@ -410,15 +415,16 @@ async def import_data(request: Request, store: Store) -> AtlasJSONResponse:
     Raises:
         AtlasError: ``UNAUTHORIZED_ACCESS``; ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK``; what the import fails with.
     """
-    verify_access(request, AtlasPrivilege.ADMIN_IMPORT, "importData")
+    verify_access(authorized, AtlasPrivilege.ADMIN_IMPORT, "importData")
     form = await request.form()
     text = form.get("request")
     import_request = _import_request(text if isinstance(text, str) else "{}")
-    content = await read_upload(request, "data", "data")
+    content = await read_upload(request, settings, "data", "data")
     exclusive = import_request is not None and not import_request.is_replication_option_set()
-    async with _exclusively(request, exclusive=exclusive):
+    async with _exclusively(found, exclusive=exclusive):
         try:
-            result = await (await _importer(request, store)).run(content, import_request, *_who(request))
+            importer_ = await _importer(request, store, found, settings, authorized)
+            result = await importer_.run(content, import_request, *_who(request))
         except AtlasError as error:
             if error.code is not AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP:
                 raise
@@ -436,7 +442,9 @@ async def import_data(request: Request, store: Store) -> AtlasJSONResponse:
         description="The import request; its fileName option names the ZIP in the server's import folder.",
     ),
 )
-async def import_file(request: Request, store: Store, body: Body) -> AtlasJSONResponse:
+async def import_file(  # noqa: PLR0913, PLR0917 - FastAPI dependencies
+    request: Request, store: Store, body: Body, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``importFile``: the export ZIP its ``fileName`` option names, from the server's import folder (IMS-06, DV-125).
 
     It locks other exports and imports out only when the request names ``replicatedFrom``, as Atlas does.
@@ -445,13 +453,13 @@ async def import_file(request: Request, store: Store, body: Body) -> AtlasJSONRe
         AtlasError: ``UNAUTHORIZED_ACCESS``; ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK``; ``INVALID_PARAMETERS``; what
             the import fails with.
     """
-    verify_access(request, AtlasPrivilege.ADMIN_IMPORT, "importFile")
+    verify_access(authorized, AtlasPrivilege.ADMIN_IMPORT, "importFile")
     import_request = _import_request(json.dumps(body)) if body is not None else None
     exclusive = import_request is not None and import_request.is_replication_option_set()
-    folder = request.app.state.settings.import_folder
-    async with _exclusively(request, exclusive=exclusive):
-        importer = await _importer(request, store)
-        result = await importer.run_file(import_request or AtlasImportRequest(), folder, *_who(request))
+    folder = settings.import_folder
+    async with _exclusively(found, exclusive=exclusive):
+        importer_ = await _importer(request, store, found, settings, authorized)
+        result = await importer_.run_file(import_request or AtlasImportRequest(), folder, *_who(request))
     return AtlasJSONResponse(content=result.to_json())
 
 
@@ -493,19 +501,16 @@ async def _audit_items(
         AuditSearchParameters, required=False, description="The audit search parameters; none asks for every entry."
     ),
 )
-async def get_atlas_audits(request: Request, store: Store, body: Body) -> AtlasJSONResponse:
+async def get_atlas_audits(store: Store, body: Body, authorized: Authorizer) -> AtlasJSONResponse:
     """``getAtlasAudits``: the admin audits the search parameters find (ADA-04); it needs ``ADMIN_AUDITS``.
 
     Raises:
         AtlasError: ``UNAUTHORIZED_ACCESS``; ``INVALID_PARAMETERS`` for no body; ``UNKNOWN_ATTRIBUTE``;
             ``BAD_REQUEST`` for a body that is no search (DV-10).
     """
-    verify_access(request, AtlasPrivilege.ADMIN_AUDITS, "Admin Audits")
-    try:
-        parameters = None if body is None else AuditSearchParameters.model_validate(body)
-    except ValueError as error:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AuditSearchParameters: {error}") from error
-    found = await AtlasAuditService(store, authorizer=authorizer(request)).get(parameters)
+    verify_access(authorized, AtlasPrivilege.ADMIN_AUDITS, "Admin Audits")
+    parameters = None if body is None else validate_body(AuditSearchParameters, body)
+    found = await AtlasAuditService(store, authorizer=authorized).get(parameters)
     return AtlasJSONResponse(content=[entry.to_json() for entry in found])
 
 
@@ -519,7 +524,9 @@ async def get_atlas_audits(request: Request, store: Store, body: Body) -> AtlasJ
         AuditReductionCriteria, required=False, description="The aging criteria; ignored when useAuditConfig is true."
     ),
 )
-async def ageout_audit_data(request: Request, store: Store, body: Body) -> Response:
+async def ageout_audit_data(
+    request: Request, store: Store, body: Body, settings: Settings, authorized: Authorizer
+) -> Response:
     """``ageoutAuditData``: the agings the criteria ask for, or with ``useAuditConfig`` the configuration's, queued
     as tasks and answered; none queued is 204 (AGE-01 to AGE-03). It needs ``ADMIN_AUDITS``.
 
@@ -527,16 +534,12 @@ async def ageout_audit_data(request: Request, store: Store, body: Body) -> Respo
         AtlasError: ``UNAUTHORIZED_ACCESS``; ``BAD_REQUEST`` for a body that is no criteria (DV-10);
             ``INTERNAL_ERROR`` for action types of which none names an action.
     """  # noqa: D205 - one sentence
-    verify_access(request, AtlasPrivilege.ADMIN_AUDITS, "Admin Audits Ageout")
-    settings: ServerSettings = request.app.state.settings
+    verify_access(authorized, AtlasPrivilege.ADMIN_AUDITS, "Admin Audits Ageout")
     service = AtlasAuditReductionService(store, settings.audit_aging_config())
     if (request.query_params.get("useAuditConfig") or "").lower() == "true":
         tasks = await service.start_by_config()
     else:
-        try:
-            criteria = AuditReductionCriteria.model_validate(body or {})
-        except ValueError as error:
-            raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AuditReductionCriteria: {error}") from error
+        criteria = validate_body(AuditReductionCriteria, body or {})
         if criteria.default_ageout_ttl_in_days <= 0:
             criteria.default_ageout_ttl_in_days = settings.audit_default_ageout_ttl_in_days
         tasks = await service.start_by_criteria(service.build_ageout_criteria(criteria))
@@ -551,7 +554,9 @@ async def ageout_audit_data(request: Request, store: Store, body: Body) -> Respo
         array_of(AtlasEntityHeader), description="The entity headers a purge's audit names (ADA-05)."
     ),
 )
-async def get_audit_details(audit_guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_audit_details(
+    audit_guid: str, request: Request, store: Store, found: StoreSet, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``getAuditDetails``: the entity headers a purge's audit names, ``limit`` (10) from ``offset`` (ADA-05).
 
     Atlas checks no admin privilege here, only the entity read of the entry.
@@ -561,9 +566,9 @@ async def get_audit_details(audit_guid: str, request: Request, store: Store) -> 
             than a purge.
     """
     page = read_params(AuditDetailsParams, request.query_params)
-    service = AtlasAuditService(store, authorizer=authorizer(request))
-    found = await service.details(audit_guid, stores(request).entity_audits, page.limit, page.offset)
-    return AtlasJSONResponse(content=[header.to_json() for header in found])
+    service = AtlasAuditService(store, authorizer=authorized)
+    entries = await service.details(audit_guid, found.entity_audits, page.limit, page.offset)
+    return AtlasJSONResponse(content=[header.to_json() for header in entries])
 
 
 def _import_request(text: str) -> AtlasImportRequest | None:
@@ -574,16 +579,21 @@ def _import_request(text: str) -> AtlasImportRequest | None:
         return None
 
 
-async def _importer(request: Request, store: Store) -> ImportService:
+async def _importer(
+    request: Request, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> ImportService:
     """The import service, its types current, its entities written as the request's user (IMS-04)."""
     return ImportService(
-        store, await refreshed_typedef_store(request), importer(request, store), audits=_audits(request, store)
+        store,
+        await refreshed_typedef_store(found),
+        importer(request, store, found, settings, authorized),
+        audits=_audits(request, store, settings),
     )
 
 
-def _audits(request: Request, store: Store) -> AuditsWriter:
+def _audits(request: Request, store: Store, settings: Settings) -> AuditsWriter:
     """The audit trail of the request's export or import, this server named as the settings name it (REP-02)."""
-    return AuditsWriter(store, cluster_name=request.app.state.settings.cluster_name, user=acting_user(request))
+    return AuditsWriter(store, cluster_name=settings.cluster_name, user=acting_user(request))
 
 
 @ADMIN.get(
@@ -592,7 +602,7 @@ def _audits(request: Request, store: Store) -> AuditsWriter:
         AtlasServer, description="The server of the full name, with the replication it recorded (REP-01)."
     ),
 )
-async def get_cluster(server_name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_cluster(server_name: str, request: Request, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
     """``getCluster``: the server of the full name, with the replication it recorded (REP-01).
 
     Atlas checks no admin privilege here, only the entity reads of its store (DD-307).
@@ -600,7 +610,7 @@ async def get_cluster(server_name: str, request: Request, store: Store) -> Atlas
     Raises:
         AtlasError: ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND`` for none.
     """
-    service = AtlasServerService(store, user=acting_user(request), authorizer=authorizer(request))
+    service = AtlasServerService(store, user=acting_user(request), authorizer=authorized)
     found = await service.get(AtlasServer(name=server_name, full_name=server_name))
     return AtlasJSONResponse(content=found.to_json())
 
@@ -612,14 +622,14 @@ async def get_cluster(server_name: str, request: Request, store: Store) -> Atlas
         description="The audit entries of the values given, the server either end (REP-05).",
     ),
 )
-async def get_export_import_audit(request: Request, store: Store) -> AtlasJSONResponse:
+async def get_export_import_audit(request: Request, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
     """``getExportImportAudit``: the audit entries of the values given, the server either end (REP-05).
 
     Query parameters ``serverName``, ``userName``, ``operation``, ``startTime``, ``endTime``, ``limit`` and
     ``offset``. Atlas checks no admin privilege here, only the entity reads of its search (DD-307).
     """
     asked = read_params(ExportImportAuditParams, request.query_params)
-    service = ExportImportAuditService(store, user=acting_user(request), authorizer=authorizer(request))
+    service = ExportImportAuditService(store, user=acting_user(request), authorizer=authorized)
     found = await service.get(
         asked.user_name,
         asked.operation,
@@ -638,14 +648,14 @@ def _who(request: Request) -> tuple[str | None, str, str]:
 
 
 @asynccontextmanager
-async def _exclusively(request: Request, *, exclusive: bool) -> AsyncIterator[None]:
+async def _exclusively(found: StoreSet, *, exclusive: bool) -> AsyncIterator[None]:
     """``acquireExportImportLock``: when ``exclusive``, the one export or import running in the request's store set
     (DD-304, WPT-06).
 
     Raises:
         AtlasError: ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK`` while another runs.
     """  # noqa: D205 - one sentence
-    lock = stores(request).import_export_lock
+    lock = found.import_export_lock
     if not exclusive:
         yield
         return
@@ -661,19 +671,19 @@ async def _exclusively(request: Request, *, exclusive: bool) -> AsyncIterator[No
         array_of(AtlasTask), description="The tasks of the guids given, in their order, else every task (TSK-06)."
     ),
 )
-async def get_task_status(request: Request) -> AtlasJSONResponse:
+async def get_task_status(request: Request, found: StoreSet) -> AtlasJSONResponse:
     """``getTaskStatus``: the tasks of the ``guids`` given that exist, in their order, else every task (TSK-06)."""
     guids = request.query_params.getlist("guids")
-    management = stores(request).task_management
-    found = await management.get_by_guids(guids) if guids else await management.get_all()
-    return AtlasJSONResponse(content=[task.to_json() for task in found])
+    management = found.task_management
+    tasks = await management.get_by_guids(guids) if guids else await management.get_all()
+    return AtlasJSONResponse(content=[task.to_json() for task in tasks])
 
 
 @ADMIN.delete("/tasks", responses=no_content_response("The tasks of the guids given are removed (TSK-06)."))
-async def delete_task(request: Request) -> Response:
+async def delete_task(request: Request, found: StoreSet) -> Response:
     """``deleteTask``: remove the tasks of the ``guids`` given (TSK-06)."""
     guids = request.query_params.getlist("guids")
     if guids:
-        management = stores(request).task_management
+        management = found.task_management
         await management.delete_by_guids(guids)
     return Response(status_code=NO_CONTENT)

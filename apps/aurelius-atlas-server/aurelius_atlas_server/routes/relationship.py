@@ -3,7 +3,6 @@
 from typing import Annotated
 
 from aurelius_atlas_core.delete_type import DeleteType
-from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_model.errors import validate_guid
 from aurelius_atlas_model.instance import AtlasRelationship, AtlasRelationshipWithExtInfo
@@ -11,12 +10,12 @@ from aurelius_atlas_model.params import ExtendedInfoParams, read_params
 from fastapi import APIRouter, Depends, Request, Response
 
 from aurelius_atlas_server.authentication import acting_user
-from aurelius_atlas_server.authorization import authorizer
 from aurelius_atlas_server.bodies import json_model
+from aurelius_atlas_server.deps import Authorizer, Settings, StoreSet
 from aurelius_atlas_server.errors import AtlasJSONResponse
 from aurelius_atlas_server.openapi import json_response, request_body
 from aurelius_atlas_server.openapi import no_content as no_content_response
-from aurelius_atlas_server.routes.entity import Store, delete_type, notifier, tasks_enabled
+from aurelius_atlas_server.services import Store, delete_type, notifier, tasks_enabled
 
 RELATIONSHIP = APIRouter(prefix="/api/atlas/v2/relationship", tags=["Relationship"])
 
@@ -26,7 +25,9 @@ RELATIONSHIP_BODY = json_model(AtlasRelationship)
 type RelationshipBody = Annotated[AtlasRelationship | None, Depends(RELATIONSHIP_BODY)]
 
 
-def relationships(request: Request, store: EntityStore) -> RelationshipStore:
+def relationships(
+    request: Request, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> RelationshipStore:
     """A relationship store deleting as the server's ``delete_type`` setting says (EDL-04).
 
     Propagation is deferred as ``tasks_enabled`` says (TSK-02), what it changed audited (CAU-05), each change checked
@@ -34,12 +35,15 @@ def relationships(request: Request, store: EntityStore) -> RelationshipStore:
     """
     return RelationshipStore(
         store,
-        delete_type=DeleteType.of(request.app.state.settings.delete_type),
+        delete_type=DeleteType.of(settings.delete_type),
         user=acting_user(request),
-        tasks=tasks_enabled(request),
-        notifier=notifier(request, store),
-        authorizer=authorizer(request),
+        tasks=tasks_enabled(settings),
+        notifier=notifier(store, found),
+        authorizer=authorized,
     )
+
+
+type Relationships = Annotated[RelationshipStore, Depends(relationships)]
 
 
 def relationship_body(body: AtlasRelationship | None) -> AtlasRelationship:
@@ -52,9 +56,9 @@ def relationship_body(body: AtlasRelationship | None) -> AtlasRelationship:
     responses=json_response(AtlasRelationship, description="The created relationship, with its GUID (REL-04)."),
     **request_body(AtlasRelationship, description="The relationship to create: its type and its two ends."),
 )
-async def create(request: Request, relationship: RelationshipBody, store: Store) -> AtlasJSONResponse:
+async def create(relationship: RelationshipBody, relationships: Relationships) -> AtlasJSONResponse:
     """``create``: a new relationship between two entities (REL-04, REL-05)."""
-    created = await relationships(request, store).create(relationship_body(relationship))
+    created = await relationships.create(relationship_body(relationship))
     return AtlasJSONResponse(content=created.to_json())
 
 
@@ -63,9 +67,9 @@ async def create(request: Request, relationship: RelationshipBody, store: Store)
     responses=json_response(AtlasRelationship, description="The updated relationship (REL-07)."),
     **request_body(AtlasRelationship, description="The relationship to update, by its GUID."),
 )
-async def update(request: Request, relationship: RelationshipBody, store: Store) -> AtlasJSONResponse:
+async def update(relationship: RelationshipBody, relationships: Relationships) -> AtlasJSONResponse:
     """``update``: the relationship's tag propagation and attributes (REL-07)."""
-    updated = await relationships(request, store).update(relationship_body(relationship))
+    updated = await relationships.update(relationship_body(relationship))
     return AtlasJSONResponse(content=updated.to_json())
 
 
@@ -76,10 +80,10 @@ async def update(request: Request, relationship: RelationshipBody, store: Store)
         description="The relationship, with its ends' headers when extendedInfo is true (REL-03).",
     ),
 )
-async def get_by_id(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_by_id(guid: str, request: Request, relationships: Relationships) -> AtlasJSONResponse:
     """``getById``: the relationship, with its ends' headers when ``extendedInfo`` is true (REL-03, REL-06)."""
     validate_guid("guid", guid)
-    found = relationships(request, store)
+    found = relationships
     extended_info = read_params(ExtendedInfoParams, request.query_params).extended_info
     if extended_info:
         answer = await found.get_ext_info_by_id(guid)
@@ -93,8 +97,8 @@ async def get_by_id(guid: str, request: Request, store: Store) -> AtlasJSONRespo
     status_code=204,
     responses=no_content_response("The relationship is deleted, soft or hard as asked (REL-08)."),
 )
-async def delete_by_id(guid: str, request: Request, store: Store) -> Response:
+async def delete_by_id(guid: str, request: Request, settings: Settings, relationships: Relationships) -> Response:
     """``deleteById``: soft or hard, as the request may choose (REL-03, REL-08, EDL-04)."""
     validate_guid("guid", guid)
-    await relationships(request, store).delete_by_id(guid, delete_type(request))
+    await relationships.delete_by_id(guid, delete_type(request, settings))
     return Response(status_code=204)

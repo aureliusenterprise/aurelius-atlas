@@ -44,6 +44,50 @@ type Body = Annotated[Any, Depends(json_body)]
 """The body of a route that reads raw JSON itself, through ``json_body``."""
 
 
+def _body_error(model: type[Any], error: ValueError) -> AtlasError:
+    """The ``BAD_REQUEST`` that answers a body ``model`` refuses (DV-10).
+
+    The one owner of the rule every body reader raises with — the four hand-written blocks included — so a
+    body rule written wrong is wrong here and nowhere else (SVC-05, DD-796). A ``ValidationError`` answers
+    with its first problem's message and its location; any other failure answers with its own text.
+    """
+    if not isinstance(error, ValidationError):
+        return AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid {model.__name__}: {error}")
+    problem = error.errors(include_url=False)[0]
+    location = ".".join(str(part) for part in problem["loc"])
+    message = f"Invalid {model.__name__}: {problem['msg']}" + (f" at {location}" if location else "")
+    return AtlasError(AtlasErrorCode.BAD_REQUEST, message)
+
+
+def validate_body[T: AtlasModel](model: type[T], body: Any) -> T:  # noqa: ANN401 - any JSON value
+    """``body`` as ``model`` through the shared check (SVC-05).
+
+    The model validates without the request context: a body GUID stays the endpoint's own rule (DV-162). The
+    hand-written blocks of the export request and the two audit bodies call this.
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a body that is no ``model`` (DV-10).
+    """
+    try:
+        return model.model_validate(body)
+    except ValueError as error:
+        raise _body_error(model, error) from error
+
+
+def validate_json_body[T: AtlasModel](model: type[T], text: bytes) -> T:
+    """The raw request ``text`` as ``model`` through the shared check (SVC-05).
+
+    What ``types_def_body`` does with the body bytes: empty or unreadable text is no ``model``, so it is 400.
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for text that is no ``model`` (DV-10).
+    """
+    try:
+        return model.model_validate_json(text)
+    except ValueError as error:
+        raise _body_error(model, error) from error
+
+
 def model_body[T: AtlasModel](model: type[T], body: Any) -> T | None:  # noqa: ANN401 - any JSON value
     """``body`` as ``model``, or None for no body; unknown fields are ignored.
 
@@ -55,10 +99,7 @@ def model_body[T: AtlasModel](model: type[T], body: Any) -> T | None:  # noqa: A
     try:
         return model.model_validate(body, context=ATLAS_BODY_CONTEXT)
     except ValidationError as error:
-        problem = error.errors(include_url=False)[0]
-        location = ".".join(str(part) for part in problem["loc"])
-        message = f"Invalid {model.__name__}: {problem['msg']}" + (f" at {location}" if location else "")
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, message) from error
+        raise _body_error(model, error) from error
 
 
 def json_model[T: BaseModel](model: type[T]) -> Callable[[Request], Awaitable[T | None]]:
@@ -77,10 +118,7 @@ def json_model[T: BaseModel](model: type[T]) -> Callable[[Request], Awaitable[T 
         try:
             return model.model_validate(value, context=ATLAS_BODY_CONTEXT)
         except ValidationError as error:
-            problem = error.errors(include_url=False)[0]
-            location = ".".join(str(part) for part in problem["loc"])
-            message = f"Invalid {model.__name__}: {problem['msg']}" + (f" at {location}" if location else "")
-            raise AtlasError(AtlasErrorCode.BAD_REQUEST, message) from error
+            raise _body_error(model, error) from error
 
     body.__name__ = f"{model.__name__.lower()}_body"
     return body

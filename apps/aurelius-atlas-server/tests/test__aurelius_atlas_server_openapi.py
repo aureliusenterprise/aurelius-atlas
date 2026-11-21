@@ -7,6 +7,8 @@ says nothing, or a ``$ref`` to a model that never entered the document.
 """
 
 import pytest
+from aurelius_atlas_server.openapi import install
+from aurelius_atlas_server.routes import GLOSSARY
 from fastapi import FastAPI
 
 METHODS = ("post", "put", "patch")
@@ -62,3 +64,27 @@ def test__every_route_declares_its_body_and_answer(app: FastAPI) -> None:
     assert _writes_missing_body(spec) == []
     assert _schemas_saying_nothing(spec) == []
     assert _dangling_refs(spec) == []
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_server.openapi.install",
+    "aurelius_atlas_server.openapi._names",
+    "aurelius_atlas_server.openapi.schema_of",
+    rules=["SRV-08", "SVC-07"],
+)
+def test__an_app_documents_only_the_models_of_the_routes_it_carries(app: FastAPI) -> None:
+    """A second application in the same process documents its own routes, not the server's (SVC-07).
+
+    The models of a document are the ones its own routes name: the glossary carries the glossary shapes,
+    and neither the entity shapes nor the type shapes it never serves enter it.
+    """
+    glossary = FastAPI()
+    glossary.include_router(GLOSSARY)
+    install(glossary)
+
+    held = glossary.openapi()["components"]["schemas"]
+    whole = app.openapi()["components"]["schemas"]
+    assert "AtlasGlossary" in held
+    assert "AtlasEntityWithExtInfo" not in held
+    assert "AtlasTypesDef" not in held
+    assert {"AtlasGlossary", "AtlasEntityWithExtInfo", "AtlasTypesDef"} <= set(whole)

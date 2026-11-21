@@ -44,9 +44,10 @@ async def entity(client: httpx.AsyncClient, name: str) -> str:
 
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.admin.get_atlas_audits",
+    "aurelius_atlas_server.bodies.validate_body",
     "aurelius_atlas_server.request_context.RequestContextMiddleware.dispatch",
     "aurelius_atlas_server.app._audit_server_status",
-    rules=["ADA-02", "ADA-03", "ADA-04"],
+    rules=["ADA-02", "ADA-03", "ADA-04", "SVC-05"],
 )
 async def test__the_start_and_type_changes_are_audited(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
     """The server's start and activation; a type created by the request's user and client; ``ADMIN_AUDITS`` asked."""

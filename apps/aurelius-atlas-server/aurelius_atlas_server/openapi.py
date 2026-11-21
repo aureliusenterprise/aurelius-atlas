@@ -7,8 +7,9 @@ and answer names a model — from ``aurelius-atlas-model`` for the Atlas shapes,
 ``aurelius_atlas_server.models`` for the Aurelius ones — whose schema is the wire shape, aliases
 included. A bare array of strings (``array_of(str)``) is the only shape given inline.
 
-The referenced models are collected as routes are declared and enter ``components/schemas`` when
-the spec is first built (``install``), each once and shared by ``$ref``. Development-only surface:
+A route names its models as it is declared, and a document names the models of the routes it carries.
+``install`` fills ``components/schemas`` from those names when the spec is first built, so each app
+documents only what it serves and no other app's routes enter it (SVC-07). Development-only surface:
 ``create_app`` serves the spec only under development (SRV-08), where it documents what the parity
 scenarios pin — it changes no request handling.
 """
@@ -23,8 +24,12 @@ from pydantic import RootModel
 MEDIA = "application/json; charset=UTF-8"
 """The media type of every JSON answer of the server (``AtlasJSONResponse``) and of its bodies."""
 
-_models: list[type[Any]] = []
-"""The models referenced by a route's body or answer, in declaration order; ``install`` adds them."""
+_models: dict[str, type[Any]] = {}
+"""The model of every name a route named, by name — a lookup, not an app's list (SVC-07).
+
+Which models enter a document is what that app's own routes name (DD-798), so a second app built in the
+same process documents only what it serves, and the order the routes were imported changes nothing.
+"""
 
 Shape = type[AtlasModel] | type[RootModel[Any]] | type[str] | Mapping[str, Any]
 """What a shape may be given as: a model (its ``$ref``), ``str`` (a string), or a raw JSON-schema dict."""
@@ -39,9 +44,18 @@ def schema_of(model: Shape) -> dict[str, Any]:
         return {"type": "string"}
     if isinstance(model, Mapping):
         return dict(model)
-    if model not in _models:
-        _models.append(model)
+    _models.setdefault(model.__name__, model)
     return {"$ref": f"#/components/schemas/{model.__name__}"}
+
+
+def _names(node: object) -> set[str]:
+    """The schema names every ``$ref`` of a spec or a part of it names."""
+    if isinstance(node, Mapping):
+        found = {str(node["$ref"]).rsplit("/", 1)[-1]} if "$ref" in node else set()
+        return found | {name for value in node.values() for name in _names(value)}
+    if isinstance(node, Sequence) and not isinstance(node, str | bytes):
+        return {name for value in node for name in _names(value)}
+    return set()
 
 
 def array_of(item: Shape) -> dict[str, Any]:
@@ -103,17 +117,23 @@ def download_response(media_type: str, *, description: str) -> dict[int | str, d
 
 
 def install(app: FastAPI) -> None:
-    """Put every referenced model into the spec's ``components/schemas`` when the spec is built."""
+    """Put the models this app's routes name into its ``components/schemas`` when its spec is built (SVC-07).
+
+    The models are the ones the app's own document refers to, so the answer depends on the routes the app
+    carries and on nothing else — not on another app built in the same process, not on import order (DD-798).
+    """
 
     def openapi() -> dict[str, Any]:
         spec = original()
-        if _models:
-            schemas = spec.setdefault("components", {}).setdefault("schemas", {})
-            for model in _models:
-                generated = model.model_json_schema(ref_template="#/components/schemas/{model}")
-                for name, definition in generated.pop("$defs", {}).items():
-                    schemas.setdefault(name, definition)
-                schemas.setdefault(generated["title"], generated)
+        asked = {name: _models[name] for name in sorted(_names(spec)) if name in _models}
+        if not asked:
+            return spec
+        schemas = spec.setdefault("components", {}).setdefault("schemas", {})
+        for name, model in asked.items():
+            generated = model.model_json_schema(ref_template="#/components/schemas/{model}")
+            for definition_name, definition in generated.pop("$defs", {}).items():
+                schemas.setdefault(definition_name, definition)
+            schemas.setdefault(name, generated)
         return spec
 
     original = app.openapi

@@ -53,8 +53,8 @@ async def test__a_type_names_who_created_and_last_updated_it(client: httpx.Async
 
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.entity.create_or_update",
-    "aurelius_atlas_server.routes.entity.writer",
-    rules=["USR-03"],
+    "aurelius_atlas_server.services.writer",
+    rules=["USR-03", "SVC-03"],
 )
 async def test__an_entity_and_its_audit_name_the_user(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
     """``createdBy``, ``updatedBy`` and each audit event's ``user`` are the users who wrote."""
