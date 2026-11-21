@@ -68,7 +68,7 @@ async def test__an_upload_is_imported(client: httpx.AsyncClient, issuer: FakeIss
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.admin.import_file",
     "aurelius_atlas_server.routes.admin._exclusively",
-    rules=["IMS-06"],
+    rules=["IMS-06", "SVC-06"],
 )
 async def test__a_file_is_imported_from_the_import_folder(
     app: FastAPI, client: httpx.AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -20,7 +20,11 @@ from fastapi import FastAPI
 AGEOUT = "/api/atlas/admin/audits/ageout"
 
 
-@pytest.mark.covers("aurelius_atlas_server.routes.admin.ageout_audit_data", rules=["AGE-01", "AGE-02", "AGE-03"])
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.admin.ageout_audit_data",
+    "aurelius_atlas_server.bodies.validate_body",
+    rules=["AGE-01", "AGE-02", "AGE-03", "SVC-05"],
+)
 async def test__an_ageout_queues_the_agings_it_asks_for(
     app: FastAPI,
     client: httpx.AsyncClient,

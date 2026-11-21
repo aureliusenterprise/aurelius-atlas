@@ -58,7 +58,7 @@ from fastapi.responses import PlainTextResponse
 
 from aurelius_atlas_server.authentication import Session, User, acting_user, csrf_token
 from aurelius_atlas_server.authorization import AtlasPrivilege, privileges, verify_access
-from aurelius_atlas_server.bodies import Body, json_root
+from aurelius_atlas_server.bodies import Body, json_root, validate_body
 from aurelius_atlas_server.deps import Authorizer, Settings, StoreSet
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import (
@@ -369,20 +369,12 @@ async def export(  # noqa: PLR0913, PLR0917 - FastAPI dependencies
     exclusive = (
         OPTION_SKIP_LINEAGE not in export_request.options and OPTION_KEY_REPLICATED_TO not in export_request.options
     )
-    lock = found.import_export_lock
-    if exclusive:
-        if lock.locked():
-            raise AtlasError(AtlasErrorCode.FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK)
-        await lock.acquire()
-    try:
+    async with _exclusively(found, exclusive=exclusive):
         sink = ZipSink()
         service = ExportService(store, cluster_name=settings.cluster_name, audits=_audits(request, store, settings))
         client = "" if request.client is None else request.client.host
         result = await service.run(sink, export_request, acting_user(request), socket.gethostname(), client)
         content = sink.close()
-    finally:
-        if exclusive:
-            lock.release()
     if "options" in export_request.model_fields_set and export_request.items_to_export:
         options = {**export_request.options, OPERATION_STATUS: result.operation_status.value}
         await _audit_items(store, AuditOperation.EXPORT, export_request.items_to_export, options)
@@ -399,14 +391,9 @@ def _export_request(body: Any) -> AtlasExportRequest:  # noqa: ANN401 - any JSON
     """The body as an export request; no body is an empty one (DV-120).
 
     Raises:
-        AtlasError: ``BAD_REQUEST`` for a body that is no export request (DV-10).
+        AtlasError: ``BAD_REQUEST`` for a body that is no export request (DV-10, SVC-05).
     """
-    if body is None:
-        return AtlasExportRequest()
-    try:
-        return AtlasExportRequest.model_validate(body)
-    except ValueError as error:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AtlasExportRequest: {error}") from error
+    return AtlasExportRequest() if body is None else validate_body(AtlasExportRequest, body)
 
 
 @ADMIN.post(
@@ -522,10 +509,7 @@ async def get_atlas_audits(store: Store, body: Body, authorized: Authorizer) -> 
             ``BAD_REQUEST`` for a body that is no search (DV-10).
     """
     verify_access(authorized, AtlasPrivilege.ADMIN_AUDITS, "Admin Audits")
-    try:
-        parameters = None if body is None else AuditSearchParameters.model_validate(body)
-    except ValueError as error:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AuditSearchParameters: {error}") from error
+    parameters = None if body is None else validate_body(AuditSearchParameters, body)
     found = await AtlasAuditService(store, authorizer=authorized).get(parameters)
     return AtlasJSONResponse(content=[entry.to_json() for entry in found])
 
@@ -555,10 +539,7 @@ async def ageout_audit_data(
     if (request.query_params.get("useAuditConfig") or "").lower() == "true":
         tasks = await service.start_by_config()
     else:
-        try:
-            criteria = AuditReductionCriteria.model_validate(body or {})
-        except ValueError as error:
-            raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AuditReductionCriteria: {error}") from error
+        criteria = validate_body(AuditReductionCriteria, body or {})
         if criteria.default_ageout_ttl_in_days <= 0:
             criteria.default_ageout_ttl_in_days = settings.audit_default_ageout_ttl_in_days
         tasks = await service.start_by_criteria(service.build_ageout_criteria(criteria))

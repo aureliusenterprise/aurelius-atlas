@@ -154,7 +154,11 @@ async def test__deletes_answer_204_without_a_body(client: httpx.AsyncClient) -> 
     assert (built_in.status_code, built_in.json()["errorCode"]) == (400, "ATLAS-400-00-024")
 
 
-@pytest.mark.covers("aurelius_atlas_server.routes.types.types_def_body", rules=["TYR-11"])
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.types.types_def_body",
+    "aurelius_atlas_server.bodies.validate_json_body",
+    rules=["TYR-11", "SVC-05"],
+)
 @pytest.mark.parametrize(
     ("method", "content"),
     [

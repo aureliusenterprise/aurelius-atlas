@@ -9,12 +9,12 @@ from aurelius_atlas_core.typedef_store import TypedefStore, root_def
 from aurelius_atlas_model.errors import validate_guid, validate_param_length
 from aurelius_atlas_model.typedef import AtlasBaseTypeDef, AtlasTypeDefHeader, AtlasTypesDef, TypeCategory
 from fastapi import APIRouter, Depends, Request, Response
-from pydantic import ValidationError
 
 from aurelius_atlas_server.authentication import acting_user
 from aurelius_atlas_server.authorization import AtlasPrivilege, verify_access
+from aurelius_atlas_server.bodies import validate_json_body
 from aurelius_atlas_server.deps import Authorizer, StoreSet
-from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
+from aurelius_atlas_server.errors import AtlasJSONResponse
 from aurelius_atlas_server.openapi import array_of, json_response, request_body
 from aurelius_atlas_server.openapi import no_content as no_content_response
 
@@ -45,15 +45,9 @@ async def types_def_body(request: Request) -> AtlasTypesDef:
     """The request body as an ``AtlasTypesDef``; unknown fields are ignored (TYR-11).
 
     Raises:
-        AtlasError: ``BAD_REQUEST`` for a body that is not JSON or not an ``AtlasTypesDef`` (DV-10).
+        AtlasError: ``BAD_REQUEST`` for a body that is not JSON or not an ``AtlasTypesDef`` (DV-10, SVC-05).
     """
-    try:
-        return AtlasTypesDef.model_validate_json(await request.body())
-    except ValidationError as error:
-        problem = error.errors(include_url=False)[0]
-        location = ".".join(str(part) for part in problem["loc"])
-        message = f"Invalid AtlasTypesDef: {problem['msg']}" + (f" at {location}" if location else "")
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, message) from error
+    return validate_json_body(AtlasTypesDef, await request.body())
 
 
 type Body = Annotated[AtlasTypesDef, Depends(types_def_body)]
