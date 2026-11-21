@@ -191,6 +191,13 @@ venvPath = "."
 extraPaths = ["apps/aurelius-atlas-embedder/tests"]
 root = "apps/aurelius-atlas-embedder"
 
+# tools/form_rules_snapshot.py regenerates the WFE-05 fixture by importing the
+# producer out of the server's test directory (the conftest dir pytest puts on
+# sys.path); pyright needs the same view.
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["apps/aurelius-atlas-server/tests"]
+root = "tools"
+
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["apps/aurelius-atlas-lineage-model/tests"]
 root = "apps/aurelius-atlas-lineage-model"

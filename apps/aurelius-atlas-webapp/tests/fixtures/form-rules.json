@@ -1,0 +1,28 @@
+{
+    "arrayPrefix": "array<",
+    "arraySuffix": ">",
+    "booleanType": "boolean",
+    "cardinalityMulti": [
+        "LIST",
+        "SET"
+    ],
+    "cardinalitySingle": "SINGLE",
+    "constraintGroupParam": "group",
+    "constraintType": "mutuallyExclusive",
+    "dateType": "date",
+    "descriptionKeys": [
+        "definition",
+        "description"
+    ],
+    "numericTypes": [
+        "bigdecimal",
+        "biginteger",
+        "byte",
+        "double",
+        "float",
+        "int",
+        "long",
+        "short"
+    ],
+    "textType": "string"
+}

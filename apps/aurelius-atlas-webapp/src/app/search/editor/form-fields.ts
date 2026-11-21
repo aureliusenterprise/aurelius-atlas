@@ -33,11 +33,15 @@ export type EditorField = {
  */
 export type EditorLabels = Readonly<Record<string, string>>;
 
-/** The two attribute keys the details box shows as the description (DET-10/DD-320). */
-const DESCRIPTION_KEYS = ["definition", "description"] as const;
+/** The two attribute keys the details box shows as the description (DET-10/DD-320).
+ * Exported only so the WFE-05 guard (`form-rules.spec.ts`) can hold it against the
+ * fixture the server's own tests produce (DD-805). */
+export const DESCRIPTION_KEYS = ["definition", "description"] as const;
 
-/** The primitive numeric `typeName`s (Atlas's built-in numeric types). */
-const NUMERIC_TYPES = new Set(["int", "long", "float", "double", "byte", "short", "bigint"]);
+/** The primitive numeric `typeName`s (Atlas's built-in numeric types). Exported only
+ * for the same WFE-05 guard; `bigint` was never one (the server's primitives carry
+ * `biginteger` and `bigdecimal`), which is the drift that guard exists to catch. */
+export const NUMERIC_TYPES = new Set(["int", "long", "float", "double", "byte", "short", "biginteger", "bigdecimal"]);
 
 /** The name that never renders and the header field that is never an attribute. */
 const DROPPED_ATTRIBUTES = new Set(["qualifiedName", "guid"]);
