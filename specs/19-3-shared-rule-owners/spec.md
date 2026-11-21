@@ -1,7 +1,7 @@
 # 19.3 One owner for the shared classification and parent rules
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** #429
 - **Records:** DD-782 to DD-787, plan in [plan.md](./plan.md), design in [design.md](./design.md)
 
 ## Scope
@@ -52,13 +52,10 @@ map](../../docs/architecture/conversion/java-map.md).
 
 ## Deviations
 
-The own-classification owner and the parent-end owner match Apache Atlas, so they add no row. RUL-05 may add
-one
-row, and only if the RPS-02 difference between the two write paths is kept rather than closed. That row is
-named
-in [design.md](./design.md) at DD-787 and lands in
-[Deviations](../../docs/architecture/conversion/deviations.md)
-with the increment if it is chosen.
+The own-classification owner and the parent-end owner match Apache Atlas, so they add no row. RUL-05 adds
+one: the RPS-02 difference is kept, because a view body is one entity and the door cannot read a save it was
+not given. [DV-189](../../docs/architecture/conversion/deviations.md) carries it, named in
+[design.md](./design.md) at DD-787 and pinned by the door test that names RUL-04.
 
 ## Acceptance
 

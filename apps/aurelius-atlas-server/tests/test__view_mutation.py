@@ -626,14 +626,21 @@ async def test__one_save_audits_one_update_per_changed_kind(typed: httpx.AsyncCl
     assert set(new) >= {"ENTITY_UPDATE", "LABEL_ADD", "CLASSIFICATION_ADD", "TERM_ADD"}
 
 
-async def attach(client: httpx.AsyncClient, guid: str, attribute: str, target: str, type_name: str) -> None:
+async def attach(
+    client: httpx.AsyncClient,
+    guid: str,
+    attribute: str,
+    target: str,
+    type_name: str,
+    parent_type: str = "s_box",
+) -> None:
     """Attach ``target`` to ``guid``'s child attribute through the wire POST (a held seed)."""
     body = {
         "entity": {
             "typeName": type_name,
             "guid": guid,
             "attributes": {},
-            "relationshipAttributes": {attribute: {"guid": target, "typeName": "s_box"}},
+            "relationshipAttributes": {attribute: {"guid": target, "typeName": parent_type}},
         }
     }
     posted = await client.post(ENTITY, json=body)
@@ -710,3 +717,35 @@ async def test__the_opt_in_moves_a_held_child_through_the_door(typed: httpx.Asyn
     assert moved.status_code == 200, moved.text
     assert await active_parents(typed, choice) == {"note": note}
     assert await active_children(typed, note, "noted") == [choice]
+
+
+@pytest.mark.covers(D, rules=["RUL-04", "RUL-05"])
+async def test__the_door_has_no_same_request_parent_release(typed: httpx.AsyncClient) -> None:
+    """The move one wire request makes (RPS-02) the door refuses: a view body is one entity (DV-189).
+
+    The wire path reads the whole request together, so a save that drops a held choice from one note
+    while another note takes it moves the child (RPS-02). A view body carries one entity, so the same
+    intention reaches the door as a plain held-add, which RPS-01 refuses without the flag.
+    """
+    first = await create(typed, "s_note", qualifiedName="n1@rul")
+    second = await create(typed, "s_note", qualifiedName="n2@rul")
+    choice = await create(typed, "s_choice", qualifiedName="c@rul")
+    await attach(typed, choice, "note", first, "s_choice", parent_type="s_note")
+
+    start = await view_of(typed, second)
+    refused = await save(
+        typed,
+        {
+            "guid": second,
+            "typeName": "s_note",
+            "updateTime": start["updateTime"],
+            "attributes": {"qualifiedName": "n2@rul"},
+            "sections": [{"attribute": "noted", "entities": [{"guid": choice, "typeName": "s_choice"}]}],
+        },
+    )
+
+    assert refused.status_code == 404, refused.text
+    assert refused.json()["errorCode"] == "ATLAS-404-00-007"
+    assert f"s_choice {choice}: note holds parent s_note {first}" in refused.json()["errorMessage"]
+    assert await active_children(typed, second, "noted") == []  # the rewind left the second note listing nothing
+    assert await active_parents(typed, choice) == {"note": first}

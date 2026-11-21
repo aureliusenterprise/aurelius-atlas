@@ -32,6 +32,7 @@ from aurelius_atlas_core.entity_store import (
     UniqueValueTakenError,
     WriteStore,
 )
+from aurelius_atlas_core.search_fields import own_classifications
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
@@ -183,6 +184,7 @@ class EntityClassifications:
             for classification in given:
                 self._validate(classification)
             instances = await self._instances(found.entity)
+            own = own_classifications(found.entity)
             mapper = self._mapper()
             changes: dict[str, ClassificationChange] = {}
             entity = found.entity.touched(now=self._store.now(), user=self._user)
@@ -191,7 +193,7 @@ class EntityClassifications:
             updates: list[StoredClassification] = []
             withdrawn: list[tuple[list[str], StoredClassification]] = []
             for classification in given:
-                current = _attached(instances, classification, guid)
+                current = _attached(instances, classification, guid, own)
                 classification_type = self._validate(classification, update=True)
                 stored = changes[current.guid].classification if current.guid in changes else current.classification
                 updated = _updated(mapper, classification_type, classification, stored)
@@ -230,7 +232,9 @@ class EntityClassifications:
                 return []  # CAU-04: Atlas records the removal and never tells it
             removed = AtlasClassification(type_name=name)
             self._verify(AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION, "remove", guid, removed)
-            direct = [instance for instance in await self._instances(found.entity) if _direct(instance, guid)]
+            own = own_classifications(found.entity)
+            instances = await self._instances(found.entity)
+            direct = [instance for instance in instances if instance.classification.type_name in own]
             if not direct:
                 raise AtlasError(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, guid)
             current = next((c for c in direct if c.classification.type_name == name), None)
@@ -268,13 +272,12 @@ class EntityClassifications:
                 ``PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED``.
         """
         guid = found.entity.guid
+        own = own_classifications(found.entity)
         current = next(
             (
                 c
                 for c in await self._instances(found.entity)
-                if c.classification.type_name == name
-                and c.classification.entity_guid == associated
-                and not _direct(c, guid)
+                if c.classification.type_name == name and c.classification.entity_guid == associated and name not in own
             ),
             None,
         )
@@ -335,11 +338,7 @@ class EntityClassifications:
 
     async def _check_associations(self, entity: StoredEntity, classifications: Sequence[AtlasClassification]) -> None:
         """``validateEntityAssociations``: not attached directly yet, and allowed for the entity's type (CLS-04)."""
-        names = [
-            instance.classification.type_name
-            for instance in await self._instances(entity)
-            if _direct(instance, entity.guid)
-        ]
+        names = own_classifications(entity)
         entity_type = _entity_type(self._store.registry, entity)
         for classification in classifications:
             name = str(classification.type_name)
@@ -520,8 +519,13 @@ async def _propagate_change(
     return [], []
 
 
-def _attached(instances: Sequence[_Instance], classification: AtlasClassification, guid: str) -> _Instance:
+def _attached(
+    instances: Sequence[_Instance], classification: AtlasClassification, guid: str, own: Sequence[str]
+) -> _Instance:
     """The instance of the classification's type attached to entity ``guid``; the classification names the entity.
+
+    The own set comes from the shared owner (RUL-01): an instance of a name the owner does not call the entity's
+    own is propagated, not updatable here.
 
     Raises:
         AtlasError: ``CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY``, ``CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``.
@@ -531,7 +535,7 @@ def _attached(instances: Sequence[_Instance], classification: AtlasClassificatio
         classification.entity_guid = guid
     elif classification.entity_guid.lower() != guid.lower():
         raise AtlasError(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, name)
-    current = next((c for c in instances if c.classification.type_name == name and _direct(c, guid)), None)
+    current = next((c for c in instances if c.classification.type_name == name and name in own), None)
     if current is None:
         raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
     return current
@@ -545,12 +549,6 @@ def _changed(given: AtlasClassification, stored: StoredClassification) -> bool:
         or given.validity_periods != stored.validity_periods
         or (removal is not None and removal != stored.remove_propagations_on_entity_delete)
     )
-
-
-def _direct(instance: _Instance, guid: str) -> bool:
-    """Attached to entity ``guid`` itself: no entity GUID, or the entity's, ignoring case."""
-    entity_guid = instance.classification.entity_guid
-    return not entity_guid or entity_guid.lower() == guid.lower()
 
 
 def _created(

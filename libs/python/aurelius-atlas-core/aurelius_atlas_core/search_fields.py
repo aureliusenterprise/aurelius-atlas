@@ -106,6 +106,18 @@ _SYSTEM: dict[str, Callable[[StoredEntity], Any]] = {
 """The system attributes an entity has a value of, read from its own fields."""
 
 
+def own_classifications(entity: StoredEntity) -> list[str]:
+    """The classifications the acting user set on the entity itself, by type name (RUL-01, RUL-02).
+
+    One owner answers the own-versus-propagated question for every caller: it reads the stored entity's
+    own-classifications field, ``__traitNames``, and nothing else. The field holds the names of the instances
+    attached to this entity, as ``search_fields`` splits them at every write; propagation brought the others,
+    which belong to their source and sit in ``__propagatedTraitNames`` (DD-090).
+    """
+    names = (entity.search or {}).get(TRAIT_NAMES)
+    return [str(name) for name in names] if isinstance(names, list) else []
+
+
 def search_fields(
     entity: StoredEntity,
     entity_type: EntityType,

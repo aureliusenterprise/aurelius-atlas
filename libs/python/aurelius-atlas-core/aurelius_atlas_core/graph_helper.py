@@ -157,6 +157,20 @@ def _mutual_group(relationship: RelationshipType | None, attribute: AtlasAttribu
     return None
 
 
+def parent_end(
+    attribute: AtlasAttribute | None,
+) -> tuple[str, EdgeDirection] | None:
+    """The parent end of a relationship attribute: its edge label and direction (RUL-03, DD-784).
+
+    One owner answers "which end of this attribute's edges is the one the entity holds" for both write
+    paths, so a change to the rule is one edit. An attribute with no edge label names no parent end; the
+    direction says whether the entity is end 1 (``OUT``) or end 2 (``IN``) of the edge.
+    """
+    if attribute is None or attribute.relationship_edge_label is None:
+        return None
+    return str(attribute.relationship_edge_label), attribute.relationship_edge_direction
+
+
 def edges_for_label(
     guid: str, relationships: Iterable[StoredRelationship], label: str, direction: EdgeDirection
 ) -> list[StoredRelationship]:

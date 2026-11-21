@@ -11,13 +11,13 @@ from aurelius_atlas_model.instance import AtlasEntityWithExtInfo, EntityMutation
 
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_classifications import EntityClassifications
-from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_writer import (
     WritePipeline,
     WriteTransaction,
     entity_stream,
     imported_classification,
 )
+from aurelius_atlas_core.search_fields import own_classifications
 from aurelius_atlas_core.task_hold import TaskHold
 
 
@@ -73,7 +73,10 @@ class ImportWriter(WritePipeline):
             guid = None if entity is None else txn.guids.get(str(entity.guid), str(entity.guid))
             if entity is None or guid not in updated:
                 continue
-            for name in list(dict.fromkeys(await self._own_classifications(guid))):
+            found_entity = await self._store.get(guid)
+            if found_entity is None:  # pragma: no cover - an updated entity is stored
+                continue
+            for name in list(dict.fromkeys(own_classifications(found_entity.entity))):
                 await classifications.delete_classification(guid, name)
             given = [
                 imported_classification(classification)
@@ -82,11 +85,3 @@ class ImportWriter(WritePipeline):
             ]
             if given:
                 await classifications.add_classifications(guid, given)
-
-    async def _own_classifications(self, guid: str) -> list[str]:
-        """``getTraitNames``: the names of the classifications attached to the entity itself."""
-        return [
-            str(found.type_name)
-            for found in await EntityRetriever(self._store).classifications(guid)
-            if not found.entity_guid or found.entity_guid == guid
-        ]

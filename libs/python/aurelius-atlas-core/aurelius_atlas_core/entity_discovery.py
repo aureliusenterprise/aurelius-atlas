@@ -33,6 +33,7 @@ from aurelius_atlas_core.graph_helper import (
     edge_for_label,
     held_parent_edges,
     other_end,
+    parent_end,
     parent_family,
     parent_side_children,
 )
@@ -296,10 +297,10 @@ class EntityDiscovery:
             return entity.get_relationship_attribute(name) is not None
         if entity.has_attribute(name):
             return entity.get_attribute(name) is not None
-        attribute = entity_type.relationship_attribute(name)
-        if attribute is None or attribute.relationship_edge_label is None:
+        end = parent_end(entity_type.relationship_attribute(name))
+        if end is None:
             return False
-        held = edge_for_label(guid, edges, attribute.relationship_edge_label, attribute.relationship_edge_direction)
+        held = edge_for_label(guid, edges, *end)
         return held is not None and held.state is RelationshipStatus.ACTIVE
 
     async def _held_edges(self, stored: VersionedEntity | None) -> list[StoredRelationship]:
