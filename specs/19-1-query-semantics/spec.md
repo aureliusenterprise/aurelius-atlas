@@ -59,7 +59,7 @@ None from Apache Atlas. The increment changes no observable behaviour, so it add
 | The server unit suites pass                        | `nx test aurelius-atlas-server -c ci`                                                                                                                                                        | 1     |
 | No wire answer moved                               | The parity scenarios and `test__app_search_governance.py` answer identical                                                                                                                   | 1     |
 | The doors and engines run on a narrow contract     | `nx test aurelius-atlas-core -c ci`: `test__search_documents.py` drives both on a purpose-built fake, and no spec writes a `# type: ignore[arg-type]` to build the store it drives them with | 0     |
-| Lint and types                                     | `nx lint aurelius-atlas-core aurelius-atlas-store-es` and `nx typecheck aurelius-atlas-core aurelius-atlas-store-es`                                                                         | 0     |
+| Lint and types                                     | `nx run-many -t lint -p aurelius-atlas-core aurelius-atlas-store-es` and the same for `-t typecheck`                                                                                         | 0     |
 | One live proof that the search path still works    | `nx e2e aurelius-atlas-server -c ci`                                                                                                                                                         | 2     |
 
 ## Design decisions
