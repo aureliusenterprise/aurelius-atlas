@@ -20,9 +20,9 @@ from aurelius_atlas_model.impexp import (
 
 from aurelius_atlas_core.audits_writer import AuditsWriter
 from aurelius_atlas_core.entity_store import WriteStore
-from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_transforms import ImportTransforms, shape
 from aurelius_atlas_core.import_type_def_processor import ImportTypeDefProcessor
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.regular_import import RegularImport
 from aurelius_atlas_core.task_hold import TaskHold
 from aurelius_atlas_core.typedef_store import TypedefStore
@@ -42,7 +42,7 @@ class ImportService:
         self,
         store: WriteStore,
         typedef_store: TypedefStore,
-        writer: EntityWriter,
+        writer: ImportWriter,
         *,
         audits: AuditsWriter | None = None,
     ) -> None:

@@ -17,8 +17,8 @@ from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
 
 from aurelius_atlas_core.audits_writer import AuditsWriter
-from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_service import ImportService
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.request_context import current_user
 from aurelius_atlas_model.impexp import AtlasImportResult, OperationStatus
 from aurelius_atlas_store_es import ElasticsearchStore
@@ -293,7 +293,7 @@ class Provisioner:
         )
         if sample is not None:
             name, content = sample
-            writer = EntityWriter(opened.entity_store, user=self._who, notifier=opened.notifier)
+            writer = ImportWriter(opened.entity_store, user=self._who, notifier=opened.notifier)
             audits = AuditsWriter(opened.entity_store, cluster_name=settings.cluster_name, user=self._who)
             importer = ImportService(opened.entity_store, opened.typedef_store, writer, audits=audits)
             result = await importer.run(content, None, self._who, socket.gethostname(), "")

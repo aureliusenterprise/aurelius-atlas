@@ -1,8 +1,8 @@
 """``WriteStore``: the store contract the write path is typed against (WRS-01, WRS-02, DD-773, DD-774).
 
-``EntityWriter`` and the internals it drives take the contract, not ``EntityStore``, so a test can drive a write
-against a store that carries nothing past the contract's members. ``EntityStore`` is the contract's only
-production implementation, and it satisfies it unchanged.
+``EntityWriter``, ``ImportWriter`` and the internals they drive take the contract, not ``EntityStore``, so a test
+can drive a write against a store that carries nothing past the contract's members. ``EntityStore`` is the
+contract's only production implementation, and it satisfies it unchanged.
 """
 
 from collections.abc import Mapping, Sequence
@@ -18,17 +18,25 @@ from aurelius_atlas_core.entity_store import (
     WriteStore,
 )
 from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_core.typedef_document import DocumentVersion
 from aurelius_atlas_model import codec
-from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, EntityStatus
+from aurelius_atlas_model.instance import (
+    AtlasEntitiesWithExtInfo,
+    AtlasEntityWithExtInfo,
+    EntityOperation,
+    EntityStatus,
+)
 from aurelius_atlas_typesystem.entity_type import EntityType
 
 W = "aurelius_atlas_core.entity_store.WriteStore"
+IW = "aurelius_atlas_core.import_writer"
 NOW = 5000
+IMPORTED = "b3a2c1d0-0000-4000-8000-000000000001"
 
 
 class OnlyContract:
@@ -164,3 +172,25 @@ async def test__the_writer_deletes_through_the_contract_alone() -> None:
     found = await real.get(guid)
     assert found is not None
     assert found.entity.state is EntityStatus.DELETED
+
+
+@pytest.mark.covers(f"{IW}.ImportWriter.create_or_update_for_import", rules=["WRS-07"])
+async def test__the_import_writer_writes_through_the_contract_alone() -> None:
+    """An import answers from ``ImportWriter`` through the contract, and the plain writer has no import path.
+
+    ``EntityWriter`` carries no import-only flag and names no import entry (WRS-07): what an import does lives
+    in ``ImportWriter``, and both writers build every attempt's state on a fresh transaction (WRS-05, WRS-06).
+    """
+    assert not hasattr(EntityWriter, "create_or_update_for_import")
+    real = store()
+    contract = OnlyContract(real)
+    found = AtlasEntityWithExtInfo.model_validate(
+        {"entity": {"typeName": "s_database", "guid": IMPORTED, "attributes": {"qualifiedName": "db@import"}}}
+    )
+
+    answer = await ImportWriter(contract, user="importer").create_or_update_for_import(found)
+
+    assert [header.guid for header in answer.get_entities_by_operation(EntityOperation.CREATE) or []] == [IMPORTED]
+    stored = await real.get(IMPORTED)
+    assert stored is not None
+    assert "db@import" in stored.entity.attributes.values()

@@ -4,6 +4,11 @@
 the ``EntityMutationContext`` they fill: a request is discovered, mapped in memory, its relationship attributes
 too (REL-11, DD-066), and written in one write (DD-052). ``deleteById``, ``deleteByIds``,
 ``deleteByUniqueAttributes`` and ``purgeByIds`` through the delete handlers (EDL-02 to EDL-09).
+
+``WritePipeline`` is that mechanism on its own: the discovery, mapping and commit steps every write runs, with
+the per-attempt ``WriteTransaction`` they share. ``EntityWriter`` is the request-facing writer built on it (this
+module), and ``ImportWriter`` in ``import_writer.py`` is the import's, which shares the same steps and the same
+transaction object without subclassing ``EntityWriter`` (WRS-07, DD-780).
 """
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
@@ -121,7 +126,7 @@ class WriteTransaction:
     """The state one write attempt carries between its steps (WRS-05, WRS-06, DD-776, DD-779).
 
     ``importing`` and ``hold`` are the attempt's options, fixed when it is built; ``record``, ``deletions`` and
-    ``guids`` are what a step writes and a later step reads. ``EntityWriter`` builds one at the top of each attempt
+    ``guids`` are what a step writes and a later step reads. Each writer builds one at the top of each attempt
     and passes it to every step, so a retry starts clean: no write's state survives on the writer into the next
     attempt. The order-sensitive reads (``deletions``, ``guids``) are set by ``_create_or_update`` and read only
     after the run has returned, so the sequence rides the object's lifetime rather than a mutable writer field.
@@ -139,12 +144,17 @@ class WriteTransaction:
     """The GUID each request GUID became, for an import's classification replace (IMP-06)."""
 
 
-class EntityWriter:
-    """Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04).
+class WritePipeline:
+    """The write mechanism every writer runs: discovery, mapping and commit, over one transaction per attempt.
 
+    Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04).
     ``tasks`` defers propagation to tasks (TSK-02); ``notifier`` is told what each request changed (DD-084);
     ``authorizer`` checks each entity created, updated or deleted (AUZ-07). ``unsafe_reparent`` lets a
     parent-side save move a child it does not own, and skips the refusal RPS-01 makes (DD-755, DD-757).
+
+    It holds no state of one write: the ``WriteTransaction`` a step builds carries it (WRS-05, WRS-06), and the
+    import path's flag and task hold ride that transaction too, so the shared pipeline carries no import-only
+    field (WRS-07, DD-778).
     """
 
     def __init__(  # noqa: PLR0913 - the request's options, each a keyword
@@ -165,71 +175,6 @@ class EntityWriter:
         self._tasks = tasks
         self._notifier = notifier
         self._unsafe_reparent = unsafe_reparent
-        self._hold: TaskHold | None = None
-        """The import's hold, set by ``hold_tasks`` around a whole import (IMT-01); each write builds it into its
-        ``WriteTransaction``. Not the state of one write: it spans many writes, so it stays on the writer."""
-
-    async def delete_by_id(self, guid: str, delete_type: DeleteType = DeleteType.DEFAULT) -> EntityMutationResponse:
-        """``deleteById``: the entity with ``guid`` and what it owns; an unknown GUID deletes nothing (EDL-03).
-
-        Raises:
-            AtlasError: ``INSTANCE_GUID_NOT_FOUND`` for an empty GUID.
-        """
-        if not guid:
-            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
-        return await self._delete(lambda: self._deletable([guid]), WriteTransaction(hold=self._hold), delete_type)
-
-    async def delete_by_ids(
-        self, guids: Sequence[str], delete_type: DeleteType = DeleteType.DEFAULT
-    ) -> EntityMutationResponse:
-        """``deleteByIds``: the entities with these GUIDs and what they own (EDL-02, EDL-03).
-
-        Raises:
-            AtlasError: ``INVALID_PARAMETERS`` when no GUID is given.
-        """
-        if not guids:
-            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUIDS)
-        return await self._delete(lambda: self._deletable(guids), WriteTransaction(hold=self._hold), delete_type)
-
-    async def delete_by_unique_attributes(
-        self, entity_type: EntityType, values: Mapping[str, Any], delete_type: DeleteType = DeleteType.DEFAULT
-    ) -> EntityMutationResponse:
-        """``deleteByUniqueAttributes``: the ``ACTIVE`` entity holding the values, if any (EDL-02, EDL-03).
-
-        Raises:
-            AtlasError: ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND`` naming ``{}`` alone when no value is given.
-        """
-        if not values:
-            raise AtlasError(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, java_string(dict(values)))
-
-        async def holder() -> list[VersionedEntity]:
-            found = await self._store.find_by_unique_attributes(entity_type, values)
-            if found is None:
-                return []
-            self._authorizer.verify_access(
-                AtlasPrivilege.ENTITY_DELETE,
-                "delete entity: typeName=",
-                entity_type.type_name,
-                ", uniqueAttributes=",
-                dict(values),
-            )
-            return [found]
-
-        return await self._delete(holder, WriteTransaction(hold=self._hold), delete_type)
-
-    async def purge_by_ids(self, guids: Sequence[str]) -> EntityMutationResponse:
-        """``purgeByIds``: remove the ``DELETED`` entities with these GUIDs and what they own (EDL-02 to EDL-08).
-
-        Raises:
-            AtlasError: ``INVALID_PARAMETERS`` when no GUID is given.
-        """
-        if not guids:
-            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUIDS)
-
-        async def deleted() -> list[VersionedEntity]:
-            return [found for found in await self._stored(guids) if found.entity.state is EntityStatus.DELETED]
-
-        return await self._delete(deleted, WriteTransaction(hold=self._hold), DeleteType.HARD, purge=True)
 
     async def _deletable(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """The stored entities of the GUIDs, each needing ``ENTITY_DELETE`` (AUZ-07)."""
@@ -249,7 +194,7 @@ class EntityWriter:
         hard = (self._delete_type if delete_type is DeleteType.DEFAULT else delete_type) is DeleteType.HARD
         for attempt in range(1, ATTEMPTS + 1):
             handler: DeleteHandler = (HardDeleteHandler if hard else SoftDeleteHandler)(
-                self._store, now=self._store.now(), user=self._user, purge=purge, deferral=self._deferral()
+                self._store, now=self._store.now(), user=self._user, purge=purge, deferral=self._deferral(txn)
             )
             try:
                 return await self._mutated(await self._deleted(handler, txn, await candidates(), purge=purge), txn)
@@ -335,124 +280,20 @@ class EntityWriter:
             response.add_entity(EntityOperation.UPDATE, await retriever.header(guid, classifications=False))
         return response
 
-    async def create_or_update(
-        self, entities: AtlasEntityWithExtInfo | AtlasEntitiesWithExtInfo | None
-    ) -> EntityMutationResponse:
-        """``createOrUpdate``: create the request's entities or update those already stored (EWR-02 to EWR-13)."""
-        response, _ = await self._run(_stream(entities), partial=False)
-        return response
-
-    async def create_or_update_for_import(self, found: AtlasEntityWithExtInfo) -> EntityMutationResponse:
-        """``createOrUpdateForImport``: one exported entity with what it owns, written as an import (IMP-01 to IMP-08).
-
-        Its GUIDs, system attributes and status are kept; its classifications and business attributes replace the
-        stored ones; it is not checked against the user's privileges, and its changes are audited as an import's.
-
-        Raises:
-            AtlasError: as ``create_or_update``.
-        """
-        response, txn = await self._run(_stream(found), partial=False, importing=True)
-        await self._replace_classifications(found, response, txn)
-        deleted = txn.deletions
-        if deleted:
-            removed = await self._delete(lambda: self._stored(deleted), txn, DeleteType.DEFAULT)  # unchecked (IMP-07)
-            for header in removed.get_entities_by_operation(EntityOperation.DELETE) or []:
-                response.add_entity(EntityOperation.DELETE, header)
-        return response
-
-    async def _replace_classifications(
-        self, found: AtlasEntityWithExtInfo, response: EntityMutationResponse, txn: WriteTransaction
-    ) -> None:
-        """``deleteClassifications`` then ``addClassifications`` of each entity an import updated (IMP-06, DD-305)."""
-        updated = {str(header.guid) for header in response.get_entities_by_operation(EntityOperation.UPDATE) or []}
-        entities = [found.entity, *(found.referred_entities or {}).values()]
-        classifications = EntityClassifications(
-            self._store, user=self._user, tasks=self._tasks, notifier=self._notifier, hold=txn.hold
-        )
-        for entity in entities:
-            guid = None if entity is None else txn.guids.get(str(entity.guid), str(entity.guid))
-            if entity is None or guid not in updated:
-                continue
-            for name in list(dict.fromkeys(await self._own_classifications(guid))):
-                await classifications.delete_classification(guid, name)
-            given = [
-                _imported_classification(classification)
-                for classification in entity.classifications or []
-                if classification.entity_guid in {None, entity.guid, guid}
-            ]
-            if given:
-                await classifications.add_classifications(guid, given)
-
-    async def _own_classifications(self, guid: str) -> list[str]:
-        """``getTraitNames``: the names of the classifications attached to the entity itself."""
-        return [
-            str(found.type_name)
-            for found in await EntityRetriever(self._store).classifications(guid)
-            if not found.entity_guid or found.entity_guid == guid
-        ]
-
-    async def update_by_unique_attributes(
-        self, entity_type: EntityType, values: Mapping[str, Any], entity_info: AtlasEntityWithExtInfo | None
-    ) -> EntityMutationResponse:
-        """``updateByUniqueAttributes``: partially update the entity holding the unique values (EWR-14).
-
-        Raises:
-            AtlasError: ``INVALID_PARAMETERS`` without an entity, ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND``.
-        """
-        if entity_info is None or entity_info.entity is None:
-            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_ENTITY_TO_UPDATE)
-        found = await self._store.find_by_unique_attributes(entity_type, values)
-        if found is None:
-            raise AtlasError(
-                AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entity_type.type_name, java_string(dict(values))
-            )
-        entity_info.entity.guid = found.entity.guid
-        self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity ByUniqueAttributes")
-        response, _ = await self._run(_stream(entity_info), partial=True)
-        return response
-
-    async def update_attribute_by_guid(self, guid: str, name: str | None, value: object) -> EntityMutationResponse:
-        """``updateEntityAttributeByGuid``: set one primitive or reference attribute of an entity (EWR-15).
-
-        Raises:
-            AtlasError: ``INSTANCE_GUID_NOT_FOUND``, ``UNKNOWN_ATTRIBUTE`` or ``ATTRIBUTE_UPDATE_NOT_SUPPORTED``.
-        """
-        found = await self._store.get(guid)
-        if found is None:
-            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
-        self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity ByUniqueAttributes : guid=", guid)
-        type_name = found.entity.type_name
-        entity_type = self._store.registry.entity_type(type_name)
-        attribute = None
-        if entity_type is not None and name is not None:
-            attribute = entity_type.attribute(name) or entity_type.relationship_attribute(
-                name, relationship_type_of(value)
-            )
-        if attribute is None:
-            raise AtlasError(AtlasErrorCode.UNKNOWN_ATTRIBUTE, name, type_name)
-        match attribute.attribute_type.category:
-            case TypeCategory.PRIMITIVE:
-                pass
-            case TypeCategory.OBJECT_ID_TYPE if isinstance(value, str):
-                value = AtlasObjectId(guid=value, type_name=attribute.attribute_def.type_name)
-            case TypeCategory.OBJECT_ID_TYPE:
-                value = attribute.attribute_type.get_normalized_value(value)
-            case _:
-                raise AtlasError(
-                    AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, name, attribute.attribute_type.type_name
-                )
-        entity = AtlasEntity(guid=guid, type_name=type_name, attributes={str(name): value})
-        response, _ = await self._run(EntityStream([entity], AtlasEntityExtInfo()), partial=True)
-        return response
-
     async def _run(
-        self, stream: EntityStream, *, partial: bool, importing: bool = False
+        self,
+        stream: EntityStream,
+        *,
+        partial: bool,
+        importing: bool = False,
+        hold: TaskHold | None = None,
     ) -> tuple[EntityMutationResponse, WriteTransaction]:
         """Run the request, once more when its write loses a race (EWR-16, DD-052).
 
         Answers the response and the ``WriteTransaction`` the attempt ended on: the import path reads the
         deletions and the GUID assignments the attempt recorded (IMP-04, IMP-06). Each attempt builds its own
-        transaction, so a retry never reads what the lost attempt left behind (WRS-05, WRS-06).
+        transaction, so a retry never reads what the lost attempt left behind (WRS-05, WRS-06). The import's
+        ``importing`` flag and task ``hold`` ride that transaction, so no writer field holds them (WRS-07).
 
         Raises:
             AtlasError: ``INTERNAL_ERROR`` for a second lost race, a unique value held by another entity, or a
@@ -460,7 +301,9 @@ class EntityWriter:
         """
         for attempt in range(1, ATTEMPTS + 1):
             try:
-                response, txn = await self._create_or_update(_copy(stream), partial=partial, importing=importing)
+                response, txn = await self._create_or_update(
+                    _copy(stream), partial=partial, importing=importing, hold=hold
+                )
                 return await self._mutated(response, txn), txn
             except EntityVersionConflictError as conflict:
                 if attempt == ATTEMPTS:
@@ -470,9 +313,9 @@ class EntityWriter:
         raise AssertionError  # pragma: no cover - the loop returns or raises
 
     async def _create_or_update(
-        self, stream: EntityStream, *, partial: bool, importing: bool
+        self, stream: EntityStream, *, partial: bool, importing: bool, hold: TaskHold | None
     ) -> tuple[EntityMutationResponse, WriteTransaction]:
-        txn = WriteTransaction(importing=importing, hold=self._hold)
+        txn = WriteTransaction(importing=importing, hold=hold)
         discovery = EntityDiscovery(self._store, stream, importing=importing)
         context = await discovery.discover()
         mutation = await self._prepare(discovery, context, txn, partial=partial)
@@ -568,7 +411,7 @@ class EntityWriter:
             relationships={guid: found.relationship for guid, found in pending.items()},
             removed=removed,
             classifications=instances,
-            deferral=self._deferral(),
+            deferral=self._deferral(txn),
         )
         for relationship in relationships.created():
             await propagation.relationship_created(relationship)
@@ -583,18 +426,13 @@ class EntityWriter:
         txn.record.merge(propagation.added, propagation.removed)
         return [TaskChange(task) for task in propagation.tasks()]
 
-    @property
-    def defers_tasks(self) -> bool:
-        """Whether propagation is deferred to tasks (TSK-02, TSK-08)."""
-        return self._tasks
+    def _deferral(self, txn: WriteTransaction) -> Deferral | None:
+        """Tasks for propagation, recorded by the writer's user now, when they are enabled (TSK-02, TSK-08).
 
-    def hold_tasks(self, hold: TaskHold | None) -> None:
-        """Record the tasks of the writes that follow with ``hold``, an import's; None stops holding (IMT-01)."""
-        self._hold = hold
-
-    def _deferral(self) -> Deferral | None:
-        """Tasks for propagation, recorded by the writer's user now, when they are enabled (TSK-02, TSK-08)."""
-        return Deferral(self._user, self._store.now(), self._store.new_guid, self._hold) if self._tasks else None
+        The transaction's task hold, if any, holds the tasks it records (IMT-01); the import's writer sets it,
+        and no other write has one.
+        """
+        return Deferral(self._user, self._store.now(), self._store.new_guid, txn.hold) if self._tasks else None
 
     def _classified(
         self, entity: StoredEntity, classifications: list[AtlasClassification]
@@ -638,7 +476,7 @@ class EntityWriter:
             removed=removed,
         )
         handler: DeleteHandler = (HardDeleteHandler if self._delete_type is DeleteType.HARD else SoftDeleteHandler)(
-            view, now=now, user=self._user, deferral=self._deferral()
+            view, now=now, user=self._user, deferral=self._deferral(txn)
         )
         found = await view.get_many(dropped)
         deletion = await handler.delete_entities([found[guid] for guid in dropped if guid in found])
@@ -734,7 +572,7 @@ class EntityWriter:
         self._record_labels(txn, created)
         added: list[StoredClassification] = []
         if entity.classifications:
-            given = [_imported_classification(c) for c in entity.classifications] if txn.importing else None
+            given = [imported_classification(c) for c in entity.classifications] if txn.importing else None
             created, added = self._classified(created, given or entity.classifications)
         created = self._business_attributes(txn, mapper, created, entity, entity_type)
         return (with_system_attributes(created, entity) if txn.importing else created), added
@@ -886,6 +724,138 @@ class EntityWriter:
         return response
 
 
+class EntityWriter(WritePipeline):
+    """The request-facing writer: the non-import create, update and delete paths an Atlas request takes.
+
+    Import semantics answer from ``ImportWriter`` (``import_writer.py``), which shares this writer's steps and
+    the ``WriteTransaction`` they fill; this writer carries no import-only flag, and each write it runs builds
+    a fresh transaction with no hold (WRS-07, DD-778, DD-780).
+    """
+
+    async def delete_by_id(self, guid: str, delete_type: DeleteType = DeleteType.DEFAULT) -> EntityMutationResponse:
+        """``deleteById``: the entity with ``guid`` and what it owns; an unknown GUID deletes nothing (EDL-03).
+
+        Raises:
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND`` for an empty GUID.
+        """
+        if not guid:
+            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
+        return await self._delete(lambda: self._deletable([guid]), WriteTransaction(), delete_type)
+
+    async def delete_by_ids(
+        self, guids: Sequence[str], delete_type: DeleteType = DeleteType.DEFAULT
+    ) -> EntityMutationResponse:
+        """``deleteByIds``: the entities with these GUIDs and what they own (EDL-02, EDL-03).
+
+        Raises:
+            AtlasError: ``INVALID_PARAMETERS`` when no GUID is given.
+        """
+        if not guids:
+            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUIDS)
+        return await self._delete(lambda: self._deletable(guids), WriteTransaction(), delete_type)
+
+    async def delete_by_unique_attributes(
+        self, entity_type: EntityType, values: Mapping[str, Any], delete_type: DeleteType = DeleteType.DEFAULT
+    ) -> EntityMutationResponse:
+        """``deleteByUniqueAttributes``: the ``ACTIVE`` entity holding the values, if any (EDL-02, EDL-03).
+
+        Raises:
+            AtlasError: ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND`` naming ``{}`` alone when no value is given.
+        """
+        if not values:
+            raise AtlasError(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, java_string(dict(values)))
+
+        async def holder() -> list[VersionedEntity]:
+            found = await self._store.find_by_unique_attributes(entity_type, values)
+            if found is None:
+                return []
+            self._authorizer.verify_access(
+                AtlasPrivilege.ENTITY_DELETE,
+                "delete entity: typeName=",
+                entity_type.type_name,
+                ", uniqueAttributes=",
+                dict(values),
+            )
+            return [found]
+
+        return await self._delete(holder, WriteTransaction(), delete_type)
+
+    async def purge_by_ids(self, guids: Sequence[str]) -> EntityMutationResponse:
+        """``purgeByIds``: remove the ``DELETED`` entities with these GUIDs and what they own (EDL-02 to EDL-08).
+
+        Raises:
+            AtlasError: ``INVALID_PARAMETERS`` when no GUID is given.
+        """
+        if not guids:
+            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUIDS)
+
+        async def deleted() -> list[VersionedEntity]:
+            return [found for found in await self._stored(guids) if found.entity.state is EntityStatus.DELETED]
+
+        return await self._delete(deleted, WriteTransaction(), DeleteType.HARD, purge=True)
+
+    async def create_or_update(
+        self, entities: AtlasEntityWithExtInfo | AtlasEntitiesWithExtInfo | None
+    ) -> EntityMutationResponse:
+        """``createOrUpdate``: create the request's entities or update those already stored (EWR-02 to EWR-13)."""
+        response, _ = await self._run(entity_stream(entities), partial=False)
+        return response
+
+    async def update_by_unique_attributes(
+        self, entity_type: EntityType, values: Mapping[str, Any], entity_info: AtlasEntityWithExtInfo | None
+    ) -> EntityMutationResponse:
+        """``updateByUniqueAttributes``: partially update the entity holding the unique values (EWR-14).
+
+        Raises:
+            AtlasError: ``INVALID_PARAMETERS`` without an entity, ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND``.
+        """
+        if entity_info is None or entity_info.entity is None:
+            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_ENTITY_TO_UPDATE)
+        found = await self._store.find_by_unique_attributes(entity_type, values)
+        if found is None:
+            raise AtlasError(
+                AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entity_type.type_name, java_string(dict(values))
+            )
+        entity_info.entity.guid = found.entity.guid
+        self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity ByUniqueAttributes")
+        response, _ = await self._run(entity_stream(entity_info), partial=True)
+        return response
+
+    async def update_attribute_by_guid(self, guid: str, name: str | None, value: object) -> EntityMutationResponse:
+        """``updateEntityAttributeByGuid``: set one primitive or reference attribute of an entity (EWR-15).
+
+        Raises:
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND``, ``UNKNOWN_ATTRIBUTE`` or ``ATTRIBUTE_UPDATE_NOT_SUPPORTED``.
+        """
+        found = await self._store.get(guid)
+        if found is None:
+            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
+        self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity ByUniqueAttributes : guid=", guid)
+        type_name = found.entity.type_name
+        entity_type = self._store.registry.entity_type(type_name)
+        attribute = None
+        if entity_type is not None and name is not None:
+            attribute = entity_type.attribute(name) or entity_type.relationship_attribute(
+                name, relationship_type_of(value)
+            )
+        if attribute is None:
+            raise AtlasError(AtlasErrorCode.UNKNOWN_ATTRIBUTE, name, type_name)
+        match attribute.attribute_type.category:
+            case TypeCategory.PRIMITIVE:
+                pass
+            case TypeCategory.OBJECT_ID_TYPE if isinstance(value, str):
+                value = AtlasObjectId(guid=value, type_name=attribute.attribute_def.type_name)
+            case TypeCategory.OBJECT_ID_TYPE:
+                value = attribute.attribute_type.get_normalized_value(value)
+            case _:
+                raise AtlasError(
+                    AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, name, attribute.attribute_type.type_name
+                )
+        entity = AtlasEntity(guid=guid, type_name=type_name, attributes={str(name): value})
+        response, _ = await self._run(EntityStream([entity], AtlasEntityExtInfo()), partial=True)
+        return response
+
+
 def compact_attributes(entity: AtlasEntity, entity_type: EntityType) -> None:
     """``compactAttributes``: a relationship attribute given in ``attributes`` moves to ``relationshipAttributes``.
 
@@ -906,7 +876,7 @@ def _object_id(entity: AtlasEntity, entity_type: EntityType) -> AtlasObjectId:
     return AtlasObjectId(guid=None if unique else entity.guid, type_name=entity.type_name, unique_attributes=unique)
 
 
-def _stream(entities: AtlasEntityWithExtInfo | AtlasEntitiesWithExtInfo | None) -> EntityStream:
+def entity_stream(entities: AtlasEntityWithExtInfo | AtlasEntitiesWithExtInfo | None) -> EntityStream:
     """``AtlasEntityStream``: one entity, possibly null, or the list of a bulk request."""
     if isinstance(entities, AtlasEntityWithExtInfo):
         return EntityStream([entities.entity], entities)
@@ -956,7 +926,7 @@ def _import_status(mutation: _Mutation, entity: AtlasEntity, stored: StoredEntit
         mutation.reactivated.add(stored.guid)
 
 
-def _imported_classification(classification: AtlasClassification) -> AtlasClassification:
+def imported_classification(classification: AtlasClassification) -> AtlasClassification:
     """``addClassifications`` of an import: a classification that says nothing does not propagate (IMP-06)."""
     if classification.propagate is not None:
         return classification

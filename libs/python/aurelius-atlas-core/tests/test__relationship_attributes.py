@@ -14,6 +14,7 @@ from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.testing.entity_samples import sample_registry
@@ -687,7 +688,7 @@ async def test__an_import_writes_a_parent_side_bundle_reaching_a_held_child(stor
         }
     )
 
-    answer = as_json(await EntityWriter(store).create_or_update_for_import(bundle))
+    answer = as_json(await ImportWriter(store).create_or_update_for_import(bundle))
     active = [found for found in await relationships(store, g("-3")) if found.state.value == "ACTIVE"]
 
     assert g("-2") in mutated(answer, "UPDATE")

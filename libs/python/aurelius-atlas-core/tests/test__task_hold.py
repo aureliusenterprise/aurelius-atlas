@@ -14,6 +14,7 @@ from aurelius_atlas_core.entity_store import EntityStore, EntityVersionConflictE
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.import_service import ImportService
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.task_hold import TaskHold, held
@@ -91,7 +92,7 @@ async def exported() -> tuple[bytes, dict[str, str]]:
 class Turns:
     """The workers' turns, taken after each entity the import writes: what they ran, and the tasks then held."""
 
-    def __init__(self, store: EntityStore, writer: EntityWriter, *, fail_at: int | None = None) -> None:
+    def __init__(self, store: EntityStore, writer: ImportWriter, *, fail_at: int | None = None) -> None:
         self.ran: list[int] = []
         self.held: list[bool] = []
         self._store = store
@@ -115,8 +116,8 @@ async def classified(store: EntityStore, guid: str) -> list[str | None]:
 
 @pytest.mark.covers(
     "aurelius_atlas_core.import_service.ImportService.run",
-    "aurelius_atlas_core.entity_writer.EntityWriter.hold_tasks",
-    "aurelius_atlas_core.entity_writer.EntityWriter.defers_tasks",
+    "aurelius_atlas_core.import_writer.ImportWriter.hold_tasks",
+    "aurelius_atlas_core.import_writer.ImportWriter.defers_tasks",
     f"{H}.TaskHold.start",
     f"{H}.TaskHold.holds",
     f"{H}.TaskHold.release",
@@ -129,7 +130,7 @@ async def test__an_import_holds_its_tasks_until_it_ends(exported: tuple[bytes, d
     store, types = await catalogue(BASE)
     woken: list[None] = []
     store.task_listeners.append(lambda: woken.append(None))
-    writer = EntityWriter(store, user="importer", tasks=True)
+    writer = ImportWriter(store, user="importer", tasks=True)
     turns = Turns(store, writer)
 
     found = await ImportService(store, types, writer).run(content, AtlasImportRequest(), "importer", "h", "ip")
@@ -152,7 +153,7 @@ async def test__an_import_that_fails_releases_what_it_held(exported: tuple[bytes
     """The tasks of the entities written before the failure run as any other; the next import holds none."""
     content, guids = exported
     store, types = await catalogue(BASE)
-    writer = EntityWriter(store, user="importer", tasks=True)
+    writer = ImportWriter(store, user="importer", tasks=True)
     Turns(store, writer, fail_at=2)
 
     with pytest.raises(AtlasError, match="the import stops here"):
@@ -224,16 +225,25 @@ async def test__an_import_may_delete_a_classification_whose_task_it_holds() -> N
     """The task the import holds is no refusal for it; for another request it still is (TSK-03)."""
     store, _ = await catalogue(BASE, TYPES)
     hold = TaskHold.start(store)
-    writer = EntityWriter(store, user="importer", tasks=True)
+    writer = ImportWriter(store, user="importer", tasks=True)
     writer.hold_tasks(hold)
     pii = [{"typeName": "PII", "propagate": True}]
-    entities = [
-        {"typeName": "hold_db", "guid": "-1", "attributes": {"qualifiedName": n, "name": n}, "classifications": pii}
-        for n in ("mine", "theirs")
-    ]
-    entities[1]["guid"] = "-2"
-    created = await writer.create_or_update(AtlasEntitiesWithExtInfo.model_validate({"entities": entities}))
-    mine, theirs = ((created.guid_assignments or {})[key] for key in ("-1", "-2"))
+
+    async def imported(name: str) -> str:
+        """One database classified ``PII``, imported under a fresh GUID; that GUID."""
+        found = AtlasEntityWithExtInfo.model_validate(
+            {
+                "entity": {
+                    "typeName": "hold_db",
+                    "guid": "-1",
+                    "attributes": {"qualifiedName": name, "name": name},
+                    "classifications": pii,
+                }
+            }
+        )
+        return ((await writer.create_or_update_for_import(found)).guid_assignments or {})["-1"]
+
+    mine, theirs = await imported("mine"), await imported("theirs")
 
     await EntityClassifications(store, tasks=True, hold=hold).delete_classification(mine, "PII")
     with pytest.raises(AtlasError) as refused:

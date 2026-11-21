@@ -21,6 +21,7 @@ from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_service import ImportService
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
 from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
@@ -107,7 +108,7 @@ class Indexed:
         types = await m4i_types()
         self.registry = types.registry
         store = EntityStore(self.registry, self.documents)
-        result = await ImportService(store, types, EntityWriter(store, user="importer")).run(
+        result = await ImportService(store, types, ImportWriter(store, user="importer")).run(
             SAMPLE.read_bytes(), AtlasImportRequest(), "importer", "h", "ip"
         )
         assert result.operation_status.value == "SUCCESS"

@@ -18,6 +18,7 @@ from aurelius_atlas_core.entity_labels import EntityLabels
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
 from aurelius_atlas_model.bulk_import import BulkImportResponse
 from aurelius_atlas_model.errors import java_string, validate_guid, validate_param_length
@@ -140,6 +141,21 @@ def updater(request: Request, store: EntityStore) -> EntityWriter:
         notifier=notifier(request, store),
         authorizer=authorizer(request),
         unsafe_reparent=read_query(EntityWriteParams, request).unsafe_reparent,
+    )
+
+
+def importer(request: Request, store: EntityStore) -> ImportWriter:
+    """A writer creating entities as an import, as the request's user, audited (IMS-04, WRS-07).
+
+    An import keeps the exported GUIDs and is checked against no privilege, so no delete type and no
+    ``unsafeReparent`` choice apply (IMP-07).
+    """
+    return ImportWriter(
+        store,
+        user=acting_user(request),
+        tasks=tasks_enabled(request),
+        notifier=notifier(request, store),
+        authorizer=authorizer(request),
     )
 
 

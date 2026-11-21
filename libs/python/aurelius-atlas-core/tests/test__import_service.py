@@ -17,6 +17,7 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.import_service import ImportService
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
@@ -84,7 +85,7 @@ async def exported() -> tuple[bytes, dict[str, str]]:
 async def importing(store: EntityStore, types: TypedefStore, content: bytes, **options: object) -> dict[str, Any]:
     """The result of importing the ZIP into the store, as JSON."""
     request = AtlasImportRequest.model_validate({"options": options})
-    service = ImportService(store, types, EntityWriter(store, user="importer"))
+    service = ImportService(store, types, ImportWriter(store, user="importer"))
     return (await service.run(content, request, "importer", "host", "10.0.0.2")).to_json()
 
 
@@ -216,7 +217,7 @@ async def test__a_file_is_imported_only_from_the_import_folder(
     (folder / "export.zip").write_bytes(content)
     (tmp_path / "outside.zip").write_bytes(content)
     store, types = await catalogue(BASE)
-    service = ImportService(store, types, EntityWriter(store, user="importer"))
+    service = ImportService(store, types, ImportWriter(store, user="importer"))
 
     def request(name: str) -> AtlasImportRequest:
         return AtlasImportRequest.model_validate({"options": {"fileName": name}})
