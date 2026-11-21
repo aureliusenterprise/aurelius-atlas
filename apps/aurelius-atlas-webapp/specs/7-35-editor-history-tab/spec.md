@@ -1,7 +1,7 @@
 # 7.35 Entity editor history tab
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** #437
 - **Records:** DD-816 (the history lives in the editor drawer), DD-817 (the audit
   read rides the drawer, not the form store); DV-190 (the list caps at one page).
   Relies on EDT-01/EDT-10 (7.7a's drawer shell and foot), VDE-11 (16.5c: a read
