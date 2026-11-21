@@ -53,10 +53,10 @@ def _open_quality_create(authenticated: Page, root_url: str) -> Locator:
     """
     authenticated.goto(urljoin(root_url, "/en-US/search/browse"))
     authenticated.locator("button.aurelius-create-entity").click()
-    drawer = authenticated.locator(".aurelius-drawer")
+    drawer = authenticated.locator(".aurelius-editor-page")
     expect(drawer).to_contain_text("Create new entity")
     authenticated.locator(".aurelius-editor-picker select").select_option(label="Data Quality")
-    expect(authenticated).to_have_url(re.compile(r"\(drawer:create/m4i_data_quality\)$"))
+    expect(authenticated).to_have_url(re.compile(r"/search/editor\?type=m4i_data_quality$"))
 
     return drawer
 
@@ -166,7 +166,7 @@ def test__the_generic_door_creates_a_rule(
             drawer.locator("button.aurelius-editor-save").click()
         assert checked.value.json() == {"valid": True, "kind": "COLUMN_NOT_NULL_RATIO", "dimension": "COMPLETENESS"}
         expect(authenticated).to_have_url(re.compile(r"/en-US/search/details/[0-9a-f-]+$"))
-        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-editor-page")).to_have_count(0)
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(rule_name)
         landing = re.search(r"/details/([^/?#]+)", authenticated.url)
         assert landing is not None
@@ -306,12 +306,12 @@ def test__the_editor_edits_a_stored_rule(
         expect(authenticated.locator("#editor-threshold")).to_have_value("100")
         authenticated.locator("#editor-threshold-slider").fill("0.5")
         active.uncheck()
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         with authenticated.expect_response(lambda r: _VALIDATE_URL in r.url) as checked:
             drawer.locator("button.aurelius-editor-save").click()
         assert checked.value.json()["valid"] is True
         expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{rule_guid}$"))
-        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-editor-page")).to_have_count(0)
 
         stored = authenticated.request.get(
             urljoin(root_url, f"/api/atlas/v2/entity/guid/{rule_guid}"),

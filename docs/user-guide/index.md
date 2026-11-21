@@ -20,6 +20,7 @@ Until the conversion is complete, the
 system reproduces; every intended difference is listed in
 [Deviations from Apache Atlas](../architecture/conversion/deviations.md).
 
+To create and edit entities in the webapp, see [Edit Entities](./edit-entities.md).
 To run the server on your machine and import a sample dataset, see
 [Standalone Server](./standalone-server.md).
 To add a tenant to it, see [Add a Tenant to the Standalone Server](./standalone-tenants.md).

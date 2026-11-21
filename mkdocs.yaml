@@ -70,6 +70,7 @@ markdown_extensions:
 nav:
     - User Guide:
           - user-guide/index.md
+          - Edit Entities: user-guide/edit-entities.md
           - Standalone Server: user-guide/standalone-server.md
           - Add a Tenant to the Standalone Server: user-guide/standalone-tenants.md
           - Deploy to Kubernetes: user-guide/deployment.md
