@@ -38,14 +38,9 @@ from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_mapper import EntityMapper
 from aurelius_atlas_core.entity_retriever import EntityRetriever
-from aurelius_atlas_core.entity_store import (
-    EntityChange,
-    EntityStore,
-    EntityVersionConflictError,
-    EntityWriteError,
-    UniqueValueTakenError,
-)
+from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.file_utils import PIPE_CHARACTER, Row, java_split, read_file_data
+from aurelius_atlas_core.retry import failed_write, internal_error, retry_race
 from aurelius_atlas_core.stored_entity import StoredEntity
 
 ATTEMPTS = 2
@@ -284,18 +279,9 @@ class EntityBusinessMetadata:
 
         The attributes the write updated are told after it (BMD-06).
         """
-        for number in range(1, ATTEMPTS + 1):
-            try:
-                updated = await attempt()
-            except EntityVersionConflictError as conflict:
-                if number == ATTEMPTS:
-                    raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
-            except (UniqueValueTakenError, EntityWriteError) as failure:
-                raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
-            else:
-                if updated and self._notifier is not None:
-                    await self._notifier.on_business_attributes_updated(guid, updated, user=self._user)
-                return
+        updated = await retry_race(failed_write(attempt), ATTEMPTS, lost_race=internal_error)
+        if updated and self._notifier is not None:
+            await self._notifier.on_business_attributes_updated(guid, updated, user=self._user)
 
 
 def validate_business_attributes(

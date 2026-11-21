@@ -27,13 +27,11 @@ from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import VersionedEntity, VersionedRelationship
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import (
-    EntityVersionConflictError,
-    EntityWriteError,
     RelationshipChange,
     TaskChange,
-    UniqueValueTakenError,
     WriteStore,
 )
+from aurelius_atlas_core.retry import failed_write, internal_error, retry_race
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
@@ -154,15 +152,7 @@ class RelationshipStore:
 
     async def _run[T](self, attempt: Callable[[], Awaitable[T]]) -> T:
         """Run once more after a lost race; a second loss or a failed write is ``INTERNAL_ERROR`` (DD-052)."""
-        for number in range(1, ATTEMPTS + 1):
-            try:
-                return await attempt()
-            except EntityVersionConflictError as conflict:
-                if number == ATTEMPTS:
-                    raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
-            except (UniqueValueTakenError, EntityWriteError) as failure:
-                raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
-        raise AssertionError  # pragma: no cover - the loop returns or raises
+        return await retry_race(failed_write(attempt), ATTEMPTS, lost_race=internal_error)
 
     async def _create(self, relationship: AtlasRelationship) -> AtlasRelationship:
         end1 = await self._end(relationship.end1)
