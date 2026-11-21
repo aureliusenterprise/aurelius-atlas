@@ -111,21 +111,6 @@
                 @if (conflictShown()) {
                     <output class="help is-warning aurelius-editor-conflict">{{ conflictLine }}</output>
                 }
-                <!-- The required-fields notification (EDT-07): shown at the top of
-                 the form when a Save was attempted and the form is invalid —
-                 never below the fold of a long form. Its delete (Bulma's
-                 notification anatomy) dismisses it until the next Save (DD-331). -->
-                @if (notificationShown()) {
-                    <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
-                        <button
-                            type="button"
-                            class="delete"
-                            [attr.aria-label]="closeLabel"
-                            (click)="dismissNotification()"
-                        ></button>
-                        {{ notificationLine }}
-                    </div>
-                }
                 <!-- The quality rule form (EDT-25, DD-477): for a vocabulary
                  rule, the served vocabulary's kind form replaces the generic
                  attribute list (EDT-27: the save stays the drawer's, the
@@ -142,7 +127,11 @@
                     ></aurelius-atlas-webapp-quality-fields>
                 }
                 @for (field of qualityMode() ? [] : fields(); track field.name) {
-                    <div class="field aurelius-editor-field" [attr.data-field]="field.name">
+                    <div
+                        class="field aurelius-editor-field"
+                        [attr.data-field]="field.name"
+                        [class.aurelius-editor-noncompliant]="descriptionNonCompliant(field.name)"
+                    >
                         @if (field.kind === "boolean") {
                             <!-- Bulma's checkbox anatomy (EDT-03): the label wraps
                              the input and a bare text node — no wrapper span,
@@ -290,8 +279,12 @@
                                 {{ nameRequired }}
                             </p>
                         }
-                        <!-- The governance banner lines under the control (EDT-24,
-                         DD-446), rendered by the one template below. -->
+                        <!-- The ’ warning (EDP-09): a hint, never a refusal. -->
+                        @if (quoteWarning(field.name); as warning) {
+                            <p class="help is-warning aurelius-editor-quote-warning">{{ warning }}</p>
+                        }
+                        <!-- The governance verdicts beside the control (EDT-24,
+                         DD-446, EDP-07), rendered by the one template below. -->
                         <ng-container *ngTemplateOutlet="govLines; context: { fieldName: field.name }"></ng-container>
                     </div>
                 }
@@ -369,6 +362,19 @@
          Delete behaves like `is-loading` itself: the label clears and a
          donut (the spinner's look, an SVG ring stroke so its edges are
          smooth) draws clockwise over the hold's own seconds. -->
+        <!-- The required-fields notice (EDT-07, EDP-08): at the foot beside Save, red, as the
+        acy's was; its delete dismisses it until the next Save (DD-331). -->
+        @if (notificationShown()) {
+            <div class="notification is-danger is-light aurelius-editor-notification" role="alert">
+                <button
+                    type="button"
+                    class="delete"
+                    [attr.aria-label]="closeLabel"
+                    (click)="dismissNotification()"
+                ></button>
+                {{ notificationLine }}
+            </div>
+        }
         <div class="aurelius-editor-foot">
             @if (state.saving() || state.deleting()) {
                 <output class="help aurelius-editor-busy">{{ busyLine() }}</output>
@@ -436,24 +442,28 @@
          template under every control and every picker alike (each renders it
          through ngTemplateOutlet). -->
     <ng-template #govLines let-fieldName="fieldName">
-        @for (verdict of validationItems(fieldName); track verdict.ruleGuid) {
-            <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
-                <span class="icon-text">
-                    <span
-                        class="icon"
-                        [class.has-text-warning]="!verdict.compliant"
-                        [class.has-text-success]="verdict.compliant"
-                    >
-                        @if (!verdict.compliant) {
-                            <fa-icon [icon]="faExclamationTriangle"></fa-icon>
-                        }
-                        @if (verdict.compliant) {
-                            <fa-icon [icon]="faCheckCircle"></fa-icon>
-                        }
+        <!-- The verdict column (EDP-07, EDP-15): beside the control on a desktop-wide
+             page, under it on a narrower one. -->
+        <div class="aurelius-editor-gov">
+            @for (verdict of validationItems(fieldName); track verdict.ruleGuid) {
+                <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
+                    <span class="icon-text">
+                        <span
+                            class="icon"
+                            [class.has-text-warning]="!verdict.compliant"
+                            [class.has-text-success]="verdict.compliant"
+                        >
+                            @if (!verdict.compliant) {
+                                <fa-icon [icon]="faExclamationTriangle"></fa-icon>
+                            }
+                            @if (verdict.compliant) {
+                                <fa-icon [icon]="faCheckCircle"></fa-icon>
+                            }
+                        </span>
+                        <span>{{ verdict.message }}</span>
                     </span>
-                    <span>{{ verdict.message }}</span>
-                </span>
-            </p>
-        }
+                </p>
+            }
+        </div>
     </ng-template>
 </section>

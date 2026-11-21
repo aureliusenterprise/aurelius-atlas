@@ -96,6 +96,9 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  * render as lines under the control their attribute names — failures swallow
  * quietly.
  */
+/** The description fields whose box turns yellow on a failing rule (EDP-16). */
+const DESCRIPTION_RULE_FIELDS = new Set(["definition", "description", "ruleDescription"]);
+
 @Component({
     imports: [
         ClassificationCombobox,
@@ -403,6 +406,12 @@ export class EntityEditor {
 
     protected readonly notificationLine = $localize`:@@search.components.editor.attribute.notification:This entity can't be saved because one or more required fields are missing.`;
 
+    /** The warnings of a `’` (U+2019) in the name or the definition (EDP-09). */
+    protected readonly quoteWarnings: Readonly<Record<string, string>> = {
+        name: $localize`:@@search.components.editor.entity.nameWarning:Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues. Please replace it with a standard apostrophe (') before importing your text.`,
+        definition: $localize`:@@search.components.editor.entity.definitionWarning:Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues. Please replace it with a standard apostrophe (') before importing your text.`,
+    };
+
     protected readonly loadingLine = $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`;
 
     protected readonly savingLine = $localize`:@@search.services.entityUpdate.save:Saving the entity`;
@@ -677,6 +686,28 @@ export class EntityEditor {
      * has no `definition` control of its own — the legacy's one-way alias, and
      * each verdict sits once on a type that carries both. A control no rule
      * measures renders nothing; `unreadRules` renders no line (VEV-03). */
+    /**
+     * The warning a field's value earns for holding `’` (U+2019), or none (EDP-09):
+     * only the name and the definition warn, and the save is not refused.
+     * @param name the field's attribute
+     * @returns the warning line, or `""`
+     */
+    protected quoteWarning(name: string): string {
+        const warning = this.quoteWarnings[name];
+        const value = this.values()[name];
+        return warning && typeof value === "string" && value.includes("\u2019") ? warning : "";
+    }
+
+    /**
+     * Whether a rule on a description field fails right now (EDP-16): the box
+     * turns yellow, the legacy's `is-warning` on the definition.
+     * @param name the field's attribute
+     * @returns whether to paint the box
+     */
+    protected descriptionNonCompliant(name: string): boolean {
+        return DESCRIPTION_RULE_FIELDS.has(name) && this.validationItems(name).some((verdict) => !verdict.compliant);
+    }
+
     protected validationItems(name: string): readonly GovernanceVerdict[] {
         const answer = this.validation();
         if (!answer) {

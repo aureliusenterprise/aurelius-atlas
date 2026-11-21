@@ -134,3 +134,64 @@ aurelius-atlas-webapp-quality-fields + .aurelius-editor-field {
 .aurelius-editor-loading {
     margin-bottom: 0.75rem;
 }
+
+/*
+ * The editor page (EDP-01, EDP-07, DD-816): the legacy's field row. The label
+ * spans the row; below it, from Bulma's desktop width (1024px), the control
+ * takes two thirds and the field's verdicts the third beside it, centred
+ * against it (`editor/entity/entity-editor.component.scss`, `.grid`). Narrower,
+ * the verdicts stay under the control.
+ */
+.aurelius-editor-page {
+    padding-block: 1.5rem 3rem;
+}
+
+.aurelius-editor-page .aurelius-editor-tabs {
+    margin-bottom: 1.5rem;
+}
+
+.aurelius-editor-page .aurelius-editor-foot {
+    margin-top: 2rem;
+}
+
+.aurelius-editor-page .aurelius-editor-notification {
+    margin-top: 2rem;
+}
+
+/* The tag box sits in the field rhythm on a legacy form (EDP-11). */
+.aurelius-editor-page aurelius-atlas-webapp-classification-combobox {
+    display: block;
+    margin-block: 1.25rem;
+}
+
+@media screen and (width >= 1024px) {
+    .aurelius-editor-page .aurelius-editor-field {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        column-gap: 2rem;
+        align-items: center;
+    }
+
+    .aurelius-editor-page .aurelius-editor-field > * {
+        grid-column: 1;
+    }
+
+    .aurelius-editor-page .aurelius-editor-field > .label {
+        grid-column: 1 / -1;
+    }
+
+    .aurelius-editor-page .aurelius-editor-field > .aurelius-editor-gov {
+        grid-column: 2;
+        grid-row: 2 / span 3;
+    }
+
+    /* The tag box has no verdicts; it keeps to the controls' column. */
+    .aurelius-editor-page aurelius-atlas-webapp-classification-combobox {
+        width: calc((100% - 2rem) * 2 / 3);
+    }
+}
+
+/* A failing rule on the definition turns its box yellow (EDP-16), Bulma's warning. */
+.aurelius-editor-noncompliant textarea {
+    border-color: var(--bulma-warning);
+}

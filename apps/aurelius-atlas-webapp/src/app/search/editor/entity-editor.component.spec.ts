@@ -1338,9 +1338,10 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(normalize(notification?.textContent)).toBe(
             "This entity can't be saved because one or more required fields are missing.",
         );
-        // The top of the form, not the bottom: it precedes the first field (DD-331).
-        const firstField = compiled.querySelector(".aurelius-editor-form .aurelius-editor-field");
-        expect(notification!.compareDocumentPosition(firstField!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        // At the foot, beside Save, red, as the legacy's was (EDP-08).
+        const foot = compiled.querySelector(".aurelius-editor-foot");
+        expect(notification!.compareDocumentPosition(foot!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(notification!.classList.contains("is-danger")).toBe(true);
 
         // The delete dismisses it; the next Save brings it back (DD-331).
         notification!.querySelector<HTMLButtonElement>("button.delete")!.click();
@@ -2069,6 +2070,53 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(normalize(line.textContent)).toBe("This entity is missing a name");
         expect(line.querySelector(".icon.has-text-warning svg")).toBeTruthy();
         expect(line.querySelector(".icon.has-text-success")).toBeNull();
+    });
+
+    function openWithVerdicts(verdicts: ReturnType<typeof govVerdict>[]) {
+        const opened = setup();
+        const { fixture, httpMock } = opened;
+        arriveSlices(fixture, httpMock, false);
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
+        fixture.detectChanges();
+        arriveChain(httpMock, "DataSet", DATASET_CHAIN);
+        fixture.detectChanges();
+        httpMock.expectOne(VALIDATE_URL).flush({ verdicts, unreadRules: [] });
+        fixture.detectChanges();
+        return opened;
+    }
+
+    it("each field's verdicts sit in its own verdict column, beside the control (EDP-07, EDP-15)", () => {
+        const { compiled } = openWithVerdicts([govVerdict("name", "This entity has a name", true)]);
+
+        const column = compiled.querySelector('.aurelius-editor-field[data-field="name"] > .aurelius-editor-gov');
+        expect(normalize(column?.querySelector("[data-gov-line]")?.textContent)).toBe("This entity has a name");
+    });
+
+    it("a failing rule on the description turns its box yellow, a passing one does not (EDP-16)", () => {
+        const failing = openWithVerdicts([govVerdict("description", "This entity is missing a definition", false)]);
+        const field = failing.compiled.querySelector('.aurelius-editor-field[data-field="description"]');
+        expect(field?.classList.contains("aurelius-editor-noncompliant")).toBe(true);
+        expect(
+            failing.compiled
+                .querySelector('.aurelius-editor-field[data-field="name"]')
+                ?.classList.contains("aurelius-editor-noncompliant"),
+        ).toBe(false);
+    });
+
+    it("a ’ in the name warns under it, and the save is not refused (EDP-09)", () => {
+        const { fixture, compiled } = openWithVerdicts([]);
+        const input = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        expect(compiled.querySelector(".aurelius-editor-quote-warning")).toBeNull();
+
+        input.value = "Customer\u2019s orders";
+        input.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+
+        const warning = compiled.querySelector(
+            '.aurelius-editor-field[data-field="name"] .aurelius-editor-quote-warning',
+        );
+        expect(normalize(warning?.textContent)).toContain("Right Single Quotation Mark");
+        expect(compiled.querySelector("#editor-name")?.classList.contains("is-danger")).toBe(false);
     });
 
     it("a definition verdict rides both controls once each (EDT-24, DD-633)", () => {
