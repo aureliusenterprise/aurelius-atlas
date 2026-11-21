@@ -5656,6 +5656,8 @@
       
         
       
+        
+      
     
     
     
@@ -5832,6 +5834,33 @@
     
   
   CI Test Tiers Plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../platform/separation-and-seams-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Separation and Seams Plan
 
     
   </span>
@@ -8334,6 +8363,13 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
+<td>15.10</td>
+<td>The tenant's dashboards in the webapp</td>
+<td>A "Dashboards" item under "Switch tenant" in the account menu, opening the tenant's catalogue in Grafana, shown only to the tenant's stewards, administrators and trusted operators, whom Grafana alone lets in; the tenant record holding its Grafana organization id</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
 <td>16.1</td>
 <td>The view shape: the card and the view</td>
 <td>The one shape family of ADR 064 in the shared model library: the card of a result and the view of one entity, derived from the entity document's own fields and its derived App Search document (AVS-01..09, DD-580..583)</td>
@@ -8423,6 +8459,69 @@ checks a PR must pass:</p>
 <td>A child relationship end carries a <code>mutuallyExclusive</code> constraint naming a parent group, which every child end of one choice shares. The type system rejects it on a container end, the registry copies it onto the built child attribute, so the API and the write path read the rule in one place. The m4i model puts <code>dataDomain</code> and <code>parentEntity</code> in one group and <code>datasets</code> and <code>parentField</code> in another, and those four relationships go to <code>1.2</code> through the typedef update check, with no migration. A save that fills two members of one group is refused; filling neither stays legal. The editor disables the other picker of a filled group (PME-01..13, DD-746..754, DV-183/185).</td>
 <td>A must-choose-one variant. Mutual exclusion between anything other than hierarchical children. A hint sentence in the editor, since no new string may join the webapp's vendored catalogue.</td>
 <td>in progress</td>
+</tr>
+<tr>
+<td>18.4</td>
+<td>Adding a child never reparents silently</td>
+<td>A parent-side save that reaches a child which already holds a parent of the same group is refused with <code>INSTANCE_CRUD_INVALID_PARAMS</code> unless the request carries the query parameter <code>unsafeReparent</code>, on the wire door and the view door (DV-187). With the parameter the door clears the child's old parent edge, so the child moves to exactly one parent and no child ends under two (DV-186). The view search gains a card field <code>hasParent</code> from a stored boolean on the App Search document, which takes the derivation version to <code>3</code>, and the editor's parent-side picker filters on it (RPS-01..08, DD-755..759, DV-186/187).</td>
+<td>A move that names the old parent. A filter on the child-side single pickers, where choosing an attached entity is the legitimate move (PME-10). The relationship endpoints of the wire door.</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>18.5</td>
+<td>A dataset picks a collection or a parent dataset</td>
+<td>The dataset end of <code>m4i_dataset_assignment</code> becomes <code>SINGLE</code> with the <code>mutuallyExclusive</code> constraint, and <code>m4i_dataset</code> loses its mirrored <code>collections</code> array attribute: the group <code>m4i_dataset_parent</code> joins <code>collections</code> and <code>parentDataset</code>, so the write check and the disabled picker of 18.3 hold for a dataset, the collection's <code>datasets</code> picker filters held candidates as a parent-side picker of 18.4, and the scanners write one collection as one object (DCP-01..09, DD-760..764)</td>
+<td>Migration of a store at the old shape (not planned, breaking); a second parent kind for the system, the data attribute or the process, each with one parent kind; a mandatory parent (composition)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>19.1</td>
+<td>One query semantics for the store and its fakes</td>
+<td>One module builds every Elasticsearch query clause core emits and one owns the free-text word rules, so the store, the App Search engine and both test fakes read one definition; the fake gains an honest <code>minimum_should_match</code>, the engines are typed on a narrow search contract, and a saved matrix proves the in-memory store and the fake answer alike (QRY-01 to QRY-06)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>19.2</td>
+<td>A store the write path can be tested against</td>
+<td>The write path is typed against a store contract it can be driven on, the view door's rewind wrapper is built from the documents contract instead of subclassing the concrete store, and a per-attempt transaction object replaces the writer's order-dependent fields with import semantics in their own orchestrator (WRS-01 to WRS-09)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>19.3</td>
+<td>One owner for the shared classification and parent rules</td>
+<td>One function owns which classifications the user set and one owns which relationship end is the parent, replacing the four and two copies; the difference between the two write paths on a child released in the same request is written up and either closed or recorded (RUL-01 to RUL-06)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>19.4</td>
+<td>One document module set and one narrow engine seam</td>
+<td>The entity_documents module splits into index setup, the Elasticsearch document client and the query translation, and the App Search engine splits into schema, query and answer, each on a contract no wider than its callers use (EDS-01 to EDS-05)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>19.5</td>
+<td>A server whose routes state their dependencies</td>
+<td>A closed tenant store answers the Atlas error body instead of a bare 500, routes take settings, stores and the authorizer through providers, the service factories and the Java coercion leave <code>routes/entity.py</code> so it is handlers only, and the hand-rolled body-validation and export-lock copies collapse to one each (SVC-01 to SVC-08)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>19.6</td>
+<td>An editor that reports its own outcome</td>
+<td>The editor states its delete and save outcome on a signal instead of reading alert text, the classification combobox and the PME-10 rule leave the component to a place with direct tests, and one guard fails when a client form rule drifts from its Python original (WFE-01 to WFE-07)</td>
+<td>none (Aurelius-native surface)</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>19.7</td>
+<td>Small deletions</td>
+<td>One retry helper replaces six copies of the version-conflict loop, and the stored-entity record's derived blocks become nested frozen records so readers see narrower types (PAR-01 to PAR-03)</td>
+<td>none</td>
+<td>planned</td>
 </tr>
 </tbody>
 </table>

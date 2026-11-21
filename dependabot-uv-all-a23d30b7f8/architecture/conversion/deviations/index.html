@@ -5668,6 +5668,8 @@
       
         
       
+        
+      
     
     
     
@@ -5844,6 +5846,33 @@
     
   
   CI Test Tiers Plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/separation-and-seams-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Separation and Seams Plan
 
     
   </span>
@@ -8112,6 +8141,38 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The corpus ships 66 governance rules. Aurelius deletes the 29 dead rule records from <code>sample_data.zip</code> and from <code>only_gov_quality.zip</code>, and drops their GUIDs from each bundle's <code>atlas-export-order.json</code> (PME-13, DD-754). A rule over a name the model lacks fails on every entity of its type, so a bundle that holds one fails <code>test__m4i_models.py</code>.</td>
 <td>The legacy corpus carried the rules from a metamodel that held those names, and the dictionary dropped them. A dead rule stamps a noncompliant verdict on every entity of its type forever. 15 of the 29 read, so 245 always-fail verdicts leave the read set, and the gates count 1,785 over 66 rules instead of 2,030 over 95. The oracle keeps its 29 documents and 1,612 verdicts, as its 27 verdict rules are not the 29. The 14.6 gates drop the GUIDs, named once in <code>test__app_search_engine.py</code> (DV-173).</td>
 <td>18.3</td>
+</tr>
+<tr>
+<td>DV-186</td>
+<td>Interface</td>
+<td>(View door origin, no Atlas behaviour.) The view door's <code>sections</code> step created a parent edge on a candidate that already held one and cleared nothing, not even an edge of the same relationship, so a child moved by the wire door on the same attribute stayed in two places through the view door.</td>
+<td>The door refuses the save without <code>unsafeReparent</code> (RPS-01) and clears the child's other parent edge of the group with it, so a moved child reads back with exactly one parent (RPS-05, DD-757). The view door is Aurelius's own surface, so this is a fix of Aurelius behaviour, recorded for the change it makes.</td>
+<td>A two-parent child breaks the single-parent read, the governance rule over it, and the lineage page. The wire door never cleared an edge of another relationship either (DV-187), so on Aurelius both doors had to change together.</td>
+<td>18.4</td>
+</tr>
+<tr>
+<td>DV-187</td>
+<td>Interface</td>
+<td>Apache Atlas 2.4.0 moves a child only within the attribute it writes: <code>EntityGraphMapper.addInverseReference</code> replaces the candidate's existing edge of that one relationship when the opposite end is <code>SINGLE</code>, and never looks at a different relationship. Adding a field through <code>datasets</code> when the field already hangs under a <code>parentField</code> keeps both edges, and nothing refuses it; the engine enforces the <code>SINGLE</code> child end nowhere on a parent-side write.</td>
+<td>Aurelius refuses that write with <code>INSTANCE_CRUD_INVALID_PARAMS</code> naming each held candidate and the parent it holds (RPS-01, RPS-03), unless the request carries the query parameter <code>unsafeReparent</code> (RPS-04). With it, both doors clear the family edge first and the child reads back with exactly one parent (RPS-05). An import is exempt, so an export replays unchanged (RPS-08).</td>
+<td>A write that leaves a child under two parents breaks 18.2's <code>SINGLE</code> cardinality silently. The opt-in keeps the Atlas engine (ADR 051) while making the author ask for the move; a client that re-parents through the Atlas wire API now sends the parameter.</td>
+<td>18.4</td>
+</tr>
+<tr>
+<td>DV-188</td>
+<td>App Search</td>
+<td>Apache Atlas 2.4.0 has no one-parent rule to break (DV-183). The difference is in Aurelius data: the sample corpus of <code>data/atlas-sample/</code> held two datasets that two parents each claimed. The dataset named one parent in its single-valued <code>parentDataset</code>, and a sibling dataset listed the same child in its <code>childDataset</code>, and an import writes both sides of an edge (RPS-08), so the store held the child under both parents.</td>
+<td>Every dataset of every bundle answers one parent once both sides are read together: the child's own single-valued end wins and the parent-side listing is emptied to match (DCP-07, DD-766). <code>kib1-hourly-table</code> and <code>kib1-hr-bar-graph</code> no longer list a child, and no dataset holds two parent edges.</td>
+<td>The oracle is frozen output of the old corpus and walked both sides of the edge, so it falsifies for the cleared listings. <code>test__app_search_indexer.py</code> names the two pairs it no longer derives, and <code>test__app_search_governance.py</code> counts 27 moved verdicts instead of 29, because the two siblings' field-or-child verdicts now answer the value the oracle recorded. The change moves Aurelius closer to the oracle, as DV-173 did.</td>
+<td>18.5</td>
+</tr>
+<tr>
+<td>DV-189</td>
+<td>Interface</td>
+<td>(View door origin, no Atlas behaviour.) Apache Atlas 2.4.0 has no one-parent rule to break (DV-183), so it has no same-request parent release either: it never refuses adding a parent-side edge to a held candidate, on the wire or on a door, and never asks whether the request also drops the child elsewhere.</td>
+<td>The wire path treats one request that drops a child from one parent and adds it to another as a deliberate move and lets it through (RPS-02), because it reads the whole request together. The view door applies one entity per request, so it cannot carry the sibling parent's drop in the same call, and it refuses a held candidate without <code>unsafeReparent</code> even where the move is deliberate (RUL-04). The door is Aurelius's own surface, so both sides of this row are Aurelius behaviour.</td>
+<td>The door body is one entity's view, so the parent the child leaves is a separate save; closing the gap would make the door read a save it was not given. No shipped client reaches it: the webapp's parent-side picker filters its search to candidates with no parent (DCP-06).</td>
+<td>19.3</td>
 </tr>
 </tbody>
 </table>

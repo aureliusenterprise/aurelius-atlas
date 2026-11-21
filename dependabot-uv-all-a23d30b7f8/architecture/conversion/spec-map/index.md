@@ -114,3 +114,10 @@ This table is the reference for a move: it fixes the home before files are touch
 | 18.1 | Bootstrap only the metamodel the system serves | `specs/18-1-metamodel-scope/` + `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` + `apps/aurelius-atlas-webapp` + `apps/aurelius-atlas-lineage-model` | MMS |
 | 18.2 | The metamodel gives every hierarchy child one parent | `specs/18-2-hierarchy-cardinality/` + `libs/python/aurelius-atlas-core` + `libs/python/aurelius-atlas-typesystem` + `apps/aurelius-atlas-server` + `apps/aurelius-atlas-webapp` + `data/atlas-sample` | HCA |
 | 18.3 | A child that can sit under two parents picks one | `specs/18-3-parent-mutual-exclusion/` + `libs/python/aurelius-atlas-model` + `libs/python/aurelius-atlas-typesystem` + `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` + `data/atlas-sample` | PME |
+| 19.1 | One query semantics for the store and its fakes | `specs/19-1-query-semantics/` + `libs/python/aurelius-atlas-store-es` + `libs/python/aurelius-atlas-core` | QRY |
+| 19.2 | A store the write path can be tested against | `specs/19-2-write-path-seams/` + `libs/python/aurelius-atlas-core` | WRS |
+| 19.3 | One owner for the shared classification and parent rules | `specs/19-3-shared-rule-owners/` + `libs/python/aurelius-atlas-core` | RUL |
+| 19.4 | One document module set and one narrow engine seam | `specs/19-4-documents-engine-split/` + `libs/python/aurelius-atlas-core` | EDS |
+| 19.5 | A server whose routes state their dependencies | `specs/19-5-server-routes/` + `apps/aurelius-atlas-server` | SVC |
+| 19.6 | An editor that reports its own outcome | `specs/19-6-webapp-editor/` + `apps/aurelius-atlas-webapp` | WFE |
+| 19.7 | Small deletions | `specs/19-7-small-deletions/` + `libs/python/aurelius-atlas-core` | PAR |

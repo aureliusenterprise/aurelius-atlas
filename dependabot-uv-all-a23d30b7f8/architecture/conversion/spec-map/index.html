@@ -5716,6 +5716,8 @@
       
         
       
+        
+      
     
     
     
@@ -5892,6 +5894,33 @@
     
   
   CI Test Tiers Plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/separation-and-seams-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Separation and Seams Plan
 
     
   </span>
@@ -7540,6 +7569,48 @@ rule belongs to the project whose code it constrains.</p>
 <td>A child that can sit under two parents picks one</td>
 <td><code>specs/18-3-parent-mutual-exclusion/</code> + <code>libs/python/aurelius-atlas-model</code> + <code>libs/python/aurelius-atlas-typesystem</code> + <code>libs/python/aurelius-atlas-core</code> + <code>apps/aurelius-atlas-server</code> + <code>data/atlas-sample</code></td>
 <td>PME</td>
+</tr>
+<tr>
+<td>19.1</td>
+<td>One query semantics for the store and its fakes</td>
+<td><code>specs/19-1-query-semantics/</code> + <code>libs/python/aurelius-atlas-store-es</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>QRY</td>
+</tr>
+<tr>
+<td>19.2</td>
+<td>A store the write path can be tested against</td>
+<td><code>specs/19-2-write-path-seams/</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>WRS</td>
+</tr>
+<tr>
+<td>19.3</td>
+<td>One owner for the shared classification and parent rules</td>
+<td><code>specs/19-3-shared-rule-owners/</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>RUL</td>
+</tr>
+<tr>
+<td>19.4</td>
+<td>One document module set and one narrow engine seam</td>
+<td><code>specs/19-4-documents-engine-split/</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>EDS</td>
+</tr>
+<tr>
+<td>19.5</td>
+<td>A server whose routes state their dependencies</td>
+<td><code>specs/19-5-server-routes/</code> + <code>apps/aurelius-atlas-server</code></td>
+<td>SVC</td>
+</tr>
+<tr>
+<td>19.6</td>
+<td>An editor that reports its own outcome</td>
+<td><code>specs/19-6-webapp-editor/</code> + <code>apps/aurelius-atlas-webapp</code></td>
+<td>WFE</td>
+</tr>
+<tr>
+<td>19.7</td>
+<td>Small deletions</td>
+<td><code>specs/19-7-small-deletions/</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>PAR</td>
 </tr>
 </tbody>
 </table>
