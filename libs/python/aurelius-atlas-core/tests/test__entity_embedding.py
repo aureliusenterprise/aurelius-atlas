@@ -3,6 +3,7 @@ VEC-06, VEC-10, EMC-01 to EMC-05), on the in-memory store and a fake embedder.
 """  # noqa: D205 - one sentence
 
 from collections.abc import Sequence
+from typing import cast
 
 import pytest
 from aurelius_atlas_core.app_search_document import DERIVATION_VERSION, awaits_document
@@ -38,6 +39,7 @@ from aurelius_atlas_core.testing.entity_samples import sample_entities, sample_r
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_model import codec
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from elasticsearch import AsyncElasticsearch
 
 E = "aurelius_atlas_core.entity_embedding"
 X = "aurelius_atlas_core.entity_embedding_indexer.EntityEmbeddingIndexer"
@@ -256,7 +258,7 @@ async def test__the_memory_store_leaves_out_entities_awaiting_their_document_whe
 async def test__the_elasticsearch_documents_leave_out_entities_awaiting_their_document_when_asked() -> None:
     """On the fake client, the same five entities and the same two listings."""
     client = FakeClient()
-    documents = ElasticsearchEntityDocuments(client, embedding_dimensions=2)  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), embedding_dimensions=2)
     await documents.prepare()
     await documents.write([(found, None) for found in awaiting_and_current()])
 
@@ -393,7 +395,7 @@ async def test__an_entity_changed_while_it_was_embedded_keeps_its_change_for_a_l
 async def test__the_elasticsearch_documents_list_entities_to_embed_and_drop_stale_embeddings() -> None:
     """On the fake client: the listing's query, and the write's check of the hash."""
     client = FakeClient()
-    documents = ElasticsearchEntityDocuments(client, embedding_dimensions=2)  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), embedding_dimensions=2)
     await documents.prepare()
     await documents.write([(embedded(entity("e", **{"Asset.name": "Customer"})), None)])
     read = (await documents.get(["e"]))["e"]
@@ -410,8 +412,8 @@ async def test__the_elasticsearch_documents_list_entities_to_embed_and_drop_stal
 async def test__a_new_entity_index_is_created_keeping_its_sources_and_mapping_the_vector() -> None:
     """With dimensions, ``exclude_source_vectors: false`` and the embedding mapping; without, neither."""
     client = FakeClient()
-    await ElasticsearchEntityDocuments(client, embedding_dimensions=384).prepare()  # type: ignore[arg-type]
-    await ElasticsearchEntityDocuments(client, prefix="plain").prepare()  # type: ignore[arg-type]
+    await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), embedding_dimensions=384).prepare()
+    await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), prefix="plain").prepare()
 
     vectors, plain = (
         client.index_settings["aurelius-atlas-entities-000001"],
@@ -428,17 +430,17 @@ async def test__a_new_entity_index_is_created_keeping_its_sources_and_mapping_th
 async def test__an_entity_index_stored_before_embedding_moves_to_the_next_generation() -> None:
     """Its entities are copied as stored, the alias moves to ``-000002``, the old index goes; a second start stays."""
     client = FakeClient()
-    before = ElasticsearchEntityDocuments(client)  # type: ignore[arg-type]
+    before = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client))
     await before.prepare()
     await before.write([(entity("e", **{"Asset.name": "Customer"}), None)])
 
-    await ElasticsearchEntityDocuments(client, embedding_dimensions=2).prepare()  # type: ignore[arg-type]
-    await ElasticsearchEntityDocuments(client, embedding_dimensions=2).prepare()  # type: ignore[arg-type]
+    await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), embedding_dimensions=2).prepare()
+    await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), embedding_dimensions=2).prepare()
 
     assert client.aliases["aurelius-atlas-entities"] == "aurelius-atlas-entities-000002"
     assert "aurelius-atlas-entities-000001" not in client.documents
     assert client.index_settings["aurelius-atlas-entities-000002"]["index.mapping.exclude_source_vectors"] is False
-    moved = await ElasticsearchEntityDocuments(client, embedding_dimensions=2).get(["e"])  # type: ignore[arg-type]
+    moved = await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), embedding_dimensions=2).get(["e"])
     assert moved["e"].entity.attributes == {"Asset.name": "Customer"}
 
 
@@ -446,10 +448,10 @@ async def test__an_entity_index_stored_before_embedding_moves_to_the_next_genera
 async def test__an_index_of_other_dimensions_stops_the_start() -> None:
     """Mapped for 384, configured for 768: the reason names both."""
     client = FakeClient()
-    await ElasticsearchEntityDocuments(client, embedding_dimensions=384).prepare()  # type: ignore[arg-type]
+    await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), embedding_dimensions=384).prepare()
 
     with pytest.raises(EmbeddingDimensionsError, match=r"384 dimensions.*configured for 768"):
-        await ElasticsearchEntityDocuments(client, embedding_dimensions=768).prepare()  # type: ignore[arg-type]
+        await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client), embedding_dimensions=768).prepare()
 
 
 @pytest.mark.covers("aurelius_atlas_core.entity_retriever.EntityRetriever.entity_with_ext_info", rules=["VEC-10"])

@@ -6,7 +6,7 @@ no embedding but the test's own is written.
 """
 
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, cast
 
 import httpx2 as httpx
 import pytest
@@ -18,6 +18,7 @@ from aurelius_atlas_server.app import create_app
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from conftest import BASE_URL
+from elasticsearch import AsyncElasticsearch
 from test__aurelius_atlas_server_search_by_meaning import Embedder
 
 R = "aurelius_atlas_server.routes.view_search"
@@ -75,7 +76,7 @@ async def searching(
             ]
             created = (await client.post("/api/atlas/v2/entity/bulk", json={"entities": entities})).json()
             by_name = {header["attributes"]["name"]: header["guid"] for header in created["mutatedEntities"]["CREATE"]}
-            documents = ElasticsearchEntityDocuments(fake_es, embedding_dimensions=2)  # type: ignore[arg-type]
+            documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake_es), embedding_dimensions=2)
             for name, vector in VECTORS.items():
                 found = (await documents.get([by_name[name]]))[by_name[name]]
                 embedding = StoredEmbedding(vector=vector, model="m", source_hash=source_hash(found.entity))

@@ -490,6 +490,31 @@ class EntityDocuments(Protocol):
         ...
 
 
+@runtime_checkable
+class SearchDocuments(Protocol):
+    """The one search the App Search engine and the view door run on (QRY-05, DD-770).
+
+    A narrow contract on purpose: an App Search search needs the engine's field table, its nested index paths and
+    its weighted vector scoring, so the in-memory store answers the basic search and the terms search it already
+    answers and does not become a third query engine. Specs that drive an engine pass a small fake for this method,
+    the pattern ``FakeEmbedder`` uses.
+    """
+
+    async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments, and the index
+        self,
+        *,
+        query: dict[str, Any] | None,
+        sort: list[dict[str, Any]],
+        aggs: dict[str, Any],
+        from_: int,
+        size: int,
+        index: str = ENTITY_DOCUMENTS,
+        knn: dict[str, Any] | None = None,
+    ) -> Mapping[str, Any]:
+        """One search of an engine's index: hits with scores, the exact total, the aggregations (DD-523, DD-534)."""
+        ...
+
+
 def _keeps_source_vectors(settings: dict[str, Any]) -> bool:
     """Whether an index's settings, flat or nested as Elasticsearch answers them, keep the source of vectors."""
     flat = settings.get("index.mapping.exclude_source_vectors")

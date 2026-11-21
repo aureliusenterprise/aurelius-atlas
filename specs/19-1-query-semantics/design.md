@@ -87,18 +87,22 @@ every unit test and fails against a real server.
 - **Date:** 2026-11-21
 - **Relates to:** QRY-05.
 
-**Decision.** A new `@runtime_checkable Protocol` `SearchDocuments` names the two methods the engines call: the
-App Search search and the terms search. `AppSearchEngine` and `ViewSearchEngine` take that instead of the
+**Decision.** A new `@runtime_checkable Protocol` `SearchDocuments` names the one method both engines call: the
+App Search search `search_app_search`. `AppSearchEngine` and `ViewSearchEngine` take that instead of the
 concrete class. `ElasticsearchEntityDocuments` satisfies it unchanged. The in-memory store keeps answering the
-basic search and the terms search it already answers, and does not gain an App Search search. Specs that drive
-an engine pass a small purpose-built fake for the one method they need, the pattern `FakeEmbedder` uses.
+basic search and the terms search it already answers, and does not gain an App Search search. A spec that drives
+an engine passes a small purpose-built fake for that one method, the pattern `FakeEmbedder` uses. The terms
+search stays on the wider `EntityDocuments`, where `EntityStore` and the suggestions provider already reach it,
+so the memory store satisfies that contract as it always did.
 
-**Reason.** `search_app_search` is missing from the store protocol (`entity_documents.py:1151` is absent from
-`:340-495`), so the engines must take the concrete class, and 28 test call sites carry
-`# type: ignore[arg-type]`. Naming the contract removes those casts without inventing an implementation. An
-App Search search needs the engine's field table, its nested index paths, and its weighted vector scoring, so
-an honest in-memory version is a third query engine. Building one would grow the duplicate semantics this
-increment sets out to shrink.
+**Reason.** Both engines call `search_app_search` and no other documents method. That method is absent from the
+store protocol, so the engines had to take the concrete `ElasticsearchEntityDocuments`. Naming the one-method
+contract lets a spec drive an engine with a fake that answers a single search, instead of a full documents object
+wired to a fake client. An App Search search needs the engine's field table, its nested index paths, and its
+weighted vector scoring, so an honest in-memory version is a third query engine. Building one would grow the
+duplicate semantics this increment sets out to shrink. Separately, the 28 `# type: ignore[arg-type]` markers sat
+on the `FakeClient` argument to the `ElasticsearchEntityDocuments` constructor, not on a documents argument. The
+protocol removes none of them. They go by the cast `FakeClient` already prescribes for a client it stands in for.
 
 **Alternatives.**
 

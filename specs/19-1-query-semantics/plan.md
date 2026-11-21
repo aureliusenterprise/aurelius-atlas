@@ -29,8 +29,8 @@ The rules are QRY-01 to QRY-06 of [the spec](./spec.md), the design DD-767 to DD
 3. `entity_documents.py` and `app_search_engine.py`: call the builders. No method signature changes here, so
    every existing test still names the method it covers.
 4. `fake.py`: honour `minimum_should_match`, import the word patterns (DD-768, DD-769).
-5. `SearchDocuments` protocol, and the two engines typed against it. Delete the 28
-   `# type: ignore[arg-type]` call sites and give the engine specs a purpose-built fake (DD-770).
+5. `SearchDocuments` protocol, and the two engines typed against it. Give the engine specs a purpose-built fake,
+   and replace the 28 `# type: ignore[arg-type]` call sites with the cast `FakeClient` prescribes (DD-770).
 6. The differential matrix fixture and its test (DD-771).
 
 Commit 1 to 3 is behaviour-preserving and reviewable by diff. Commit 4 changes the fake, and its failures are

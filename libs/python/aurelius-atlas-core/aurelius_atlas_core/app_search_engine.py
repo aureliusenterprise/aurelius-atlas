@@ -34,7 +34,7 @@ from aurelius_atlas_core.app_search_document import (
     SOURCE_HASH_FIELD,
     VERDICT_FIELDS,
 )
-from aurelius_atlas_core.entity_documents import ENTITY_DOCUMENTS, GOV_QUALITY, ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import ENTITY_DOCUMENTS, GOV_QUALITY, SearchDocuments
 from aurelius_atlas_core.search_query import ACTIVE, MAX_RESULT_WINDOW, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredQualityResult
 
@@ -649,7 +649,7 @@ def sort_clauses(sort: list[tuple[str, str]], fields: Mapping[str, EngineField],
 class AppSearchEngine:
     """An engine over ``documents``' indices, ``atlas-dev`` by default (ASE-03 to ASE-11, ASQ-03, ASG-05)."""
 
-    def __init__(self, documents: ElasticsearchEntityDocuments, engine: Engine = ATLAS_DEV) -> None:
+    def __init__(self, documents: SearchDocuments, engine: Engine = ATLAS_DEV) -> None:
         """``engine`` answering from ``documents``."""
         self._documents = documents
         self._engine = engine

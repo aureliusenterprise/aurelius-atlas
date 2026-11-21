@@ -9,7 +9,7 @@ would, and runs the quality round. The sample catalogue, with a score for each l
 import asyncio
 import json
 from collections import Counter
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.app_search_document import DIMENSIONS, quality_result_mapping, quality_totals_mapping
@@ -26,6 +26,7 @@ from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity, AtlasObjectId
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from elasticsearch import AsyncElasticsearch
 from test__app_search_engine import FIXTURES, indexed_sample, legacy
 
 Q = "aurelius_atlas_core.app_search_quality.QualityIndexer"
@@ -104,7 +105,7 @@ class Catalogue:
     """A small catalogue written through the store on the fake client, its documents indexed, each known by key."""
 
     def __init__(self, types: TypedefStore) -> None:
-        self.documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+        self.documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
         self.store = EntityStore(types.registry, self.documents)
         self.indexer = AppSearchIndexer(self.documents, types.registry)
         self.quality = QualityIndexer(self.documents, batch_size=2)

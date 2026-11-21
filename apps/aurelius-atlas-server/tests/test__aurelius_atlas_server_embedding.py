@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import certifi
 import httpx2 as httpx
@@ -20,6 +20,7 @@ from aurelius_atlas_server.app import create_app
 from aurelius_atlas_server.embedding import EmbeddingClient, EmbeddingError, EmbeddingWorker, embedding_http
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from elasticsearch import AsyncElasticsearch
 
 C = "aurelius_atlas_server.embedding.EmbeddingClient"
 W = "aurelius_atlas_server.embedding.EmbeddingWorker"
@@ -172,7 +173,7 @@ async def test__with_embedding_the_server_maps_the_vector_and_embeds_the_entitie
     app = create_app(configured)
 
     async with app.router.lifespan_context(app):
-        documents = ElasticsearchEntityDocuments(fake_es, embedding_dimensions=3)  # type: ignore[arg-type]
+        documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake_es), embedding_dimensions=3)
         await documents.write(
             [(StoredEntity(guid="e", type_name="m4i_data_entity", attributes={"Asset.name": "Customer"}), None)]
         )

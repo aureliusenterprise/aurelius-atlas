@@ -6,7 +6,7 @@ its counts are 14.4's, plus the entities the engine never derived and the door o
 """
 
 import asyncio
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.app_search_document import own_document
@@ -24,6 +24,7 @@ from aurelius_atlas_model.instance import EntityStatus
 from aurelius_atlas_model.typedef import AtlasEntityDef
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from aurelius_atlas_typesystem.registry import TransientTypeRegistry, TypeRegistry
+from elasticsearch import AsyncElasticsearch
 from test__app_search_engine import indexed_sample, legacy_counts
 from test__app_search_quality import m4i_types
 
@@ -70,7 +71,7 @@ def hold(m4i: TypeRegistry, guid: str, type_name: str = "m4i_data_entity", **val
 
 async def opened(*entities: StoredEntity, m4i: TypeRegistry) -> ViewSearchEngine:
     """The door over a fake store holding ``entities``."""
-    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
     await documents.prepare()
     await documents.write([(entity, None) for entity in entities])
     return ViewSearchEngine(documents, m4i)
@@ -446,7 +447,7 @@ async def test__the_two_facet_names_are_always_accepted_and_answer_empty_where_t
     door = await opened(hold(m4i, "d-1"), m4i=m4i)
     assert (await door.search({"facets": ["owner", "serviceType"]}))["facets"]["owner"] == []
 
-    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
     await documents.prepare()
     bare = await ViewSearchEngine(documents, TypeRegistry()).search({"facets": ["owner", "serviceType"]})
     assert bare == {"cards": [], "facets": {"owner": [], "serviceType": []}, "total": 0}

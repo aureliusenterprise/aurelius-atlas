@@ -2,12 +2,15 @@
 privilege it needs, and a refused body (ASE-01, ASE-02, ASE-04, ASQ-01, ASG-01), on the fake store.
 """  # noqa: D205 - one sentence
 
+from typing import cast
+
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.app_search_document import StoredVerdict, own_document
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from elasticsearch import AsyncElasticsearch
 from fake_issuer import FakeIssuer
 
 R = "aurelius_atlas_server.routes.app_search.search"
@@ -22,7 +25,7 @@ def as_roles(issuer: FakeIssuer, user: str, *roles: str) -> dict[str, str]:
 async def indexed(fake_es: FakeClient) -> None:
     """A domain with its App Search document in the server's store."""
     entity = StoredEntity(guid="d", type_name="m4i_data_domain", attributes={"Asset.name": "Sales"})
-    documents = ElasticsearchEntityDocuments(fake_es)  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake_es))
     await documents.write([(entity.model_copy(update={"app_search": own_document(entity)}), None)])
 
 
@@ -49,7 +52,7 @@ async def test__the_quality_engine_answers_its_results_on_both_paths(
     """A score's result by ``fieldguid``, the field page's filter; the engine named in the answer."""
     result = StoredQualityResult(qualityguid="r", name="Rule 1", fieldguid=["f"], dqscore=0.5)
     score = StoredEntity(guid="s", type_name="m4i_dq_score", attributes={}, quality_result=result)
-    await ElasticsearchEntityDocuments(fake_es).write([(score, None)])  # type: ignore[arg-type]
+    await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake_es)).write([(score, None)])
     body = {"filters": {"all": [{"fieldguid": ["f"]}]}, "result_fields": {"name": {"raw": {}}, "dqscore": {"raw": {}}}}
 
     for path in ("search", "search.json"):
@@ -69,7 +72,7 @@ async def test__the_governance_engine_answers_its_verdicts_on_both_paths(
         StoredVerdict(id=f"d--{rule}", guid=rule, name=rule.title(), entity_guid="d", compliant=compliant)
         for rule, compliant in (("named", "1"), ("owned", "0"))
     ]
-    await ElasticsearchEntityDocuments(fake_es).replace_verdicts({"d": verdicts})  # type: ignore[arg-type]
+    await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake_es)).replace_verdicts({"d": verdicts})
     body = {"filters": {"all": [{"entity_guid": ["d"]}, {"compliant": ["0"]}]}, "result_fields": {"name": {"raw": {}}}}
 
     for path in ("search", "search.json"):

@@ -7,7 +7,7 @@ sample catalogue gives each legacy verdict of a rule that reads back.
 import asyncio
 import json
 from collections import Counter
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, StoredVerdict, own_document, verdict_mapping
@@ -23,6 +23,7 @@ from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity, AtlasObjectId, EntityStatus
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from elasticsearch import AsyncElasticsearch
 from test__app_search_engine import FIXTURES, indexed_sample
 
 G = "aurelius_atlas_core.app_search_governance"
@@ -122,7 +123,7 @@ class Catalogue:
 
     def __init__(self, types: TypedefStore) -> None:
         self.client = FakeClient()
-        self.documents = ElasticsearchEntityDocuments(self.client)  # type: ignore[arg-type]
+        self.documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", self.client))
         self.store = EntityStore(types.registry, self.documents)
         self.indexer = AppSearchIndexer(self.documents, types.registry)
         self.governance = GovernanceIndexer(self.documents, types.registry, batch_size=2)

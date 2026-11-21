@@ -7,7 +7,7 @@ through the engine's argument.
 """
 
 import asyncio
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
@@ -17,6 +17,7 @@ from aurelius_atlas_core.view_search import ViewSearchEngine
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from elasticsearch import AsyncElasticsearch
 from test__app_search_quality import m4i_types
 from test__view_search import hold
 
@@ -43,7 +44,7 @@ def embedded(entity: Any, vector: list[float]) -> Any:  # noqa: ANN401 - a Store
 
 async def opened(m4i: TypeRegistry, *entities: Any) -> ViewSearchEngine:  # noqa: ANN401 - StoredEntity
     """The door over a fake store holding ``entities``, each already embedded."""
-    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
     await documents.prepare()
     await documents.write([(entity, None) for entity in entities])
     return ViewSearchEngine(documents, m4i)

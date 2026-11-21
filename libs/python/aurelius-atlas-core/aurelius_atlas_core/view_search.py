@@ -34,7 +34,7 @@ from aurelius_atlas_core.app_search_engine import (
     plain,
     query_body,
 )
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import SearchDocuments
 from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH
 from aurelius_atlas_core.search_aggregator import ASSET_ENTITY_TYPE, OWNER_ATTRIBUTE
 from aurelius_atlas_core.search_fields import KEYWORD, field_name, kind_of
@@ -339,7 +339,7 @@ def _refuse(messages: list[str]) -> NoReturn:
 class ViewSearchEngine:
     """The search door over ``documents``' entity index, typed by ``registry`` (AVR-08, DD-584)."""
 
-    def __init__(self, documents: ElasticsearchEntityDocuments, registry: TypeRegistry) -> None:
+    def __init__(self, documents: SearchDocuments, registry: TypeRegistry) -> None:
         """The door reading ``documents`` and naming attributes and fields through ``registry``."""
         self._documents = documents
         self._registry = registry

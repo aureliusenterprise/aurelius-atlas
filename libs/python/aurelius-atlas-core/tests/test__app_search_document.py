@@ -2,6 +2,8 @@
 the listings (LAS-01 to LAS-03, ASD-01 to ASD-04, ASU-01 to ASU-04), without a catalogue.
 """  # noqa: D205 - one sentence
 
+from typing import cast
+
 import pytest
 from aurelius_atlas_core.app_search_document import (
     DERIVATION_VERSION,
@@ -24,6 +26,7 @@ from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_model.instance import EntityStatus, RelationshipStatus
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from elasticsearch import AsyncElasticsearch
 
 A = "aurelius_atlas_core.app_search_document"
 D = "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments"
@@ -235,7 +238,7 @@ def test__names_are_keywords_with_text_and_guids_and_types_keywords() -> None:
 async def test__the_elasticsearch_documents_map_list_and_mark_documents() -> None:
     """On the fake client: the mapping, the listing's query, and the write's check of the hash."""
     client = FakeClient()
-    documents = ElasticsearchEntityDocuments(client)  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client))
     await documents.prepare()
     old = entity("o", **{"m4i_data_entity.name": "O"})
     await documents.write(
@@ -268,7 +271,7 @@ async def test__the_elasticsearch_documents_map_list_and_mark_documents() -> Non
 async def test__the_elasticsearch_documents_list_the_naming_entities_and_the_unseen_relationships() -> None:
     """On the fake client: a term on any GUID field names the entity; deleted or restored since seen is unseen."""
     client = FakeClient()
-    documents = ElasticsearchEntityDocuments(client)  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", client))
     await documents.prepare()
     await documents.write(
         [
