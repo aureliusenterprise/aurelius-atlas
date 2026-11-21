@@ -20,11 +20,6 @@
     "aliases": []
   },
   {
-    "version": "fix-webapp-token-operator-role",
-    "title": "fix-webapp-token-operator-role",
-    "aliases": []
-  },
-  {
     "version": "fix-webapp-session-expiry",
     "title": "fix-webapp-session-expiry",
     "aliases": []
