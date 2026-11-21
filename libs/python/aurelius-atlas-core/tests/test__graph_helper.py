@@ -13,6 +13,7 @@ from aurelius_atlas_core.graph_helper import (
     edge_for_label,
     edges_for_label,
     other_end,
+    parent_end,
     referenced_end,
     relationship_type_name,
 )
@@ -103,6 +104,23 @@ def test__an_attribute_of_several_relationship_types_takes_that_of_an_incoming_r
     assert relationship_type_name("d", [], database, "kept") == "r_keeper"
     assert relationship_type_name("n", [], node, "keeper") == "r_keeper"
     assert relationship_type_name("n", [], node, "nothing") is None
+
+
+@pytest.mark.covers(f"{H}.parent_end", rules=["RUL-03"])
+def test__the_parent_end_names_the_edges_label_and_direction() -> None:
+    """One owner for both write paths: the attribute's edge label and direction, or none (RUL-03)."""
+    node = REGISTRY.entity_type("r_node")
+    database = REGISTRY.entity_type("s_database")
+    assert node is not None
+    assert database is not None
+    members = node.relationship_attribute("members")
+    kept = database.relationship_attribute("kept")
+    assert members is not None
+    assert kept is not None
+
+    assert parent_end(members) == (members.relationship_edge_label, EdgeDirection.OUT)
+    assert parent_end(kept) == (kept.relationship_edge_label, EdgeDirection.IN)  # the end the database sits on
+    assert parent_end(None) is None
 
 
 @pytest.mark.covers(f"{H}.referenced_end", f"{H}.other_end", rules=["REL-15", "REL-17"])
