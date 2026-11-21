@@ -498,6 +498,38 @@ async def test__a_failing_later_step_leaves_the_request_start_in_place(typed: ht
     assert len((await typed.get(f"{ENTITY}/{node}/audit")).json()) == audits
 
 
+@pytest.mark.covers("aurelius_atlas_core.view_mutation.RewindStore.flush", rules=["WRS-08"])
+async def test__a_rolled_back_save_wakes_no_store_listener(typed: httpx.AsyncClient, app: FastAPI) -> None:
+    """A save the door rolls back wakes no worker hooked to the real store (WRS-08, DD-777).
+
+    The door writes its attributes, labels and tags before the section step fails, so the App Search and task
+    workers would each hear a write that did not happen. The rewind holds the wake back and drops it, and a
+    later save that lands wakes them after all.
+    """
+    node = await create(typed, "r_node", qualifiedName="node@quiet", name="Keep")
+    before = await view_of(typed, node)
+    heard: list[str] = []
+    app.state.entity_store.write_listeners.append(lambda: heard.append("write"))
+
+    gone = str(uuid.uuid4())
+    refused = await save(
+        typed,
+        {
+            "guid": node,
+            "typeName": "r_node",
+            "updateTime": before["updateTime"],
+            "attributes": {"qualifiedName": "node@quiet", "name": "Renamed"},
+            "sections": [{"attribute": "keeper", "entities": [gone]}],
+        },
+    )
+    assert refused.status_code == 400
+    assert heard == []  # nothing reached the workers of a write that rolled back
+
+    landed = await save(typed, dict(before, attributes={**before["attributes"], "name": "Kept"}))
+    assert landed.status_code == 200
+    assert heard == ["write"]  # a save that lands wakes the worker once (ASU-08)
+
+
 @pytest.mark.covers(D, rules=["AVW-09"])
 async def test__an_unknown_section_attribute_is_refused(typed: httpx.AsyncClient) -> None:
     """A sections entry the type has no attribute for is refused naming it (AVW-09)."""
