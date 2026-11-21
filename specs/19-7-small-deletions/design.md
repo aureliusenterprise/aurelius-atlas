@@ -15,17 +15,14 @@ is never edited except its status line, and a changed decision is a new entry th
 
 **Decision.** A retry helper in core runs a callable until it succeeds or the caller's stop condition fires.
 The
-six loops in `classification_tasks`, `entity_business_metadata`, `entity_classifications`, `entity_labels`,
-and the
-two in `entity_writer` call it instead of writing the loop each.
+seven loops in `classification_tasks`, `entity_business_metadata`, `entity_classifications`, `entity_labels`,
+`relationship_store`, and the two in `entity_writer` call it instead of writing the loop each.
 
-**Reason.** The six loops share a body: run, catch the version conflict, rerun, and on the last attempt raise
-the
-mapped error. They differ only in which error each maps to and how many attempts it allows. Copying the shape
-six
-times means a fix to the retry (for example a backoff, or a fix to the last-attempt error) is six edits, and
-the
-audit found two copies already differ on the error path.
+**Reason.** The seven loops share a body: run, catch the version conflict, rerun, and on the last attempt
+raise the mapped error. They differ only in which error each maps to and how many attempts it allows. Copying
+the shape seven times means a fix to the retry (for example a backoff, or a fix to the last-attempt error) is
+seven edits, and the audit found two copies already differ on the error path. The spec first counted six; the
+count is seven because `relationship_store` writes the same loop, and the acceptance grep names its shape.
 
 **Alternatives.**
 
@@ -43,9 +40,8 @@ audit found two copies already differ on the error path.
 as
 arguments. It does not hard-code one attempt count or one error.
 
-**Reason.** The five `ATTEMPTS = 2` loops and `model_loader`'s `RACE_ATTEMPTS = 10` are different races with
-different budgets, and each caller maps a persistent conflict to a different `AtlasError`. Forcing one count
-would
+**Reason.** The six `ATTEMPTS = 2` loops and `model_loader`'s `RACE_ATTEMPTS = 10` are different races with
+different budgets, and each caller maps a persistent conflict to a different error. Forcing one count would
 change a retry budget, which is a behaviour change this increment promises not to make (PAR-03). Passing the
 mapping keeps each caller's answer identical.
 
@@ -54,27 +50,31 @@ mapping keeps each caller's answer identical.
 - **One shared attempt count for all callers.** Smaller helper, and it changes how many times a conflict is
   retried, which is observable and out of scope.
 
-### DD-811. The governance fields group into one nested record
+### DD-811. The governance fields stay where they are
 
 - **Status:** Proposed
 - **Increment:** 19.7
 - **Date:** 2026-11-21
 - **Relates to:** PAR-03.
 
-**Decision.** The flat `governed`, `governed_by`, and `governed_source` fields on `StoredEntity` group into
-one
-nested record, the way `app_search` (a `StoredAppSearch`) and `quality_result` (a `StoredQualityResult`)
-already
-are. The stored values do not change.
+**Decision.** This increment does not group `governed`, `governed_by`, and `governed_source` into one nested
+record on `StoredEntity`. It keeps them as they are: `governed` flat on the entity, and `governed_by` and
+`governed_source` inside the entity's `app_search` document.
 
-**Reason.** `StoredEntity` carries a wide flat set, and a reader of a governance question must scan the whole
-record to gather the three governance fields, while the App Search and quality questions already have their
-own
-nested blocks. Grouping the three gives the governance reader a narrow type without changing what is stored or
-sent, because the record serialises to the same shape. This is the small half of the plan's finding 18: the
-narrowing the wide record needs, limited to the block that already has a pattern to follow.
+**Reason.** The plan assumed all three sit flat on `StoredEntity`, beside two nested records. They do not.
+Only `governed` is flat. `governed_by` and `governed_source` are already nested, inside `StoredAppSearch`
+(DD-535), and the indexer and the governance round read them there. The flat one cannot join them without
+moving its stored value. `governed` is the search field read from the top of the document
+(`EngineField(path="governed")` in `view_search.py`), so nesting it changes the Elasticsearch path that every
+governed filter reads. A document written before the change would then no longer match one written after it.
+Moving a stored value is what PAR-03 forbids, and the parity scenarios and the frozen 14.6 corpus are the
+rule that proves it. The two fields already in a nested record give the governance reader the narrow type the
+plan wanted, and the flat one is a single boolean the record answers directly.
 
 **Alternatives.**
 
-- **Rewrite `StoredEntity` into nested blocks for everything.** Larger, touches storage and every reader, and
-  the audit's finding is the duplication of a shape, not a request to rebuild the record.
+- **Group the three under one nested record anyway.** Smaller to read, but it moves `governed` off the
+  top-level path the search engine names. That changes both the stored document and how an old document
+  reads. It is a migration, not a deletion, and this increment is neither.
+- **Rewrite `StoredEntity` into nested blocks for everything.** Larger still, touches storage and every
+  reader, and the audit's finding was a duplicated shape, not a request to rebuild the record.
