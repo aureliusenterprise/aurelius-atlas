@@ -116,6 +116,29 @@ type Candidates = Callable[[], Awaitable[list[VersionedEntity]]]
 """Reads the entities a delete names, again for each attempt."""
 
 
+@dataclass
+class WriteTransaction:
+    """The state one write attempt carries between its steps (WRS-05, WRS-06, DD-776, DD-779).
+
+    ``importing`` and ``hold`` are the attempt's options, fixed when it is built; ``record``, ``deletions`` and
+    ``guids`` are what a step writes and a later step reads. ``EntityWriter`` builds one at the top of each attempt
+    and passes it to every step, so a retry starts clean: no write's state survives on the writer into the next
+    attempt. The order-sensitive reads (``deletions``, ``guids``) are set by ``_create_or_update`` and read only
+    after the run has returned, so the sequence rides the object's lifetime rather than a mutable writer field.
+    """
+
+    importing: bool = False
+    """True for ``createOrUpdateForImport`` alone (IMP-01); it changes discovery, mapping and the change check."""
+    hold: TaskHold | None = None
+    """The import's task hold, or None (IMT-01); the deferral records propagation tasks with it."""
+    record: RequestRecord = field(default_factory=RequestRecord)
+    """What the write changed, told to the notifier once it is written (DD-084)."""
+    deletions: list[str] = field(default_factory=list)
+    """The GUIDs an import gives ``DELETED`` that are ``ACTIVE``; deleted after the entities land (IMP-04)."""
+    guids: dict[str, str] = field(default_factory=dict)
+    """The GUID each request GUID became, for an import's classification replace (IMP-06)."""
+
+
 class EntityWriter:
     """Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04).
 
@@ -142,11 +165,9 @@ class EntityWriter:
         self._tasks = tasks
         self._notifier = notifier
         self._unsafe_reparent = unsafe_reparent
-        self._record = RequestRecord()
-        self._importing = False
         self._hold: TaskHold | None = None
-        self._import_deletions: list[str] = []
-        self._import_guids: dict[str, str] = {}
+        """The import's hold, set by ``hold_tasks`` around a whole import (IMT-01); each write builds it into its
+        ``WriteTransaction``. Not the state of one write: it spans many writes, so it stays on the writer."""
 
     async def delete_by_id(self, guid: str, delete_type: DeleteType = DeleteType.DEFAULT) -> EntityMutationResponse:
         """``deleteById``: the entity with ``guid`` and what it owns; an unknown GUID deletes nothing (EDL-03).
@@ -156,7 +177,7 @@ class EntityWriter:
         """
         if not guid:
             raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
-        return await self._delete(lambda: self._deletable([guid]), delete_type)
+        return await self._delete(lambda: self._deletable([guid]), WriteTransaction(hold=self._hold), delete_type)
 
     async def delete_by_ids(
         self, guids: Sequence[str], delete_type: DeleteType = DeleteType.DEFAULT
@@ -168,7 +189,7 @@ class EntityWriter:
         """
         if not guids:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUIDS)
-        return await self._delete(lambda: self._deletable(guids), delete_type)
+        return await self._delete(lambda: self._deletable(guids), WriteTransaction(hold=self._hold), delete_type)
 
     async def delete_by_unique_attributes(
         self, entity_type: EntityType, values: Mapping[str, Any], delete_type: DeleteType = DeleteType.DEFAULT
@@ -194,7 +215,7 @@ class EntityWriter:
             )
             return [found]
 
-        return await self._delete(holder, delete_type)
+        return await self._delete(holder, WriteTransaction(hold=self._hold), delete_type)
 
     async def purge_by_ids(self, guids: Sequence[str]) -> EntityMutationResponse:
         """``purgeByIds``: remove the ``DELETED`` entities with these GUIDs and what they own (EDL-02 to EDL-08).
@@ -208,7 +229,7 @@ class EntityWriter:
         async def deleted() -> list[VersionedEntity]:
             return [found for found in await self._stored(guids) if found.entity.state is EntityStatus.DELETED]
 
-        return await self._delete(deleted, DeleteType.HARD, purge=True)
+        return await self._delete(deleted, WriteTransaction(hold=self._hold), DeleteType.HARD, purge=True)
 
     async def _deletable(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """The stored entities of the GUIDs, each needing ``ENTITY_DELETE`` (AUZ-07)."""
@@ -222,7 +243,7 @@ class EntityWriter:
         return [found[guid] for guid in dict.fromkeys(guids) if guid in found]
 
     async def _delete(
-        self, candidates: Candidates, delete_type: DeleteType, *, purge: bool = False
+        self, candidates: Candidates, txn: WriteTransaction, delete_type: DeleteType, *, purge: bool = False
     ) -> EntityMutationResponse:
         """``deleteVertices`` and ``purgeVertices``, run again once after a lost race (EDL-08, EDL-09)."""
         hard = (self._delete_type if delete_type is DeleteType.DEFAULT else delete_type) is DeleteType.HARD
@@ -231,7 +252,7 @@ class EntityWriter:
                 self._store, now=self._store.now(), user=self._user, purge=purge, deferral=self._deferral()
             )
             try:
-                return await self._mutated(await self._deleted(handler, await candidates(), purge=purge))
+                return await self._mutated(await self._deleted(handler, txn, await candidates(), purge=purge), txn)
             except EntityVersionConflictError as conflict:
                 if attempt == ATTEMPTS:
                     raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
@@ -239,28 +260,33 @@ class EntityWriter:
                 raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
         raise AssertionError  # pragma: no cover - the loop returns or raises
 
-    def _record_labels(self, created: StoredEntity) -> None:
+    def _record_labels(self, txn: WriteTransaction, created: StoredEntity) -> None:
         """``setLabels`` of a created entity: its labels told as added once it is written (LBL-05)."""
         if created.labels:
-            self._record.added_labels.append((created.guid, list(created.labels)))
+            txn.record.added_labels.append((created.guid, list(created.labels)))
 
     def _business_attributes(
-        self, mapper: EntityMapper, created: StoredEntity, entity: AtlasEntity, entity_type: EntityType
+        self,
+        txn: WriteTransaction,
+        mapper: EntityMapper,
+        created: StoredEntity,
+        entity: AtlasEntity,
+        entity_type: EntityType,
     ) -> StoredEntity:
         """``addOrUpdateBusinessAttributes`` of a created entity: those set told once it is written (BMD-02, BMD-06)."""
         stored, updated = add_or_update_business_attributes(mapper, created, entity_type, entity.business_attributes)
         if updated:
-            self._record.business_attributes[created.guid] = updated
+            txn.record.business_attributes[created.guid] = updated
         return stored
 
-    async def _mutated(self, response: EntityMutationResponse) -> EntityMutationResponse:
+    async def _mutated(self, response: EntityMutationResponse, txn: WriteTransaction) -> EntityMutationResponse:
         """``onEntitiesMutated``: the response pruned, as Atlas answers it, and told to the notifier (AUD-02).
 
         The labels created entities were given come first, then each one's classifications and business attributes,
         the propagations after (LBL-05, CAU-02, BMD-06, CAU-05).
         """
         prune_response(response)
-        record, self._record = self._record, RequestRecord()
+        record, txn.record = txn.record, RequestRecord()
         notifier = self._notifier
         if notifier is not None:
             for guid, labels in record.added_labels:
@@ -272,7 +298,7 @@ class EntityWriter:
                 await self._notify_business_attributes(notifier, business, before=guids[0])
                 await notifier.on_classifications_added(guids, [instance], user=self._user)
             await self._notify_business_attributes(notifier, business, before=None)
-            await notifier.on_entities_mutated(response, user=self._user, importing=self._importing)
+            await notifier.on_entities_mutated(response, user=self._user, importing=txn.importing)
             gone = [
                 str(header.guid)
                 for operation in (EntityOperation.DELETE, EntityOperation.PURGE)
@@ -291,11 +317,11 @@ class EntityWriter:
             await notifier.on_business_attributes_updated(guid, pending.pop(guid), user=self._user)
 
     async def _deleted(
-        self, handler: DeleteHandler, candidates: list[VersionedEntity], *, purge: bool
+        self, handler: DeleteHandler, txn: WriteTransaction, candidates: list[VersionedEntity], *, purge: bool
     ) -> EntityMutationResponse:
         deletion = await handler.delete_entities(candidates)
-        self._record = RequestRecord()
-        self._record.merge(deletion.added, deletion.removed)
+        txn.record = RequestRecord()
+        txn.record.merge(deletion.added, deletion.removed)
         retriever = EntityRetriever(self._store)
         headers = [await retriever.header(guid, classifications=purge) for guid in deletion.deleted]
         if deletion.changes or deletion.relationship_changes or deletion.classification_changes:
@@ -313,7 +339,8 @@ class EntityWriter:
         self, entities: AtlasEntityWithExtInfo | AtlasEntitiesWithExtInfo | None
     ) -> EntityMutationResponse:
         """``createOrUpdate``: create the request's entities or update those already stored (EWR-02 to EWR-13)."""
-        return await self._run(_stream(entities), partial=False)
+        response, _ = await self._run(_stream(entities), partial=False)
+        return response
 
     async def create_or_update_for_import(self, found: AtlasEntityWithExtInfo) -> EntityMutationResponse:
         """``createOrUpdateForImport``: one exported entity with what it owns, written as an import (IMP-01 to IMP-08).
@@ -324,28 +351,26 @@ class EntityWriter:
         Raises:
             AtlasError: as ``create_or_update``.
         """
-        self._importing = True
-        try:
-            response = await self._run(_stream(found), partial=False)
-            await self._replace_classifications(found, response)
-            deleted = self._import_deletions
-            if deleted:
-                removed = await self._delete(lambda: self._stored(deleted), DeleteType.DEFAULT)  # unchecked (IMP-07)
-                for header in removed.get_entities_by_operation(EntityOperation.DELETE) or []:
-                    response.add_entity(EntityOperation.DELETE, header)
-            return response
-        finally:
-            self._importing = False
+        response, txn = await self._run(_stream(found), partial=False, importing=True)
+        await self._replace_classifications(found, response, txn)
+        deleted = txn.deletions
+        if deleted:
+            removed = await self._delete(lambda: self._stored(deleted), txn, DeleteType.DEFAULT)  # unchecked (IMP-07)
+            for header in removed.get_entities_by_operation(EntityOperation.DELETE) or []:
+                response.add_entity(EntityOperation.DELETE, header)
+        return response
 
-    async def _replace_classifications(self, found: AtlasEntityWithExtInfo, response: EntityMutationResponse) -> None:
+    async def _replace_classifications(
+        self, found: AtlasEntityWithExtInfo, response: EntityMutationResponse, txn: WriteTransaction
+    ) -> None:
         """``deleteClassifications`` then ``addClassifications`` of each entity an import updated (IMP-06, DD-305)."""
         updated = {str(header.guid) for header in response.get_entities_by_operation(EntityOperation.UPDATE) or []}
         entities = [found.entity, *(found.referred_entities or {}).values()]
         classifications = EntityClassifications(
-            self._store, user=self._user, tasks=self._tasks, notifier=self._notifier, hold=self._hold
+            self._store, user=self._user, tasks=self._tasks, notifier=self._notifier, hold=txn.hold
         )
         for entity in entities:
-            guid = None if entity is None else self._import_guids.get(str(entity.guid), str(entity.guid))
+            guid = None if entity is None else txn.guids.get(str(entity.guid), str(entity.guid))
             if entity is None or guid not in updated:
                 continue
             for name in list(dict.fromkeys(await self._own_classifications(guid))):
@@ -383,7 +408,8 @@ class EntityWriter:
             )
         entity_info.entity.guid = found.entity.guid
         self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity ByUniqueAttributes")
-        return await self._run(_stream(entity_info), partial=True)
+        response, _ = await self._run(_stream(entity_info), partial=True)
+        return response
 
     async def update_attribute_by_guid(self, guid: str, name: str | None, value: object) -> EntityMutationResponse:
         """``updateEntityAttributeByGuid``: set one primitive or reference attribute of an entity (EWR-15).
@@ -416,10 +442,17 @@ class EntityWriter:
                     AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, name, attribute.attribute_type.type_name
                 )
         entity = AtlasEntity(guid=guid, type_name=type_name, attributes={str(name): value})
-        return await self._run(EntityStream([entity], AtlasEntityExtInfo()), partial=True)
+        response, _ = await self._run(EntityStream([entity], AtlasEntityExtInfo()), partial=True)
+        return response
 
-    async def _run(self, stream: EntityStream, *, partial: bool) -> EntityMutationResponse:
+    async def _run(
+        self, stream: EntityStream, *, partial: bool, importing: bool = False
+    ) -> tuple[EntityMutationResponse, WriteTransaction]:
         """Run the request, once more when its write loses a race (EWR-16, DD-052).
+
+        Answers the response and the ``WriteTransaction`` the attempt ended on: the import path reads the
+        deletions and the GUID assignments the attempt recorded (IMP-04, IMP-06). Each attempt builds its own
+        transaction, so a retry never reads what the lost attempt left behind (WRS-05, WRS-06).
 
         Raises:
             AtlasError: ``INTERNAL_ERROR`` for a second lost race, a unique value held by another entity, or a
@@ -427,7 +460,8 @@ class EntityWriter:
         """
         for attempt in range(1, ATTEMPTS + 1):
             try:
-                return await self._mutated(await self._create_or_update(_copy(stream), partial=partial))
+                response, txn = await self._create_or_update(_copy(stream), partial=partial, importing=importing)
+                return await self._mutated(response, txn), txn
             except EntityVersionConflictError as conflict:
                 if attempt == ATTEMPTS:
                     raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
@@ -435,19 +469,21 @@ class EntityWriter:
                 raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
         raise AssertionError  # pragma: no cover - the loop returns or raises
 
-    async def _create_or_update(self, stream: EntityStream, *, partial: bool) -> EntityMutationResponse:
-        self._record = RequestRecord()
-        discovery = EntityDiscovery(self._store, stream, importing=self._importing)
+    async def _create_or_update(
+        self, stream: EntityStream, *, partial: bool, importing: bool
+    ) -> tuple[EntityMutationResponse, WriteTransaction]:
+        txn = WriteTransaction(importing=importing, hold=self._hold)
+        discovery = EntityDiscovery(self._store, stream, importing=importing)
         context = await discovery.discover()
-        mutation = await self._prepare(discovery, context, partial=partial)
-        self._import_deletions = mutation.to_delete
-        self._import_guids = {str(key): str(guid) for key, guid in mutation.guids.items()}
-        skipped = await self._unchanged(mutation)
-        self._verify_changes(mutation, skipped)
+        mutation = await self._prepare(discovery, context, txn, partial=partial)
+        txn.deletions = mutation.to_delete
+        txn.guids = {str(key): str(guid) for key, guid in mutation.guids.items()}
+        skipped = await self._unchanged(mutation, txn)
+        self._verify_changes(mutation, skipped, txn)
         now = self._store.now()
         mapper = EntityMapper(
             self._store.registry,
-            resolve=lambda value: self._resolve(context, mutation, value),
+            resolve=lambda value: self._resolve(context, mutation, txn, value),
             guid_assignments=mutation.guid_assignments,
             now=now,
             user=self._user,
@@ -457,7 +493,7 @@ class EntityWriter:
         )
         relationships = RelationshipMapper(
             self._store,
-            resolve=lambda value: self._resolve(context, mutation, value),
+            resolve=lambda value: self._resolve(context, mutation, txn, value),
             known=context.stored,
             created={
                 str(entity.guid): StoredEntity(
@@ -472,14 +508,14 @@ class EntityWriter:
             hard=self._delete_type is DeleteType.HARD,
             touched=mapper.touched,
             dropped=mapper.dropped,
-            importing=self._importing,
+            importing=txn.importing,
             unsafe_reparent=self._unsafe_reparent,
         )
         written: dict[str, StoredEntity] = {}
         classified: list[ClassificationChange] = []
         for entity, entity_type in mutation.created:
             await relationships.map(entity, entity_type, str(entity.guid), EntityOperation.CREATE)
-            written[str(entity.guid)], added = self._created(mapper, entity, entity_type)
+            written[str(entity.guid)], added = self._created(txn, mapper, entity, entity_type)
             classified += [ClassificationChange(instance) for instance in added]
         operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
         for entity, entity_type, stored in mutation.updated:
@@ -488,7 +524,9 @@ class EntityWriter:
                 new = mapper.update(entity, entity_type, stored.entity, partial=partial)
                 if not partial and stored.entity.is_incomplete:
                     new = new.model_copy(update={"is_incomplete": False})
-                written[str(entity.guid)] = self._imported_update(mapper, new, entity, entity_type, stored.entity)
+                written[str(entity.guid)] = self._imported_update(
+                    txn, mapper, new=new, entity=entity, entity_type=entity_type, stored=stored.entity
+                )
         reported = await self._touch(mapper, context, written, skipped)
         for guid, listed in relationships.listings().items():
             current = written[guid] if guid in written else context.stored[guid].entity
@@ -500,24 +538,20 @@ class EntityWriter:
         for guid, new in written.items():
             stored = context.stored.get(guid)
             changes[guid] = EntityChange(new, None if stored is None else stored.version)
-        tasks = await self._propagate(relationships, changes, classified)
+        tasks = await self._propagate(txn, relationships, changes, classified)
         relationship_changes = {change.relationship.guid: change for change in relationships.relationship_changes()}
         relationship_changes.update(await self._reactivated_relationships(mutation, relationship_changes))
-        deleted = await self._drop_owned(
-            mapper.dropped,
-            relationships,
-            changes,
-            relationship_changes,
-            now,
-        )
+        deleted = await self._drop_owned(txn, mapper.dropped, relationships, changes, relationship_changes, now=now)
         classified += deleted.classification_changes
         tasks += deleted.task_changes
         if changes or relationship_changes or classified:
             await self._store.write(list(changes.values()), list(relationship_changes.values()), classified, tasks)
-        return await self._response(mutation, skipped, reported + deleted.updated, partial=partial, deleted=deleted)
+        response = await self._response(mutation, skipped, reported + deleted.updated, partial=partial, deleted=deleted)
+        return response, txn
 
     async def _propagate(
         self,
+        txn: WriteTransaction,
         relationships: RelationshipMapper,
         changes: dict[str, EntityChange],
         classified: list[ClassificationChange],
@@ -543,10 +577,10 @@ class EntityWriter:
         for instance in instances.values():
             if instance.entity_guid:
                 reached = await propagation.propagate(instance, instance.entity_guid) if instance.propagate else []
-                self._record.added_classifications.append(([instance.entity_guid, *reached], instance))
+                txn.record.added_classifications.append(([instance.entity_guid, *reached], instance))
         for change in propagation.entity_changes(changes):
             changes[change.entity.guid] = change
-        self._record.merge(propagation.added, propagation.removed)
+        txn.record.merge(propagation.added, propagation.removed)
         return [TaskChange(task) for task in propagation.tasks()]
 
     @property
@@ -575,12 +609,14 @@ class EntityWriter:
                 raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.type_name)
         return EntityClassifications(self._store, user=self._user).attached(entity, classifications)
 
-    async def _drop_owned(
+    async def _drop_owned(  # noqa: PLR0913 - the request's write set, each part needed to delete what it dropped
         self,
+        txn: WriteTransaction,
         dropped: list[str],
         relationships: RelationshipMapper,
         changes: dict[str, EntityChange],
         relationship_changes: dict[str, RelationshipChange],
+        *,
         now: int,
     ) -> _Dropped:
         """``deleteEdgeReference``'s ``deleteTypeVertex``: delete the owned entities the request dropped (OWN-02).
@@ -606,7 +642,7 @@ class EntityWriter:
         )
         found = await view.get_many(dropped)
         deletion = await handler.delete_entities([found[guid] for guid in dropped if guid in found])
-        self._record.merge(deletion.added, deletion.removed)
+        txn.record.merge(deletion.added, deletion.removed)
         retriever = EntityRetriever(self._store)
         headers = [await retriever.header(guid, classifications=False) for guid in deletion.deleted]
         for change in deletion.changes:
@@ -626,7 +662,9 @@ class EntityWriter:
             deletion.task_changes,
         )
 
-    async def _prepare(self, discovery: EntityDiscovery, context: DiscoveryContext, *, partial: bool) -> _Mutation:
+    async def _prepare(
+        self, discovery: EntityDiscovery, context: DiscoveryContext, txn: WriteTransaction, *, partial: bool
+    ) -> _Mutation:
         """``preCreateOrUpdate``: each request entity among the references, to update or to create (EWR-06)."""
         mutation = _Mutation()
         for request_guid in context.referenced_guids:
@@ -638,36 +676,36 @@ class EntityWriter:
             found = self._resolved_entity(context, entity, entity_type)
             if found is not None:
                 stored = context.stored[found]
-                if self._importing and stored.entity.is_incomplete and entity.is_incomplete:
+                if txn.importing and stored.entity.is_incomplete and entity.is_incomplete:
                     continue  # an import leaves a shell entity it gives as a shell (IMP-04)
                 discovery.validate_and_normalize(entity, for_update=partial)
                 await discovery.validate_parent_groups(entity, entity_type, stored)
                 entity.guid = found
-                await self._refuse_held(discovery, entity, entity_type, found)
+                await self._refuse_held(discovery, entity, entity_type, found, txn)
                 if partial and stored.entity.is_incomplete:
                     continue  # Atlas leaves an incomplete entity out of a partial update
                 if stored.entity.is_incomplete:
                     entity.is_incomplete = False
                 mutation.add_updated(request_guid, entity, entity_type, stored)
-                if self._importing:
+                if txn.importing:
                     _import_status(mutation, entity, stored.entity)
             else:
                 discovery.validate_and_normalize(entity, for_update=False)
                 await discovery.validate_parent_groups(entity, entity_type, None)
-                kept = self._importing and entity.guid is not None and is_assigned_guid(entity.guid)
+                kept = txn.importing and entity.guid is not None and is_assigned_guid(entity.guid)
                 guid = as_assigned_guid(str(entity.guid)) if kept else self._store.new_guid()
                 context.resolved_guids[request_guid] = guid
                 context.add_resolved_by_unique(_object_id(entity, entity_type), guid)
                 entity.guid = guid
-                await self._refuse_held(discovery, entity, entity_type, guid)
+                await self._refuse_held(discovery, entity, entity_type, guid, txn)
                 mutation.add_created(request_guid, entity, entity_type)
         return mutation
 
     async def _refuse_held(
-        self, discovery: EntityDiscovery, entity: AtlasEntity, entity_type: EntityType, guid: str
+        self, discovery: EntityDiscovery, entity: AtlasEntity, entity_type: EntityType, guid: str, txn: WriteTransaction
     ) -> None:
         """The parent-safe check (RPS-01): an import is exempt, and so is a request that opted in (RPS-08, RPS-04)."""
-        if self._importing or self._unsafe_reparent:
+        if txn.importing or self._unsafe_reparent:
             return
         await discovery.validate_parent_safe(entity, entity_type, guid)
 
@@ -687,23 +725,25 @@ class EntityWriter:
         return None
 
     def _created(
-        self, mapper: EntityMapper, entity: AtlasEntity, entity_type: EntityType
+        self, txn: WriteTransaction, mapper: EntityMapper, entity: AtlasEntity, entity_type: EntityType
     ) -> tuple[StoredEntity, list[StoredClassification]]:
         """``createVertex`` and ``mapAttributesAndClassifications`` of a created entity: its attributes, labels,
         classifications and business attributes; an import's with its system attributes (EWR-09, IMP-02).
         """  # noqa: D205 - one sentence
         created = mapper.create(entity, entity_type, str(entity.guid))
-        self._record_labels(created)
+        self._record_labels(txn, created)
         added: list[StoredClassification] = []
         if entity.classifications:
-            given = [_imported_classification(c) for c in entity.classifications] if self._importing else None
+            given = [_imported_classification(c) for c in entity.classifications] if txn.importing else None
             created, added = self._classified(created, given or entity.classifications)
-        created = self._business_attributes(mapper, created, entity, entity_type)
-        return (with_system_attributes(created, entity) if self._importing else created), added
+        created = self._business_attributes(txn, mapper, created, entity, entity_type)
+        return (with_system_attributes(created, entity) if txn.importing else created), added
 
-    def _imported_update(
+    def _imported_update(  # noqa: PLR0913 - the entity before and after an import's update, with its type
         self,
+        txn: WriteTransaction,
         mapper: EntityMapper,
+        *,
         new: StoredEntity,
         entity: AtlasEntity,
         entity_type: EntityType,
@@ -713,16 +753,16 @@ class EntityWriter:
 
         The labels it changes are told, as ``updateSystemAttributes`` sets them.
         """
-        if not self._importing:
+        if not txn.importing:
             return new
         new, updated = set_business_attributes(mapper, new, entity_type, entity.business_attributes)
         if updated:
-            self._record.business_attributes[new.guid] = updated
+            txn.record.business_attributes[new.guid] = updated
         new = with_system_attributes(new, entity)
         added = [label for label in new.labels or [] if label not in (stored.labels or [])]
         removed = [label for label in stored.labels or [] if label not in (new.labels or [])]
         if added or removed:
-            self._record.updated_labels.append((new.guid, added, removed))
+            txn.record.updated_labels.append((new.guid, added, removed))
         return new
 
     async def _reactivated_relationships(
@@ -746,12 +786,12 @@ class EntityWriter:
                 found[guid] = RelationshipChange(active, relationship.version)
         return found
 
-    def _verify_changes(self, mutation: _Mutation, skipped: set[str]) -> None:
+    def _verify_changes(self, mutation: _Mutation, skipped: set[str], txn: WriteTransaction) -> None:
         """Each entity created needs ``ENTITY_CREATE``, then each changed one ``ENTITY_UPDATE``; an import's none.
 
         AUZ-07, IMP-07.
         """
-        if self._importing:
+        if txn.importing:
             return
         for entity, _ in mutation.created:
             self._authorizer.verify_access(AtlasPrivilege.ENTITY_CREATE, "create entity: type=", entity.type_name)
@@ -759,11 +799,9 @@ class EntityWriter:
             if entity.guid not in skipped:
                 self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity: type=", entity.type_name)
 
-    async def _unchanged(self, mutation: _Mutation) -> set[str]:
+    async def _unchanged(self, mutation: _Mutation, txn: WriteTransaction) -> set[str]:
         """The updated entities the comparator finds unchanged; they are neither written nor reported (EWR-08)."""
-        comparator = EntityComparator(
-            EntityRetriever(self._store), mutation.guid_assignments, importing=self._importing
-        )
+        comparator = EntityComparator(EntityRetriever(self._store), mutation.guid_assignments, importing=txn.importing)
         skipped: set[str] = set()
         for entity, entity_type, stored in mutation.updated:
             if entity.status is EntityStatus.DELETED:
@@ -772,7 +810,9 @@ class EntityWriter:
                 skipped.add(str(entity.guid))
         return skipped
 
-    def _resolve(self, context: DiscoveryContext, mutation: _Mutation, value: object) -> str | None:
+    def _resolve(
+        self, context: DiscoveryContext, mutation: _Mutation, txn: WriteTransaction, value: object
+    ) -> str | None:
         """``getInstanceType`` and ``mapObjectIdValue``: the GUID of the entity a reference names (EWR-11).
 
         None for one an import names that is not there (IMP-05).
@@ -793,11 +833,11 @@ class EntityWriter:
             created = next((e.type_name for e, _ in mutation.created if e.guid == found), None)
             type_name = known.entity.type_name if known is not None else created
         entity_type = None if type_name is None else self._store.registry.entity_type(type_name)
-        if entity_type is None and not self._importing:
+        if entity_type is None and not txn.importing:
             raise AtlasError(AtlasErrorCode.INVALID_OBJECT_ID, value)
         if found is None and entity_type is not None:
             found = context.resolved_object_id(object_id, list(entity_type.all_sub_types))
-        if found is None and not self._importing:
+        if found is None and not txn.importing:
             raise AtlasError(AtlasErrorCode.INVALID_OBJECT_ID, value)
         return found
 
