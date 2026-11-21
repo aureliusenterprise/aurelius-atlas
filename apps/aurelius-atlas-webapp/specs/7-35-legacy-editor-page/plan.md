@@ -9,21 +9,19 @@ reads the rules as its own service account (VEV-04, DD-499), whose token names n
 it (`AURELIUS-403-00-001 … acts in no tenant`); the service answers 502 and the editor swallows it (EDT-23). Point
 3 of the request cannot be seen until the service reads the caller's tenant's rules.
 
-Two ways, to decide before 12.7b's spec:
+Decided (2026-11-21): **read with the caller's token, cache per tenant.** The caller's token names their tenant;
+on a cache miss the service reads that tenant's rules with it and caches them per tenant. This supersedes DD-499
+for tenancy: DD-499 refused forwarding because a cache filled under one user's visibility leaked to another, and
+per tenant there is no leak, as every member of a tenant reads its rules (`atlas-read`). Without tenancy the
+service keeps its own identity. 12.7b's spec lives in `apps/aurelius-atlas-validate-entity/specs/`.
 
-- **Read with the caller's token, cache per tenant** (recommended): the caller's token names their tenant; on
-  a cache miss the service reads that tenant's rules with it, and caches them per tenant. DD-499 refused
-  forwarding because a cache filled under one user's visibility leaked to another; per tenant there is no
-  leak, as every member of a tenant reads its rules (`atlas-read`). - **The service account in every tenant**:
-  made a member of each tenant's organization, as trust does for the operators, and asking Keycloak for a
-  token per tenant. The account's reads stay its own, at the price of a realm membership per tenant and a
-  token per tenant.
+## 1. The page (EDP-01 to EDP-04, EDP-19 to EDP-23)
 
-## 1. The page (EDP-01 to EDP-04)
-
-The routes `search/create-entity` and `search/edit-entity/:guid` in the main outlet, the drawer's two editor
-routes removed, the pencil and create action re-pointed, the page title, Cancel and the return after Save and
-Delete. Unit tests for the routes and the return; the e2e moves from the drawer to the page.
+The route `search/editor` in the main outlet, creating or editing by its `guid` query parameter; the drawer's
+two editor routes removed, the pencil and create action re-pointed, the page title, Cancel and the return after
+Save and Delete. The Entity and History tabs, History read from the entity audit answer through the data-access
+client the library already has. Unit tests for the route, the return and the history; the e2e moves from the
+drawer to the page.
 
 ## 2. The form definitions (EDP-05, EDP-06, EDP-11 to EDP-13)
 

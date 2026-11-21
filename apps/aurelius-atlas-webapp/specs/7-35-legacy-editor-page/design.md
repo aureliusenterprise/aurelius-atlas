@@ -13,8 +13,9 @@ entry is never edited except its status line, and a changed decision is a new en
 - **Date:** 2026-11-21
 - **Supersedes:** 7.7a's drawer (EDT-01) and the editor's place in DD-166's drawer family
 
-**Decision.** Create and edit are pages in the main outlet, `search/create-entity` and
-`search/edit-entity/<guid>`, full content width, as the legacy's were.
+**Decision.** Create and edit are one page in the main outlet, `search/editor`, editing when its `guid` query
+parameter names an entity and creating when it names none; full content width, as the legacy's pages were. The
+legacy had two routes around the one editor; one page keeps one URL shape for both.
 
 **Reason.** The forms have up to nine fields, most of them pickers with a column of verdicts beside them. In a
 drawer they are squeezed into a third of the screen and the verdict column has no room; the user asked for the
@@ -23,6 +24,8 @@ legacy page back (2026-11-21), reversing the drawer chosen on 2026-11-03.
 **Alternatives.**
 
 - A wider drawer: still beside the page, still too narrow for two columns on a laptop.
+- The legacy's two routes, `create-entity` and `edit-entity`: two URLs for one component, by user direction
+  folded into one (2026-11-21).
 
 **Consequences.** The settings and alerts drawers stay drawers. The editor loses the drawer's "page stays
 behind" effect; Cancel returns to where the user came from.
