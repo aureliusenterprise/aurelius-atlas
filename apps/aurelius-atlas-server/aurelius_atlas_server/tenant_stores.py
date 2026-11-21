@@ -24,6 +24,7 @@ from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_audit_listener import BufferedTypeDefAuditListener
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
+from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import Request
@@ -244,13 +245,14 @@ def stores(request: Request) -> TenantStores:
     """The store set of the request's tenant: the default without one or for the operator organization (TSS-06).
 
     Raises:
-        LookupError: When the tenant has no store set open; 15.1 refuses a tenant that isn't provisioned, so this
-            is a server fault.
+        AtlasError: ``INTERNAL_ERROR`` when the tenant has no store set open; 15.1 refuses a tenant that isn't
+            provisioned, so this is a server fault, and it answers the Atlas error body like every other refusal
+            (SVC-01, DD-793).
     """
     tenant: str | None = getattr(request.state, "tenant", None)
     prefix = index_prefix(tenant, request.app.state.tenancy)
     opened: Mapping[str, TenantStores] = request.app.state.tenant_stores
     if prefix not in opened:
         msg = f"no store set is open for tenant {tenant}"
-        raise LookupError(msg)
+        raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, msg)
     return opened[prefix]

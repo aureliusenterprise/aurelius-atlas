@@ -12,6 +12,7 @@ import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.index_setup import INDEX_PREFIX
 from aurelius_atlas_server import ServerSettings, create_app
+from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_server.tenancy import Tenancy
 from aurelius_atlas_server.tenant_stores import index_prefix, store_aliases, stores
 from aurelius_atlas_server.tenants import TENANTS_INDEX
@@ -136,8 +137,32 @@ async def test__the_request_store_set_follows_its_tenant(served: tuple[FastAPI, 
     assert stores(request(None)) is stores(request("operators")) is opened[INDEX_PREFIX]
     assert stores(request("acme")) is opened[f"{INDEX_PREFIX}-tenant-acme"]
     assert stores(request("acme")).documents is not stores(request("globex")).documents
-    with pytest.raises(LookupError, match="no store set is open for tenant initech"):
+    with pytest.raises(AtlasError, match="no store set is open for tenant initech") as refused:
         stores(request("initech"))
+    assert refused.value.code is AtlasErrorCode.INTERNAL_ERROR
+
+
+@pytest.mark.covers(f"{S}.stores", rules=["SVC-01"])
+async def test__a_request_with_a_closed_store_set_answers_the_atlas_error_body(
+    served: tuple[FastAPI, httpx.AsyncClient], issuer: FakeIssuer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The Atlas error body with an ``errorCode``, not FastAPI's default 500 with no body (SVC-01, DD-793)."""
+    app, client = served
+    acme = f"{INDEX_PREFIX}-tenant-acme"
+
+    async def stay_open(_request: object, _tenancy: object) -> None:  # the request does not reopen acme
+        return None
+
+    # What retain does when it closes a tenant (WPT-02), without stopping its workers from this test's loop.
+    monkeypatch.setattr(
+        app.state, "tenant_stores", {prefix: s for prefix, s in app.state.tenant_stores.items() if prefix != acme}
+    )
+    monkeypatch.setattr("aurelius_atlas_server.authentication.open_request_stores", stay_open)
+    refused = await client.get(f"{TYPEDEF}/t_acme", headers=member(issuer, "acme"))
+    assert refused.status_code == 500
+    body = refused.json()
+    assert body["errorCode"] == "ATLAS-500-00-001"
+    assert body["errorMessage"] == "Internal server error no store set is open for tenant acme"
 
 
 @pytest.mark.covers("aurelius_atlas_server.app.create_app", rules=["TSS-07", "TSS-08"])
