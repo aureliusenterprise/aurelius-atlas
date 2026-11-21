@@ -81,10 +81,12 @@ def make_token(
     azp: str | None = AUDIENCE,
     issuer: str = BASE_URL,
     expires_in: int = 60,
+    **extra: Any,  # noqa: ANN401 - further claims, such as the organization (VET-01)
 ) -> str:
     """Mint an RS256 token as the fake issuer would, with the given claims."""
     now = int(time.time())
     claims: dict[str, Any] = {"iss": issuer, "iat": now, "exp": now + expires_in, "sub": "user-1", "nbf": now - 1}
+    claims.update(extra)
     if audience is not None:
         claims["aud"] = audience
     if azp is not None:

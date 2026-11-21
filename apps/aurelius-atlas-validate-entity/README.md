@@ -27,9 +27,11 @@ example-app layout (DD-209): the collaborators built by `providers/`, the endpoi
 | `POST /`        | Keycloak bearer | `200` the draft's verdicts and unread rules; `400` a draft it cannot read |
 | `GET /liveness` | –               | `204` while the app runs (the container healthcheck)                      |
 
-The rules read signs as the app's **own** service identity (VEV-04), never the caller's,
-and the catalogue leg travels one circuit breaker: an unreachable or refusing catalogue —
-or a cluster without the realm join — answers `502`, never a no-rules answer (VEV-06).
+The rules read signs as the app's **own** service identity (VEV-04), unless the caller acts in
+a tenant: then it reads that tenant's rules with the caller's token, and caches them per tenant
+([12.7f](specs/12-7f-verdicts-per-tenant/spec.md), DD-820). The catalogue leg travels one
+circuit breaker: an unreachable or refusing catalogue — or a cluster without the realm join —
+answers `502`, never a no-rules answer (VEV-06).
 
 The app answers its OpenAPI document at `/openapi.json` and the Swagger UI at `/docs` under
 development only (`AURELIUS_ATLAS_VALIDATE_ENTITY_ENVIRONMENT=development`, which the dev `.env`

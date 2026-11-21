@@ -440,3 +440,57 @@ def test__the_development_environment_serves_the_openapi_surface(settings: Valid
     assert app.openapi_url == "/openapi.json"
     assert app.docs_url == "/docs"
     assert app.redoc_url is None
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.verdicts.VerdictEngine.rules", rules=["VET-02"])
+async def test__a_tenants_caller_reads_its_rules_with_its_own_token(
+    client: httpx.AsyncClient, token: Callable[..., str], catalogue: FakeCatalogue
+) -> None:
+    """A caller acting in demo has the rule search carry its own bearer, not the app's (VET-02, DD-820)."""
+    _answers_one_page(catalogue, NAME_RULE)
+    caller = token(organization={"demo": {"groups": ["/atlas-read"]}})
+
+    response = await client.post("/", json=DRAFT, headers=_bearer(caller))
+
+    assert response.status_code == 200
+    (search,) = catalogue.searches()
+    assert search.headers["authorization"] == f"Bearer {caller}"
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.verdicts.VerdictEngine.rules", rules=["VET-03", "VET-04"])
+async def test__each_tenant_has_its_own_cached_rules(
+    client: httpx.AsyncClient, token: Callable[..., str], catalogue: FakeCatalogue
+) -> None:
+    """Demo twice reads once; meyn reads its own; a caller in no tenant reads as the app, into its own entry."""
+    _answers_one_page(catalogue, NAME_RULE)
+    demo = _bearer(token(organization=["demo"]))
+
+    await client.post("/", json=DRAFT, headers=demo)
+    await client.post("/", json=DRAFT, headers=demo)
+    await client.post("/", json=DRAFT, headers=_bearer(token(organization=["meyn"])))
+    await client.post("/", json=DRAFT, headers=_bearer(token()))
+
+    bearers = [search.headers["authorization"] for search in catalogue.searches()]
+    assert len(bearers) == 3
+    assert bearers[-1] == "Bearer app-identity"
+    assert len(set(bearers)) == 3
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.verdicts.VerdictEngine.rules", rules=["VET-05"])
+async def test__a_refused_tenant_read_answers_502_and_spares_the_others(
+    client: httpx.AsyncClient, token: Callable[..., str], catalogue: FakeCatalogue
+) -> None:
+    """The server refusing meyn's caller answers 502 and caches nothing for meyn; demo's cached set still answers."""
+    demo, meyn = token(organization=["demo"]), token(organization=["meyn"])
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        if request.headers["authorization"] == f"Bearer {meyn}":
+            return FakeCatalogue.json(403, {"errorCode": "AURELIUS-403-00-001"})
+        return FakeCatalogue.json(200, search_result([NAME_RULE], "-1" if _marker(request) == "*" else None))
+
+    catalogue.handler = answer
+    assert (await client.post("/", json=DRAFT, headers=_bearer(demo))).status_code == 200
+    assert (await client.post("/", json=DRAFT, headers=_bearer(meyn))).status_code == 502
+    assert (await client.post("/", json=DRAFT, headers=_bearer(meyn))).status_code == 502
+    assert (await client.post("/", json=DRAFT, headers=_bearer(demo))).status_code == 200
+    assert len(catalogue.searches()) == 3

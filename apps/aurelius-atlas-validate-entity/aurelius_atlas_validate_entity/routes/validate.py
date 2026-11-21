@@ -14,17 +14,19 @@ wired by the composition root; a catalogue failure is its
 :class:`~aurelius_atlas_validate_entity.errors.UpstreamError`, answered by the
 root's handlers (VEV-06).
 
-The caller's token verifies at the gate (VE-03, unchanged) and is never forwarded
-— the app reads the rules as its own service identity (VEV-04, DD-499).
+The caller's token verifies at the gate (VE-03, unchanged). A caller acting in a tenant has the rules read with
+its own token, that tenant's (VET-02, DD-820); any other caller's token is never forwarded, and the app reads the
+rules as its own service identity (VEV-04, DD-499, VET-03).
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 from aurelius_atlas_auth import KeycloakAuth
 from aurelius_atlas_validate_entity_client.models import ValidationResponse
 from fastapi import APIRouter, Request
 
 from aurelius_atlas_validate_entity.models import DraftEntity
+from aurelius_atlas_validate_entity.tenancy import tenant_of
 
 VALIDATE = "validate"
 """The router's tag: the app's one use case."""
@@ -53,9 +55,12 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
         response_model=ValidationResponse,
         response_model_exclude_none=True,
         responses=VALIDATE_ANSWER,
-        dependencies=[auth.require_auth],
     )
-    async def validate_entity(request: Request, body: DraftEntity) -> ValidationResponse:
+    async def validate_entity(
+        request: Request,
+        body: DraftEntity,
+        claims: Annotated[dict[str, Any], auth.require_auth],
+    ) -> ValidationResponse:
         """`POST /`: the draft entity in, the governance verdicts out (VEV-01/02).
 
         The token is verified for this app's audience (VE-03, DV-75); the rules
@@ -67,6 +72,8 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
         classifications and the rest of the body stay ignored (VEV-01).
         """
         engine = request.app.state.engine
-        return await engine.evaluate_draft(body)
+        tenant = tenant_of(claims)
+        bearer = request.headers.get("authorization", "").removeprefix("Bearer ").strip() or None
+        return await engine.evaluate_draft(body, tenant=tenant, bearer=bearer if tenant is not None else None)
 
     return router
