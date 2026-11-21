@@ -12,6 +12,8 @@ from typing import Any
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
 from elasticsearch import ApiError, ConflictError, NotFoundError
 
+from aurelius_atlas_store_es.text_analysis import QUERY_WORD, term_matches, words
+
 NODE = NodeConfig("https", "localhost", 9200)
 
 
@@ -522,11 +524,11 @@ def _matches(source: dict[str, Any], query: dict[str, Any] | None, document_id: 
         return "ids" in query and document_id in query["ids"]["values"]
     if "bool" in query:
         clauses = query["bool"]
-        should = clauses.get("should", [])
+        required = clauses.get("filter", []) + clauses.get("must", [])
         return (
-            all(_matches(source, clause, document_id) for clause in clauses.get("filter", []) + clauses.get("must", []))
+            _should_match(source, clauses, document_id)
+            and all(_matches(source, clause, document_id) for clause in required)
             and not any(_matches(source, clause, document_id) for clause in clauses.get("must_not", []))
-            and (not should or any(_matches(source, clause, document_id) for clause in should))
         )
     if "simple_query_string" in query:
         return _text_score(source, query["simple_query_string"]) > 0
@@ -535,6 +537,21 @@ def _matches(source: dict[str, Any], query: dict[str, Any] | None, document_id: 
     ((kind, condition),) = query.items()
     ((field, operand),) = condition.items()
     return _field_matches(source, kind, field, operand)
+
+
+def _should_match(source: dict[str, Any], clauses: dict[str, Any], document_id: str | None) -> bool:
+    """Whether a ``bool``'s ``should`` meets its ``minimum_should_match``: as Elasticsearch counts it, defaulting to
+    one when ``should`` is the only clause kind and zero when ``filter`` or ``must`` is present (DD-769).
+    """  # noqa: D205 - one sentence
+    should = clauses.get("should", [])
+    should = should if isinstance(should, list) else [should]
+    if not should:
+        return True
+    minimum = clauses.get("minimum_should_match")
+    if minimum is None:
+        minimum = 0 if clauses.get("filter") or clauses.get("must") else 1
+    matched = sum(_matches(source, clause, document_id) for clause in should)
+    return matched >= minimum
 
 
 def _field_matches(source: dict[str, Any], kind: str, field: str, operand: Any) -> bool:  # noqa: ANN401 - a query operand
@@ -559,9 +576,7 @@ def _regexp(source: dict[str, Any], field: str, options: dict[str, Any]) -> bool
     """A ``regexp``: a value, or for a ``.text`` sub-field a lower-cased word of one, matching whole."""
     pattern = re.compile(options["value"], re.IGNORECASE if options.get("case_insensitive") else 0)
     if field.endswith(".text"):
-        values = [
-            word.lower() for value in _held(source, field.removesuffix(".text")) for word in _WORD.findall(str(value))
-        ]
+        values = [word for value in _held(source, field.removesuffix(".text")) for word in words(str(value))]
     else:
         values = [value for value in _held(source, field) if isinstance(value, str)]
     return any(pattern.fullmatch(value) is not None for value in values)
@@ -598,14 +613,12 @@ def _text_score(source: dict[str, Any], options: dict[str, Any]) -> float:
     """A ``simple_query_string`` read word by word: each field (``.text`` sub-field, ``^`` boost) whose words, in
     any case, hold one of the query's, or one beginning with a word ending in ``*``, adds its boost.
     """  # noqa: D205 - one sentence
-    terms = [term.lower() for term in _QUERY_WORD.findall(options["query"])]
+    terms = [term.lower() for term in QUERY_WORD.findall(options["query"])]
     score = 0.0
     for spec in options["fields"]:
         name, _, boost = spec.partition("^")
-        words = {
-            word.lower() for value in _held(source, name.removesuffix(".text")) for word in _WORD.findall(str(value))
-        }
-        if any(_term_in(term, words) for term in terms):
+        held = {word for value in _held(source, name.removesuffix(".text")) for word in words(str(value))}
+        if any(term_matches(term, held) for term in terms):
             score += float(boost or 1)
     return score
 
@@ -623,7 +636,7 @@ def _terms(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, 
         held = _held(source, field.removesuffix(".text") if text else field)
         if not held and "missing" in options:
             held = [options["missing"]]
-        terms = {word.lower() for value in held for word in _WORD.findall(str(value))} if text else set(held)
+        terms = {word for value in held for word in words(str(value))} if text else set(held)
         for term in terms:
             if include is None or include.fullmatch(str(term)):
                 counts[term] = counts.get(term, 0) + 1
@@ -657,16 +670,6 @@ def _composite(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[s
         {"key": dict(zip(names, key, strict=True)), "doc_count": count} for key, count in ordered[: options["size"]]
     ]
     return {"buckets": buckets, **({"after_key": buckets[-1]["key"]} if buckets else {})}
-
-
-def _term_in(term: str, words: set[str]) -> bool:
-    if term.endswith("*"):
-        return any(word.startswith(term[:-1]) for word in words)
-    return term in words
-
-
-_WORD = re.compile(r"\w+")
-_QUERY_WORD = re.compile(r"\w+\*?")
 
 
 def _value(source: dict[str, Any], field: str) -> Any:  # noqa: ANN401 - any field value

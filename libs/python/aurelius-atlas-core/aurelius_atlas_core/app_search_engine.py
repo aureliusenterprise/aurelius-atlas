@@ -11,13 +11,14 @@ in App Search's shape.
 
 import html
 import math
-import re
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
+
+from aurelius_atlas_store_es.text_analysis import WORD, words
 
 from aurelius_atlas_core.app_search_document import (
     APP_SEARCH_FIELD,
@@ -55,7 +56,6 @@ MAX_SNIPPET = 1000
 DEFAULT_SNIPPET = 100
 
 _DIRECTIONS = ("asc", "desc")
-_WORD = re.compile(r"\w+")
 
 
 class Kind(StrEnum):
@@ -701,14 +701,14 @@ def _result(hit: Mapping[str, Any], search: Search) -> dict[str, Any]:
     document_id = source.get(search.engine.id_field)
     asked = search.result_fields if search.result_fields is not None else dict.fromkeys(fields, _ResultField(raw=True))
     result: dict[str, Any] = {"id": {"raw": document_id}}
-    words = [word.lower() for word in _WORD.findall(search.query)]
+    query_words = words(search.query)
     for name, options in asked.items():
         value = plain(fields[name].value(source))
         answered: dict[str, Any] = {}
         if options.raw:
             answered["raw"] = _cut(value, options.raw_size)
         if options.snippet:
-            answered["snippet"] = _snippet(value, words, options)
+            answered["snippet"] = _snippet(value, query_words, options)
         result[name] = answered
     result["_meta"] = {"id": document_id, "engine": search.engine.name, "score": float(hit.get("_score") or 0.0)}
     return result
@@ -734,15 +734,15 @@ def _cut(value: Any, size: int | None) -> Any:  # noqa: ANN401 - a field's JSON 
     return value
 
 
-def _snippet(value: Any, words: list[str], options: _ResultField) -> str | None:  # noqa: ANN401 - a JSON value
+def _snippet(value: Any, query_words: list[str], options: _ResultField) -> str | None:  # noqa: ANN401 - a JSON value
     """The first text holding one of the query's words, cut, escaped, the words in ``<em>``; the first text when
     none does and ``fallback`` asks for it (DV-158).
     """  # noqa: D205 - one sentence
     texts = [item for item in (value if isinstance(value, list) else [value]) if isinstance(item, str)]
-    wanted = set(words)
+    wanted = set(query_words)
     for text in texts:
         cut = text[: options.snippet_size]
-        if any(word.lower() in wanted for word in _WORD.findall(cut)):
+        if any(word in wanted for word in words(cut)):
             return _highlighted(cut, wanted)
     if options.fallback and texts:
         return html.escape(texts[0][: options.snippet_size])
@@ -751,7 +751,7 @@ def _snippet(value: Any, words: list[str], options: _ResultField) -> str | None:
 
 def _highlighted(text: str, words: set[str]) -> str:
     parts, last = [], 0
-    for match in _WORD.finditer(text):
+    for match in WORD.finditer(text):
         if match.group().lower() in words:
             parts += [html.escape(text[last : match.start()]), f"<em>{html.escape(match.group())}</em>"]
             last = match.end()

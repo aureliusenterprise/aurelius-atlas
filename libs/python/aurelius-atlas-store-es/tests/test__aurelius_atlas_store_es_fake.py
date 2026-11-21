@@ -239,6 +239,25 @@ async def test__bool_queries_exclude_require_any_and_test_presence() -> None:
     assert await found({"term": {"nested.x.q": "z"}}) == []
 
 
+@pytest.mark.covers("aurelius_atlas_store_es.testing.fake.FakeClient.search", rules=["QRY-03"])
+async def test__should_clauses_are_counted_against_minimum_should_match() -> None:
+    """A ``should`` group needs ``minimum_should_match`` clauses to match (default 1 alone, 0 beside a filter)."""
+    fake = FakeClient()
+    for document_id, tag, color in (("a", "x", "red"), ("b", "x", "blue"), ("c", "y", "red")):
+        await fake.index(index="docs", id=document_id, document={"tag": tag, "color": color})
+
+    should = [{"term": {"tag": "x"}}, {"term": {"color": "red"}}]
+
+    async def found(**bool_clauses: object) -> list[str]:
+        query = {"bool": {"should": should, **bool_clauses}}
+        return sorted(hit["_id"] for hit in (await fake.search(index="docs", query=query))["hits"]["hits"])
+
+    assert await found(minimum_should_match=2) == ["a"]
+    assert await found(minimum_should_match=1) == ["a", "b", "c"]
+    assert await found() == ["a", "b", "c"]
+    assert await found(filter=[{"term": {"tag": "x"}}]) == ["a", "b"]
+
+
 async def test__regexp_queries_match_whole_values_or_words_of_a_text_sub_field() -> None:
     """``regexp`` on a field: a string value whole, in case unless ``case_insensitive``; on ``.text``: a word."""
     fake = FakeClient()

@@ -17,11 +17,13 @@ The rules are QRY-01 to QRY-06 of [the spec](./spec.md), the design DD-767 to DD
   from the protocol (`:340-495`), so `AppSearchEngine` and `ViewSearchEngine` take the concrete class. The fake
   needs an honest `minimum_should_match`, which no current test exercises because production always passes `1`.
 - **The word patterns.** `fake.py:668-669` copy `free_text.py:28-29` exactly, and `app_search_engine.py:58`
-  repeats the first one. Three definitions, one meaning.
+  repeats the first one. Three definitions, one meaning. The store package owns them, because core depends on
+  it and not the other way round, so the fake can import them (DD-772).
 
 ## Steps
 
-1. `free_text.py`: export `WORD` and `QUERY_WORD`, and the word helpers the engine and the fake need (DD-772).
+1. `aurelius_atlas_store_es/text_analysis.py`: the `WORD` and `QUERY_WORD` patterns and the word helpers the
+   engine and the fake need; `free_text.py` and `app_search_engine.py` use them (DD-772).
 2. `es_clauses.py`: the filter, text, range, kNN, and facet builders, taking the bodies from
    `entity_documents` and the engine. Tests move with each builder.
 3. `entity_documents.py` and `app_search_engine.py`: call the builders. No method signature changes here, so

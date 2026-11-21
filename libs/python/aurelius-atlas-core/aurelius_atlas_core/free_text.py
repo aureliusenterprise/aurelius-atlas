@@ -5,12 +5,16 @@ types as ``qf``, weighted by their ``searchWeight``, and four system fields with
 is prepared as ``EntityDiscoveryService.searchWithParameters`` and ``AtlasAttribute.hastokenizeChar`` do (DD-092).
 """
 
-import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from aurelius_atlas_model.typedef import ATLAS_TYPE_STRING, TypeCategory
+from aurelius_atlas_store_es.text_analysis import (
+    QUERY_WORD,
+    term_matches,
+    words,
+)
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
@@ -25,8 +29,6 @@ SYSTEM_WEIGHTS = {"__classificationsText": 10, "__labels": 10, "__customAttribut
 """``SEARCHWEIGHT_FOR_CLASSIFICATIONS``, ``_LABELS``, ``_CUSTOM_ATTRS`` and ``_TYPENAME``."""
 
 _TOKENISING_NEXT_TO_LETTERS = ".:'"
-_WORD = re.compile(r"\w+")
-_QUERY_WORD = re.compile(r"\w+\*?")
 
 
 @dataclass(frozen=True)
@@ -103,20 +105,15 @@ def text_matches(query: str, values: Mapping[str, object], fields: Mapping[str, 
 
     A field matches when one of its words, in any case, is one of the query's, or begins with one ending in ``*``.
     """
-    terms = [term.lower() for term in _QUERY_WORD.findall(query)]
+    terms = [term.lower() for term in QUERY_WORD.findall(query)]
     score = 0
     for field, weight in fields.items():
         value = values.get(field)
         items = value if isinstance(value, list) else [] if value is None else [value]
         found = {word for item in items for word in words(str(item))}
-        if any(_term_matches(term, found) for term in terms):
+        if any(term_matches(term, found) for term in terms):
             score += weight
     return score
-
-
-def words(value: str) -> list[str]:
-    """The words of a value, lower-cased: the in-memory reading of the text sub-field's analysis (DD-092)."""
-    return [word.lower() for word in _WORD.findall(value)]
 
 
 MIN_SUGGESTION_WEIGHT = 8
@@ -150,9 +147,3 @@ def top_terms(per_field: Mapping[str, Sequence[tuple[str, int]]]) -> list[str]:
         for term, count in terms:
             summed[term] += count
     return [term for term, _ in sorted(summed.items(), key=lambda item: (-item[1], item[0]))[:TERM_COUNT]]
-
-
-def _term_matches(term: str, words: set[str]) -> bool:
-    if term.endswith("*"):
-        return any(word.startswith(term[:-1]) for word in words)
-    return term in words

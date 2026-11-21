@@ -40,9 +40,10 @@ vocabulary that Atlas's `SearchPredicateUtil` became, so the builder that walks 
 - **Relates to:** QRY-02, QRY-03, QRY-04.
 
 **Decision.** The store fake continues to interpret the Elasticsearch query dictionaries itself, and does not
-call the shared clause builder. It stops carrying its own word patterns and imports them from `free_text`. It
-gains an honest `minimum_should_match`. One differential test compares the in-memory store and the fake on a
-saved matrix of basic searches.
+call the shared clause builder. It stops carrying its own word patterns and imports them from
+`aurelius_atlas_store_es.text_analysis`, the module DD-772 puts them in. It gains an honest
+`minimum_should_match`. One differential test compares the in-memory store and the fake on a saved matrix of
+basic searches.
 
 **Reason.** The fake stands in for a server we do not run, so its value is that it reads the emitted JSON the
 way Elasticsearch does. If it called the builder, a wrong builder and a wrong fake would agree silently, which
@@ -135,17 +136,23 @@ a reviewer sees which predicate the suite would stop covering when one drops out
 - **Date:** 2026-11-21
 - **Relates to:** QRY-02.
 
-**Decision.** `free_text` keeps the weighted field table and the query preparation, and gains an exported
-`words` and a shared pattern so the engine's highlighter and the fake use them. The engine's private `_WORD`
-(`app_search_engine.py:58`) goes away.
+**Decision.** A new module `aurelius_atlas_store_es.text_analysis` owns the word pattern, the query-word
+pattern, `words` and the term match, so core's free-text reading, the App Search engine and the fake use one.
+`free_text` keeps the weighted field table and the query preparation, and re-exports `words` where its callers
+already read it. The engine's private `_WORD` (`app_search_engine.py:58`) goes away.
 
 **Reason.** Three modules define a word: `free_text.py:28`, `app_search_engine.py:58`, and `fake.py:668`. The
 first two are the same expression, and the third matches a `.text` sub-field's words, so a change to tokenising
-that misses one of them makes the highlighter disagree with the index that matched. The weight table stays
-put, because the fake does not use weights and moving it would touch 4.2's rules for no gain.
+that misses one of them makes the highlighter disagree with the index that matched. The module belongs to the
+store package because `aurelius-atlas-store-es` depends on no Aurelius package while core depends on it, so a
+core module is not importable from the fake, and the words a `.text` sub-field keeps are Elasticsearch analysis
+rather than core business logic. The weight table stays put, because the fake does not use weights and moving
+it would touch 4.2's rules for no gain.
 
 **Alternatives.**
 
 - **Let each module keep its pattern.** It is the current state, and the audit named it as a finding.
+- **Put the patterns in `free_text`.** The first plan step said so, and it cannot work: core depends on the
+  store package, so the fake cannot import a module from core.
 - **Move the weight table too.** `FTX-01` to `FTX-03` own those weights, and 4.2's parity tests guard them. No
   duplication exists there, so a move is churn.
