@@ -35,6 +35,11 @@
     "aliases": []
   },
   {
+    "version": "feat-12-7f-verdicts-per-tenant",
+    "title": "feat-12-7f-verdicts-per-tenant",
+    "aliases": []
+  },
+  {
     "version": "feat-infra-root",
     "title": "feat-infra-root",
     "aliases": []
