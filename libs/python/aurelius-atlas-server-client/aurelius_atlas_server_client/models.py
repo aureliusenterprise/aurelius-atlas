@@ -45,9 +45,11 @@ class AtlasStatus(AtlasModel):
     status: str = Field(alias="Status", description="The service state; the only state is ``ACTIVE``.")
 
 
-# ADM-05; DV-04; CL-10. The ``atlas.*`` UI settings ride along as extras;
+# ADM-05; DV-04; CL-10; CLW-13. The ``atlas.*`` UI settings ride along as extras;
 # the typed fields are the session's own — the server has no authenticated
-# user yet, so ``user_name`` answers ``None``.
+# user yet, so ``user_name`` answers ``None``. The two entity flags are what a
+# caller checks before it offers a write (AUZ-06); the other switches have no
+# client caller, so they stay extras (CL-10).
 class AtlasSessionInfo(AtlasModel):
     """The body of ``GET /api/atlas/admin/session``."""
 
@@ -56,6 +58,18 @@ class AtlasSessionInfo(AtlasModel):
     groups: list[str] = Field(default_factory=list, description="The groups of the signed-in user.")
 
     timezones: list[str] = Field(default_factory=list, description="The timezones the UI offers.")
+
+    entity_create_allowed: bool = Field(
+        default=False,
+        alias="atlas.entity.create.allowed",
+        description="Whether the session's user may create entities (ADM-05, AUZ-06).",
+    )
+
+    entity_update_allowed: bool = Field(
+        default=False,
+        alias="atlas.entity.update.allowed",
+        description="Whether the session's user may update entities (ADM-05, AUZ-06).",
+    )
 
     csrf_token: str | None = Field(
         alias="_csrfToken",

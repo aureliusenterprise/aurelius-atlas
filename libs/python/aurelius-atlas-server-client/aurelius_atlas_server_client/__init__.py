@@ -13,6 +13,8 @@ from aurelius_atlas_server_client.aurelius import (
     QualityRuleCheck,
     QualityVocabulary,
     SemanticSearchParameters,
+    ViewSearchAnswer,
+    ViewSearchRequest,
 )
 from aurelius_atlas_server_client.client import (
     AtlasClient,
@@ -25,6 +27,8 @@ from aurelius_atlas_server_client.client import (
     RelationshipApi,
     SearchApi,
     TokenSource,
+    ViewApi,
+    ViewVersionConflictError,
 )
 from aurelius_atlas_server_client.lineage import (
     Direction,
@@ -64,4 +68,8 @@ __all__ = [
     "SearchApi",
     "SemanticSearchParameters",
     "TokenSource",
+    "ViewApi",
+    "ViewSearchAnswer",
+    "ViewSearchRequest",
+    "ViewVersionConflictError",
 ]

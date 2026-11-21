@@ -142,6 +142,19 @@ async def anonymous(server: str) -> AsyncIterator[httpx.AsyncClient]:
         yield client
 
 
+@pytest_asyncio.fixture(loop_scope="function")
+async def anonymous_api(server: str) -> AsyncIterator[AtlasClient]:
+    """The typed client without credentials, on the same pool the writer's fixture closes (AUT-04, CL-03).
+
+    The client's empty token source sends no ``authorization`` header at all —
+    the unauthenticated call the routes answer 401 for.
+    """
+    async with httpx.AsyncClient(
+        base_url=server, verify=ssl.create_default_context(cafile=CA_FILE), timeout=TIMEOUT
+    ) as http:
+        yield AtlasClient(http, "")
+
+
 # The function loop (pytest-asyncio 1.x): the root config gives async fixtures
 # a module loop, which here outlives the test loops its TLS connections were
 # opened on — aclose then schedules on a closed loop ("Event loop is closed").

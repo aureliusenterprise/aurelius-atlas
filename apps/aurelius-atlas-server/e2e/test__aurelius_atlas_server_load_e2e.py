@@ -3,6 +3,10 @@
 The run is short by default, so CI runs it with the suite; ``AURELIUS_ATLAS_LOAD_USERS``, ``_SECONDS`` and
 ``_P95_MS`` make it a longer or harder run (``nx e2e aurelius-atlas-server`` with them set). Its report is printed
 and recorded as the junit property ``load_report``.
+
+The timed mix rides the raw client: every request is a latency sample, and typed parsing would add CPU the
+measurement must not count (DD-813, ECL-01). The run's own seed and clean-up are not timed, so they go through
+the typed client (CL-11).
 """
 
 import json
@@ -14,7 +18,10 @@ from typing import Any
 
 import httpx2 as httpx
 import pytest
-from load import ENTITY, OperationReport, Sample, atlas_mix, drive, percentile, report
+from aurelius_atlas_model.instance import AtlasEntity, AtlasEntityWithExtInfo, EntityOperation
+from aurelius_atlas_model.typedef import AtlasEntityDef, AtlasTypesDef
+from aurelius_atlas_server_client import AtlasClient
+from load import OperationReport, Sample, atlas_mix, drive, percentile, report
 
 USERS = int(os.environ.get("AURELIUS_ATLAS_LOAD_USERS", "8"))
 SECONDS = float(os.environ.get("AURELIUS_ATLAS_LOAD_SECONDS", "20"))
@@ -31,23 +38,32 @@ BATCH = 100
 # (PR 329's flake record) — weekly Scan's dedicated runner is its home.
 @pytest.mark.medium
 @pytest.mark.covers(
-    "load.drive", "load.atlas_mix", "load.report", "load.OperationReport.as_dict", rules=["LOD-01", "LOD-02", "LOD-03"]
+    "load.drive",
+    "load.atlas_mix",
+    "load.report",
+    "load.OperationReport.as_dict",
+    "aurelius_atlas_server_client.client.TypesApi.create_typedefs",
+    "aurelius_atlas_server_client.client.EntityApi.create_or_update",
+    "aurelius_atlas_server_client.client.EntityApi.delete_by_guids",
+    "aurelius_atlas_server_client.client.AdminApi.purge",
+    "aurelius_atlas_server_client.client.TypesApi.delete_typedef_by_name",
+    rules=["LOD-01", "LOD-02", "LOD-03"],
 )
 async def test__the_server_holds_a_mixed_load(
-    client: httpx.AsyncClient, record_property: Callable[[str, object], None]
+    client: httpx.AsyncClient, api: AtlasClient, record_property: Callable[[str, object], None]
 ) -> None:
     """Every request of the run succeeds, and every operation's 95th percentile is within the budget (LOD-03)."""
     type_name = f"e2e_load_{uuid.uuid4().hex}"
-    types = {"entityDefs": [{"name": type_name, "superTypes": ["DataSet"]}]}
-    assert (await client.post("/api/atlas/v2/types/typedefs", json=types)).status_code == 200
+    types = AtlasTypesDef(entity_defs=[AtlasEntityDef(name=type_name, super_types=["DataSet"])])
+    await api.types.create_typedefs(types)
     created: list[str] = []
     try:
-        guids = [await _seed(client, type_name, number) for number in range(USERS)]
+        guids = [await _seed(api, type_name, number) for number in range(USERS)]
         created.extend(guids)
 
         samples = await drive(client, atlas_mix(type_name, guids, created), users=USERS, seconds=SECONDS)
     finally:
-        await _remove(client, type_name, created)
+        await _remove(api, type_name, created)
 
     reports = report(samples)
     record_property("load_report", json.dumps([found.as_dict() for found in reports]))
@@ -70,19 +86,22 @@ def test__the_report_counts_failures_and_takes_nearest_rank_percentiles() -> Non
     assert percentile([], 0.95) == 0.0
 
 
-async def _seed(client: httpx.AsyncClient, type_name: str, number: int) -> str:
+async def _seed(api: AtlasClient, type_name: str, number: int) -> str:
     attributes = {"qualifiedName": f"{type_name}-seed-{number}", "name": f"seed {number}"}
-    response = await client.post(ENTITY, json={"entity": {"typeName": type_name, "attributes": attributes}})
-    assert response.status_code == 200, response.text
-    return response.json()["mutatedEntities"]["CREATE"][0]["guid"]
+    entity = AtlasEntity(type_name=type_name, attributes=attributes)
+    created = await api.entity.create_or_update(AtlasEntityWithExtInfo(entity=entity))
+    seeded = created.get_first_entity_by_operation(EntityOperation.CREATE)
+    assert seeded is not None
+    assert seeded.guid is not None
+    return seeded.guid
 
 
-async def _remove(client: httpx.AsyncClient, type_name: str, guids: list[str]) -> None:
+async def _remove(api: AtlasClient, type_name: str, guids: list[str]) -> None:
     """Delete and purge the run's entities, then its type: the shared dev store is left as it was."""
     for batch in batched(guids, BATCH, strict=False):
-        assert (await client.delete(f"{ENTITY}/bulk", params={"guid": list(batch)})).status_code == 200
-        assert (await client.put("/api/atlas/admin/purge", json=list(batch))).status_code == 200
-    assert (await client.delete(f"/api/atlas/v2/types/typedef/name/{type_name}")).status_code == 204
+        await api.entity.delete_by_guids(list(batch))
+        await api.admin.purge(list(batch))
+    await api.types.delete_typedef_by_name(type_name)
 
 
 def _table(reports: Sequence[OperationReport], users: int, seconds: float) -> str:

@@ -11,7 +11,6 @@ import json
 import uuid
 import zipfile
 
-import httpx2 as httpx
 import pytest
 from aurelius_atlas_model.impexp import AtlasExportRequest, OperationStatus
 from aurelius_atlas_model.instance import (
@@ -130,32 +129,40 @@ async def test__an_export_imports_back_into_the_catalogue(api: AtlasClient) -> N
 # impact=severe, likelihood=low (the spine path moves rarely between increments)
 @pytest.mark.high
 @pytest.mark.covers(
+    "aurelius_atlas_server_client.client.AdminApi.export",
+    "aurelius_atlas_server_client.client.AdminApi.server",
+    "aurelius_atlas_server_client.client.AdminApi.export_import_audit",
     "aurelius_atlas_server.routes.admin.get_cluster",
     "aurelius_atlas_server.routes.admin.get_export_import_audit",
-    rules=["REP-01", "REP-02", "REP-04", "REP-05"],
+    rules=["REP-01", "REP-02", "REP-04", "REP-05", "CLW-03", "CLW-10"],
 )
-async def test__a_replicating_export_is_audited_and_marks_its_entity(
-    client: httpx.AsyncClient, created: Created
-) -> None:
+async def test__a_replicating_export_is_audited_and_marks_its_entity(api: AtlasClient, created: Created) -> None:
     """The target server saved, the entity marked ``replicatedTo`` it, the export found in the audit trail."""
     run = uuid.uuid4().hex
     name, server = f"e2e_repl_{run}", f"e2e_server_{run}"
-    assert (
-        await client.post(
-            "/api/atlas/v2/types/typedefs", json={"entityDefs": [{"name": name, "superTypes": ["DataSet"]}]}
-        )
-    ).status_code == 200
-    body = {"entity": {"typeName": name, "attributes": {"qualifiedName": f"q_{run}", "name": run}}}
-    guid = (await client.post("/api/atlas/v2/entity", json=body)).json()["mutatedEntities"]["CREATE"][0]["guid"]
-    request = {"itemsToExport": [{"guid": guid}], "options": {"replicatedTo": f"dc${server}"}}
-    assert (await client.post("/api/atlas/admin/export", json=request)).status_code == 200
+    # DataSet, so the entity inherits the replicatedTo attribute REP-04 marks (the patch adds it to Referenceable).
+    await api.types.create_typedefs(AtlasTypesDef(entity_defs=[AtlasEntityDef(name=name, super_types=["DataSet"])]))
+    body = AtlasEntityWithExtInfo(
+        entity=AtlasEntity(type_name=name, attributes={"qualifiedName": f"q_{run}", "name": run})
+    )
+    created_response = await api.entity.create_or_update(body)
+    header = created_response.get_first_entity_by_operation(EntityOperation.CREATE)
+    assert header is not None
+    assert header.guid is not None
+    guid = header.guid
+    await api.admin.export(
+        AtlasExportRequest(items_to_export=[AtlasObjectId(guid=guid)], options={"replicatedTo": f"dc${server}"})
+    )
 
-    target = (await client.get(f"/api/atlas/admin/server/dc${server}")).json()
-    created.entity(target["guid"])  # the export made it, no answer lists it
-    entity = (await client.get(f"/api/atlas/v2/entity/guid/{guid}")).json()["entity"]
-    audits = (await client.get("/api/atlas/admin/expimp/audit", params={"serverName": server})).json()
+    target = await api.admin.server(f"dc${server}")
+    created.entity(target.guid)  # the export made it, no answer lists it
+    entity = (await api.entity.by_guid(guid)).entity
+    audits = await api.admin.export_import_audit(server_name=server)
 
-    assert target["name"] == server
-    assert guid in target["additionalInfo"]["REPL_DETAILS"]
-    assert entity["attributes"]["replicatedTo"] == [{"typeName": "AtlasServer", "guid": target["guid"]}]
-    assert [(entry["operation"], entry["targetServerName"]) for entry in audits] == [("EXPORT", server)]
+    assert entity is not None
+    assert target.name == server
+    assert target.additional_info is not None
+    assert guid in target.additional_info["REPL_DETAILS"]
+    assert entity.attributes is not None
+    assert entity.attributes["replicatedTo"] == [{"typeName": "AtlasServer", "guid": target.guid}]
+    assert [(entry.operation, entry.target_server_name) for entry in audits] == [("EXPORT", server)]
