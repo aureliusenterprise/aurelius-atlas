@@ -28,12 +28,11 @@ import {
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { cardTypeAlias } from "../details/shared/card";
-import { ALERT_CLOCK, AlertsService } from "../../alerts/alerts.service";
 import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
 import { EditorState } from "./editor-state";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
-import { EntitySaved } from "./entity-saved";
+import { EntityWritten } from "./entity-written";
 import {
     type EditorField,
     type EditorLabels,
@@ -122,16 +121,10 @@ export class EntityEditor {
 
     private readonly qualityRule = inject(QualityRuleService);
 
-    /** The saved-tick bus (DD-327): its write is the save's success, heard
-     * here to fill the outcome line (LR-005). */
-    private readonly entitySaved = inject(EntitySaved);
-
-    /** The alerts store — the delete's refusal lands here (LR-005, see the effect). */
-    private readonly alerts = inject(AlertsService);
-
-    /** The alerts store's own clock — the refusal test reads the same clock
-     * the store stamps its groups with (LR-005). */
-    private readonly alertClock = inject(ALERT_CLOCK);
+    /** The write-tick bus (DD-327, DD-803): the code that performs a save
+     * or a delete fires its outcome here, heard to fill the outcome line
+     * (LR-005, WFE-01 — never inferred from the alerts store, DD-802). */
+    private readonly entityWritten = inject(EntityWritten);
 
     /** The quality form, once the quality-mode branch renders it (EDT-25,
      * DD-477). The drawer owns the Save button, so it reads the child's
@@ -540,13 +533,9 @@ export class EntityEditor {
 
     protected readonly deletedLine = $localize`:@@ENTITY_DELETE:Entity deleted`;
 
-    /** The wall-clock ms the running delete hold started, null while no
-     * delete is in flight — the refusal test's lower bound (LR-005). */
-    private deleteStartedAt: number | null = null;
-
-    /** The save-bus sequence last consumed — a tick from an earlier drawer
+    /** The write-bus sequence last consumed — a tick from an earlier drawer
      * is not this editor's outcome (LR-005). */
-    private initialSaveSeq = this.entitySaved.latest()?.seq ?? 0;
+    private initialWriteSeq = this.entityWritten.latest()?.seq ?? 0;
 
     /** The field-set signature the last build used (the rebuild guard). */
     private builtSignature = "";
@@ -611,37 +600,19 @@ export class EntityEditor {
             }
         });
 
-        // The delete's outcome (LR-005): the store owns the delete, alerts
-        // on refusal (drawer open, EDT-08's shape), and navigates on
-        // success — so the editor reads the answer off the alerts store.
-        // A delete-line alert stamped at or after the hold's start is this
-        // drawer's refusal (the clock test survives a merged repeat);
-        // an ended delete with no such alert is the success, filled before
-        // the navigation takes the drawer away.
+        // The write's outcome (LR-005, WFE-01, WFE-02): the store fires the
+        // write tick with its outcome (DD-327, DD-803) just before it
+        // navigates, so the tick is the success signal that reaches the
+        // drawer before its view goes away — a refusal rides no tick, so
+        // nothing fills the line and the alerts carry the refusal. The
+        // sequence guard skips a tick from an earlier drawer. The outcome
+        // arrives as data (WFE-01): a reworded delete or save line changes
+        // no outcome (DD-802).
         effect(() => {
-            const deleting = this.state.deleting();
-            const groups = this.alerts.alerts();
-            const started = this.deleteStartedAt;
-            if (deleting || started === null) {
-                return;
-            }
-            const refusal = groups.some((group) => group.message === this.deletingLine && group.lastSeen >= started);
-            this.deleteStartedAt = null;
-            if (!refusal) {
-                this.outcomeLine.set(this.deletedLine);
-            }
-        });
-
-        // The save's outcome (LR-005): the store posts, fires the saved
-        // tick (DD-327), and navigates — the tick is the success signal
-        // that reaches the drawer before its view goes away (a refusal
-        // rides no tick). The sequence guard skips a tick from an earlier
-        // drawer.
-        effect(() => {
-            const latest = this.entitySaved.latest();
-            if (latest && latest.seq > this.initialSaveSeq) {
-                this.initialSaveSeq = latest.seq;
-                this.outcomeLine.set(this.savedLine);
+            const latest = this.entityWritten.latest();
+            if (latest && latest.seq > this.initialWriteSeq) {
+                this.initialWriteSeq = latest.seq;
+                this.outcomeLine.set(latest.outcome === "deleted" ? this.deletedLine : this.savedLine);
             }
         });
 
@@ -1163,9 +1134,6 @@ export class EntityEditor {
     protected deleteHeld(confirmed: boolean): void {
         const guid = this.state.entity()?.guid;
         if (confirmed && guid) {
-            // LR-005: the clock stamp lets the effect tell a refusal of
-            // this drawer's own delete from any older alert on file.
-            this.deleteStartedAt = this.alertClock();
             this.state.delete(guid);
         }
     }

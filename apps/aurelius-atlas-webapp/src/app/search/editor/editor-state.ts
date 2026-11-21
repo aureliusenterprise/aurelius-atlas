@@ -23,7 +23,7 @@ import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
 import { TYPE_ICONS } from "../meta/type-icons";
 
-import { EntitySaved } from "./entity-saved";
+import { EntityWritten } from "./entity-written";
 import { entityFromView, tagsAfterConflict } from "./view-as-entity";
 
 /** The editor's mode, read off its own route segment (EDT-01, DD-325). */
@@ -67,7 +67,7 @@ export class EditorState {
     private readonly router = inject(Router);
 
     /** The saved-tick bus (DD-327): the details screen underneath re-reads. */
-    private readonly entitySaved = inject(EntitySaved);
+    private readonly entityWritten = inject(EntityWritten);
 
     /** The editor's mode, set once by the route component from its route. */
     readonly mode = signal<EditorMode>("edit");
@@ -329,7 +329,7 @@ export class EditorState {
                 // on the details with the drawer outlet cleared through the
                 // commands array (NavigationExtras has no `outlets` key).
                 this.views.evict(answer.guid);
-                this.entitySaved.notify(answer.guid);
+                this.entityWritten.notify(answer.guid, "saved");
                 // The root compound form (DD-322): a string-command array
                 // with a trailing {outlets} applies the outlet instruction
                 // inside the primary child group, not the root where the
@@ -417,6 +417,11 @@ export class EditorState {
         this.entities.deleteEntityByGuid(guid).subscribe({
             next: () => {
                 this.deleting.set(false);
+                // The outcome rides the same tick the save fires (WFE-01,
+                // WFE-02, DD-803): the code that performed the delete says
+                // so, and the drawer reads its outcome line off the tick —
+                // not off the alerts store's text (DD-802).
+                this.entityWritten.notify(guid, "deleted");
                 // The screen underneath is the deleted entity's details;
                 // it is not a destination any more — the browse landing
                 // is (the reference routes 'search', our landing).

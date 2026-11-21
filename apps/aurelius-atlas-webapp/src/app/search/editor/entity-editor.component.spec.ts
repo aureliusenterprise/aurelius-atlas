@@ -1743,7 +1743,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("already_there");
     });
 
-    it("the delete's outcome is announced, not just acted on (LR-005, VDE-11)", () => {
+    it("the delete's outcome is announced, not just acted on (LR-005, VDE-11, WFE-01, WFE-02)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
         // The store navigates on success; the spy keeps the empty test-bed
@@ -1776,6 +1776,32 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         // The refusal is an alert (EDT-08's shape), not an "Entity deleted"
         // lie on the outcome line.
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
+        expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent ?? "")).toBe("");
+    });
+
+    it("a reworded delete line keeps the refusal a refusal (WFE-01, DD-802)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        // Reword the refusal alert the way a copy change or a translation
+        // would: the stored text no longer equals the editor's deleting
+        // line. Inferring the outcome from alert text (the old effect) would
+        // read this refusal as a success and lie "Entity deleted"; the tick
+        // (WFE-01) never compares text, so the outcome line stays empty.
+        const alerts = TestBed.inject(AlertsService);
+        const original = alerts.add.bind(alerts);
+        vi.spyOn(alerts, "add").mockImplementation((alert) => {
+            original({ ...alert, message: "Die entiteit kan nie verwijder word nie" });
+        });
+
+        holdDirective(fixture).held.emit(true);
+        const request = httpMock.expectOne(`${ATLAS_ENTITY_URL}7a1b`);
+        request.flush(
+            { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
+            { status: 403, statusText: "Forbidden" },
+        );
+        fixture.detectChanges();
+        fixture.detectChanges();
+
         expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent ?? "")).toBe("");
     });
 
