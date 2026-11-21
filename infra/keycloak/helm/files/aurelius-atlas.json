@@ -710,6 +710,12 @@
             }
         ]
     },
+    "scopeMappings": [
+        {
+            "client": "aurelius",
+            "roles": ["atlas-operator"]
+        }
+    ],
     "sslRequired": "all",
     "ssoSessionIdleTimeout": 1800,
     "ssoSessionMaxLifespan": 36000,
