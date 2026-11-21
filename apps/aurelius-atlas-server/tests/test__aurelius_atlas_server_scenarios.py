@@ -28,7 +28,7 @@ def models_dir(models_dir: Path, tmp_path: Path, request: pytest.FixtureRequest)
     return core_models(tmp_path / "core-models") if scenario.id.startswith(NEEDS_CORE_MODELS) else models_dir
 
 
-@pytest.mark.covers(rules=["QRY-06", "WRS-09", "RUL-06", "EDS-05"])
+@pytest.mark.covers(rules=["QRY-06", "WRS-09", "RUL-06", "EDS-05", "SVC-08"])
 @pytest.mark.parametrize("scenario", load_scenarios(SCENARIOS))
 async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
     """Each parity scenario passes against the application in-process (ADR 052), as the user ``admin`` (USR-04).
@@ -36,5 +36,7 @@ async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
     A scenario's expected response is read from the Apache Atlas 2.4.0 source, so it answers what the wire
     answered before any write-path seam moved (WRS-09: no answer that leaves the server changed). The shared
     rule owners of 19.3 replaced copies with calls, so the same scenarios pin the rule answers too (RUL-06).
+    The dependency work of 19.5 moved how a route reaches its services and owners, so these scenarios pin
+    that no answer moved either (SVC-08).
     """
     await run_scenario(scenario, client, {"user": "admin"})
