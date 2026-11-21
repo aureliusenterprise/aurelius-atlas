@@ -23,7 +23,7 @@
          shape: native buttons, roving tabindex (the active 0, the other -1),
          and Left/Right (Home/End) carry the active tab and its focus. -->
     @if (tabsShown()) {
-        <nav drawer-subhead class="tabs aurelius-editor-tabs" role="tablist">
+        <nav drawer-subhead class="tabs is-fullwidth aurelius-editor-tabs" role="tablist">
             <ul>
                 <li [class.is-active]="tab() === 'entity'">
                     <button
