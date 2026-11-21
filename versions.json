@@ -25,6 +25,11 @@
     "aliases": []
   },
   {
+    "version": "fix-webapp-history-clears-rows-before-reread",
+    "title": "fix-webapp-history-clears-rows-before-reread",
+    "aliases": []
+  },
+  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
