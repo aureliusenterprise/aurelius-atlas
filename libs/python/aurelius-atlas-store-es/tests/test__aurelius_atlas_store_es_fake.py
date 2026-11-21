@@ -258,6 +258,11 @@ async def test__should_clauses_are_counted_against_minimum_should_match() -> Non
     assert await found(filter=[{"term": {"tag": "x"}}]) == ["a", "b"]
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_store_es.text_analysis.term_matches",
+    "aurelius_atlas_store_es.testing.fake.FakeClient.search",
+    rules=["QRY-02"],
+)
 async def test__regexp_queries_match_whole_values_or_words_of_a_text_sub_field() -> None:
     """``regexp`` on a field: a string value whole, in case unless ``case_insensitive``; on ``.text``: a word."""
     fake = FakeClient()
@@ -306,6 +311,11 @@ async def test__search_sorts_with_options_and_pages_from_an_offset() -> None:
     assert fake.settings_updates == ["docs"]
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_store_es.text_analysis.words",
+    "aurelius_atlas_store_es.testing.fake.FakeClient.search",
+    rules=["QRY-02"],
+)
 async def test__simple_query_strings_score_and_sort_by_boosted_words() -> None:
     """Words in any case, ``*`` prefixes, ``^`` boosts (1 without) on ``.text`` sub-fields; ``_score`` sorts."""
     fake = FakeClient()
