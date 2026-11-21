@@ -642,6 +642,18 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": null,
 >       "title": "Grafana Url"
 >     },
+>     "grafana_public_url": {
+>       "anyOf": [
+>         {
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Grafana Public Url"
+>     },
 >     "grafana_admin_user": {
 >       "default": "admin",
 >       "title": "Grafana Admin User",
@@ -779,6 +791,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tenancy_admin_client_id` (`str`)
 > - `tenancy_admin_client_secret` (`SecretStr | None`)
 > - `grafana_url` (`str | None`)
+> - `grafana_public_url` (`str | None`)
 > - `grafana_admin_user` (`str`)
 > - `grafana_admin_password` (`SecretStr | None`)
 > - `sample_dir` (`Path | None`)
@@ -1190,6 +1203,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > Grafana's local administrator, as whom the command calls its API (TGF-12).
+>
+> ### grafana\_public\_url
+>
+> ```
+> grafana_public_url: str | None = None
+> ```
+>
+> Grafana's address as the browser reaches it, for the tenant's dashboards link; none, no link (TDL-05).
 >
 > ### grafana\_url
 >

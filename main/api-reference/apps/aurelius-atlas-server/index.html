@@ -1809,6 +1809,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.grafana_public_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;grafana_public_url
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.grafana_url" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -9141,6 +9152,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.grafana_public_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;grafana_public_url
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.grafana_url" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -11114,6 +11136,18 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Grafana Url"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"grafana_public_url"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"null"</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Grafana Public Url"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"grafana_admin_user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"admin"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Grafana Admin User"</span><span class="p">,</span>
@@ -11955,6 +11989,15 @@ Elasticsearch settings; it does not start without its store.</p>
   
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.grafana_url)" href="./#aurelius_atlas_server.settings.ServerSettings.grafana_url">grafana_url</a></code>
+                (<code><span title="str">str</span> | None</code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            grafana_public_url
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.grafana_public_url)" href="./#aurelius_atlas_server.settings.ServerSettings.grafana_public_url">grafana_public_url</a></code>
                 (<code><span title="str">str</span> | None</code>)
             </li>
             <li>
@@ -13230,6 +13273,30 @@ limit itself lives at the webapp's nginx edge, not here (SRV-09, DD-238).</p>
     <div class="doc doc-contents ">
 
         <p>Grafana's local administrator, as whom the command calls its API (TGF-12).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.grafana_public_url" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">grafana_public_url</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.grafana_public_url" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">grafana_public_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Grafana's address as the browser reaches it, for the tenant's dashboards link; none, no link (TDL-05).</p>
 
     </div>
 
