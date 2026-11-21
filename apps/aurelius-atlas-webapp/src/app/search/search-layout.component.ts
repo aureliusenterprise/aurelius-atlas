@@ -106,7 +106,7 @@ export class SearchLayout {
     }
 
     /**
-     * The hero's `+` was clicked (EDP-01, DD-816): open the editor page to
+     * The hero's `+` was clicked (EDP-01, DD-821): open the editor page to
      * create. From the editor page itself (editing another entity), the page
      * is left first, so the create starts on a fresh page, not the edit's.
      */

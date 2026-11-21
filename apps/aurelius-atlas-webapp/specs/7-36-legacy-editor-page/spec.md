@@ -1,10 +1,10 @@
-# 7.35 The legacy editor page
+# 7.36 The legacy editor page
 
 - **Status:** in progress
 - **Pull request:** to follow
-- **Records:** DD-816 to DD-819 (here); supersedes 7.7a's drawer (EDT-01, DD-166's family for the editor) and
-  EDT-03's field set; relies on 7.7a to 7.7c and 7.9 (EDT-01 to EDT-28), 12.7 (EDT-23/24's verdict lines),
-  16.5c (VDE-01 to VDE-08), 18.2 (HCA-06), 18.3 (PME-10), 18.5 (DCP-05)
+- **Records:** DD-821 to DD-824 (here); supersedes 7.7a's drawer (EDT-01, DD-166's family for the editor) and
+  EDT-03's field set; relies on 7.35 (HST-01 to HST-07), 7.7a to 7.7c and 7.9 (EDT-01 to EDT-28), 12.7
+  (EDT-23/24's verdict lines), 16.5c (VDE-01 to VDE-08), 18.2 (HCA-06), 18.3 (PME-10), 18.5 (DCP-05)
 - **Legacy source:** `aureliusenterprise/aurelius` at `b057389828c10497dd52d9efd4c16547c282c005`,
   `apps/atlas/src/app/search/components/editor/` (cited below as `editor/`), and
   `apps/atlas/src/app/search/{create,edit}-entity/`
@@ -20,7 +20,7 @@ legacy fields in their legacy order; and the verdicts sit next to their field, r
 - `aurelius-atlas-webapp`:
     - the editor as one routed page, `search/editor`, creating without a `guid` query parameter and editing
       with one, replacing the `drawer` outlet's `edit/:guid` and create routes;
-    - the History tab beside the form: the entity's audit events from the server's entity audit answer;
+    - 7.35's History tab moved from the drawer onto the page;
     - one form definition per type (below), replacing EDT-03's every-attribute field set for those types;
     - the verdict column beside each field.
 - The validate-entity service answering under tenancy, which the verdicts need on a tenancy stack: a separate
@@ -36,7 +36,7 @@ Not delivered:
 
 | Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| EDP-01 | The editor is one page of its own in the main outlet, `search/editor`: without a `guid` query parameter it creates, with `?guid=<guid>` it edits that entity. It takes the page's full content width in a centered container, as the legacy's `<div class="container">` did; no drawer and no backdrop. The legacy had two routes, `create-entity` and `edit-entity`, around the same editor (`create-entity.component.html`, `edit-entity.component.html`; DD-816) |
+| EDP-01 | The editor is one page of its own in the main outlet, `search/editor`: without a `guid` query parameter it creates, with `?guid=<guid>` it edits that entity. It takes the page's full content width in a centered container, as the legacy's `<div class="container">` did; no drawer and no backdrop. The legacy had two routes, `create-entity` and `edit-entity`, around the same editor (`create-entity.component.html`, `edit-entity.component.html`; DD-821) |
 | EDP-02 | The page's title is "Create new entity" when creating and "Edit entity" when editing (`search.createEntity.newEntity`, `search.editEntity.editEntity`), a level-3 title above the form                                                                                                                                                                                                                                                                              |
 | EDP-03 | The details pencil and the "create" action navigate to the page; Save, Cancel and Delete return to where the user came from (the details screen of the entity, or the search for a create), as the drawer's close does today                                                                                                                                                                                                                                        |
 | EDP-04 | When creating, the type select comes first and stays until the entity is saved; when editing there is none (`editor.component.html`, `editTypeAllowed$`)                                                                                                                                                                                                                                                                                                            |
@@ -50,20 +50,16 @@ Not delivered:
 | EDP-07 | A field's label sits above it. Below the label, on a desktop-wide page, the control takes two thirds of the row and the field's verdicts the third beside it; narrower, the verdicts sit under the control (`entity-editor.component.scss`'s `.grid`, `2fr 1fr`, `gap: 2rem`)                                                                                                                   |
 | EDP-08 | `name` is required on every form; `email` is required and must be an email address on the person form; `expression` is required on the rule form. A save with a missing required field is refused in the browser: the field turns red with its `…Required` message, and the red notice `search.components.editor.<form>.notification` shows at the foot of the form                             |
 | EDP-09 | A `name` or `definition` holding `’` (U+2019) shows the warning `…nameWarning` or `…definitionWarning` under it; the save is not refused                                                                                                                                                                                                                                                        |
-| EDP-10 | A single-pick field holds at most one related entity (18.2, HCA-06). Of the two parents of a data entity (`dataDomain`, `parentEntity`), a field (`datasets`, `parentField`) and a dataset (`collections`, `parentDataset`), the picker of one is disabled while the other holds a pick (18.3 PME-10, 18.5 DCP-05). This keeps today's rule; the legacy cleared the other pick instead (DD-818) |
+| EDP-10 | A single-pick field holds at most one related entity (18.2, HCA-06). Of the two parents of a data entity (`dataDomain`, `parentEntity`), a field (`datasets`, `parentField`) and a dataset (`collections`, `parentDataset`), the picker of one is disabled while the other holds a pick (18.3 PME-10, 18.5 DCP-05). This keeps today's rule; the legacy cleared the other pick instead (DD-823) |
 | EDP-11 | The classifications field is today's tag box (7.21a), shown only where the legacy form had it: data entity, data attribute, data domain                                                                                                                                                                                                                                                         |
-| EDP-12 | The governance rule form serves `m4i_gov_data_quality`; `qualityDimension` and `ruleType` are free-text inputs, as in the legacy. `m4i_data_quality` keeps 7.27's quality mode, whose closed check vocabulary (DQ-01, DV-146) the legacy's free-text form would bypass; the legacy served both types with one form (`editors-by-type.ts`, DD-819)                                               |
-| EDP-13 | A type without a table below keeps today's generic form (EDT-03) on the page. The create type select lists the ten types first, then the others; the legacy listed every `m4i_referenceable` subtype but `m4i_referenceable` and `m4i_source`, and showed an empty form for the ones it had no form for (DD-819)                                                                                |
+| EDP-12 | The governance rule form serves `m4i_gov_data_quality`; `qualityDimension` and `ruleType` are free-text inputs, as in the legacy. `m4i_data_quality` keeps 7.27's quality mode, whose closed check vocabulary (DQ-01, DV-146) the legacy's free-text form would bypass; the legacy served both types with one form (`editors-by-type.ts`, DD-824)                                               |
+| EDP-13 | A type without a table below keeps today's generic form (EDT-03) on the page. The create type select lists the ten types first, then the others; the legacy listed every `m4i_referenceable` subtype but `m4i_referenceable` and `m4i_source`, and showed an empty form for the ones it had no form for (DD-824)                                                                                |
 
 ### The history
 
-| Id     | Rule                                                                                                                                                                                                                                                                       |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| EDP-19 | When editing, two tabs head the page: "Entity", the form, and "History" (`search.components.editor.entityPlaceholder`, `…historyPlaceholder`). The page opens on Entity. When creating there is no History tab: an entity not yet saved has none (`editor.component.html`) |
-| EDP-20 | History lists the entity's audit events from `GET /api/atlas/v2/entity/{guid}/audit`, newest first (`sortOrder=DESC`), read 100 at a time until a page comes back short, all of them shown (`entity-audit.service.ts`, `retrieveAuditsPaged`)                              |
-| EDP-21 | Each event is one entry: the action in bold, translated by its dictionary key (`ENTITY_CREATE` "Entity created", `ENTITY_UPDATE` "Entity updated", …), and under it, small, the user and the time as `yyyy-MM-dd HH:mm:ss` in the browser's time zone, joined by `·`       |
-| EDP-22 | The history is read each time the History tab opens; a save leaves the page for the entity's details (EDP-03), so no list goes stale. A failed read shows an empty list; the form is unaffected. With tenancy on the server answers the tenant's audit index alone (15.2)  |
-| EDP-23 | Save and Delete show under the Entity tab only, as in the legacy (`*ngIf="currentTab === 'entity'"`)                                                                                                                                                                       |
+| Id     | Rule                                                                                                                                                                                                                                                                                   |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EDP-19 | 7.35's Entity/History tab pair and its History pane (HST-01 to HST-07) ride the page: the pair sits under the page title, where HST-01 put it in the drawer's subhead, and HST-07's closing of the drawer becomes the page's Cancel (EDP-03). Everything else of 7.35 holds as written |
 
 ### The verdicts
 
@@ -218,14 +214,13 @@ None: the editor is the legacy Aurelius webapp's, not Apache Atlas's.
 ## Deviations
 
 From the legacy, each with its decision: one page for create and edit, where the legacy had two routes (EDP-01,
-DD-816); the parents' mutual exclusion disables instead of clearing (EDP-10, DD-818); the generic form for the
-types the legacy had none for, and 7.27's quality mode for `m4i_data_quality` (EDP-12, EDP-13, DD-819). None from
+DD-821); the parents' mutual exclusion disables instead of clearing (EDP-10, DD-823); the generic form for the
+types the legacy had none for, and 7.27's quality mode for `m4i_data_quality` (EDP-12, EDP-13, DD-824). None from
 Apache Atlas.
 
 ## Acceptance
 
-- The webapp's unit tests: EDP-01 to EDP-23, one form definition test per table naming each field in order.
+- The webapp's unit tests: EDP-01 to EDP-19, one form definition test per table naming each field in order.
 - The webapp's e2e: create a data entity on the page, the name rule's verdict turning from warning to check
-  while typing, and the save returning to the details screen; edit it again and find "Entity created" and
-  "Entity updated" in its History.
+  while typing, and the save returning to the details screen.
 - By hand on the standalone stack (with 12.7b): each of the ten forms against the tables above.

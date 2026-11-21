@@ -480,7 +480,7 @@ export class Details {
     }
 
     /**
-     * The pencil was clicked (EDP-01, DD-816): open the editor page for this
+     * The pencil was clicked (EDP-01, DD-821): open the editor page for this
      * entity.
      */
     protected edit(): void {

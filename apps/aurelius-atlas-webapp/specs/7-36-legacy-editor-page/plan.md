@@ -1,4 +1,4 @@
-# 7.35 Plan
+# 7.36 Plan
 
 The steps, in order, with the rules each delivers. The spec is [`spec.md`](./spec.md).
 
@@ -15,13 +15,12 @@ for tenancy: DD-499 refused forwarding because a cache filled under one user's v
 per tenant there is no leak, as every member of a tenant reads its rules (`atlas-read`). Without tenancy the
 service keeps its own identity. 12.7b's spec lives in `apps/aurelius-atlas-validate-entity/specs/`.
 
-## 1. The page (EDP-01 to EDP-04, EDP-19 to EDP-23)
+## 1. The page (EDP-01 to EDP-04, EDP-19)
 
 The route `search/editor` in the main outlet, creating or editing by its `guid` query parameter; the drawer's
 two editor routes removed, the pencil and create action re-pointed, the page title, Cancel and the return after
-Save and Delete. The Entity and History tabs, History read from the entity audit answer through the data-access
-client the library already has. Unit tests for the route, the return and the history; the e2e moves from the
-drawer to the page.
+Save and Delete. 7.35's Entity/History tabs and History pane move from the drawer onto the page. Unit tests for
+the route and the return; the e2e moves from the drawer to the page.
 
 ## 2. The form definitions (EDP-05, EDP-06, EDP-11 to EDP-13)
 
@@ -43,4 +42,4 @@ standalone stack, each form against its table, typing into `name` and `definitio
 ## Size
 
 Steps 1 to 3 are about 1,200 changed lines of production code, mostly the form definitions and the field row.
-If it grows past 1,500, step 1 (the page) goes first as 7.35a and steps 2 and 3 follow as 7.35b.
+If it grows past 1,500, step 1 (the page) goes first as 7.36a and steps 2 and 3 follow as 7.36b.

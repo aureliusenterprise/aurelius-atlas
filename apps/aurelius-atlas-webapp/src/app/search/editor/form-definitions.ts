@@ -1,9 +1,9 @@
 /**
- * The legacy editor's forms, one per type (7.35, EDP-05, DD-817): the fields
+ * The legacy editor's forms, one per type (7.36, EDP-05, DD-822): the fields
  * each hand-written form of the Aurelius webapp showed, in its order, with its
  * labels (`apps/atlas/src/app/search/components/editor/<form>/`). A type here
  * shows these fields and no other; a type not here keeps the generic form of
- * EDT-03 (EDP-13, DD-819). `typeAlias` is in no form: every legacy form hid it
+ * EDT-03 (EDP-13, DD-824). `typeAlias` is in no form: every legacy form hid it
  * (EDP-06).
  *
  * Each entry names an attribute, plain or relationship: the editor finds it
@@ -30,7 +30,7 @@ const entry = (attribute: string, label: string): FormEntry => ({ attribute, lab
 
 /**
  * The ten legacy forms by type name (EDP-05). `m4i_data_quality` is not here: it
- * keeps 7.27's quality mode (EDP-12, DD-819).
+ * keeps 7.27's quality mode (EDP-12, DD-824).
  * @returns the form definition of each type the legacy edited with a form of its own
  */
 export function formDefinitions(): Readonly<Record<string, FormDefinition>> {

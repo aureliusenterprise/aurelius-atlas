@@ -6,10 +6,10 @@ entry is never edited except its status line, and a changed decision is a new en
 
 ## Entries
 
-### DD-816. The editor is a page again, not a drawer
+### DD-821. The editor is a page again, not a drawer
 
 - **Status:** Proposed
-- **Increment:** 7.35
+- **Increment:** 7.36
 - **Date:** 2026-11-21
 - **Supersedes:** 7.7a's drawer (EDT-01) and the editor's place in DD-166's drawer family
 
@@ -30,10 +30,10 @@ legacy page back (2026-11-21), reversing the drawer chosen on 2026-11-03.
 **Consequences.** The settings and alerts drawers stay drawers. The editor loses the drawer's "page stays
 behind" effect; Cancel returns to where the user came from.
 
-### DD-817. One form per type, from a table in the webapp
+### DD-822. One form per type, from a table in the webapp
 
 - **Status:** Proposed
-- **Increment:** 7.35
+- **Increment:** 7.36
 - **Date:** 2026-11-21
 - **Supersedes:** EDT-03's every-attribute field set, for the ten types with a legacy form
 
@@ -53,10 +53,10 @@ ordered by label.
 **Consequences.** An attribute added to one of these types appears in the editor only when its form definition
 lists it.
 
-### DD-818. The parents keep disabling each other's picker
+### DD-823. The parents keep disabling each other's picker
 
 - **Status:** Proposed
-- **Increment:** 7.35
+- **Increment:** 7.36
 - **Date:** 2026-11-21
 
 **Decision.** Of two mutually exclusive parents, the second picker stays disabled while the first holds a pick
@@ -65,10 +65,10 @@ lists it.
 **Reason.** Clearing a pick the user made, because they made another, loses data without asking; the server
 refuses both together anyway (PME-07).
 
-### DD-819. Types without a legacy form keep the generic form; the data quality rule keeps its own
+### DD-824. Types without a legacy form keep the generic form; the data quality rule keeps its own
 
 - **Status:** Proposed
-- **Increment:** 7.35
+- **Increment:** 7.36
 - **Date:** 2026-11-21
 
 **Decision.** A type the legacy had no form for keeps today's generic form on the page; the create type select

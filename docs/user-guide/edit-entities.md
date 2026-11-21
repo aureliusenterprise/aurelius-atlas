@@ -50,5 +50,5 @@ next to **Save** says what is missing.
 
 ## See the history
 
-When you edit an entity, the **History** tab next to **Entity** lists every change to it, newest first: what
+When you edit an entity, the **History** tab next to **Entity** lists its latest changes, newest first: what
 happened, who did it, and when.

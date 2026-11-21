@@ -1,8 +1,8 @@
 <!--
-  The entity editor drawer body (EDT-01..EDT-08, DD-322): the routed panel
-  in the `drawer` aux outlet, carried by the ui-lib drawer (the settings /
-  alerts shape). The drawer's own X, backdrop, and Escape close it (EDT-01)
-  — the foot bar carries Save and Delete (EDT-10, EDT-19), no Cancel.
+  The entity editor page (EDP-01, DD-821): one page for create and edit, the
+  legacy's — the title, 7.35's Entity/History tabs when editing (EDP-19), the
+  legacy form of the type (EDP-05), each field's verdicts beside it (EDP-07),
+  and Delete, Cancel and Save at the foot (EDP-03, EDT-19).
 
   i18n ids are the catalogue bridge keys (EDT-11, DD-128 bridge). Strings
   bound into component inputs live in TypeScript as $localize (BRW-02), so
@@ -10,43 +10,51 @@
   `id|description` suffixes (DD-144).
 -->
 <section class="container aurelius-editor-page">
-    <!-- The editor page (EDP-01, EDP-02, DD-816): one page for create and edit,
+    <!-- The editor page (EDP-01, EDP-02, DD-821): one page for create and edit,
          full content width, the legacy's title above the tabs and the form. -->
     <h1 class="title is-3 aurelius-editor-title">{{ drawerTitle() }}</h1>
-    <!-- The tabs (EDP-19): the form and, when editing, the entity's history. -->
-    @if (!isCreate) {
-        <div class="tabs is-centered is-fullwidth aurelius-editor-tabs">
-            <ul role="tablist">
+    <!-- The Entity/History tab pair (HST-01, HST-02): edit mode only, under the page title (EDP-19). -->
+    @if (tabsShown()) {
+        <nav class="tabs is-fullwidth aurelius-editor-tabs" role="tablist">
+            <ul>
                 <li [class.is-active]="tab() === 'entity'">
-                    <a
+                    <button
+                        #entityTab
+                        type="button"
                         role="tab"
-                        tabindex="0"
+                        id="editor-entity-tab"
+                        [attr.tabindex]="tab() === 'entity' ? 0 : -1"
                         [attr.aria-selected]="tab() === 'entity'"
-                        (click)="tab.set('entity')"
-                        (keydown.enter)="tab.set('entity')"
-                        (keydown.space)="tab.set('entity'); $event.preventDefault()"
-                        i18n="@@search.components.editor.entityPlaceholder"
-                        >Entity</a
+                        aria-controls="editor-entity-pane"
+                        (click)="showTab('entity')"
+                        (keydown)="onTabKeys($event)"
                     >
+                        <!-- Entity. -->
+                        <span i18n="@@search.components.editor.entityPlaceholder">Entity</span>
+                    </button>
                 </li>
                 <li [class.is-active]="tab() === 'history'">
-                    <a
+                    <button
+                        #historyTab
+                        type="button"
                         role="tab"
-                        tabindex="0"
+                        id="editor-history-tab"
+                        [attr.tabindex]="tab() === 'history' ? 0 : -1"
                         [attr.aria-selected]="tab() === 'history'"
-                        (click)="tab.set('history')"
-                        (keydown.enter)="tab.set('history')"
-                        (keydown.space)="tab.set('history'); $event.preventDefault()"
-                        i18n="@@search.components.editor.historyPlaceholder"
-                        >History</a
+                        aria-controls="editor-history-pane"
+                        (click)="showTab('history')"
+                        (keydown)="onTabKeys($event)"
                     >
+                        <!-- History. -->
+                        <span i18n="@@search.components.editor.historyPlaceholder">History</span>
+                    </button>
                 </li>
             </ul>
-        </div>
+        </nav>
     }
-    @if (tab() === "history" && guid()) {
-        <aurelius-atlas-webapp-entity-history [guid]="guid()" />
-    } @else {
+    <!-- The Entity pane (HST-02): mounted for the page's whole life and hidden
+         while History shows, so the form keeps its DOM state (DD-352). -->
+    <div id="editor-entity-pane" role="tabpanel" aria-labelledby="editor-entity-tab" [hidden]="tab() !== 'entity'">
         <!-- The loading line (LR-002): the region stays mounted and only its
          text comes and goes, so the reader already watches the place the
          line lands in — an <output> created and filled in one frame can be
@@ -417,7 +425,36 @@
                 </button>
             </div>
         </div>
-    }
+    </div>
+
+    <!-- The History pane (HST-02..HST-05, DD-816): mounted beside the form
+         and hidden while the Entity pane shows. The loading line is the
+         persistent-region shape again (LR-002): the region stays mounted and
+         only its text comes and goes. The rows are the legacy's Bulma media
+         anatomy (HST-04): the change's label, then its user and its time. -->
+    <div id="editor-history-pane" role="tabpanel" aria-labelledby="editor-history-tab" [hidden]="tab() !== 'history'">
+        <output class="help aurelius-editor-loading">{{ auditsLoading() ? auditRetrieveLine : "" }}</output>
+        <div class="media-list aurelius-editor-audits">
+            @for (event of audits(); track event.eventKey) {
+                <div class="media aurelius-editor-audit">
+                    <div class="media-content">
+                        <div class="content">
+                            <h6 class="title is-6">{{ auditActionLabel(event) }}</h6>
+                            <p>
+                                <small>
+                                    <span>{{ event.user }}</span>
+                                    ·
+                                    <time [attr.datetime]="event.timestamp">
+                                        {{ event.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}
+                                    </time>
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
 
     <!-- The tag box (EDT-05), placed by the form (EDP-11): before the pickers on a legacy form, last on the generic one. -->
     <ng-template #tagBox>

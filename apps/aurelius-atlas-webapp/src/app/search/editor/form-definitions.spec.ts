@@ -3,7 +3,7 @@ import { FormDefinition, formDefinitions, formLabels, inFormOrder, legacyFirst }
 /**
  * The legacy forms (EDP-05, EDP-06, EDP-11, EDP-12): each of the ten types
  * names exactly its legacy fields, in the legacy order — the tables of the
- * 7.35 spec, read from `apps/atlas/src/app/search/components/editor/<form>/`.
+ * 7.36 spec, read from `apps/atlas/src/app/search/components/editor/<form>/`.
  */
 
 const FORMS: Record<string, readonly string[]> = {
