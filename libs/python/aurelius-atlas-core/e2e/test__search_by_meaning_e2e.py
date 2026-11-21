@@ -7,7 +7,7 @@ filters inside it, its hits paged by ``from``, the facets counted over them, and
 
 import pytest
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding import source_hash
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.stored_entity import StoredEmbedding

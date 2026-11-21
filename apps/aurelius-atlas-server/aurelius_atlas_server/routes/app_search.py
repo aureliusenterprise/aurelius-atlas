@@ -8,7 +8,8 @@ take App Search's shape, not Atlas's (DD-527).
 
 import json
 
-from aurelius_atlas_core.app_search_engine import ENGINES, AppSearchEngine, AppSearchError
+from aurelius_atlas_core.app_search_answer import AppSearchEngine
+from aurelius_atlas_core.app_search_schema import ENGINES, AppSearchError
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 

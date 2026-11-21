@@ -46,7 +46,7 @@ def _qualified(name: str) -> AtlasEntityDef:
 @pytest.mark.high
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.admin.export",
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.of_types",
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.of_types",
     "aurelius_atlas_server_client.client.TypesApi.create_typedefs",
     "aurelius_atlas_server_client.client.EntityApi.create_or_update_bulk",
     "aurelius_atlas_server_client.client.AdminApi.export",

@@ -4,23 +4,26 @@ from decimal import Decimal
 from typing import Any, cast
 
 import pytest
-from aurelius_atlas_core import entity_documents
+from aurelius_atlas_core import documents_es
 from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, StoredVerdict, verdict_mapping
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_documents import (
+    EntityDocuments,
+    JournalEntry,
+    LinkedWrite,
+    Reservation,
+    StoreDocuments,
+)
+from aurelius_atlas_core.free_text import TextQuery
+from aurelius_atlas_core.index_setup import (
     CLASSIFICATION_MAPPING,
     ENTITY_FIELD_LIMIT,
     ENTITY_MAPPING,
     RELATIONSHIP_MAPPING,
     TASK_MAPPING,
-    ElasticsearchEntityDocuments,
-    EntityDocuments,
-    JournalEntry,
     Linked,
     LinkedKind,
-    LinkedWrite,
-    Reservation,
 )
-from aurelius_atlas_core.free_text import TextQuery
 from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -36,7 +39,7 @@ from aurelius_atlas_store_es.testing.fake import FakeClient
 from elasticsearch import AsyncElasticsearch
 
 D = "aurelius_atlas_core.entity_documents"
-E = f"{D}.ElasticsearchEntityDocuments"
+E = "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments"
 
 
 def _wire_names(model: type[AtlasModel]) -> set[str]:
@@ -86,7 +89,11 @@ def entity(guid: str, **attributes: object) -> StoredEntity:
     return StoredEntity(guid=guid, type_name="table", attributes=attributes)
 
 
-@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05", "CLS-02", "TSK-02", "ASG-03"])
+@pytest.mark.covers(
+    f"{E}.prepare",
+    f"{E}.aliases",
+    rules=["ENS-01", "REL-05", "CLS-02", "TSK-02", "ASG-03", "EDS-01", "EDS-02"],
+)
 async def test__seven_aliases_are_created_once(fake: FakeClient) -> None:
     """An index behind each alias; a second prepare changes nothing."""
     documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake))
@@ -238,9 +245,24 @@ async def test__entities_of_a_type_are_counted_on_the_written_index(
     *(
         f"{D}.EntityDocuments.{name}"
         for name in (
-            "prepare",
             "get",
+            "get_linked",
+            "without_app_search",
+            "naming",
+            "unseen_relationships",
+            "without_embedding",
+            "scores",
+            "quality_holders",
+            "governance_rules",
+            "to_govern",
+            "replace_verdicts",
             "write",
+        )
+    ),
+    *(
+        f"{D}.StoreDocuments.{name}"
+        for name in (
+            "prepare",
             "restore",
             "reserve",
             "reservations",
@@ -251,22 +273,24 @@ async def test__entities_of_a_type_are_counted_on_the_written_index(
             "get_journal",
             "count_type",
             "referring",
+            "of_types",
             "classified",
             "list_tasks",
             "search",
             "classifications_of_types",
             "terms",
-            "get_linked",
             "restore_linked",
             "count_linked_type",
         )
     ),
-    rules=["ENS-07"],
+    rules=["ENS-07", "EDS-03"],
 )
 def test__both_implementations_are_entity_documents(documents: ElasticsearchEntityDocuments) -> None:
-    """The store takes any ``EntityDocuments``: Elasticsearch in the server, memory in tests."""
+    """The store takes any ``StoreDocuments``, an indexer any ``EntityDocuments``: ES in the server, memory in tests."""
     assert isinstance(documents, EntityDocuments)
     assert isinstance(MemoryEntityDocuments(), EntityDocuments)
+    assert isinstance(documents, StoreDocuments)
+    assert isinstance(MemoryEntityDocuments(), StoreDocuments)
 
 
 @pytest.mark.covers(
@@ -279,7 +303,7 @@ async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_
 
     The writes carry the refresh, the referring search pays for none (ENS-11).
     """
-    monkeypatch.setattr(entity_documents, "REFERRING_PAGE", 1)
+    monkeypatch.setattr(documents_es, "REFERRING_PAGE", 1)
     written = [
         entity("a").model_copy(update={"references": ["x"]}),
         entity("b").model_copy(update={"references": ["x", "y"]}),
@@ -325,7 +349,7 @@ async def test__tasks_are_listed_oldest_first_all_or_open(
     documents: ElasticsearchEntityDocuments, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Oldest first, page by page; the open ones are ``PENDING`` or ``IN_PROGRESS``."""
-    monkeypatch.setattr(entity_documents, "TASK_PAGE", 1)
+    monkeypatch.setattr(documents_es, "TASK_PAGE", 1)
     tasks = [
         StoredTask(guid="a", type="t", created_time=1, status=TaskStatus.IN_PROGRESS),
         StoredTask(guid="b", type="t", created_time=2),
@@ -571,7 +595,7 @@ async def test__classification_instances_are_read_by_type_page_by_page(
     documents: ElasticsearchEntityDocuments, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Of the types given, or of every type (DD-090)."""
-    monkeypatch.setattr(entity_documents, "CLASSIFICATION_PAGE", 1)
+    monkeypatch.setattr(documents_es, "CLASSIFICATION_PAGE", 1)
     instances = [
         StoredClassification(guid="k1", type_name="pii", entity_guid="a"),
         StoredClassification(guid="k2", type_name="secret", entity_guid="a"),

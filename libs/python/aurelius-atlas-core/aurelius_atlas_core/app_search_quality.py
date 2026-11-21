@@ -23,8 +23,9 @@ from aurelius_atlas_core.app_search_document import (
     document_name,
     has_document,
 )
-from aurelius_atlas_core.entity_documents import EntityDocuments, LinkedKind, VersionedEntity
+from aurelius_atlas_core.entity_documents import EntityDocuments, VersionedEntity
 from aurelius_atlas_core.graph_helper import other_end
+from aurelius_atlas_core.index_setup import LinkedKind
 from aurelius_atlas_core.stored_entity import (
     StoredDimensionTotals,
     StoredEntity,

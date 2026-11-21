@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 from aurelius_atlas_core.audit_reduction_service import AuditAgingConfig
-from aurelius_atlas_core.entity_documents import INDEX_PREFIX
+from aurelius_atlas_core.index_setup import INDEX_PREFIX
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
 from aurelius_atlas_store_es.snapshots import SnapshotPolicy

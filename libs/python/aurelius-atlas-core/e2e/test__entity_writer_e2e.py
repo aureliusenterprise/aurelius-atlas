@@ -9,7 +9,7 @@ from itertools import count
 from typing import Any
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter

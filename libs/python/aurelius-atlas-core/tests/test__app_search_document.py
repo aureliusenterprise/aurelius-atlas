@@ -20,7 +20,9 @@ from aurelius_atlas_core.app_search_document import (
     ungoverned,
     with_current_app_search,
 )
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments, LinkedKind, LinkedWrite
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import LinkedWrite
+from aurelius_atlas_core.index_setup import LinkedKind
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
@@ -29,7 +31,7 @@ from aurelius_atlas_store_es.testing.fake import FakeClient
 from elasticsearch import AsyncElasticsearch
 
 A = "aurelius_atlas_core.app_search_document"
-D = "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments"
+D = "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments"
 M = "aurelius_atlas_core.testing.memory.MemoryEntityDocuments"
 
 

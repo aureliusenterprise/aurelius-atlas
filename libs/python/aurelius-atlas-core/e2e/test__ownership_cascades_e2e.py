@@ -7,7 +7,7 @@ search of DD-057 and read through the request's view.
 from typing import Any
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.entity_samples import sample_registry

@@ -6,10 +6,11 @@ judged again after a round.
 """
 
 import pytest
-from aurelius_atlas_core.app_search_engine import ATLAS_DEV_GOV_QUALITY, AppSearchEngine
+from aurelius_atlas_core.app_search_answer import AppSearchEngine
 from aurelius_atlas_core.app_search_governance import GovernanceIndexer
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.app_search_schema import ATLAS_DEV_GOV_QUALITY
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader

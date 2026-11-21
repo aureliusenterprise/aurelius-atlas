@@ -7,7 +7,7 @@ import logging
 from typing import Any, cast
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_server.app import create_app
 from aurelius_atlas_server.app_search import AppSearchWorker, DeriveBeforeAnsweringMiddleware, derive

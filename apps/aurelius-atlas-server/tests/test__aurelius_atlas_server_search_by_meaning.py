@@ -11,7 +11,7 @@ from typing import Any, cast
 
 import httpx2 as httpx
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding import source_hash
 from aurelius_atlas_core.stored_entity import StoredEmbedding
 from aurelius_atlas_model.errors import AtlasErrorCode

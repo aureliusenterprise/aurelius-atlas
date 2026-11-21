@@ -7,7 +7,7 @@ answers the unit tests check against Atlas.
 from decimal import Decimal
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.testing.entity_samples import sample_entities, sample_entity, sample_registry

@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.entity_samples import sample_registry
@@ -27,7 +27,7 @@ def item(name: str, **attributes: Any) -> dict[str, Any]:  # noqa: ANN401 - Atla
 @pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.dsl_query_composer.DslQueryComposer.compose",
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search",
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.search",
     rules=["DSE-07", "DSE-08", "DSE-12"],
 )
 async def test__dsl_queries_search_the_same_on_elasticsearch(dev_store: ElasticsearchStore, entity_prefix: str) -> None:
@@ -67,7 +67,7 @@ async def test__dsl_queries_search_the_same_on_elasticsearch(dev_store: Elastics
 @pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.dsl_query_executor.DslQueryExecutor.execute",
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.referring",
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.referring",
     rules=["DSP-03", "DSP-05", "DSP-06", "DSP-07"],
 )
 async def test__dsl_traversals_and_groups_on_elasticsearch(dev_store: ElasticsearchStore, entity_prefix: str) -> None:

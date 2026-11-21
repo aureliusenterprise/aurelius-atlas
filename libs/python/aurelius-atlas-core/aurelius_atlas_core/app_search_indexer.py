@@ -31,14 +31,9 @@ from aurelius_atlas_core.app_search_document import (
     own_document,
     ungoverned,
 )
-from aurelius_atlas_core.entity_documents import (
-    EntityDocuments,
-    LinkedKind,
-    LinkedWrite,
-    VersionedEntity,
-    VersionedRelationship,
-)
+from aurelius_atlas_core.entity_documents import EntityDocuments, LinkedWrite, VersionedEntity, VersionedRelationship
 from aurelius_atlas_core.graph_helper import collection_elements, other_end, referenced_end, relationship_type_name
+from aurelius_atlas_core.index_setup import LinkedKind
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 

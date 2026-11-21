@@ -11,9 +11,10 @@ from decimal import Decimal
 import pytest
 from aurelius_atlas_core.app_search_document import DERIVATION_VERSION
 from aurelius_atlas_core.app_search_document import source_hash as document_hash
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments, EmbeddingDimensionsError
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding import VECTOR_FIELD, source_hash
 from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
+from aurelius_atlas_core.index_setup import EmbeddingDimensionsError
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 from aurelius_atlas_store_es import ElasticsearchStore
 

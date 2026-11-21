@@ -11,8 +11,8 @@ from typing import Any
 import httpx2 as httpx
 import pytest
 import pytest_asyncio
-from aurelius_atlas_core.entity_documents import INDEX_PREFIX
 from aurelius_atlas_core.entity_store import StoredEntity
+from aurelius_atlas_core.index_setup import INDEX_PREFIX
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_server import app as app_module
 from aurelius_atlas_server.tenant_stores import TenantStoreSets, tenant_prefix

@@ -201,7 +201,7 @@ async def test__a_connected_export_follows_the_direction_it_reached_in(store: En
 @pytest.mark.covers(
     "aurelius_atlas_core.start_entity_fetch_by_export_request.StartEntityFetchByExportRequest.get",
     "aurelius_atlas_core.entity_store.EntityStore.of_types",
-    "aurelius_atlas_core.entity_documents.EntityDocuments.of_types",
+    "aurelius_atlas_core.entity_documents.StoreDocuments.of_types",
     f"{S}.overall_operation_status",
     rules=["EXP-03", "EXP-06"],
 )

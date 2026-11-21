@@ -7,7 +7,7 @@ from typing import cast
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.app_search_document import StoredVerdict, own_document
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from elasticsearch import AsyncElasticsearch

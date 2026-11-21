@@ -21,10 +21,7 @@ from aurelius_atlas_core.app_search_document import (
 )
 from aurelius_atlas_core.entity_audit_repository import DEFAULT_LIMIT, TAG_ACTIONS, sort_events
 from aurelius_atlas_core.entity_documents import (
-    LINKED_MODELS,
     JournalEntry,
-    Linked,
-    LinkedKind,
     LinkedWrite,
     Reservation,
     TypeCount,
@@ -34,6 +31,7 @@ from aurelius_atlas_core.entity_documents import (
 )
 from aurelius_atlas_core.entity_embedding import embeddable, with_current_embedding
 from aurelius_atlas_core.free_text import field_terms, text_matches
+from aurelius_atlas_core.index_setup import LINKED_MODELS, Linked, LinkedKind
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery, facet_counts, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -101,7 +99,7 @@ class SimulatedCrashError(RuntimeError):
 
 
 class MemoryEntityDocuments:
-    """``EntityDocuments`` in memory, entities and linked documents kept as JSON with a version per document.
+    """``StoreDocuments`` in memory, entities and linked documents kept as JSON with a version per document.
 
     ``fail`` maps a GUID to ``"conflict"`` or ``"error"`` for the next bulk write of it; ``crash_after_write`` makes
     the next bulk write raise ``SimulatedCrashError`` after writing, as if the process died.

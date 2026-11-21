@@ -8,8 +8,8 @@ from typing import Any
 
 import pytest
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_classifications import EntityClassifications
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.suggestions_provider import SuggestionsProvider
@@ -35,7 +35,7 @@ def where(name: str, operator: str, value: str | None = None) -> dict[str, Any]:
 
 @pytest.mark.critical
 @pytest.mark.covers(
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search",
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.search",
     "aurelius_atlas_core.discovery_service.EntityDiscoveryService.search_with_parameters",
     rules=["SRC-05", "SRC-07"],
 )
@@ -81,7 +81,7 @@ async def test__items_are_searched_by_their_typed_fields_on_elasticsearch(
 @pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.classification_search_processor.ClassificationSearchProcessor.criterion",
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.classifications_of_types",
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.classifications_of_types",
     rules=["CSR-02", "CSR-03", "CSR-05"],
 )
 async def test__entities_are_searched_by_classification_on_elasticsearch(
@@ -130,7 +130,7 @@ async def test__entities_are_searched_by_classification_on_elasticsearch(
 
 @pytest.mark.critical
 @pytest.mark.covers(
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search",
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.search",
     "aurelius_atlas_core.discovery_service.EntityDiscoveryService.search_using_full_text",
     rules=["FTX-02", "FTX-03", "FTX-04", "FTX-05"],
 )
@@ -196,7 +196,7 @@ async def test__entities_are_found_by_free_text_on_elasticsearch(
 
 @pytest.mark.critical
 @pytest.mark.covers(
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms",
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.terms",
     "aurelius_atlas_core.discovery_service.EntityDiscoveryService.quick_search",
     rules=["QSR-02", "QSR-03", "QSR-04", "SUG-01"],
 )

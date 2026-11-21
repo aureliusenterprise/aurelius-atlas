@@ -13,7 +13,7 @@ import pytest
 from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, StoredVerdict, own_document, verdict_mapping
 from aurelius_atlas_core.app_search_governance import GovernanceIndexer, governance_rule, rules_digest
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
@@ -28,7 +28,7 @@ from test__app_search_engine import FIXTURES, indexed_sample
 
 G = "aurelius_atlas_core.app_search_governance"
 X = f"{G}.GovernanceIndexer"
-D = "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments"
+D = "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments"
 M = "aurelius_atlas_core.testing.memory.MemoryEntityDocuments"
 VERDICTS = "aurelius-atlas-gov-quality"
 
@@ -441,7 +441,9 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
     return asyncio.run(build())
 
 
-@pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09", "QRY-06", "RUL-06"])
+@pytest.mark.covers(
+    f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09", "QRY-06", "RUL-06", "EDS-05"]
+)
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
     """28 of 66 rules read; 1,785 verdicts; 1,585 of the 1,612 legacy verdicts of a rule that reads as it
     were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).

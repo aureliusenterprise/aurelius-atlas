@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding import source_hash
 from aurelius_atlas_core.free_text import TextQuery
 from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test, VectorQuery
@@ -20,7 +20,7 @@ from aurelius_atlas_model.discovery import Condition
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from elasticsearch import AsyncElasticsearch
 
-D = "aurelius_atlas_core.entity_documents"
+D = "aurelius_atlas_core.documents_es"
 E = f"{D}.ElasticsearchEntityDocuments"
 M = "aurelius_atlas_core.testing.memory.MemoryEntityDocuments"
 

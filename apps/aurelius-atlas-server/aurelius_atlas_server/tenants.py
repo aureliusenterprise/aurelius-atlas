@@ -11,7 +11,7 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import Any
 
-from aurelius_atlas_core.entity_documents import INDEX_PREFIX, WRITE_REFRESH
+from aurelius_atlas_core.index_setup import INDEX_PREFIX, WRITE_REFRESH
 from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, ensure_index
 from aurelius_atlas_model.base import AtlasModel
 from aurelius_atlas_store_es import ElasticsearchStore

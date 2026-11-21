@@ -1,0 +1,364 @@
+"""``atlas-dev``, ``atlas-dev-quality`` and ``atlas-dev-gov-quality`` as their field tables (ASE-01 to ASE-03,
+ASQ-01 to ASQ-03, ASG-01 to ASG-03, DD-523, DD-531, DD-534, DD-790).
+
+An engine is the documents it holds and its fields: each field is a row of its table, its kind, and the index
+field it is read from or the constant it holds. The table also answers a filter — a value becomes a clause
+through the field's kind and path (ASE-06) — and a request that names no row is refused.
+"""  # noqa: D205 - one sentence
+
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Any
+
+from aurelius_atlas_core import es_clauses
+from aurelius_atlas_core.app_search_document import (
+    APP_SEARCH_FIELD,
+    DIMENSIONS,
+    KEYWORD_FIELDS,
+    NAME_FIELDS,
+    QUALITY_KEYWORD_FIELDS,
+    QUALITY_NUMBER_FIELDS,
+    QUALITY_RESULT_FIELD,
+    QUALITY_TEXT_FIELDS,
+    QUALITY_TOTALS_FIELD,
+    SOURCE_HASH_FIELD,
+    VERDICT_FIELDS,
+)
+from aurelius_atlas_core.index_setup import ENTITY_DOCUMENTS, GOV_QUALITY
+from aurelius_atlas_core.search_query import ACTIVE
+from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredQualityResult
+
+ENGINE = "atlas-dev"
+"""The engine of the entity documents (LAS-01)."""
+
+QUALITY_ENGINE = "atlas-dev-quality"
+"""The engine of the quality results (LAS-11, ASQ-02)."""
+
+GOV_QUALITY_ENGINE = "atlas-dev-gov-quality"
+"""The engine of the governance verdicts (LAS-13, ASG-03)."""
+
+MAX_PAGE = 100
+MAX_PAGE_SIZE = 1000
+MAX_FACET_SIZE = 250
+
+MIN_SNIPPET = 20
+MAX_SNIPPET = 1000
+DEFAULT_SNIPPET = 100
+
+_DIRECTIONS = ("asc", "desc")
+
+
+class Kind(StrEnum):
+    """An App Search field's schema type."""
+
+    TEXT = "text"
+    NUMBER = "number"
+    BOOL = "boolean"
+
+
+@dataclass(frozen=True)
+class EngineField:
+    """A field of the engine: its kind, and either the index field it is read from or its constant (DD-523).
+
+    ``text`` is the analysed sub-field a query's words are matched in; ``read`` gives the value from a hit's
+    source; ``missing`` is the number a document without the index field holds for filters, facets and sorts
+    (DD-530).
+    """
+
+    kind: Kind
+    path: str | None = None
+    constant: Any = None
+    text: str | None = None
+    read: Callable[[Mapping[str, Any]], Any] | None = None
+    missing: Any = None
+    """The value a document without the index field holds; a bool field's may be ``None`` (the field absent)."""
+    paths: tuple[str, ...] | None = None
+    """The index paths of a field stored per entity type (the view door's ``name``, DD-586): a filter holds
+    a value of any one of them, and only filtering and matching reach such a field."""
+
+    def value(self, source: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a field's JSON value
+        """The field's value in a hit's source."""
+        return self.constant if self.read is None else self.read(source)
+
+
+def _stored(name: str) -> Callable[[Mapping[str, Any]], Any]:
+    """The reader of a stored App Search field, its default when the stored document lacks it."""
+    default = StoredAppSearch.model_fields[name].get_default(call_default_factory=True)
+
+    def read(source: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a field's JSON value
+        return (source.get(APP_SEARCH_FIELD) or {}).get(name, default)
+
+    return read
+
+
+def _nested(path: str, default: Any) -> Callable[[Mapping[str, Any]], Any]:  # noqa: ANN401 - a JSON value
+    """The reader of a dotted index field, ``default`` where the source lacks it."""
+    keys = path.split(".")
+
+    def read(source: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a field's JSON value
+        value: Any = source
+        for key in keys:
+            value = value.get(key) if isinstance(value, dict) else None
+        return default if value is None else value
+
+    return read
+
+
+_TOTALS = {"dqscore": "score", "dqscorecnt": "count", "dqscoresum": "total"}
+"""The score fields of ``atlas-dev`` and the totals they are read from (ASQ-04, ASQ-05)."""
+
+
+def _fields() -> dict[str, EngineField]:
+    """The engine's fields (14.1's ``atlas-dev`` documents): the entity's, the stored ones, the constants."""
+    guid = EngineField(Kind.TEXT, path="guid", read=lambda source: source.get("guid"))
+    fields = {
+        "id": guid,
+        "guid": guid,
+        "typename": EngineField(Kind.TEXT, path="typeName", read=lambda source: source.get("typeName")),
+        "supertypenames": EngineField(Kind.TEXT, path="typeName", read=lambda source: [source.get("typeName")]),
+    }
+    for name in NAME_FIELDS:
+        path = f"{APP_SEARCH_FIELD}.{name}"
+        fields[name] = EngineField(Kind.TEXT, path=path, text=f"{path}.text", read=_stored(name))
+    for name in KEYWORD_FIELDS:
+        fields[name] = EngineField(Kind.TEXT, path=f"{APP_SEARCH_FIELD}.{name}", read=_stored(name))
+    fields["businessruleid"] = EngineField(Kind.NUMBER, constant=0.0)
+    for name in ("deriveddataownerguid", "deriveddatastewardguid", "deriveddomainleadguid", "entityname"):
+        fields[name] = EngineField(Kind.TEXT, constant=None)
+    for name in (
+        "classificationstext",
+        "deriveddatasetguids",
+        "deriveddatasetnames",
+        "derivedentityguids",
+        "derivedentitynames",
+    ):
+        fields[name] = EngineField(Kind.TEXT, constant=[])
+    for dimension in (*DIMENSIONS, "overall"):
+        for prefix, total in _TOTALS.items():
+            path = f"{QUALITY_TOTALS_FIELD}.{dimension}.{total}"
+            fields[f"{prefix}_{dimension}"] = EngineField(Kind.NUMBER, path=path, read=_nested(path, 0.0), missing=0.0)
+    for dimension in DIMENSIONS:
+        path = f"{QUALITY_TOTALS_FIELD}.{dimension}.rules"
+        fields[f"qualityguid_{dimension}"] = EngineField(Kind.TEXT, path=path, read=_nested(path, []))
+    return fields
+
+
+FIELDS = _fields()
+"""``atlas-dev``'s fields by name: LAS-02 to LAS-07, and the scores read from the totals (ASQ-04 to ASQ-06)."""
+
+
+def _quality_fields() -> dict[str, EngineField]:
+    """``atlas-dev-quality``'s fields (14.1's documents): the score entity's GUID and its result's (ASQ-02)."""
+    fields = {"id": EngineField(Kind.TEXT, path="guid", read=lambda source: source.get("guid"))}
+    defaults = {
+        name: info.get_default(call_default_factory=True) for name, info in StoredQualityResult.model_fields.items()
+    }
+    for name in ("guid", *QUALITY_KEYWORD_FIELDS):
+        stored = "qualityguid" if name == "guid" else name
+        path = f"{QUALITY_RESULT_FIELD}.{stored}"
+        fields[name] = EngineField(Kind.TEXT, path=path, read=_nested(path, defaults[stored]))
+    for name in QUALITY_TEXT_FIELDS:
+        path = f"{QUALITY_RESULT_FIELD}.{name}"
+        fields[name] = EngineField(Kind.TEXT, path=path, text=f"{path}.text", read=_nested(path, defaults[name]))
+    for name in QUALITY_NUMBER_FIELDS:
+        path = f"{QUALITY_RESULT_FIELD}.{name}"
+        fields[name] = EngineField(Kind.NUMBER, path=path, read=_nested(path, defaults[name]))
+    return fields
+
+
+QUALITY_FIELDS = _quality_fields()
+"""``atlas-dev-quality``'s fields by name (LAS-11, ASQ-02)."""
+
+
+def _verdict(name: str, default: Any) -> Callable[[Mapping[str, Any]], Any]:  # noqa: ANN401 - a JSON value
+    """The reader of a verdict's field, ``default`` where the source lacks it."""
+    return lambda source: source.get(name, default)
+
+
+def _gov_quality_fields() -> dict[str, EngineField]:
+    """``atlas-dev-gov-quality``'s fields (14.1's documents, the legacy schema): all text (ASG-03, ASG-05)."""
+    fields = {
+        name: EngineField(
+            Kind.TEXT,
+            path=name,
+            text=f"{name}.text",
+            read=_verdict(name, [] if name == "usedattributes" else ""),
+        )
+        for name in VERDICT_FIELDS
+    }
+    for name in ("result", "doc_guid"):
+        fields[name] = EngineField(Kind.TEXT, constant=None)
+    return fields
+
+
+GOV_QUALITY_FIELDS = _gov_quality_fields()
+"""``atlas-dev-gov-quality``'s fields by name (LAS-13, ASG-03)."""
+
+
+@dataclass(frozen=True)
+class Engine:
+    """An engine: its name, the filter of the documents it holds, its fields, and the index and id field of its
+    documents (DD-531, DD-534).
+    """  # noqa: D205 - one sentence
+
+    name: str
+    holds: tuple[dict[str, Any], ...]
+    fields: Mapping[str, EngineField]
+    index: str = ENTITY_DOCUMENTS
+    id_field: str = "guid"
+
+
+ATLAS_DEV = Engine(ENGINE, (es_clauses.term("state", ACTIVE), es_clauses.exists(SOURCE_HASH_FIELD)), FIELDS)
+"""The active entities with an App Search document, stale or not (ASE-03, DD-524)."""
+
+ATLAS_DEV_QUALITY = Engine(
+    QUALITY_ENGINE,
+    (
+        es_clauses.term("state", ACTIVE),
+        es_clauses.exists(f"{QUALITY_RESULT_FIELD}.qualityguid"),
+    ),
+    QUALITY_FIELDS,
+)
+"""The active score entities with a quality result (ASQ-02)."""
+
+ATLAS_DEV_GOV_QUALITY = Engine(GOV_QUALITY_ENGINE, (), GOV_QUALITY_FIELDS, index=GOV_QUALITY, id_field="id")
+"""Every governance verdict (ASG-03, DD-534)."""
+
+ENGINES = {engine.name: engine for engine in (ATLAS_DEV, ATLAS_DEV_QUALITY, ATLAS_DEV_GOV_QUALITY)}
+"""The engines by name (ASE-01, ASQ-01, ASG-01)."""
+
+
+class AppSearchError(Exception):
+    """A request App Search refuses: its status and one message per problem (ASE-04, DD-527)."""
+
+    def __init__(self, status: int, *messages: str) -> None:
+        """A refusal with ``status`` for ``messages``."""
+        super().__init__("; ".join(messages))
+        self.status = status
+        self.messages = list(messages)
+
+    def to_json(self) -> dict[str, list[str]]:
+        """App Search's error body."""
+        return {"errors": self.messages}
+
+
+class Errors:
+    """The problems found in a request, raised together."""
+
+    def __init__(self, fields: Mapping[str, EngineField]) -> None:
+        self.fields = fields
+        self.messages: list[str] = []
+
+    def add(self, message: str) -> None:
+        """One more problem found in the request."""
+        self.messages.append(message)
+
+    def raise_any(self) -> None:
+        """Refuse with every problem found, if any; App Search's one 400 for all of them."""
+        if self.messages:
+            raise AppSearchError(400, *self.messages)
+
+
+def known(name: object, errors: Errors, what: str) -> EngineField | None:
+    """The engine's field of that name, or a problem named after ``what``."""
+    found = errors.fields.get(name) if isinstance(name, str) else None
+    if found is None:
+        errors.add(f"{what} contains an unknown field: {name}")
+    return found
+
+
+_ALL = es_clauses.match_all()
+_NONE = es_clauses.match_none()
+
+
+def filter_clauses(node: object, errors: Errors, what: str) -> dict[str, Any]:
+    """A filter object: its fields and its ``all``, ``any`` and ``none`` lists, joined as ``all`` (ASE-06)."""
+    if not isinstance(node, dict):
+        errors.add(f"{what} must be an object")
+        return _ALL
+    clauses: list[dict[str, Any]] = []
+    for key, value in node.items():
+        if key in ("all", "any", "none"):
+            if not isinstance(value, list):
+                errors.add(f"{what} {key} must be a list of filters")
+                continue
+            nested = [filter_clauses(item, errors, what) for item in value]
+            if key == "all":
+                clauses.append(es_clauses.filter_(nested))
+            elif key == "any":
+                clauses.append(es_clauses.should(nested) if nested else _NONE)
+            else:
+                clauses.append(es_clauses.must_not(nested))
+        elif (engine_field := known(key, errors, what)) is not None:
+            clauses.append(field_filter(key, engine_field, value, errors))
+    return es_clauses.filter_(clauses)
+
+
+def field_filter(name: str, engine_field: EngineField, value: object, errors: Errors) -> dict[str, Any]:
+    """A field's value filter, any of a list, or a number field's range from included to not (ASE-06).
+
+    A field stored per entity type (``paths``) filters as any one of its paths holding a value: a document
+    of one type has the value under its own path alone (DD-586).
+    """
+    if isinstance(value, dict):
+        return range_filter(name, engine_field, value, errors)
+    values = value if isinstance(value, list) else [value]
+    wanted = [filter_value(name, engine_field, item, errors) for item in values]
+    if engine_field.paths is not None:
+        terms = [es_clauses.terms(path, [item for item in wanted if item is not None]) for path in engine_field.paths]
+        return es_clauses.should(terms) if terms else _NONE
+    if engine_field.path is None:
+        held = engine_field.constant if isinstance(engine_field.constant, list) else [engine_field.constant]
+        return _ALL if any(item in held for item in wanted if item is not None) else _NONE
+    terms = es_clauses.terms(engine_field.path, [item for item in wanted if item is not None])
+    missing = engine_field.missing
+    return _or_missing(engine_field.path, terms) if missing is not None and missing in wanted else terms
+
+
+def _or_missing(path: str, clause: dict[str, Any]) -> dict[str, Any]:
+    """The clause, or the field missing: a document without it holds the field's ``missing`` value (DD-530)."""
+    absent = es_clauses.must_not([es_clauses.exists(path)])
+    return es_clauses.should([clause, absent])
+
+
+_KIND_WORDS = {Kind.TEXT: "string", Kind.NUMBER: "number", Kind.BOOL: "boolean"}
+"""What a refusal calls a field's kind, in a filter message."""
+
+
+def filter_value(name: str, engine_field: EngineField, value: object, errors: Errors) -> object:
+    """A filter value of the field's kind: a string for text, a number for a number field, a bool for a flag."""
+    if engine_field.kind is Kind.TEXT and isinstance(value, str):
+        return value
+    if engine_field.kind is Kind.NUMBER and _is_number(value):
+        return value
+    if engine_field.kind is Kind.BOOL and isinstance(value, bool):
+        return value
+    errors.add(f"Filter value for {name} must be a {_KIND_WORDS[engine_field.kind]}")
+    return None
+
+
+def range_filter(name: str, engine_field: EngineField, bounds: dict[str, Any], errors: Errors) -> dict[str, Any]:
+    """``{from, to}`` of a number field: from included, to not."""
+    if engine_field.kind is not Kind.NUMBER:
+        errors.add(f"Filter for {name} must be a value or a list of values: it is a text field")
+        return _ALL
+    lower, upper = bounds.get("from"), bounds.get("to")
+    if (lower is None and upper is None) or not all(item is None or _is_number(item) for item in (lower, upper)):
+        errors.add(f"Range filter for {name} must have a number from or to")
+        return _ALL
+    if engine_field.path is None:
+        return _ALL if _within(engine_field.constant, lower, upper) else _NONE
+    limits = ({"gte": lower} if lower is not None else {}) | ({"lt": upper} if upper is not None else {})
+    clause = es_clauses.range_(engine_field.path, limits)
+    missing = engine_field.missing
+    return _or_missing(engine_field.path, clause) if missing is not None and _within(missing, lower, upper) else clause
+
+
+def _within(value: float, lower: float | None, upper: float | None) -> bool:
+    """Whether the value is from ``lower`` on, ``lower`` included, and below ``upper``; ``None`` bounds nothing."""
+    return (lower is None or value >= lower) and (upper is None or value < upper)
+
+
+def _is_number(value: object) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
