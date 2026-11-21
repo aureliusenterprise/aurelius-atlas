@@ -39,6 +39,7 @@ import {
     type EditorLabels,
     type RelationshipField,
     type RelationshipPick,
+    blockedRelationshipNames,
     buildFields,
     buildRelationshipFields,
     mergeOntoEntity,
@@ -240,41 +241,17 @@ export class EntityEditor {
         return this.qualityMode() ? all.filter((field) => field.name === QUALITY_FIELDS_RELATIONSHIP) : all;
     });
 
-    /**
-     * The pickers currently blocked by 18.3's parent choice (PME-10, DD-751):
-     * a field of a parent group whose *other* members already hold a value.
-     * Filling one member makes the others unfillable — the rule the server
-     * enforces on save (PME-07), made impossible in the form instead of
-     * reported after the fact. The check rides the picker values, so it moves
-     * with the edits, and it never blocks a field that holds a value itself:
-     * the one the user filled stays live, so it can be deleted and the choice
-     * switched. A field with no parent group is never blocked.
-     */
-    protected readonly blockedRelationships = computed<ReadonlySet<string>>(() => {
-        const held = new Set<string>();
-        for (const field of this.relationshipFields()) {
-            if (field.parentGroup !== undefined && (this.relationshipValues().get(field.name)?.length ?? 0) > 0) {
-                held.add(field.parentGroup);
-            }
-        }
-        if (held.size === 0) {
-            return new Set<string>();
-        }
-
-        return new Set(
-            this.relationshipFields()
-                .filter(
-                    (field) =>
-                        field.parentGroup !== undefined &&
-                        held.has(field.parentGroup) &&
-                        (this.relationshipValues().get(field.name)?.length ?? 0) === 0,
-                )
-                .map((field) => field.name),
-        );
-    });
+    /** The pickers the parent choice blocks right now (PME-10, DD-751): the
+     * pure rule of `form-fields.ts` (WFE-04, DD-806) over the fields and the
+     * current picker values — a filled member of a parent group blocks its
+     * empty siblings, and holds nothing itself. */
+    protected readonly blockedRelationships = computed<ReadonlySet<string>>(() =>
+        blockedRelationshipNames(this.relationshipFields(), this.relationshipValues()),
+    );
 
     /** Whether one picker is blocked by a filled sibling of its parent group
-     * (PME-10). The template's disabled input.
+     * (PME-10). The template's disabled input — the rule itself lives in
+     * `form-fields.ts` with its direct tests.
      * @param field the picker's field
      */
     protected relationshipBlocked(field: RelationshipField): boolean {

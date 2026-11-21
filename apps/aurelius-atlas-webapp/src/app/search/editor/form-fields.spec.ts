@@ -8,6 +8,7 @@ import type {
 } from "aurelius-atlas-data-access";
 
 import {
+    blockedRelationshipNames,
     buildFields,
     buildRelationshipFields,
     mergeOntoEntity,
@@ -598,6 +599,53 @@ describe("a parent group's pickers (PME-10, 18.3)", () => {
         expect(
             buildRelationshipFields(blank, new Map([["E", blank]])).every((field) => field.parentGroup === undefined),
         ).toBe(true);
+    });
+
+    // The blocked-pickers rule (WFE-04, DD-806), decided on the fields and the
+    // current picks — no component, no DOM. The group's members above:
+    // dataDomain and parentEntity share the group; steward has none.
+    const FIELDS = buildRelationshipFields(ENTITY, new Map([["m4i_data_entity", ENTITY]]));
+    const pick = (guid: string) => [{ guid, typeName: "x", relationshipType: "y", relationshipStatus: "ACTIVE" }];
+    const picks = (entries: Record<string, readonly unknown[]>): ReadonlyMap<string, readonly unknown[]> =>
+        new Map(Object.entries(entries));
+
+    it("blocks nothing while the group holds no value (PME-10)", () => {
+        const blocked = blockedRelationshipNames(FIELDS, picks({ dataDomain: [], parentEntity: [] }));
+
+        expect([...blocked]).toEqual([]);
+    });
+
+    it("a filled member blocks its empty sibling, and holds itself live (PME-10)", () => {
+        // Filling dataDomain makes parentEntity unfillable (the PME-07 rule the
+        // server applies on save), but dataDomain itself stays live so the
+        // choice can be deleted and switched.
+        const blocked = blockedRelationshipNames(FIELDS, picks({ dataDomain: pick("d1") }));
+
+        expect([...blocked]).toEqual(["parentEntity"]);
+        expect(blocked.has("dataDomain")).toBe(false);
+    });
+
+    it("a filled member blocks the other way too (PME-10, PME-08)", () => {
+        const blocked = blockedRelationshipNames(FIELDS, picks({ parentEntity: pick("p1") }));
+
+        expect([...blocked]).toEqual(["dataDomain"]);
+    });
+
+    it("nothing is blocked when both members hold a value (PME-10)", () => {
+        // Both hold, so neither is an empty sibling — a stale double-pick
+        // disables nothing; the server's save rejects it.
+        const blocked = blockedRelationshipNames(FIELDS, picks({ dataDomain: pick("d1"), parentEntity: pick("p1") }));
+
+        expect([...blocked]).toEqual([]);
+    });
+
+    it("a field with no parent group is never blocked (PME-10)", () => {
+        // steward shares no group: filling it must not block the parents, and
+        // a held parent must not block it.
+        const blocked = blockedRelationshipNames(FIELDS, picks({ steward: pick("s1"), dataDomain: pick("d1") }));
+
+        expect(blocked.has("steward")).toBe(false);
+        expect([...blocked]).toEqual(["parentEntity"]);
     });
 });
 

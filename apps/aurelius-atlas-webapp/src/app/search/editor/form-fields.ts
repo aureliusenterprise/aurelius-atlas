@@ -384,6 +384,51 @@ export function buildRelationshipFields(
     return enforced.sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 
+/**
+ * The pickers currently blocked by 18.3's parent choice (PME-10, DD-751):
+ * a field of a parent group whose *other* members already hold a value.
+ * Filling one member makes the others unfillable — the rule the server
+ * enforces on save (PME-07), made impossible in the form instead of reported
+ * after the fact. The check rides the picker values, so it moves with the
+ * edits, and it never blocks a field that holds a value itself: the one the
+ * user filled stays live, so it can be deleted and the choice switched. A
+ * field with no parent group is never blocked.
+ *
+ * This is the pure rule (WFE-04, DD-806): the component only feeds it its
+ * fields and current picker values, and reads the disabled flag off the
+ * result. PME-01 and PME-03 build the fields' `parentGroup`s; this decides
+ * which of them the current edits block.
+ * @param fields the picker fields (their `parentGroup`s, PME-01/PME-03)
+ * @param picksByName the current picks per field name — a non-empty list is
+ *  a held member (the editor's `relationshipValues()`)
+ * @returns the names of the fields a filled sibling of the same group blocks
+ */
+export function blockedRelationshipNames(
+    fields: readonly RelationshipField[],
+    picksByName: ReadonlyMap<string, readonly unknown[]>,
+): ReadonlySet<string> {
+    const held = new Set<string>();
+    for (const field of fields) {
+        if (field.parentGroup !== undefined && (picksByName.get(field.name)?.length ?? 0) > 0) {
+            held.add(field.parentGroup);
+        }
+    }
+    if (held.size === 0) {
+        return new Set<string>();
+    }
+
+    return new Set(
+        fields
+            .filter(
+                (field) =>
+                    field.parentGroup !== undefined &&
+                    held.has(field.parentGroup) &&
+                    (picksByName.get(field.name)?.length ?? 0) === 0,
+            )
+            .map((field) => field.name),
+    );
+}
+
 /** The picker field one merged relationship definition becomes (EDT-13).
  * The label is the catalogue string where one exists, else the `displayName`,
  * else the name — the legacy's translated string alone, with no target-type
