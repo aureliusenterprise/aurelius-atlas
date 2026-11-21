@@ -30,6 +30,11 @@
     "aliases": []
   },
   {
+    "version": "fix-core-propagation-tell-skips-deleted",
+    "title": "fix-core-propagation-tell-skips-deleted",
+    "aliases": []
+  },
+  {
     "version": "feat-19-1-query-semantics",
     "title": "feat-19-1-query-semantics",
     "aliases": []
