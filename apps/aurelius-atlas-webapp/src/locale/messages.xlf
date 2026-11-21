@@ -2993,6 +2993,10 @@ The technical data governance model consists of the following types of entities:
         <source>Unread</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.alerts.unread</note>
       </trans-unit>
+      <trans-unit id="shell.editor.cancel" datatype="html">
+        <source>Cancel</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.editor.cancel</note>
+      </trans-unit>
       <trans-unit id="shell.footer.copyright" datatype="html">
         <source>Copyright</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.footer.copyright</note>

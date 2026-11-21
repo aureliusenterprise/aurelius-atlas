@@ -19,7 +19,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
-import { Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
+import { Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
 import {
     AtlasEntitiesService,
     QualityRuleService,
@@ -38,6 +38,7 @@ import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
 import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState } from "./editor-state";
+import { formDefinitions, formLabels, inFormOrder, legacyFirst } from "./form-definitions";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import { EntityWritten } from "./entity-written";
 import {
@@ -108,11 +109,13 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  * events, re-read from the Atlas v2 audit endpoint on every switch (HST-03,
  * DD-817), and the commit foot belongs to the Entity pane alone (HST-07).
  */
+/** The description fields whose box turns yellow on a failing rule (EDP-16). */
+const DESCRIPTION_RULE_FIELDS = new Set(["definition", "description", "ruleDescription"]);
+
 @Component({
     imports: [
         ClassificationCombobox,
         DatePipe,
-        Drawer,
         EntityRelationshipInput,
         FontAwesomeModule,
         FormField,
@@ -194,14 +197,14 @@ export class EntityEditor {
 
     private readonly route = inject(ActivatedRoute);
 
-    /** The route's `:guid` (edit mode) — the editor reads its own entity. */
-    private readonly guid = toSignal(this.route.paramMap.pipe(map((params) => params.get("guid") ?? "")), {
-        initialValue: "",
+    /** The page's `?guid=` (edit mode, EDP-01) — the editor reads its own entity. */
+    protected readonly guid = toSignal(this.route.queryParamMap.pipe(map((params) => params.get("guid") ?? "")), {
+        initialValue: this.route.snapshot.queryParamMap.get("guid") ?? "",
     });
 
-    /** The route's `:type` (create mode, DD-330) — "" before the first pick. */
-    private readonly routeType = toSignal(this.route.paramMap.pipe(map((params) => params.get("type") ?? "")), {
-        initialValue: "",
+    /** The page's `?type=` (create mode, DD-330, EDP-01) — "" before the first pick. */
+    private readonly routeType = toSignal(this.route.queryParamMap.pipe(map((params) => params.get("type") ?? "")), {
+        initialValue: this.route.snapshot.queryParamMap.get("type") ?? "",
     });
 
     /** The mode, off the route's data — no store sentinel (EDT-01, DD-325).
@@ -210,19 +213,39 @@ export class EntityEditor {
      * rebuilt this component (and replayed the drawer's slide-in) on the
      * first type pick. One matcher route now serves both URLs, so the mode
      * cannot come from the path anymore. */
-    private readonly isCreate = this.route.snapshot.data["editorMode"] === "create";
+    protected readonly isCreate = (this.route.snapshot.queryParamMap.get("guid") ?? "") === "";
 
     /** Every field label the catalogue names (EDT-33): one localized string
      * per attribute the shipped metamodel can render (7-33, DD-722). */
     private readonly labels: EditorLabels = attributeLabels();
 
-    /** The fields the form renders (EDT-03), from the store's typedefs. */
+    /** The legacy forms by type (EDP-05, DD-822). */
+    private readonly definitions = formDefinitions();
+
+    /** The legacy form of the rendered type, or none: the generic form then (EDP-13). */
+    protected readonly formDefinition = computed(() => {
+        const typeName = this.state.typeName();
+        return typeName ? this.definitions[typeName] : undefined;
+    });
+
+    /** The labels the fields carry: the legacy form's own over the catalogue's (EDP-05). */
+    private readonly fieldLabels = computed<EditorLabels>(() => {
+        const form = this.formDefinition();
+        return form ? { ...this.labels, ...formLabels(form) } : this.labels;
+    });
+
+    /** The fields the form renders (EDT-03), from the store's typedefs: the
+     * legacy form's, in its order, where the type has one (EDP-05). */
     protected readonly fields = computed(() => {
         const typeName = this.state.typeName();
         const defs = this.state.entityDefsByName();
         const def = typeName ? defs.get(typeName) : undefined;
-
-        return def ? buildFields(def, defs, this.state.enumsByName(), this.labels) : [];
+        if (!def) {
+            return [];
+        }
+        const all = buildFields(def, defs, this.state.enumsByName(), this.fieldLabels());
+        const form = this.formDefinition();
+        return form ? inFormOrder(form, all) : all;
     });
 
     // The form trio sits below `fields` on purpose: `form()` compiles the
@@ -248,8 +271,16 @@ export class EntityEditor {
         const defs = this.state.entityDefsByName();
         const def = typeName ? defs.get(typeName) : undefined;
 
-        return def ? buildRelationshipFields(def, defs, this.labels, this.state.relationshipDefs()) : [];
+        if (!def) {
+            return [];
+        }
+        const all = buildRelationshipFields(def, defs, this.fieldLabels(), this.state.relationshipDefs());
+        const form = this.formDefinition();
+        return form ? inFormOrder(form, all) : all;
     });
+
+    /** Whether the tag box shows: on every generic form, and on the legacy forms that had it (EDP-11). */
+    protected readonly tagBoxShown = computed(() => this.formDefinition()?.classifications ?? true);
 
     /** The picker values the form holds (EDT-15's seed, EDT-14's edits). They
      * ride their own signal, not the form model: a picker's value is a chip
@@ -300,9 +331,14 @@ export class EntityEditor {
 
     /** The picker rows for the ui-lib Select (EDT-04). The Select's `options`
      * input is a mutable array, so the map yields a fresh one (not readonly). */
-    protected readonly pickerRows = computed<PickerRow[]>(() =>
-        this.state.pickerTypes().map(({ name, label }) => ({ name, label })),
-    );
+    protected readonly pickerRows = computed<PickerRow[]>(() => {
+        // The types with a legacy form first, then the rest (EDP-13), each part
+        // in the store's label order (DD-497).
+        return legacyFirst(
+            this.state.pickerTypes().map(({ name, label }) => ({ name, label })),
+            this.definitions,
+        );
+    });
 
     /** The classification box's applicable type names (EDT-05): the defs the
      * chain answers, minus the chosen ones (VDE-02) — the combobox filters
@@ -408,6 +444,12 @@ export class EntityEditor {
     protected readonly markdownPlaceholder = $localize`:@@components.markdownEditor.placeholder:Please type some markdown to get started...`;
 
     protected readonly notificationLine = $localize`:@@search.components.editor.attribute.notification:This entity can't be saved because one or more required fields are missing.`;
+
+    /** The warnings of a `’` (U+2019) in the name or the definition (EDP-09). */
+    protected readonly quoteWarnings: Readonly<Record<string, string>> = {
+        name: $localize`:@@search.components.editor.entity.nameWarning:Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues. Please replace it with a standard apostrophe (') before importing your text.`,
+        definition: $localize`:@@search.components.editor.entity.definitionWarning:Importing the character ’ (Unicode U+2019, Right Single Quotation Mark) may cause representation issues. Please replace it with a standard apostrophe (') before importing your text.`,
+    };
 
     protected readonly loadingLine = $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`;
 
@@ -690,6 +732,28 @@ export class EntityEditor {
      * has no `definition` control of its own — the legacy's one-way alias, and
      * each verdict sits once on a type that carries both. A control no rule
      * measures renders nothing; `unreadRules` renders no line (VEV-03). */
+    /**
+     * The warning a field's value earns for holding `’` (U+2019), or none (EDP-09):
+     * only the name and the definition warn, and the save is not refused.
+     * @param name the field's attribute
+     * @returns the warning line, or `""`
+     */
+    protected quoteWarning(name: string): string {
+        const warning = this.quoteWarnings[name];
+        const value = this.values()[name];
+        return warning && typeof value === "string" && value.includes("\u2019") ? warning : "";
+    }
+
+    /**
+     * Whether a rule on a description field fails right now (EDP-16): the box
+     * turns yellow, the legacy's `is-warning` on the definition.
+     * @param name the field's attribute
+     * @returns whether to paint the box
+     */
+    protected descriptionNonCompliant(name: string): boolean {
+        return DESCRIPTION_RULE_FIELDS.has(name) && this.validationItems(name).some((verdict) => !verdict.compliant);
+    }
+
     protected validationItems(name: string): readonly GovernanceVerdict[] {
         const answer = this.validation();
         if (!answer) {
@@ -825,7 +889,7 @@ export class EntityEditor {
      */
     protected pickType(row: PickerRow | null): void {
         if (row && row.name !== this.routeType()) {
-            void this.router.navigate([{ outlets: { drawer: ["create", row.name] } }]);
+            void this.router.navigate(["/search/editor"], { queryParams: { type: row.name } });
         }
     }
 
@@ -1077,9 +1141,9 @@ export class EntityEditor {
         }
     }
 
-    /** Dismiss (EDT-01): X, backdrop, Escape — navigate the outlet away. */
+    /** Cancel (EDP-03): back to the entity's details when editing, to the search when creating. */
     protected close(): void {
-        this.active.set(false);
-        void this.router.navigate([{ outlets: { drawer: null } }]);
+        const guid = this.guid();
+        void this.router.navigate(guid ? ["/search/details", guid] : ["/search/browse"]);
     }
 }

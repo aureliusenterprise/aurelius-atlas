@@ -1,29 +1,21 @@
 <!--
-  The entity editor drawer body (EDT-01..EDT-08, DD-322): the routed panel
-  in the `drawer` aux outlet, carried by the ui-lib drawer (the settings /
-  alerts shape). The drawer's own X, backdrop, and Escape close it (EDT-01)
-  — the foot bar carries Save and Delete (EDT-10, EDT-19), no Cancel.
+  The entity editor page (EDP-01, DD-821): one page for create and edit, the
+  legacy's — the title, 7.35's Entity/History tabs when editing (EDP-19), the
+  legacy form of the type (EDP-05), each field's verdicts beside it (EDP-07),
+  and Delete, Cancel and Save at the foot (EDP-03, EDT-19).
 
   i18n ids are the catalogue bridge keys (EDT-11, DD-128 bridge). Strings
   bound into component inputs live in TypeScript as $localize (BRW-02), so
   only plain text carries markers here — descriptions are comments, never
   `id|description` suffixes (DD-144).
 -->
-<aurelius-atlas-ui-drawer
-    [(active)]="active"
-    [title]="drawerTitle()"
-    [ariaLabel]="closeLabel"
-    size="wide"
-    (cancelRequested)="close()"
->
-    <!-- The Entity/History tab pair (HST-01, HST-02, DD-816): edit mode only
-         — a create has no entity to audit. It rides the drawer's subhead
-         slot (DD-180), so a long form or a long list cannot scroll it away.
-         The pair is one tablist in UIC-26's anatomy, the markdown field's
-         shape: native buttons, roving tabindex (the active 0, the other -1),
-         and Left/Right (Home/End) carry the active tab and its focus. -->
+<section class="container aurelius-editor-page">
+    <!-- The editor page (EDP-01, EDP-02, DD-821): one page for create and edit,
+         full content width, the legacy's title above the tabs and the form. -->
+    <h1 class="title is-3 aurelius-editor-title">{{ drawerTitle() }}</h1>
+    <!-- The Entity/History tab pair (HST-01, HST-02): edit mode only, under the page title (EDP-19). -->
     @if (tabsShown()) {
-        <nav drawer-subhead class="tabs is-fullwidth aurelius-editor-tabs" role="tablist">
+        <nav class="tabs is-fullwidth aurelius-editor-tabs" role="tablist">
             <ul>
                 <li [class.is-active]="tab() === 'entity'">
                     <button
@@ -60,63 +52,8 @@
             </ul>
         </nav>
     }
-
-    <!-- The foot (EDT-19, DD-347): the commit pair in the drawer's fixed
-         foot bar — Delete (edit mode, write grant) holds three seconds to
-         confirm (EDT-19, the demo's holdable), Save commits. Neither sits
-         in the head anymore: the head carries the title and the X only.
-         Busy rides the pair: Bulma's spinner on the acting button (EDT-18,
-         DD-342) plus the status line above it. While the hold runs, the
-         Delete behaves like `is-loading` itself: the label clears and a
-         donut (the spinner's look, an SVG ring stroke so its edges are
-         smooth) draws clockwise over the hold's own seconds. Since 7.35 the
-         pair belongs to the Entity pane alone (HST-07, the legacy's footer
-         rule): in History the foot holds nothing, which hides it (the
-         drawer's empty-foot rule). -->
-    @if (tab() === "entity") {
-        <div drawer-footer class="aurelius-editor-foot">
-            @if (state.saving() || state.deleting()) {
-                <output class="help aurelius-editor-busy">{{ busyLine() }}</output>
-            }
-            <div class="buttons is-right aurelius-editor-actions">
-                @if (deleteShown()) {
-                    <button
-                        type="button"
-                        class="button is-danger aurelius-editor-delete"
-                        aurelius-atlas-ui-hold
-                        [holdFor]="deleteHoldSeconds"
-                        [style.--aurelius-hold-duration]="deleteHoldSeconds + 's'"
-                        [attr.title]="deleteTooltip"
-                        [class.is-loading]="state.deleting()"
-                        [disabled]="state.deleting() || state.saving()"
-                        [attr.aria-busy]="state.deleting() ? 'true' : null"
-                        (held)="deleteHeld($event)"
-                    >
-                        <!-- Delete. -->
-                        <span i18n="@@search.components.editor.delete">Delete</span>
-                        <svg class="aurelius-hold-donut" viewBox="0 0 16 16" aria-hidden="true">
-                            <circle cx="8" cy="8" r="6.5" pathLength="1"></circle>
-                        </svg>
-                    </button>
-                }
-                <button
-                    type="button"
-                    class="button is-primary aurelius-editor-save"
-                    [class.is-loading]="state.saving()"
-                    [disabled]="state.saving() || state.deleting()"
-                    [attr.aria-busy]="state.saving() ? 'true' : null"
-                    (click)="save()"
-                >
-                    <!-- Save. -->
-                    <span i18n="@@search.components.editor.save">Save</span>
-                </button>
-            </div>
-        </div>
-    }
-
-    <!-- The Entity pane (HST-02): mounted for the drawer's whole life and
-         hidden while History shows, so the form keeps its DOM state — the
-         markdown field's pane rule (DD-352). -->
+    <!-- The Entity pane (HST-02): mounted for the page's whole life and hidden
+         while History shows, so the form keeps its DOM state (DD-352). -->
     <div id="editor-entity-pane" role="tabpanel" aria-labelledby="editor-entity-tab" [hidden]="tab() !== 'entity'">
         <!-- The loading line (LR-002): the region stays mounted and only its
          text comes and goes, so the reader already watches the place the
@@ -182,21 +119,6 @@
                 @if (conflictShown()) {
                     <output class="help is-warning aurelius-editor-conflict">{{ conflictLine }}</output>
                 }
-                <!-- The required-fields notification (EDT-07): shown at the top of
-                 the form when a Save was attempted and the form is invalid —
-                 never below the fold of a long form. Its delete (Bulma's
-                 notification anatomy) dismisses it until the next Save (DD-331). -->
-                @if (notificationShown()) {
-                    <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
-                        <button
-                            type="button"
-                            class="delete"
-                            [attr.aria-label]="closeLabel"
-                            (click)="dismissNotification()"
-                        ></button>
-                        {{ notificationLine }}
-                    </div>
-                }
                 <!-- The quality rule form (EDT-25, DD-477): for a vocabulary
                  rule, the served vocabulary's kind form replaces the generic
                  attribute list (EDT-27: the save stays the drawer's, the
@@ -213,7 +135,11 @@
                     ></aurelius-atlas-webapp-quality-fields>
                 }
                 @for (field of qualityMode() ? [] : fields(); track field.name) {
-                    <div class="field aurelius-editor-field" [attr.data-field]="field.name">
+                    <div
+                        class="field aurelius-editor-field"
+                        [attr.data-field]="field.name"
+                        [class.aurelius-editor-noncompliant]="descriptionNonCompliant(field.name)"
+                    >
                         @if (field.kind === "boolean") {
                             <!-- Bulma's checkbox anatomy (EDT-03): the label wraps
                              the input and a bare text node — no wrapper span,
@@ -361,8 +287,12 @@
                                 {{ nameRequired }}
                             </p>
                         }
-                        <!-- The governance banner lines under the control (EDT-24,
-                         DD-446), rendered by the one template below. -->
+                        <!-- The ’ warning (EDP-09): a hint, never a refusal. -->
+                        @if (quoteWarning(field.name); as warning) {
+                            <p class="help is-warning aurelius-editor-quote-warning">{{ warning }}</p>
+                        }
+                        <!-- The governance verdicts beside the control (EDT-24,
+                         DD-446, EDP-07), rendered by the one template below. -->
                         <ng-container *ngTemplateOutlet="govLines; context: { fieldName: field.name }"></ng-container>
                     </div>
                 }
@@ -376,6 +306,9 @@
                  Quality mode renders the rule's `fields` end only (EDT-25):
                  the derived typedefs also carry the inherited lineage ends,
                  which the rule form does not edit. -->
+                @if (formDefinition() && tagBoxShown()) {
+                    <ng-container *ngTemplateOutlet="tagBox"></ng-container>
+                }
                 @for (field of renderedRelationshipFields(); track field.name) {
                     <div
                         class="field aurelius-editor-field aurelius-editor-relationship"
@@ -422,20 +355,76 @@
                     </div>
                 }
 
-                <!-- The classification box (EDT-05, DD-335, DD-336) is its own
-                 component since WFE-03 (DD-804): the editor hands it the
-                 applicable names and the chosen ones, and the store keeps
-                 the set the door's body carries (VDE-03). -->
-                <aurelius-atlas-webapp-classification-combobox
-                    [suggestions]="suggestions()"
-                    [chosen]="state.chosen()"
-                    [tooltips]="classificationTooltips()"
-                    [deleteLabel]="deleteLabel"
-                    (added)="state.addClassification($event)"
-                    (removed)="state.removeClassification($event)"
-                />
+                @if (!formDefinition()) {
+                    <ng-container *ngTemplateOutlet="tagBox"></ng-container>
+                }
             </form>
         }
+
+        <!-- The foot (EDT-19, DD-347): the commit pair in the drawer's fixed
+         foot bar — Delete (edit mode, write grant) holds three seconds to
+         confirm (EDT-19, the demo's holdable), Save commits. Neither sits
+         in the head anymore: the head carries the title and the X only.
+         Busy rides the pair: Bulma's spinner on the acting button (EDT-18,
+         DD-342) plus the status line above it. While the hold runs, the
+         Delete behaves like `is-loading` itself: the label clears and a
+         donut (the spinner's look, an SVG ring stroke so its edges are
+         smooth) draws clockwise over the hold's own seconds. -->
+        <!-- The required-fields notice (EDT-07, EDP-08): at the foot beside Save, red, as the
+        acy's was; its delete dismisses it until the next Save (DD-331). -->
+        @if (notificationShown()) {
+            <div class="notification is-danger is-light aurelius-editor-notification" role="alert">
+                <button
+                    type="button"
+                    class="delete"
+                    [attr.aria-label]="closeLabel"
+                    (click)="dismissNotification()"
+                ></button>
+                {{ notificationLine }}
+            </div>
+        }
+        <div class="aurelius-editor-foot">
+            @if (state.saving() || state.deleting()) {
+                <output class="help aurelius-editor-busy">{{ busyLine() }}</output>
+            }
+            <div class="buttons is-right aurelius-editor-actions">
+                @if (deleteShown()) {
+                    <button
+                        type="button"
+                        class="button is-danger aurelius-editor-delete"
+                        aurelius-atlas-ui-hold
+                        [holdFor]="deleteHoldSeconds"
+                        [style.--aurelius-hold-duration]="deleteHoldSeconds + 's'"
+                        [attr.title]="deleteTooltip"
+                        [class.is-loading]="state.deleting()"
+                        [disabled]="state.deleting() || state.saving()"
+                        [attr.aria-busy]="state.deleting() ? 'true' : null"
+                        (held)="deleteHeld($event)"
+                    >
+                        <!-- Delete. -->
+                        <span i18n="@@search.components.editor.delete">Delete</span>
+                        <svg class="aurelius-hold-donut" viewBox="0 0 16 16" aria-hidden="true">
+                            <circle cx="8" cy="8" r="6.5" pathLength="1"></circle>
+                        </svg>
+                    </button>
+                }
+                <button type="button" class="button is-light aurelius-editor-cancel" (click)="close()">
+                    <!-- Cancel (EDP-03): back to where the editor was opened from. -->
+                    <span i18n="@@shell.editor.cancel">Cancel</span>
+                </button>
+                <button
+                    type="button"
+                    class="button is-primary aurelius-editor-save"
+                    [class.is-loading]="state.saving()"
+                    [disabled]="state.saving() || state.deleting()"
+                    [attr.aria-busy]="state.saving() ? 'true' : null"
+                    (click)="save()"
+                >
+                    <!-- Save. -->
+                    <span i18n="@@search.components.editor.save">Save</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- The History pane (HST-02..HST-05, DD-816): mounted beside the form
@@ -467,6 +456,22 @@
         </div>
     </div>
 
+    <!-- The tag box (EDT-05), placed by the form (EDP-11): before the pickers on a legacy form, last on the generic one. -->
+    <ng-template #tagBox>
+        <!-- The classification box (EDT-05, DD-335, DD-336) is its own
+                     component since WFE-03 (DD-804): the editor hands it the
+                     applicable names and the chosen ones, and the store keeps
+                     the set the door's body carries (VDE-03). -->
+        <aurelius-atlas-webapp-classification-combobox
+            [suggestions]="suggestions()"
+            [chosen]="state.chosen()"
+            [tooltips]="classificationTooltips()"
+            [deleteLabel]="deleteLabel"
+            (added)="state.addClassification($event)"
+            (removed)="state.removeClassification($event)"
+        />
+    </ng-template>
+
     <!-- The governance banner lines (EDT-24 as amended by 12.7, DD-446/DD-498):
          one per verdict measuring the control — the icon by the boolean
          `compliant`, then the verdict's message, at the legacy's small size.
@@ -474,24 +479,28 @@
          template under every control and every picker alike (each renders it
          through ngTemplateOutlet). -->
     <ng-template #govLines let-fieldName="fieldName">
-        @for (verdict of validationItems(fieldName); track verdict.ruleGuid) {
-            <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
-                <span class="icon-text">
-                    <span
-                        class="icon"
-                        [class.has-text-warning]="!verdict.compliant"
-                        [class.has-text-success]="verdict.compliant"
-                    >
-                        @if (!verdict.compliant) {
-                            <fa-icon [icon]="faExclamationTriangle"></fa-icon>
-                        }
-                        @if (verdict.compliant) {
-                            <fa-icon [icon]="faCheckCircle"></fa-icon>
-                        }
+        <!-- The verdict column (EDP-07, EDP-15): beside the control on a desktop-wide
+             page, under it on a narrower one. -->
+        <div class="aurelius-editor-gov">
+            @for (verdict of validationItems(fieldName); track verdict.ruleGuid) {
+                <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
+                    <span class="icon-text">
+                        <span
+                            class="icon"
+                            [class.has-text-warning]="!verdict.compliant"
+                            [class.has-text-success]="verdict.compliant"
+                        >
+                            @if (!verdict.compliant) {
+                                <fa-icon [icon]="faExclamationTriangle"></fa-icon>
+                            }
+                            @if (verdict.compliant) {
+                                <fa-icon [icon]="faCheckCircle"></fa-icon>
+                            }
+                        </span>
+                        <span>{{ verdict.message }}</span>
                     </span>
-                    <span>{{ verdict.message }}</span>
-                </span>
-            </p>
-        }
+                </p>
+            }
+        </div>
     </ng-template>
-</aurelius-atlas-ui-drawer>
+</section>

@@ -168,7 +168,7 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-create-entity")!.click();
 
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create"] } }]);
+        expect(navigate).toHaveBeenCalledWith(["/search/editor"]);
     });
 
     it("LR-001: the persistent status states searching, the settled count, or no results", () => {

@@ -1802,7 +1802,7 @@ def _delete_entity(page: Page, root_url: str, token: str, guid: str) -> None:
 
 
 def _open_editor_from_details(page: Page, root_url: str, guid: str) -> None:
-    """Open the editor drawer on a seeded entity's details through the pencil (EDT-01)."""
+    """Open the editor page on a seeded entity's details through the pencil (EDP-01)."""
     _goto_app(page, urljoin(root_url, f"/en-US/search/details/{guid}"))
     expect(page.locator("h1.aurelius-details-title")).to_have_text(re.compile(r"\S"))
 
@@ -1810,8 +1810,8 @@ def _open_editor_from_details(page: Page, root_url: str, guid: str) -> None:
     expect(pencil).to_be_visible()  # the writer holds atlas-write (EDT-09)
     pencil.click()
 
-    expect(page.locator(".aurelius-drawer")).to_be_visible()
-    expect(page).to_have_url(re.compile(r"\(drawer:edit"))
+    expect(page.locator(".aurelius-editor-page")).to_be_visible()
+    expect(page).to_have_url(re.compile(r"/search/editor\?guid="))
 
 
 def _wait_entity_read(
@@ -1864,7 +1864,7 @@ def test__the_editor_edits_a_seeded_entity(authenticated: Page, root_url: str, u
     try:
         _open_editor_from_details(authenticated, root_url, guid)
 
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         expect(drawer).to_contain_text("Edit entity")
         expect(authenticated.locator("#editor-name")).to_have_value(name)
         expect(authenticated.locator("textarea#editor-description")).to_have_value("The first description.")
@@ -1876,7 +1876,7 @@ def test__the_editor_edits_a_seeded_entity(authenticated: Page, root_url: str, u
         # saved entity (EDT-06's navigation + DD-327's tick): the new text
         # shows without a page reload (URL identity proves no reload).
         expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
-        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-editor-page")).to_have_count(0)
         expect(authenticated.locator(".aurelius-details-description")).to_have_text("The edited description.")
     finally:
         _delete_entity(authenticated, root_url, user_token, guid)
@@ -1919,8 +1919,8 @@ def test__the_editor_deletes_an_entity(authenticated: Page, root_url: str, user_
         authenticated.mouse.down()
         authenticated.mouse.up()
 
-        expect(authenticated).to_have_url(re.compile(r"\(drawer:edit"))
-        expect(authenticated.locator(".aurelius-drawer")).to_be_visible()
+        expect(authenticated).to_have_url(re.compile(r"/search/editor\?guid="))
+        expect(authenticated.locator(".aurelius-editor-page")).to_be_visible()
 
         # Nothing is deleted: the store still reads the entity ACTIVE.
         still = authenticated.request.get(
@@ -1939,7 +1939,7 @@ def test__the_editor_deletes_an_entity(authenticated: Page, root_url: str, user_
         authenticated.mouse.up()
 
         expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse$"), timeout=15_000)
-        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-editor-page")).to_have_count(0)
         expect(authenticated.locator("#browse-placeholder")).to_be_visible()
 
         _wait_entity_read(
@@ -2022,7 +2022,7 @@ def test__the_editor_previews_markdown_it_saves(authenticated: Page, root_url: s
     try:
         _open_editor_from_details(authenticated, root_url, guid)
 
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         area = authenticated.locator("textarea#editor-description")
         area.fill("# The saved heading")
 
@@ -2037,7 +2037,7 @@ def test__the_editor_previews_markdown_it_saves(authenticated: Page, root_url: s
         drawer.locator("button.aurelius-editor-save").click()
 
         expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
-        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-editor-page")).to_have_count(0)
         # The details box renders the saved source through the same block:
         # the heading there is the drawer's preview, one renderer (DD-321).
         expect(authenticated.locator(".aurelius-details-description h1.title")).to_have_text("The saved heading")
@@ -2073,7 +2073,7 @@ def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, user_tok
     try:
         _open_editor_from_details(authenticated, root_url, guid)
 
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         expect(drawer.locator(".aurelius-editor-tag")).to_have_count(0)
 
         box = authenticated.locator("input.aurelius-editor-classification-input")
@@ -2141,21 +2141,21 @@ def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_
     expect(plus).to_be_visible()  # the writer holds atlas-write (EDT-09)
     plus.click()
 
-    drawer = authenticated.locator(".aurelius-drawer")
+    drawer = authenticated.locator(".aurelius-editor-page")
     expect(drawer).to_contain_text("Create new entity")
 
     authenticated.locator(".aurelius-editor-picker select").select_option(label="Dataset")
 
     # The type is part of the path (DD-330), and the form for the chosen
     # type arrived with it: an empty required name, no entity yet.
-    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/m4i_dataset\)$"))
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/editor\?type=m4i_dataset$"))
     expect(authenticated.locator("#editor-name")).to_have_value("")
 
     # Switching (EDT-04): a half-typed draft is dropped, the picker stays
     # selected at the new type, and switching back re-seeds the Dataset form.
     authenticated.locator("#editor-name").fill("half-typed")
     authenticated.locator(".aurelius-editor-picker select").select_option(label="Collection")
-    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/m4i_collection\)$"))
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/editor\?type=m4i_collection$"))
     authenticated.locator(".aurelius-editor-picker select").select_option(label="Dataset")
     expect(authenticated.locator("#editor-name")).to_have_value("")
 
@@ -2191,7 +2191,7 @@ def test__the_editor_links_a_relationship(authenticated: Page, root_url: str, us
 
     try:
         _open_editor_from_details(authenticated, root_url, ds_guid)
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         block = drawer.locator('.aurelius-editor-relationship[data-field="inputToProcesses"]')
 
         # Type the process's name; the picker's debounced prefix-search finds
@@ -2297,7 +2297,7 @@ def test__the_editor_unlinks_a_relationship(authenticated: Page, root_url: str, 
 
     try:
         _open_editor_from_details(authenticated, root_url, ds_guid)
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         block = drawer.locator('.aurelius-editor-relationship[data-field="inputToProcesses"]')
         expect(block.locator(".aurelius-token-chip")).to_have_count(1)
 
@@ -2344,7 +2344,7 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
     notification stands (EDT-17, where the server itself would answer the
     create with the mandatory-attribute error). Picking the API-seeded leaf
     through the picker's own search lands the create, and reopening shows its
-    chip. The drawer opens on the deep link (``drawer:create/<type>``): the
+    chip. The page opens on the deep link (``search/editor?type=<type>``): the
     create picker lists the icon map's types alone (MMS-07, DD-719), so a
     runtime type arrives no person could pick from that list either.
     """
@@ -2380,9 +2380,9 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
 
     created: str | None = None
     try:
-        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/browse(drawer:create/{holder_type})"))
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/editor?type={holder_type}"))
 
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         block = drawer.locator('.aurelius-editor-relationship[data-field="volume"]')
         # No catalogue key: the raw name (EDT-33), and no target-type bracket (EDT-34, DD-724).
         expect(block.locator("p.label")).to_contain_text("volume")
@@ -2395,7 +2395,7 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         # EDT-17: the save fires nothing — the notification appears and the
         # drawer stays open on the create route.
         expect(drawer.locator(".aurelius-editor-notification")).to_be_visible()
-        expect(authenticated).to_have_url(re.compile(rf"drawer:create/{holder_type}"))
+        expect(authenticated).to_have_url(re.compile(rf"search/editor\?type={holder_type}"))
 
         # The pick (EDT-14): the leaf arrives through the picker's search.
         box = block.locator(".aurelius-token-input")
@@ -2466,7 +2466,7 @@ def test__the_editor_re_edits_from_the_stored_view_after_a_conflict(
 
     try:
         _open_editor_from_details(authenticated, root_url, guid)
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         # The drawer's read has landed: the form carries the seeded name.
         expect(authenticated.locator("#editor-name")).to_have_value(name)
 
@@ -2487,7 +2487,7 @@ def test__the_editor_re_edits_from_the_stored_view_after_a_conflict(
         # appears, the drawer stays open, and the typed edit survives (VDE-07).
         expect(drawer.locator(".aurelius-editor-conflict")).to_be_visible()
         expect(authenticated.locator("textarea#editor-description")).to_have_value("The kept edit.")
-        expect(authenticated).to_have_url(re.compile(r"drawer:edit"))
+        expect(authenticated).to_have_url(re.compile(r"/search/editor\?guid="))
 
         # The re-seed (VDE-07): the untouched owner slot now carries the
         # stored answer's new value; the typed description stayed.
@@ -2497,7 +2497,7 @@ def test__the_editor_re_edits_from_the_stored_view_after_a_conflict(
         # drawer closes and the details screen shows the kept edit.
         drawer.locator("button.aurelius-editor-save").click()
         expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
-        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-editor-page")).to_have_count(0)
         expect(authenticated.locator(".aurelius-details-description")).to_have_text("The kept edit.")
     finally:
         _delete_entity(authenticated, root_url, user_token, guid)
@@ -2539,22 +2539,18 @@ def test__the_editor_keeps_the_draft_when_the_name_is_taken(
         authenticated.locator("button.aurelius-create-entity").click()
         authenticated.locator(".aurelius-editor-picker select").select_option(label="Dataset")
         authenticated.locator("#editor-name").fill(draft_name)
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         drawer.locator("button.aurelius-editor-save").click()
 
         # The create is refused (AVW-06): the drawer stays open on the create
         # route with the draft intact, and no conflict line shows (VDE-08).
         expect(drawer.locator(".aurelius-editor-conflict")).to_have_count(0)
-        expect(authenticated).to_have_url(re.compile(r"drawer:create/m4i_dataset"))
+        expect(authenticated).to_have_url(re.compile(r"search/editor\?type=m4i_dataset"))
         expect(authenticated.locator("#editor-name")).to_have_value(draft_name)
         expect(authenticated.locator(".aurelius-badge-dot")).to_have_count(1)  # the bell marks the alert unread
 
         # The line itself, in the alerts feed: the bell's drawer names the
-        # refusal. The kept drawer rides the scrim that covers the navbar, so
-        # it goes first (16.5a's idiom) — pressed on a field, because the
-        # drawer listens for Escape on its panel and a failed Save leaves the
-        # focus on the body, where the keydown would die.
-        authenticated.locator("#editor-name").press("Escape")
+        # refusal. The editor is a page (EDP-01), so the navbar is reachable.
         authenticated.locator('a.navbar-item[aria-label="Alerts"]').click()
         expect(authenticated.locator(".aurelius-alert-message")).to_have_text(
             "That name is already held by another entity."
@@ -2655,7 +2651,7 @@ def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: 
 
     try:
         _open_editor_from_details(authenticated, root_url, guid)
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
 
         # The open round renders the lines without any edit (EDT-23's trigger),
         # each under its own control (EDT-24's keying), icon by the verdict.
@@ -2701,7 +2697,7 @@ def test__an_aborted_validation_leaves_the_drawer_usable(authenticated: Page, ro
     authenticated.route("**/validate-entity/", lambda route: route.abort())
     try:
         _open_editor_from_details(authenticated, root_url, guid)
-        drawer = authenticated.locator(".aurelius-drawer")
+        drawer = authenticated.locator(".aurelius-editor-page")
         expect(authenticated.locator("#editor-name")).to_have_value(name)
 
         # No lines, no alert: the aborted call renders nothing and says
