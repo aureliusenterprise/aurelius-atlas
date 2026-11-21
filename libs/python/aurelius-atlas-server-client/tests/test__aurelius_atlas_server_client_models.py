@@ -48,6 +48,18 @@ def test__the_session_body_carries_the_settings_and_the_csrf_token() -> None:
     assert session.csrf_token == "token-1"  # noqa: S105 - a fixed fake token in a test, not a secret
 
 
+@pytest.mark.covers(rules=["CLW-13"])
+def test__the_session_body_carries_the_two_entity_permission_flags() -> None:
+    """``atlas.entity.create.allowed``/``atlas.entity.update.allowed`` read as typed booleans (ADM-05, AUZ-06)."""
+    reader = AtlasSessionInfo.model_validate(
+        {"atlas.entity.create.allowed": False, "atlas.entity.update.allowed": True}
+    )
+    writer = AtlasSessionInfo.model_validate({})
+
+    assert (reader.entity_create_allowed, reader.entity_update_allowed) == (False, True)
+    assert (writer.entity_create_allowed, writer.entity_update_allowed) == (False, False)
+
+
 @pytest.mark.covers(rules=["CL-10"])
 def test__the_session_body_has_no_user_before_6_1() -> None:
     """The empty session is valid: no user, no groups, no token."""

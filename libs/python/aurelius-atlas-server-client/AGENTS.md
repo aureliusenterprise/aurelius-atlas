@@ -11,12 +11,14 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   body models (`LineageInfo` et al., moved here from the 8.2 app by CL-12)
 - `aurelius_atlas_server_client/aurelius.py` — the client-side shapes of the
   Aurelius-native routes (`SemanticSearchParameters`, `QualityKind`,
-  `QualityVocabulary`, `QualityRuleCheck`, CAV-01..CAV-04, DD-562). The server
+  `QualityVocabulary`, `QualityRuleCheck`, CAV-01..CAV-04, DD-562; the view
+  door's `ViewSearchRequest`/`ViewSearchAnswer`, CLV-01, DD-812). The server
   keeps its own copies in `aurelius_atlas_server/models.py`
 - `aurelius_atlas_server_client/client.py` — `AtlasClient` (`admin` / `types` /
   `entity` / `glossary` / `relationship` / `search` / `lineage` / `aurelius` /
-  `with_token`,
+  `view` / `with_token`,
   plus the `get_lineage` alias of `lineage.get`), `AtlasClientError`,
+  `ViewVersionConflictError`,
   `KIND_PATHS`;
   `search` mirrors `routes/discovery.py` (CL-13 by 8.4, plus CSD-01..CSD-06,
   8.12 — the DSL search and the saved searches, the 204 of a missing profile
@@ -39,7 +41,12 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   `lineage` mirrors `routes/lineage.py` (CL-61..CL-63, 8.8);
   `aurelius` mirrors `routes/quality.py` and `routes/search_by_meaning.py`
   (CAV-01..CAV-04, 8.24 — bodies from `aurelius.py`, DD-562; its Angular
-  twins are `SearchByMeaningService` and `QualityRuleService`)
+  twins are `SearchByMeaningService` and `QualityRuleService`);
+  `view` mirrors `routes/view_search.py` and `routes/view_entity.py`
+  (CLV-01..CLV-04, 20.1, DD-812 — `search` and `read` typed, `save` a raw
+  `Mapping` because the door reads `meanings` the read wire never carries,
+  the stale-save 409 raised as `ViewVersionConflictError` carrying the
+  stored `EntityView`)
 - `specs/<increment>/spec.md` — the per-module coverage matrices (DD-307): a
   change to a server `routes/*.py` updates its spec's matrix in the same PR.
 
@@ -63,11 +70,14 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   transport failures propagate as `httpx2` errors (CL-05).
 - `routes/admin.py` / `routes/types.py` / `routes/entity.py` /
   `routes/glossary.py` / `routes/relationship.py` / `routes/discovery.py` /
-  `routes/lineage.py` of the server are the source of truth for paths — mirror
+  `routes/lineage.py` / `routes/view_search.py` / `routes/view_entity.py` of
+  the server are the source of truth for paths — mirror
   changes here, and the module spec's matrix, in the
   same PR (the server's
   `e2e/test__aurelius_atlas_server_search_e2e.py` proves the discovery paths
-  against the container).
+  against the container, and
+  `e2e/test__view_family_e2e.py` / `e2e/test__view_mutation_e2e.py` the view
+  doors).
 
 ## Commands
 

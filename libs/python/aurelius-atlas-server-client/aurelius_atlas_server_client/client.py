@@ -27,7 +27,9 @@ CL-13, plus the DSL search and the saved searches, CSD-01..CSD-06, 8.12), the
 lineage feed of ``routes/lineage.py`` under ``/api/atlas/v2/lineage``
 (CL-60..CL-63, 8.8), the Aurelius-native routes of ``routes/quality.py`` and
 ``routes/search_by_meaning.py`` under ``/api/aurelius/v1``
-(CAV-01..CAV-04, 8.24), and the ten admin routes of 6.3 and 6.4 that joined
+(CAV-01..CAV-04, 8.24), the view doors of ``routes/view_search.py`` and
+``routes/view_entity.py`` under ``/api/aurelius/v1``
+(CLV-01..CLV-04, 20.1), and the ten admin routes of 6.3 and 6.4 that joined
 ``routes/admin.py`` after 8.11 (CLW-08..CLW-12, 8.24).
 """
 
@@ -95,12 +97,15 @@ from aurelius_atlas_model.typedef import (
     AtlasTypesDef,
     TypeCategory,
 )
+from aurelius_atlas_model.views import EntityView
 from pydantic import ValidationError
 
 from aurelius_atlas_server_client.aurelius import (
     QualityRuleCheck,
     QualityVocabulary,
     SemanticSearchParameters,
+    ViewSearchAnswer,
+    ViewSearchRequest,
 )
 from aurelius_atlas_server_client.lineage import Direction, LineageInfo
 from aurelius_atlas_server_client.models import (
@@ -143,6 +148,9 @@ server mounts its feed at ``/api/atlas/v2/lineage``, as every other resource
 
 CLIENT_ERROR = 400
 """The status where an answer becomes an error: the client-error boundary (CL-04)."""
+
+CONFLICT = 409
+"""The status of the mutation door's stale save (AVW-04, CLV-03)."""
 
 NO_CONTENT = 204
 """The status a saved-searches read answers when the user has no profile (CSD-03, SVS-04)."""
@@ -192,6 +200,43 @@ class AtlasClientError(RuntimeError):
         super().__init__(f"the Atlas server answered {status_code}: {detail}")
 
 
+class ViewVersionConflictError(AtlasClientError):
+    """The mutation door's stale save: the conflict beside the stored view (CLV-03, AVW-04, DD-591).
+
+    An :class:`AtlasClientError` like every other refusal (CL-04), with the door's
+    one extra: the body carries the live view the editor merges from, parsed.
+    The server raises its own twin of this name (``view_mutation``) for exactly
+    this answer, and the door answers it with no ``errorMessage`` — so ``info``
+    stays None and the code lives in the type itself.
+    """
+
+    def __init__(self, status_code: int, view: EntityView) -> None:
+        self.view = view
+        """The stored view the door answered the conflict with."""
+        super().__init__(status_code, None)
+
+
+def _is_view_conflict(status_code: int, body: Any) -> bool:  # noqa: ANN401 - the JSON body of the answer
+    """Whether the door's answer is the stale-save conflict: 409, its code, and a view (AVW-04)."""
+    return (
+        status_code == CONFLICT
+        and isinstance(body, dict)
+        and body.get("errorCode") == "ENTITY_VERSION_CONFLICT"
+        and isinstance(body.get("view"), dict)
+    )
+
+
+def _view_error(response: httpx.Response) -> AtlasClientError:
+    """The mutation door's error: the conflict with its view, every other refusal as CL-04's."""
+    try:
+        body = response.json()
+    except ValueError:
+        return AtlasClientError(response.status_code, _error_info(response))
+    if _is_view_conflict(response.status_code, body):
+        return ViewVersionConflictError(response.status_code, EntityView.model_validate(body["view"]))
+    return AtlasClientError(response.status_code, _error_info(response))
+
+
 def _bearer(token: TokenSource) -> dict[str, str]:
     """The authorization header for the token source's current token (CL-03).
 
@@ -212,6 +257,11 @@ def _error_info(response: httpx.Response) -> AtlasErrorInfo | None:
         return None
 
 
+def _client_error(response: httpx.Response) -> AtlasClientError:
+    """The base refusal of CL-04: the status and the error body when it parses."""
+    return AtlasClientError(response.status_code, _error_info(response))
+
+
 @dataclass(frozen=True)
 class _Api:
     """The shared transport of a client's resource APIs: the httpx client and the token source."""
@@ -219,7 +269,7 @@ class _Api:
     http: httpx.AsyncClient
     token: TokenSource
 
-    async def request(
+    async def request(  # noqa: PLR0913 - the shared transport's parameters, one method for every route's shape
         self,
         method: str,
         path: str,
@@ -227,18 +277,21 @@ class _Api:
         params: Mapping[str, Any] | list[tuple[str, Any]] | None = None,
         body: Any = None,  # noqa: ANN401 - a JSON request body: a model's to_json(), or any JSON value (EWR-15)
         files: Mapping[str, tuple[str | None, str | bytes]] | None = None,
+        on_error: Callable[[httpx.Response], AtlasClientError] | None = None,
     ) -> httpx.Response:
         """One request with the bearer header; a non-2xx answer raises (CL-03..CL-05).
 
         ``files`` sends ``multipart/form-data`` instead of JSON (CL-64) — the two
         are never given together. A part name mapped to a ``(None, text)`` pair
-        travels as a plain form field, no filename (DD-313).
+        travels as a plain form field, no filename (DD-313). ``on_error`` builds
+        the error for a refusal with a body the base error cannot carry (the door's
+        conflict view, CLV-03); its absence is CL-04's own build.
         """
         response = await self.http.request(
             method, path, params=params, json=body, files=files, headers=_bearer(self.token)
         )
         if response.status_code >= CLIENT_ERROR:
-            raise AtlasClientError(response.status_code, _error_info(response))
+            raise (on_error or _client_error)(response)
         return response
 
     async def json(
@@ -248,9 +301,10 @@ class _Api:
         *,
         params: Mapping[str, Any] | list[tuple[str, Any]] | None = None,
         body: Any = None,  # noqa: ANN401 - the JSON body of the answer, parsed by the caller's model
+        on_error: Callable[[httpx.Response], AtlasClientError] | None = None,
     ) -> Any:  # noqa: ANN401 - the JSON body of the answer, parsed by the caller's model
         """One request answered with JSON (CL-11)."""
-        return (await self.request(method, path, params=params, body=body)).json()
+        return (await self.request(method, path, params=params, body=body, on_error=on_error)).json()
 
 
 class AdminApi:
@@ -1529,6 +1583,62 @@ class AureliusApi:
         )
 
 
+class ViewApi:
+    """The view family's doors of an :class:`AtlasClient` (CLV-01..CLV-04): ``client.view``.
+
+    The paths mirror ``routes/view_search.py`` and ``routes/view_entity.py``, the
+    Aurelius-native doors of 16.2 and 16.3 beside the Atlas routes. The view and
+    card shapes are ``aurelius-atlas-model``'s (``EntityView``, ``EntityCard``),
+    reused whole (DD-309); the door's own search shapes are this library's
+    ``aurelius.py`` (DD-562), the ``lineage.py`` precedent (CL-12).
+    """
+
+    def __init__(self, api: _Api) -> None:
+        self._api = api
+
+    async def search(self, request: ViewSearchRequest | None = None) -> ViewSearchAnswer:
+        """``POST /search``: the door's cards, facet counts and total (AVR-08, CLV-04).
+
+        No request is the empty one the door reads as "everything" (ASE-04). The
+        client checks no filter, facet or mode (CL-12): the door itself refuses an
+        unreadable body (AVR-13) and answers ``VIEW_FORBIDDEN`` without the read
+        privilege (AVR-01).
+        """
+        return ViewSearchAnswer.model_validate(
+            await self._api.json("POST", f"{AURELIUS_ROOT}/search", body=None if request is None else request.to_json())
+        )
+
+    async def read(self, guid: str) -> EntityView:
+        """``GET /entity/guid/{guid}``: the entity's live view, derived fresh (AVR-10, CLV-01).
+
+        A GUID with no entity raises ``AtlasClientError`` with the Atlas 404 body
+        (AVR-10), and a reader without ``ENTITY_READ`` the door's refusal (AVR-01).
+        """
+        return EntityView.model_validate(await self._api.json("GET", f"{AURELIUS_ROOT}/entity/guid/{guid}"))
+
+    async def save(self, view: Mapping[str, Any], *, unsafe_reparent: bool = False) -> EntityView:
+        """``POST /entity``: the view as desired state, the new live view out (AVW-07, CLV-02).
+
+        The body is the view dict the caller read through :meth:`read` and edited:
+        the door reads the raw body (AVW-02) and acts on the fields it knows, so
+        the client sends what it was given and validates no view (CL-12) — the
+        same way :meth:`AureliusApi.validate_quality_rule` sends its body.
+        ``unsafe_reparent`` moves a child that holds another parent (RPS-05), and
+        travels as ``unsafeReparent=true`` only when set, as the route reads an
+        absent flag as false.
+
+        Raises:
+            ViewVersionConflictError: The save lost the update race — the door's
+                409 beside the stored view (AVW-04, CLV-03).
+        """
+        params = {"unsafeReparent": True} if unsafe_reparent else None
+        return EntityView.model_validate(
+            await self._api.json(
+                "POST", f"{AURELIUS_ROOT}/entity", params=params, body=dict(view), on_error=_view_error
+            )
+        )
+
+
 def _present(**params: Any) -> dict[str, Any]:  # noqa: ANN401 - the query parameter values
     """The endpoint's query parameters: a given value, its Java defaults left out.
 
@@ -1605,6 +1715,7 @@ class AtlasClient:
         self.search = SearchApi(api)
         self.lineage = LineageApi(api)
         self.aurelius = AureliusApi(api)
+        self.view = ViewApi(api)
 
     def with_token(self, token: TokenSource) -> AtlasClient:
         """The same client speaking with ``token`` — sharing the connection pool (CL-03, LM-04).

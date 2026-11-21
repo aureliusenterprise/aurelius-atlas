@@ -7,6 +7,9 @@ entities, and a snapshot is taken by the policy; the first cluster is then remov
 snapshot command restores the server's indices, and a server started on them answers the entities, their
 audits and a search as the first did. The time from the restore's start to the second server's first answer
 is the recovery time, recorded as the junit property ``recovery_seconds``.
+
+Both servers are read through the typed client (ECL-01, CL-11): the client carries the writer's token and
+builds each request from models, so the rehearsal proves the same wire the dashboard rides.
 """  # noqa: D205 - the title sentence spans the first two lines
 
 import argparse
@@ -14,16 +17,19 @@ import os
 import shutil
 import tempfile
 import time
-from collections.abc import AsyncIterator, Callable, Generator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 import httpx2 as httpx
 import pytest
+from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity, EntityOperation, EntityStatus
+from aurelius_atlas_model.typedef import AtlasEntityDef, AtlasTypesDef
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_server import snapshots as command
 from aurelius_atlas_server.settings import ENV_PREFIX, StoreAccessSettings
+from aurelius_atlas_server_client import AtlasClient
 from aurelius_atlas_store_es import ElasticsearchStore, StoreSettings
 from aurelius_atlas_store_es.snapshots import list_snapshots, take_snapshot
 from aurelius_atlas_store_es.testing.container import elasticsearch_container
@@ -39,18 +45,6 @@ RECOVERY_BUDGET_SECONDS = 300.0
 
 type TokenSource = Callable[[], str]
 """The e2e conftest's ``user_token``: the dev writer's current access token."""
-
-
-class _Bearer(httpx.Auth):
-    """Each request with the source's current token: the dev realm's tokens live 60 seconds."""
-
-    def __init__(self, token: TokenSource) -> None:
-        self._token = token
-
-    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:
-        """Add the ``Authorization`` header."""
-        request.headers["Authorization"] = f"Bearer {self._token()}"
-        yield request
 
 
 @pytest.fixture
@@ -96,41 +90,47 @@ def _settings(store: StoreSettings, auth_secret: str) -> ServerSettings:
 
 
 @asynccontextmanager
-async def _server(settings: ServerSettings, token: TokenSource) -> AsyncIterator[httpx.AsyncClient]:
-    """The server started in-process on its store, and a client for it as the dev writer."""
+async def _server(settings: ServerSettings, token: TokenSource) -> AsyncIterator[AtlasClient]:
+    """The server started in-process on its store, and the typed client for it as the dev writer."""
     app = create_app(settings)
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(
-            transport=transport, base_url="https://aurelius-atlas", auth=_Bearer(token), timeout=60
-        ) as client:
-            yield client
+        async with httpx.AsyncClient(transport=transport, base_url="https://aurelius-atlas", timeout=60) as http:
+            yield AtlasClient(http, token)
 
 
-async def _write_catalogue(client: httpx.AsyncClient) -> list[str]:
+async def _write_catalogue(api: AtlasClient) -> list[str]:
     """A type and two entities of it; their guids."""
-    typedefs = {"entityDefs": [{"name": TYPE, "superTypes": ["DataSet"], "attributeDefs": []}]}
-    assert (await client.post("/api/atlas/v2/types/typedefs", json=typedefs)).status_code == 200
-    entities = {
-        "entities": [
-            {"typeName": TYPE, "attributes": {"qualifiedName": f"rehearsal.{n}@snapshot", "name": f"rehearsal {n}"}}
+    typedefs = AtlasTypesDef(entity_defs=[AtlasEntityDef(name=TYPE, super_types=["DataSet"])])
+    await api.types.create_typedefs(typedefs)
+    entities = AtlasEntitiesWithExtInfo(
+        entities=[
+            AtlasEntity(
+                type_name=TYPE,
+                attributes={"qualifiedName": f"rehearsal.{n}@snapshot", "name": f"rehearsal {n}"},
+            )
             for n in (1, 2)
         ]
-    }
-    created = await client.post("/api/atlas/v2/entity/bulk", json=entities)
-    assert created.status_code == 200, created.text
-    return sorted(entity["guid"] for entity in created.json()["mutatedEntities"]["CREATE"])
+    )
+    created = await api.entity.create_or_update_bulk(entities)
+    assert created.mutated_entities is not None
+    return sorted(entity.guid for entity in created.mutated_entities[EntityOperation.CREATE] if entity.guid)
 
 
-async def _read_catalogue(client: httpx.AsyncClient, guids: list[str]) -> dict[str, Any]:
+async def _read_catalogue(api: AtlasClient, guids: list[str]) -> dict[str, Any]:
     """What a person sees of the catalogue: the entities, their audits and a search of the type."""
-    entities = [(await client.get(f"/api/atlas/v2/entity/guid/{guid}")).json()["entity"] for guid in guids]
-    audits = [len((await client.get(f"/api/atlas/v2/entity/{guid}/audit")).json()) for guid in guids]
-    search = (await client.get("/api/atlas/v2/search/basic", params={"typeName": TYPE})).json()
+    seen: list[tuple[str | None, EntityStatus | None, Any, int | None]] = []
+    for guid in guids:
+        entity = (await api.entity.by_guid(guid)).entity
+        assert entity is not None, guid
+        assert entity.attributes is not None, guid
+        seen.append((entity.guid, entity.status, entity.attributes["qualifiedName"], entity.version))
+    audits = [len(await api.entity.audit_events(guid)) for guid in guids]
+    search = await api.search.search_using_basic(type_name=TYPE)
     return {
-        "entities": [(e["guid"], e["status"], e["attributes"]["qualifiedName"], e["version"]) for e in entities],
+        "entities": seen,
         "audits": audits,
-        "found": sorted(entity["guid"] for entity in search.get("entities", [])),
+        "found": sorted(entity.guid for entity in search.entities or [] if entity.guid),
     }
 
 
@@ -138,6 +138,14 @@ async def _read_catalogue(client: httpx.AsyncClient, guids: list[str]) -> dict[s
 @pytest.mark.high
 @pytest.mark.covers("aurelius_atlas_server.snapshots.run", rules=["SNP-04", "SNP-05", "SNP-06"])
 @pytest.mark.covers("aurelius_atlas_store_es.testing.container.elasticsearch_container", rules=["SNP-06"])
+@pytest.mark.covers(
+    "aurelius_atlas_server_client.client.TypesApi.create_typedefs",
+    "aurelius_atlas_server_client.client.EntityApi.create_or_update_bulk",
+    "aurelius_atlas_server_client.client.EntityApi.by_guid",
+    "aurelius_atlas_server_client.client.EntityApi.audit_events",
+    "aurelius_atlas_server_client.client.SearchApi.search_using_basic",
+    rules=["CL-11"],
+)
 async def test__a_snapshot_of_a_running_server_comes_back_as_a_working_server_on_a_clean_cluster(
     snapshot_dir: Path,
     auth_secret: str,
@@ -146,9 +154,9 @@ async def test__a_snapshot_of_a_running_server_comes_back_as_a_working_server_on
 ) -> None:
     """Snapshot on the first cluster, remove it, restore on a second, and the second server answers the same."""
     with elasticsearch_container(snapshot_dir=snapshot_dir) as first:
-        async with _server(_settings(first, auth_secret), user_token) as client:
-            guids = await _write_catalogue(client)
-            before = await _read_catalogue(client, guids)
+        async with _server(_settings(first, auth_secret), user_token) as api:
+            guids = await _write_catalogue(api)
+            before = await _read_catalogue(api, guids)
         async with ElasticsearchStore(first) as store:
             taken = await take_snapshot(store.client)
 
@@ -163,16 +171,16 @@ async def test__a_snapshot_of_a_running_server_comes_back_as_a_working_server_on
         )
         started = time.monotonic()
         await command.run(argparse.Namespace(command="restore", snapshot=None, replace=False), access, lines.append)
-        async with _server(_settings(second, auth_secret), user_token) as client:
-            answered = await client.get(f"/api/atlas/v2/entity/guid/{guids[0]}")
+        async with _server(_settings(second, auth_secret), user_token) as api:
+            answered = await api.entity.by_guid(guids[0])
             recovery = time.monotonic() - started
-            after = await _read_catalogue(client, guids)
+            after = await _read_catalogue(api, guids)
         async with ElasticsearchStore(second) as store:
             [listed] = await list_snapshots(store.client)
 
     record_property("recovery_seconds", f"{recovery:.1f}")
     record_property("restore", lines[0])
-    assert answered.status_code == 200
+    assert answered.entity is not None
     assert lines[0].startswith(f"Restored {taken}: ")
     assert listed.name == taken
     assert after == before

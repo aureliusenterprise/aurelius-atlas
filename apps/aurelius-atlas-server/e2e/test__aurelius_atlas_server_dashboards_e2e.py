@@ -11,7 +11,8 @@ from collections.abc import AsyncIterator, Callable
 
 import httpx2 as httpx
 import pytest
-from aurelius_atlas_server_client import AtlasClient
+from aurelius_atlas_model.typedef import AtlasEntityDef, AtlasTypesDef
+from aurelius_atlas_server_client import AtlasClient, AtlasClientError
 from playwright.async_api import Browser, Page, Response, async_playwright
 from playwright.async_api import Error as PlaywrightError
 
@@ -242,25 +243,39 @@ async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient)
 
 # impact=severe, likelihood=low (the spine path moves rarely between increments)
 @pytest.mark.high
-@pytest.mark.covers(rules=["AUT-02", "AUT-04"])
-async def test__the_api_needs_a_token_of_the_dev_realm(anonymous: httpx.AsyncClient, client: httpx.AsyncClient) -> None:
-    """Without a token the API answers 401 with the bearer challenge; the writer's token names the writer."""
+@pytest.mark.covers(
+    "aurelius_atlas_server_client.client.AdminApi.session",
+    rules=["AUT-02", "AUT-04"],
+)
+async def test__the_api_needs_a_token_of_the_dev_realm(anonymous: httpx.AsyncClient, api: AtlasClient) -> None:
+    """Without a token the API answers 401 with the bearer challenge; the writer's token names the writer.
+
+    The challenge itself rides a raw request: the client's error carries the status and the body, not the
+    ``www-authenticate`` header the assertion reads (DD-813). The session read moves to the client (CL-11).
+    """
     refused = await anonymous.get(SESSION)
     assert (refused.status_code, refused.headers["www-authenticate"]) == (401, 'Bearer realm="atlas.com"')
-    assert (await client.get(SESSION)).json()["userName"] == USERNAME
+    assert (await api.admin.session()).user_name == USERNAME
 
 
 # impact=severe, likelihood=low (the spine path moves rarely between increments)
 @pytest.mark.high
-@pytest.mark.covers(rules=["AUZ-01", "AUZ-03", "AUZ-04", "AUZ-06"])
+@pytest.mark.covers(
+    "aurelius_atlas_server_client.client.AdminApi.session",
+    "aurelius_atlas_server_client.client.TypesApi.create_typedefs",
+    "aurelius_atlas_server_client.client.TypesApi.typedef_by_name",
+    rules=["AUZ-01", "AUZ-03", "AUZ-04", "AUZ-06", "CLW-13"],
+)
 async def test__the_reader_may_read_types_but_not_change_them(
-    anonymous: httpx.AsyncClient, reader_token: Callable[[], str]
+    api: AtlasClient, reader_token: Callable[[], str]
 ) -> None:
     """The dev realm's reader holds ``atlas-read``: a type change is refused, the session allows no writes."""
-    reader = {"Authorization": f"Bearer {reader_token()}"}
-    session = (await anonymous.get(SESSION, headers=reader)).json()
-    assert (session["userName"], session["atlas.entity.create.allowed"]) == ("aurelius-reader", False)
-    definition = {"entityDefs": [{"name": f"e2e_refused_{secrets.token_hex(4)}", "superTypes": []}]}
-    refused = await anonymous.post("/api/atlas/v2/types/typedefs", json=definition, headers=reader)
-    assert (refused.status_code, refused.json()["errorCode"]) == (403, "ATLAS-403-00-001")
-    assert (await anonymous.get("/api/atlas/v2/types/typedef/name/Asset", headers=reader)).status_code == 200
+    reader = api.with_token(reader_token)
+    session = await reader.admin.session()
+    assert (session.user_name, session.entity_create_allowed) == ("aurelius-reader", False)
+    definition = AtlasTypesDef(entity_defs=[AtlasEntityDef(name=f"e2e_refused_{secrets.token_hex(4)}")])
+    with pytest.raises(AtlasClientError) as refused:
+        await reader.types.create_typedefs(definition)
+    assert refused.value.info is not None
+    assert (refused.value.status_code, refused.value.info.error_code) == (403, "ATLAS-403-00-001")
+    assert (await reader.types.typedef_by_name("Asset")).name == "Asset"
