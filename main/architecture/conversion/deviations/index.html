@@ -8166,6 +8166,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The oracle is frozen output of the old corpus and walked both sides of the edge, so it falsifies for the cleared listings. <code>test__app_search_indexer.py</code> names the two pairs it no longer derives, and <code>test__app_search_governance.py</code> counts 27 moved verdicts instead of 29, because the two siblings' field-or-child verdicts now answer the value the oracle recorded. The change moves Aurelius closer to the oracle, as DV-173 did.</td>
 <td>18.5</td>
 </tr>
+<tr>
+<td>DV-189</td>
+<td>Interface</td>
+<td>(View door origin, no Atlas behaviour.) Apache Atlas 2.4.0 has no one-parent rule to break (DV-183), so it has no same-request parent release either: it never refuses adding a parent-side edge to a held candidate, on the wire or on a door, and never asks whether the request also drops the child elsewhere.</td>
+<td>The wire path treats one request that drops a child from one parent and adds it to another as a deliberate move and lets it through (RPS-02), because it reads the whole request together. The view door applies one entity per request, so it cannot carry the sibling parent's drop in the same call, and it refuses a held candidate without <code>unsafeReparent</code> even where the move is deliberate (RUL-04). The door is Aurelius's own surface, so both sides of this row are Aurelius behaviour.</td>
+<td>The door body is one entity's view, so the parent the child leaves is a separate save; closing the gap would make the door read a save it was not given. No shipped client reaches it: the webapp's parent-side picker filters its search to candidates with no parent (DCP-06).</td>
+<td>19.3</td>
+</tr>
 </tbody>
 </table>
 
