@@ -1,4 +1,4 @@
-import { FormDefinition, formDefinitions, formLabels, inFormOrder } from "./form-definitions";
+import { FormDefinition, formDefinitions, formLabels, inFormOrder, legacyFirst } from "./form-definitions";
 
 /**
  * The legacy forms (EDP-05, EDP-06, EDP-11, EDP-12): each of the ten types
@@ -104,5 +104,22 @@ describe("inFormOrder (EDP-05)", () => {
     it("keeps the form's fields in its order, drops the rest, and skips what the type lacks", () => {
         const available = [{ name: "typeAlias" }, { name: "definition" }, { name: "qualifiedName" }, { name: "name" }];
         expect(inFormOrder(form, available).map((field) => field.name)).toEqual(["name", "definition"]);
+    });
+});
+
+describe("legacyFirst (EDP-13)", () => {
+    it("puts the types with a legacy form first, each part in its own order", () => {
+        const rows = [
+            { name: "AtlasServer" },
+            { name: "m4i_dataset" },
+            { name: "m4i_kafka_topic" },
+            { name: "m4i_collection" },
+        ];
+        expect(legacyFirst(rows, formDefinitions()).map((row) => row.name)).toEqual([
+            "m4i_dataset",
+            "m4i_collection",
+            "AtlasServer",
+            "m4i_kafka_topic",
+        ]);
     });
 });

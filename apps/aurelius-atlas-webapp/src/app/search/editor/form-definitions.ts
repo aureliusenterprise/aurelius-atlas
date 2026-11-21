@@ -199,3 +199,18 @@ export function inFormOrder<T extends { readonly name: string }>(
 export function formLabels(definition: FormDefinition): Record<string, string> {
     return Object.fromEntries(definition.fields.map((field) => [field.attribute, field.label]));
 }
+
+/**
+ * The create type picker's rows with the types that have a legacy form first
+ * (EDP-13), each part keeping its own order.
+ * @param rows the picker's rows, in the store's label order (DD-497)
+ * @param definitions the legacy forms by type name
+ * @returns the rows, the legacy forms' types first
+ */
+export function legacyFirst<T extends { readonly name: string }>(
+    rows: readonly T[],
+    definitions: Readonly<Record<string, FormDefinition>>,
+): T[] {
+    const legacy = (row: T) => row.name in definitions;
+    return [...rows.filter(legacy), ...rows.filter((row) => !legacy(row))];
+}

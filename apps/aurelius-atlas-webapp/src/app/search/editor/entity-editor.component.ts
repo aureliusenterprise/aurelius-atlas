@@ -33,7 +33,7 @@ import { canWriteEntities } from "./can-write-entities";
 import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState } from "./editor-state";
 import { EntityHistory } from "./entity-history.component";
-import { formDefinitions, formLabels, inFormOrder } from "./form-definitions";
+import { formDefinitions, formLabels, inFormOrder, legacyFirst } from "./form-definitions";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import { EntityWritten } from "./entity-written";
 import {
@@ -293,9 +293,14 @@ export class EntityEditor {
 
     /** The picker rows for the ui-lib Select (EDT-04). The Select's `options`
      * input is a mutable array, so the map yields a fresh one (not readonly). */
-    protected readonly pickerRows = computed<PickerRow[]>(() =>
-        this.state.pickerTypes().map(({ name, label }) => ({ name, label })),
-    );
+    protected readonly pickerRows = computed<PickerRow[]>(() => {
+        // The types with a legacy form first, then the rest (EDP-13), each part
+        // in the store's label order (DD-497).
+        return legacyFirst(
+            this.state.pickerTypes().map(({ name, label }) => ({ name, label })),
+            this.definitions,
+        );
+    });
 
     /** The classification box's applicable type names (EDT-05): the defs the
      * chain answers, minus the chosen ones (VDE-02) — the combobox filters
