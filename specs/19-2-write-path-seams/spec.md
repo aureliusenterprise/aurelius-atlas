@@ -1,7 +1,7 @@
 # 19.2 A store the write path can be tested against
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** #428
 - **Records:** DD-773 to DD-781, plan in [plan.md](./plan.md), design in [design.md](./design.md)
 
 ## Scope

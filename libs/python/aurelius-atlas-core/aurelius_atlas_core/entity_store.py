@@ -8,7 +8,7 @@ import time
 import uuid
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -122,6 +122,91 @@ type _LinkedChanges = dict[LinkedKind, list[tuple[Linked, DocumentVersion | None
 """A write's linked documents by kind: each one's new state, the version it was read in, and whether it goes."""
 
 
+@runtime_checkable
+class WriteStore(Protocol):
+    """The store the write path calls (WRS-01, DD-773, DD-774).
+
+    ``EntityWriter``, ``ViewMutationDoor`` and the internals they drive are typed on this instead of on
+    ``EntityStore``, so a spec can drive a write against a small fake or the in-memory store without a server.
+    ``EntityStore`` is the contract's only production implementation; it satisfies it unchanged, and so do the
+    in-memory store and the test fake.
+
+    The contract names the members the whole write path reaches, not only the ones the writer and the door call
+    themselves: the rewind store composes its real store instead of subclassing it (DD-775), so every member an
+    internal forwards to the store has to be on the contract. ``search`` is here because the door's meanings step
+    drives ``GlossaryService``, which searches for a term.
+    """
+
+    registry: TypeRegistry
+
+    @property
+    def documents(self) -> EntityDocuments:
+        """The documents the store keeps, for a wrapper that records before-images (WRS-03, DD-775)."""
+        ...
+
+    task_listeners: list[Callable[[], None]]
+    """Called after a write that recorded tasks, to wake a worker (DD-080)."""
+
+    write_listeners: list[Callable[[], None]]
+    """Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678)."""
+
+    def new_guid(self) -> AssignedGuid:
+        """A new entity's GUID (ENS-02, DD-044)."""
+        ...
+
+    def now(self) -> int:
+        """The current time in epoch milliseconds, as Atlas stores times."""
+        ...
+
+    async def get(self, guid: str) -> VersionedEntity | None:
+        """The entity with ``guid`` as last written, or None (ENS-04)."""
+        ...
+
+    async def get_many(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
+        """The entities with these GUIDs that exist (ENS-04)."""
+        ...
+
+    async def find_by_unique_attributes(
+        self, entity_type: EntityType, values: Mapping[str, Any]
+    ) -> VersionedEntity | None:
+        """The ``ACTIVE`` entity holding every given unique value, if any (ENS-06)."""
+        ...
+
+    async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities whose references name any of these GUIDs (EDL-10, DD-057)."""
+        ...
+
+    async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities listing any of these classification instances (DD-075, DD-076)."""
+        ...
+
+    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
+        """The relationships with these GUIDs that exist, as last written (REL-06, DD-061)."""
+        ...
+
+    async def get_classifications(self, guids: Sequence[str]) -> dict[str, VersionedClassification]:
+        """The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070)."""
+        ...
+
+    async def list_tasks(self, *, open_only: bool = False) -> list[tuple[StoredTask, DocumentVersion]]:
+        """Every task, or those ``PENDING`` or ``IN_PROGRESS``, oldest first (TSK-04, TSK-06)."""
+        ...
+
+    async def search(self, query: SearchQuery) -> SearchHits:
+        """The entities of a search query's page, how many match it in all, their scores and facets (DD-089)."""
+        ...
+
+    async def write(
+        self,
+        changes: Sequence[EntityChange],
+        relationship_changes: Sequence[RelationshipChange] = (),
+        classification_changes: Sequence[ClassificationChange] = (),
+        task_changes: Sequence[TaskChange] = (),
+    ) -> None:
+        """Write the changes of one request, all or nothing (ENS-05, ENS-07, ENS-08)."""
+        ...
+
+
 class EntityStore:
     """Entities of the registry's entity types, and the relationships between them, in ``EntityDocuments``."""
 
@@ -141,6 +226,15 @@ class EntityStore:
         """Called after a write that recorded tasks, to wake a worker (DD-080)."""
         self.write_listeners: list[Callable[[], None]] = []
         """Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678)."""
+
+    @property
+    def documents(self) -> EntityDocuments:
+        """The documents this store keeps (WRS-03, DD-775).
+
+        Public so the rewind wrapper reads before-images through the documents contract instead of reaching
+        ``_documents`` of the class it composes.
+        """
+        return self._documents
 
     async def prepare(self) -> None:
         """Create the indices that are missing (ENS-01)."""

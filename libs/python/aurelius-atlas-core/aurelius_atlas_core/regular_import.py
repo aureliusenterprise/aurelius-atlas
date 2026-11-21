@@ -12,8 +12,8 @@ from aurelius_atlas_model.impexp import AtlasImportResult
 from aurelius_atlas_model.instance import AtlasEntityWithExtInfo, EntityMutationResponse, EntityOperation
 from aurelius_atlas_typesystem.builtin.object_id_type import is_assigned_guid
 
-from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.entity_store import WriteStore
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.zip_source import ZipSource
 
 NO_ENTITIES = "no entities to create/update."
@@ -28,7 +28,7 @@ METRICS = (
 class RegularImport:
     """``RegularImport`` into ``store`` through ``writer``."""
 
-    def __init__(self, store: EntityStore, writer: EntityWriter) -> None:
+    def __init__(self, store: WriteStore, writer: ImportWriter) -> None:
         self._store = store
         self._writer = writer
         self._guids: dict[str, str] = {}

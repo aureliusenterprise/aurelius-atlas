@@ -27,12 +27,12 @@ from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import VersionedEntity, VersionedRelationship
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import (
-    EntityStore,
     EntityVersionConflictError,
     EntityWriteError,
     RelationshipChange,
     TaskChange,
     UniqueValueTakenError,
+    WriteStore,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
@@ -56,7 +56,7 @@ class RelationshipStore:
 
     def __init__(  # noqa: PLR0913 - the request's options, each a keyword
         self,
-        store: EntityStore,
+        store: WriteStore,
         *,
         user: str | None = None,
         delete_type: DeleteType = DeleteType.SOFT,

@@ -8,9 +8,10 @@ discovery classes of Apache Atlas 2.4.0, and its tests ``AtlasEntityStoreV2Test`
 from typing import Any
 
 import pytest
+from aurelius_atlas_core.entity_discovery import DiscoveryContext, EntityDiscovery
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
-from aurelius_atlas_core.entity_writer import EntityWriter, compact_attributes
+from aurelius_atlas_core.entity_writer import EntityWriter, WriteTransaction, compact_attributes
 from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_model import codec
@@ -465,6 +466,45 @@ async def test__a_lost_race_is_run_again_once(store: EntityStore, documents: Mem
     )
     assert code is AtlasErrorCode.INTERNAL_ERROR
     assert message.startswith("Internal server error unique value s_ref.qualifiedName=same of type s_ref is held by")
+
+
+@pytest.mark.covers(f"{W}.EntityWriter.create_or_update", rules=["WRS-05", "WRS-06"])
+async def test__the_retry_of_a_write_starts_from_a_fresh_transaction(
+    store: EntityStore, documents: MemoryEntityDocuments, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each attempt of a write builds its own transaction and no state of the lost attempt rides into it (WRS-05,
+    WRS-06, DD-776, DD-779): a step reads what an earlier step of the same attempt wrote, from the transaction the
+    attempt was built with.
+    """  # noqa: D205 - one sentence
+    await write(store, entity("s_table", "-1", qualifiedName="t@txn"))
+    table = g("-1")
+
+    seen: list[tuple[WriteTransaction, list[tuple[str, list[str]]]]] = []
+    original_prepare = EntityWriter._prepare  # noqa: SLF001 - the step the test wraps (WRS-06)
+
+    async def prepare_and_note(
+        self: EntityWriter,
+        discovery: EntityDiscovery,
+        context: DiscoveryContext,
+        txn: WriteTransaction,
+        *,
+        partial: bool,
+    ) -> Any:  # noqa: ANN401 - the mutation record the step answers
+        """Note what each attempt's transaction carries on entry, then leave a mark on it."""
+        seen.append((txn, list(txn.record.added_labels)))
+        txn.record.added_labels.append(("attempt", ["left behind"]))  # what the lost attempt would hand on
+        return await original_prepare(self, discovery, context, txn, partial=partial)
+
+    monkeypatch.setattr(EntityWriter, "_prepare", prepare_and_note)
+    documents.fail[table] = "conflict"
+    retried = await write(store, entity("s_table", table, name="a"))
+
+    assert len(seen) == 2
+    (first, first_state), (second, second_state) = seen
+    assert first is not second
+    assert first_state == []
+    assert second_state == []  # the lost attempt's mark is not there (WRS-06)
+    assert [h["attributes"]["name"] for h in retried["mutatedEntities"]["UPDATE"]] == ["a"]
 
 
 @pytest.mark.covers(f"{W}.EntityWriter.create_or_update", rules=["EWR-12"])

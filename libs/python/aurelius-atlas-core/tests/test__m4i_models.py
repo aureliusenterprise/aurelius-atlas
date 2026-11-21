@@ -16,8 +16,8 @@ from typing import Any
 
 import pytest
 from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_service import ImportService
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryTypedefDocument
 from aurelius_atlas_core.typedef_change_listener import ChangedTypeDefs
@@ -164,7 +164,7 @@ async def test__a_sample_export_imports_without_creating_a_type() -> None:
     for name in ("small.zip", "sample_data.zip"):
         assert types.registry.typedef_by_name("hive_table") is None, name
         content = (SAMPLES / name).read_bytes()
-        result = await ImportService(store, types, EntityWriter(store, user="importer")).run(
+        result = await ImportService(store, types, ImportWriter(store, user="importer")).run(
             content, AtlasImportRequest(), "importer", "h", "ip"
         )
         created = {key: count for key, count in (result.metrics or {}).items() if key.startswith("typedef:") and count}

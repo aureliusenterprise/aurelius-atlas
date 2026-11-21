@@ -27,7 +27,7 @@ from aurelius_atlas_typesystem.struct_type import struct_attributes
 from aurelius_atlas_typesystem.values import java_distinct, relationship_type_of
 
 from aurelius_atlas_core.entity_documents import DocumentVersion, VersionedEntity, VersionedRelationship
-from aurelius_atlas_core.entity_store import EntityStore, RelationshipChange
+from aurelius_atlas_core.entity_store import RelationshipChange, WriteStore
 from aurelius_atlas_core.graph_helper import (
     collection_elements,
     edge_for_label,
@@ -65,7 +65,7 @@ class RelationshipMapper:
 
     def __init__(  # noqa: PLR0913 - the request's context, as ``EntityMutationContext`` and ``RequestContext``
         self,
-        store: EntityStore,
+        store: WriteStore,
         *,
         resolve: Resolve,
         known: dict[str, VersionedEntity],

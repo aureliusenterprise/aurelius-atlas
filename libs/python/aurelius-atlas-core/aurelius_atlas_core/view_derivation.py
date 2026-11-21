@@ -24,7 +24,7 @@ from aurelius_atlas_model.views import (
 from aurelius_atlas_typesystem.entity_type import EntityType
 
 from aurelius_atlas_core.app_search_document import RELATION_FIELDS, ROLE_FIELDS, awaits_document
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.graph_helper import collection_elements, other_end, relationship_type_name
 from aurelius_atlas_core.search_fields import TRAIT_NAMES
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity, StoredQualityTotals
@@ -232,7 +232,7 @@ def _end_name(entity: StoredEntity) -> str | None:
     return None
 
 
-async def read_ends(store: EntityStore, stored: StoredEntity, entity_type: EntityType) -> RelationEnds:
+async def read_ends(store: WriteStore, stored: StoredEntity, entity_type: EntityType) -> RelationEnds:
     """The entities at the other ends of ``stored``'s relationship attributes, by attribute name (VDR-02, DD-604).
 
     The 2.3 read's own machinery answers them (REL-17): the entity's listed relationships through

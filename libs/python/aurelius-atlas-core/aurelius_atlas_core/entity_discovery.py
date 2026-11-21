@@ -28,7 +28,7 @@ from aurelius_atlas_typesystem.struct_type import StructType, struct_attributes
 from aurelius_atlas_typesystem.values import relationship_type_of
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.graph_helper import (
     edge_for_label,
     held_parent_edges,
@@ -115,7 +115,7 @@ class EntityDiscovery:
     ``importing`` keeps a GUID an import names that is nowhere yet as one to come (IMP-03).
     """
 
-    def __init__(self, store: EntityStore, stream: EntityStream, *, importing: bool = False) -> None:
+    def __init__(self, store: WriteStore, stream: EntityStream, *, importing: bool = False) -> None:
         self._store = store
         self.stream = stream
         self.context = DiscoveryContext()
@@ -514,7 +514,7 @@ def held_parent_message(held: HeldParent) -> str:
 
 
 async def held_parent_sides(  # noqa: PLR0913, PLR0917 - the save's parts, each needed once
-    store: EntityStore,
+    store: WriteStore,
     stream: EntityStream,
     entity: AtlasEntity,
     entity_type: EntityType,
@@ -550,7 +550,7 @@ async def held_parent_sides(  # noqa: PLR0913, PLR0917 - the save's parts, each 
 
 
 async def _declared_parents_held(  # noqa: PLR0913, PLR0917 - the candidate's parts, each needed once
-    store: EntityStore,
+    store: WriteStore,
     stream: EntityStream,
     candidate: AtlasEntity,
     child_attribute: str,
@@ -596,7 +596,7 @@ async def _declared_parents_held(  # noqa: PLR0913, PLR0917 - the candidate's pa
 
 
 async def held_parents_of(
-    store: EntityStore,
+    store: WriteStore,
     candidate_guid: str,
     child_attribute: str,
     parent_guid: str,
@@ -646,7 +646,7 @@ def _reference_guid(value: Any) -> str | None:  # noqa: ANN401 - a reference as 
     return None if object_id is None or object_id.guid is None else str(object_id.guid)
 
 
-async def _known_type_name(store: EntityStore, stream: EntityStream, guid: str) -> str:
+async def _known_type_name(store: WriteStore, stream: EntityStream, guid: str) -> str:
     """The type name a same-request or stored GUID names, "entity" when it names neither yet."""
     entity = stream.get_by_guid(guid)
     if entity is not None:
@@ -654,7 +654,7 @@ async def _known_type_name(store: EntityStore, stream: EntityStream, guid: str) 
     return await _type_name(store, guid)
 
 
-async def _type_name(store: EntityStore, guid: str) -> str:
+async def _type_name(store: WriteStore, guid: str) -> str:
     """The type name of the stored entity, "entity" when there is none."""
     found = await store.get(guid)
     return "entity" if found is None else found.entity.type_name

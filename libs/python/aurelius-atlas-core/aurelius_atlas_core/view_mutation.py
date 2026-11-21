@@ -37,14 +37,21 @@ from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_discovery import HeldParent, held_parent_message, held_parents_of
-from aurelius_atlas_core.entity_documents import DocumentVersion, LinkedKind, VersionedEntity
+from aurelius_atlas_core.entity_documents import (
+    DocumentVersion,
+    EntityDocuments,
+    LinkedKind,
+    VersionedClassification,
+    VersionedEntity,
+    VersionedRelationship,
+)
 from aurelius_atlas_core.entity_labels import EntityLabels
 from aurelius_atlas_core.entity_store import (
     ClassificationChange,
     EntityChange,
-    EntityStore,
     RelationshipChange,
     TaskChange,
+    WriteStore,
 )
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.glossary_service import GlossaryService
@@ -55,7 +62,9 @@ from aurelius_atlas_core.graph_helper import (
     referenced_end,
     relationship_type_name,
 )
+from aurelius_atlas_core.guids import AssignedGuid
 from aurelius_atlas_core.relationship_store import RelationshipStore
+from aurelius_atlas_core.search_query import SearchHits, SearchQuery
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
@@ -107,23 +116,91 @@ class _Write:
     sections: list[_Section] | None = None
 
 
-class RewindStore(EntityStore):
-    """An ``EntityStore`` that records, for each document its writes changed, the state before the first (DD-590).
+class RewindStore:
+    """A ``WriteStore`` wrapper that records, for each document its writes changed, the state before the first (DD-590).
 
-    ``undo`` writes those recorded states back over the current ones in one write of the real store: entities and
-    linked documents a step created are removed, ones it changed are put back, ones it removed are restored.
-    A concurrent change to a recorded document answers a conflict of that undo, as of any other write.
+    It composes the real store instead of subclassing it (WRS-03, DD-775): it reads before-images through the
+    documents contract, mints GUIDs and tells time through the store members the contract names, and shares the
+    real store's two listener lists by name, so the real store keeps owning them (WRS-04). Every member the
+    contract names is forwarded - the door hands this wrapper to the writer and the set internals, which reach
+    the store only through it.
+
+    A write made through it wakes nothing on its own (WRS-08, DD-777): the wrapper holds back the wake the real
+    store would give, and ``flush`` gives it once the whole apply has succeeded. A rolled-back apply never calls
+    ``flush``, so the index and task workers see nothing of the documents that were prepared and then undone.
+
+    ``undo`` writes those recorded states back over the current ones in one write of the real store, again waking
+    nothing: entities and linked documents a step created are removed, ones it changed are put back, ones it
+    removed are restored. A concurrent change to a recorded document answers a conflict of that undo, as of any
+    other write.
     """
 
-    def __init__(self, real: EntityStore) -> None:
-        super().__init__(real.registry, real._documents, clock=real._clock, new_id=real._new_id)  # noqa: SLF001
+    def __init__(self, real: WriteStore) -> None:
         self._real = real
-        # The real store's listeners hear the door's writes too: the App Search worker (ASU-07, ASU-08) and the task
-        # worker (DD-080) are hooked to the real store alone.
+        self.registry = real.registry
+        # The real store's listeners hear the door's writes too, through ``flush``: the App Search worker
+        # (ASU-07, ASU-08) and the task worker (DD-080) are hooked to the real store alone. Shared by name, not
+        # by reaching a private field: the lists are public members of the contract, and the real store stays
+        # their owner (WRS-04).
         self.write_listeners = real.write_listeners
         self.task_listeners = real.task_listeners
         self._entities: dict[str, StoredEntity | None] = {}
         self._linked: dict[LinkedKind, dict[str, Any]] = {kind: {} for kind in LinkedKind}
+        self._wrote = False
+        """Whether a write has been made through this wrapper since the last flush (WRS-08)."""
+        self._new_task = False
+        """Whether one of those writes recorded a new task, which wakes the task listeners too (DD-080)."""
+
+    @property
+    def documents(self) -> EntityDocuments:
+        """The real store's documents, read through the documents contract for before-images (WRS-03)."""
+        return self._real.documents
+
+    def new_guid(self) -> AssignedGuid:
+        """The real store's minted GUID."""
+        return self._real.new_guid()
+
+    def now(self) -> int:
+        """The real store's time."""
+        return self._real.now()
+
+    async def get(self, guid: str) -> VersionedEntity | None:
+        """The real store's entity."""
+        return await self._real.get(guid)
+
+    async def get_many(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
+        """The real store's entities."""
+        return await self._real.get_many(guids)
+
+    async def find_by_unique_attributes(
+        self, entity_type: EntityType, values: Mapping[str, Any]
+    ) -> VersionedEntity | None:
+        """The real store's unique-value holder."""
+        return await self._real.find_by_unique_attributes(entity_type, values)
+
+    async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The real store's referrers."""
+        return await self._real.referring(guids)
+
+    async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The real store's classified entities."""
+        return await self._real.classified(guids)
+
+    async def get_relationships(self, guids: Sequence[str]) -> dict[str, VersionedRelationship]:
+        """The real store's relationships."""
+        return await self._real.get_relationships(guids)
+
+    async def get_classifications(self, guids: Sequence[str]) -> dict[str, VersionedClassification]:
+        """The real store's classification instances."""
+        return await self._real.get_classifications(guids)
+
+    async def list_tasks(self, *, open_only: bool = False) -> list[tuple[StoredTask, DocumentVersion]]:
+        """The real store's tasks."""
+        return await self._real.list_tasks(open_only=open_only)
+
+    async def search(self, query: SearchQuery) -> SearchHits:
+        """The real store's search."""
+        return await self._real.search(query)
 
     async def write(
         self,
@@ -132,7 +209,12 @@ class RewindStore(EntityStore):
         classification_changes: Sequence[ClassificationChange] = (),
         task_changes: Sequence[TaskChange] = (),
     ) -> None:
-        """Record what is about to change, then write as the store does (DD-590)."""
+        """Record what is about to change, then write through the real store without waking it (DD-590, WRS-08).
+
+        The wake the real store would give is held back (``_quiet``); ``flush`` gives it once the apply succeeds,
+        and a rolled-back apply drops it (DD-777). A new task among the changes is remembered so the task
+        listeners are woken too (DD-080).
+        """
         await self._record_entities([change.entity.guid for change in changes])
         await self._record_linked(
             LinkedKind.RELATIONSHIP, [change.relationship.guid for change in relationship_changes]
@@ -141,16 +223,60 @@ class RewindStore(EntityStore):
             LinkedKind.CLASSIFICATION, [change.classification.guid for change in classification_changes]
         )
         await self._record_linked(LinkedKind.TASK, [change.task.guid for change in task_changes])
-        await super().write(changes, relationship_changes, classification_changes, task_changes)
+        self._wrote = True
+        self._new_task = self._new_task or any(change.expected is None and not change.remove for change in task_changes)
+        await self._quiet(changes, relationship_changes, classification_changes, task_changes)
+
+    async def flush(self) -> None:
+        """Wake the real store's listeners for the writes made through this wrapper, once (ASU-07, ASU-08).
+
+        The door calls it after the whole apply has succeeded, beside replaying the change records (AVW-10). A
+        write that never reached here - one the apply rolled back - wakes nothing (WRS-08).
+        """
+        wrote, new_task = self._wrote, self._new_task
+        self._wrote = self._new_task = False
+        if wrote:
+            for listener in self._real.write_listeners:
+                listener()
+        if new_task:
+            for listener in self._real.task_listeners:
+                listener()
+
+    async def _quiet(
+        self,
+        changes: Sequence[EntityChange],
+        relationship_changes: Sequence[RelationshipChange],
+        classification_changes: Sequence[ClassificationChange],
+        task_changes: Sequence[TaskChange],
+    ) -> None:
+        """Write through the real store while it wakes no listener (WRS-08, DD-777).
+
+        ``EntityStore.write`` wakes the workers at the end of every write; while the wrapper holds its two
+        listener lists aside, ``_notify`` iterates empty lists and hears nothing. The real store owns the lists
+        and gets them back whether the write lands or raises (WRS-04: they are its public members).
+        """
+        write_listeners, task_listeners = self._real.write_listeners, self._real.task_listeners
+        self._real.write_listeners = []
+        self._real.task_listeners = []
+        try:
+            await self._real.write(changes, relationship_changes, classification_changes, task_changes)
+        finally:
+            self._real.write_listeners = write_listeners
+            self._real.task_listeners = task_listeners
 
     async def undo(self) -> None:
-        """Write the recorded states back over the current ones through the real store, once (DD-590)."""
+        """Write the recorded states back over the current ones, waking no listener (DD-590, WRS-08).
+
+        Any wake the rolled-back writes had built up is dropped with them: a worker hears nothing of a write
+        that did not happen (DD-777).
+        """
+        self._wrote = self._new_task = False
         entities = await self._restore_entities()
         relationships = await self._restore_linked(LinkedKind.RELATIONSHIP)
         classifications = await self._restore_linked(LinkedKind.CLASSIFICATION)
         tasks = await self._restore_linked(LinkedKind.TASK)
         if entities or relationships or classifications or tasks:
-            await self._real.write(entities, relationships, classifications, tasks)
+            await self._quiet(entities, relationships, classifications, tasks)
         self._entities.clear()
         for kind in self._linked:
             self._linked[kind].clear()
@@ -159,7 +285,7 @@ class RewindStore(EntityStore):
         unread = [guid for guid in dict.fromkeys(guids) if guid not in self._entities]
         if not unread:
             return
-        for guid, found in (await self._documents.get(unread)).items():
+        for guid, found in (await self.documents.get(unread)).items():
             self._entities[guid] = found.entity
         for guid in unread:
             self._entities.setdefault(guid, None)
@@ -169,13 +295,13 @@ class RewindStore(EntityStore):
         unread = [guid for guid in dict.fromkeys(guids) if guid not in recorded]
         if not unread:
             return
-        for guid, (document, _) in (await self._documents.get_linked(kind, unread)).items():
+        for guid, (document, _) in (await self.documents.get_linked(kind, unread)).items():
             recorded[guid] = document
         for guid in unread:
             recorded.setdefault(guid, None)
 
     async def _restore_entities(self) -> list[EntityChange]:
-        current = await self._documents.get(list(self._entities))
+        current = await self.documents.get(list(self._entities))
         changes = []
         for guid, before in self._entities.items():
             found = current.get(guid)
@@ -188,7 +314,7 @@ class RewindStore(EntityStore):
 
     async def _restore_linked(self, kind: LinkedKind) -> list[Any]:
         recorded = self._linked[kind]
-        current = await self._documents.get_linked(kind, list(recorded))
+        current = await self.documents.get_linked(kind, list(recorded))
 
         def change(
             before: Any,  # noqa: ANN401 - the kind's stored document, or none when it did not exist
@@ -263,7 +389,7 @@ class ViewMutationDoor:
 
     def __init__(  # noqa: PLR0913 - the request's options, each a keyword
         self,
-        store: EntityStore,
+        store: WriteStore,
         *,
         user: str | None = None,
         authorizer: Authorizer = ALLOW_ALL,
@@ -315,6 +441,7 @@ class ViewMutationDoor:
         except Exception:
             await rewind.undo()
             raise
+        await rewind.flush()
         await buffer.replay()
         return await self._view(guid)
 
@@ -342,6 +469,7 @@ class ViewMutationDoor:
         except Exception:
             await rewind.undo()
             raise
+        await rewind.flush()
         await buffer.replay()
         return await self._view(guid)
 

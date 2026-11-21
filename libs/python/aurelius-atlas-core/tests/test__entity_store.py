@@ -15,6 +15,7 @@ from aurelius_atlas_core.entity_store import (
     EntityVersionConflictError,
     EntityWriteError,
     UniqueValueTakenError,
+    WriteStore,
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, SimulatedCrashError
@@ -79,7 +80,7 @@ def store(documents: MemoryEntityDocuments, clock: Clock) -> EntityStore:
     return EntityStore(registry(), documents, clock=clock)
 
 
-def new(store: EntityStore, type_name: str = "table", **attributes: object) -> StoredEntity:
+def new(store: WriteStore, type_name: str = "table", **attributes: object) -> StoredEntity:
     """A new entity of ``type_name`` with ``attributes``, as stored."""
     entity_type = store.registry.entity_type(type_name)
     assert entity_type is not None

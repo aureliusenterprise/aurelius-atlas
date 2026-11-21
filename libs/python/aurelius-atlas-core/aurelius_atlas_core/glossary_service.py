@@ -25,7 +25,7 @@ from aurelius_atlas_model.instance import AtlasRelatedObjectId
 from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_retriever import EntityRetriever
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.file_utils import java_split, read_file_data
 from aurelius_atlas_core.glossary_category_utils import GlossaryCategoryUtils
 from aurelius_atlas_core.glossary_dto import (
@@ -86,7 +86,7 @@ class GlossaryService:
 
     def __init__(
         self,
-        store: EntityStore,
+        store: WriteStore,
         *,
         user: str | None = None,
         tasks: bool = False,

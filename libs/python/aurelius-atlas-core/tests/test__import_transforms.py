@@ -14,6 +14,7 @@ from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.import_transforms import ImportTransforms, shape, transformer
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
@@ -127,7 +128,7 @@ async def test__an_import_writes_its_entities_transformed() -> None:
     option = json.dumps({"tr_table": {"qualifiedName": ["lowercase"]}})
     request = AtlasImportRequest.model_validate({"options": {"transforms": option}})
 
-    await ImportService(target, types, EntityWriter(target)).run(sink.close(), request, "u", "h", "i")
+    await ImportService(target, types, ImportWriter(target)).run(sink.close(), request, "u", "h", "i")
     imported = (await EntityRetriever(target).entity_with_ext_info(guid)).entity
 
     assert imported is not None

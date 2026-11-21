@@ -68,7 +68,7 @@ from aurelius_atlas_server.openapi import (
     text_response,
 )
 from aurelius_atlas_server.openapi import no_content as no_content_response
-from aurelius_atlas_server.routes.entity import INVALID_PARAMETER, Body, Store, updater, writer
+from aurelius_atlas_server.routes.entity import INVALID_PARAMETER, Body, Store, importer, writer
 from aurelius_atlas_server.routes.types import typedef_store as refreshed_typedef_store
 from aurelius_atlas_server.routes.types import validate_param_length
 from aurelius_atlas_server.settings import ServerSettings
@@ -577,7 +577,7 @@ def _import_request(text: str) -> AtlasImportRequest | None:
 async def _importer(request: Request, store: Store) -> ImportService:
     """The import service, its types current, its entities written as the request's user (IMS-04)."""
     return ImportService(
-        store, await refreshed_typedef_store(request), updater(request, store), audits=_audits(request, store)
+        store, await refreshed_typedef_store(request), importer(request, store), audits=_audits(request, store)
     )
 
 

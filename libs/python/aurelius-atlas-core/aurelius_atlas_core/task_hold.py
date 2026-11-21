@@ -9,7 +9,7 @@ that stops part-way only delays the propagation of what it wrote.
 
 from dataclasses import dataclass
 
-from aurelius_atlas_core.entity_store import EntityStore, EntityVersionConflictError, EntityWriteError, TaskChange
+from aurelius_atlas_core.entity_store import EntityVersionConflictError, EntityWriteError, TaskChange, WriteStore
 from aurelius_atlas_core.stored_task import StoredTask
 
 HOLD_MILLISECONDS = 3_600_000
@@ -27,7 +27,7 @@ class TaskHold:
     until: int
 
     @classmethod
-    def start(cls, store: EntityStore) -> TaskHold:
+    def start(cls, store: WriteStore) -> TaskHold:
         """A new hold of the store's clock, passing after ``HOLD_MILLISECONDS`` (IMT-01)."""
         return cls(store.new_guid(), store.now() + HOLD_MILLISECONDS)
 
@@ -35,7 +35,7 @@ class TaskHold:
         """Whether the task was recorded with this hold and is still held by it."""
         return task.held_by == self.id and task.held_until is not None
 
-    async def release(self, store: EntityStore) -> int:
+    async def release(self, store: WriteStore) -> int:
         """Release every task still held by this hold and wake the workers; the number released (IMT-02).
 
         A task another process claimed once the hold had passed is no longer held and is left as it is.
@@ -65,7 +65,7 @@ def _released(task: StoredTask) -> StoredTask:
     return task.model_copy(update={"held_by": None, "held_until": None})
 
 
-async def _release_each(store: EntityStore, changes: list[TaskChange]) -> int:
+async def _release_each(store: WriteStore, changes: list[TaskChange]) -> int:
     """Release the tasks of a batch that lost a race one by one, passing over those that changed since."""
     released = 0
     for change in changes:

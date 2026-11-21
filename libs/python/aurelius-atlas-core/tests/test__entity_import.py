@@ -15,7 +15,8 @@ from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.entity_writer import EntityWriter, with_system_attributes
+from aurelius_atlas_core.entity_writer import with_system_attributes
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_core.testing.memory import InMemoryEntityAuditRepository, MemoryEntityDocuments
 from aurelius_atlas_model.audit import EntityAuditActionV2
@@ -24,6 +25,7 @@ from aurelius_atlas_model.typedef import AtlasTypesDef
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 W = "aurelius_atlas_core.entity_writer"
+IW = "aurelius_atlas_core.import_writer"
 A = EntityAuditActionV2
 DB, TABLE = "11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"
 MISSING = "33333333-3333-3333-3333-333333333333"
@@ -69,10 +71,10 @@ def store() -> EntityStore:
     return EntityStore(registry, MemoryEntityDocuments(), clock=lambda: next(ticks) / 1000)
 
 
-def importer(store: EntityStore, audits: InMemoryEntityAuditRepository) -> EntityWriter:
-    """A writer as user ``admin``, refused every privilege, its changes audited."""
+def importer(store: EntityStore, audits: InMemoryEntityAuditRepository) -> ImportWriter:
+    """An import writer as user ``admin``, refused every privilege, its changes audited."""
     notifier = EntityChangeNotifier(store, [EntityAuditListener(audits, store.now)])
-    return EntityWriter(store, user="admin", notifier=notifier, authorizer=Granted("admin", frozenset()))
+    return ImportWriter(store, user="admin", notifier=notifier, authorizer=Granted("admin", frozenset()))
 
 
 def table(**more: Any) -> dict[str, Any]:  # noqa: ANN401 - Atlas JSON
@@ -106,7 +108,7 @@ def database(**more: Any) -> dict[str, Any]:  # noqa: ANN401 - Atlas JSON
     return {"typeName": "imp_db", "guid": DB, "attributes": {"qualifiedName": "d", "name": "d"}, **more}
 
 
-async def run(writer: EntityWriter, entity: dict[str, Any]) -> dict[str, Any]:
+async def run(writer: ImportWriter, entity: dict[str, Any]) -> dict[str, Any]:
     """The answer to importing the entity, as JSON."""
     return (
         await writer.create_or_update_for_import(AtlasEntityWithExtInfo.model_validate({"entity": entity}))
@@ -126,7 +128,7 @@ def actions(audits: InMemoryEntityAuditRepository) -> list[tuple[str, EntityAudi
 
 
 @pytest.mark.covers(
-    f"{W}.EntityWriter.create_or_update_for_import",
+    f"{IW}.ImportWriter.create_or_update_for_import",
     f"{W}.with_system_attributes",
     "aurelius_atlas_core.entity_discovery.EntityDiscovery.discover",
     rules=["IMP-01", "IMP-02", "IMP-03", "IMP-05", "IMP-07", "IMP-08"],
@@ -171,7 +173,7 @@ async def test__an_imported_relationship_keeps_its_guid(
 
 
 @pytest.mark.covers(
-    f"{W}.EntityWriter.create_or_update_for_import",
+    f"{IW}.ImportWriter.create_or_update_for_import",
     "aurelius_atlas_core.entity_comparator.EntityComparator.has_difference",
     rules=["IMP-06", "IMP-08"],
 )
@@ -210,7 +212,7 @@ async def test__an_import_replaces_classifications_and_business_attributes(
     assert "UPDATE" not in (same.get("mutatedEntities") or {})
 
 
-@pytest.mark.covers(f"{W}.EntityWriter.create_or_update_for_import", rules=["IMP-04", "IMP-08"])
+@pytest.mark.covers(f"{IW}.ImportWriter.create_or_update_for_import", rules=["IMP-04", "IMP-08"])
 async def test__an_import_deletes_and_reactivates_by_status(
     store: EntityStore, audits: InMemoryEntityAuditRepository
 ) -> None:

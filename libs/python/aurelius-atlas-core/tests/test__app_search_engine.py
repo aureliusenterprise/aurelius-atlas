@@ -31,8 +31,8 @@ from aurelius_atlas_core.app_search_engine import (
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_service import ImportService
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
 from aurelius_atlas_core.stored_entity import (
     StoredDimensionTotals,
@@ -512,7 +512,7 @@ async def indexed_sample() -> ElasticsearchEntityDocuments:
     documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
     store = EntityStore(types.registry, documents)
     await store.prepare()
-    result = await ImportService(store, types, EntityWriter(store, user="importer")).run(
+    result = await ImportService(store, types, ImportWriter(store, user="importer")).run(
         SAMPLE.read_bytes(), AtlasImportRequest(), "importer", "h", "ip"
     )
     assert result.operation_status.value == "SUCCESS"

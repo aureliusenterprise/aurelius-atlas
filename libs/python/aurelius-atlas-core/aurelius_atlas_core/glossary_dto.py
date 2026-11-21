@@ -29,7 +29,7 @@ from aurelius_atlas_model.instance import (
 
 from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.data_access import DataAccess, Registry
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 
 ATLAS_GLOSSARY_TYPENAME = "AtlasGlossary"
 ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory"
@@ -208,7 +208,7 @@ GLOSSARY_DTOS: Registry = {
 
 
 def glossary_data_access(
-    store: EntityStore, *, user: str | None = None, authorizer: Authorizer = ALLOW_ALL
+    store: WriteStore, *, user: str | None = None, authorizer: Authorizer = ALLOW_ALL
 ) -> DataAccess:
     """The ``DataAccess`` of glossary objects in ``store``, written as ``user`` and checked by ``authorizer``."""
     return DataAccess(store, GLOSSARY_DTOS, user=user, authorizer=authorizer)

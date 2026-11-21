@@ -15,10 +15,10 @@ from aurelius_atlas_core.entity_discovery import validate_labels
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_store import (
     EntityChange,
-    EntityStore,
     EntityVersionConflictError,
     EntityWriteError,
     UniqueValueTakenError,
+    WriteStore,
 )
 
 ATTEMPTS = 2
@@ -38,7 +38,7 @@ class EntityLabels:
 
     def __init__(
         self,
-        store: EntityStore,
+        store: WriteStore,
         *,
         user: str | None = None,
         notifier: EntityChangeNotifier | None = None,

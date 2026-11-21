@@ -17,6 +17,7 @@ from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.export_import_audit_service import ExportImportAuditService
 from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.import_service import ImportService
+from aurelius_atlas_core.import_writer import ImportWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, ModelLoader
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
@@ -102,7 +103,7 @@ async def test__a_replicating_export_and_import_mark_the_servers_and_entities() 
     other, other_types = await catalogue()
     request = AtlasImportRequest.model_validate({"options": {"replicatedFrom": "cl1"}})
     audits = AuditsWriter(other, cluster_name="cl2", user="importer")
-    await ImportService(other, other_types, EntityWriter(other), audits=audits).run(content, request, "i", "h", "ip")
+    await ImportService(other, other_types, ImportWriter(other), audits=audits).run(content, request, "i", "h", "ip")
     source = await AtlasServerService(other).get(AtlasServer(full_name="cl1"))
     assert await replicated(other, guid, "replicatedFrom") == [{"typeName": "AtlasServer", "guid": source.guid}]
     with pytest.raises(AtlasError):
@@ -129,7 +130,7 @@ async def test__each_export_and_import_with_entities_is_an_audit_entry() -> None
     content = await exported(store, guid)
     await exported(store, "missing")  # no entities: no entry
     audits = AuditsWriter(store, cluster_name="cl1", user="importer")
-    importer = ImportService(store, types, EntityWriter(store), audits=audits)
+    importer = ImportService(store, types, ImportWriter(store), audits=audits)
     await importer.run(content, AtlasImportRequest.model_validate({"options": {"replicatedFrom": "cl0"}}), "i", "h", "")
     await importer.run(content, AtlasImportRequest.model_validate({"options": {"migration": "true"}}), "i", "h", "")
     service = ExportImportAuditService(store)
