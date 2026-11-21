@@ -25,6 +25,11 @@
     "aliases": []
   },
   {
+    "version": "fix-sonarqube-findings",
+    "title": "fix-sonarqube-findings",
+    "aliases": []
+  },
+  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
