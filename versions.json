@@ -40,6 +40,11 @@
     "aliases": []
   },
   {
+    "version": "feat-e2e-through-client",
+    "title": "feat-e2e-through-client",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
