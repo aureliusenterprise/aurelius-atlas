@@ -77,14 +77,15 @@ EXPIRY_MARGIN_SECONDS = 10
 
 @dataclass(frozen=True)
 class User:
-    """An authenticated user: their name, groups (``Authentication``'s name and authorities), roles (AUZ-01), and
-    the tenant they act in while tenancy is on (TEN-03).
+    """An authenticated user: their name, groups (``Authentication``'s name and authorities), roles (AUZ-01), the
+    tenant they act in while tenancy is on (TEN-03), and their token's subject, the realm's user id (TDL-06).
     """  # noqa: D205 - one sentence
 
     name: str
     groups: tuple[str, ...] = ()
     roles: frozenset[str] = frozenset()
     tenant: str | None = None
+    subject: str | None = None
 
 
 def user_of(
@@ -111,7 +112,9 @@ def user_of(
     if tenancy is None:
         return User(name, named_groups, client_roles(claims, client_id))
     tenant, entry = tenant_of(claims, tenancy, name)
-    return User(name, named_groups, tenant_roles(claims, tenancy, tenant, entry), tenant)
+    roles = tenant_roles(claims, tenancy, tenant, entry)
+    subject = claims.get("sub")
+    return User(name, named_groups, roles, tenant, subject=subject if isinstance(subject, str) else None)
 
 
 async def current_tenancy(request: Request) -> Tenancy | None:

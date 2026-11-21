@@ -37,6 +37,8 @@ services:
             AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-true}
             # Tenancy (15.4, ADR 063): off by default; on, each tenant is provisioned by the command (README.md).
             AURELIUS_ATLAS_SERVER_TENANCY_ENABLED: ${ATLAS_TENANCY_ENABLED:-false}
+            # Grafana as the browser reaches it, for the tenant's dashboards link (15.10, TDL-11).
+            AURELIUS_ATLAS_SERVER_GRAFANA_PUBLIC_URL: https://localhost:9000/grafana
             # The stack's one host, localhost (SPC-02, DD-694): this container shares the proxy's
             # network namespace, so the issuer URL and the browser's address are one and the same
             # string, and the proxy answers it here.

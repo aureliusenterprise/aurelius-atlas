@@ -102,7 +102,7 @@ class FakeKeycloak:
         body = json.loads(request.content) if request.content else None
         return self._route(request.method, path, query, body)
 
-    def _route(self, method: str, path: str, query: dict[str, str], body: Any) -> httpx.Response:  # noqa: ANN401, C901, PLR0911, PLR0912 - one fake router
+    def _route(self, method: str, path: str, query: dict[str, str], body: Any) -> httpx.Response:  # noqa: ANN401, C901, PLR0911, PLR0912, PLR0915 - one fake router
         if path == "/organizations" and method == "GET":
             found = list(self.organizations.values())
             if "search" in query:  # Keycloak matches the name (or a domain), not the alias
@@ -147,6 +147,10 @@ class FakeKeycloak:
             if org.members.pop(match[2], None) is None:
                 return httpx.Response(404)
             return httpx.Response(204)
+        if (match := re.fullmatch(r"/organizations/([^/]+)/groups/([^/]+)/members", path)) and method == "GET":
+            org = self.organizations[match[1]]
+            listed = [user_id for user_id, groups in org.members.items() if match[2] in groups]
+            return _page([{"id": user_id, "username": self.users[user_id]["username"]} for user_id in listed], query)
         if match := re.fullmatch(r"/organizations/([^/]+)/groups/([^/]+)/members/([^/]+)", path):
             org, group, user_id = self.organizations[match[1]], match[2], match[3]
             if user_id not in org.members:

@@ -16,7 +16,8 @@
             "settings": "Settings",
             "alerts": "Alerts",
             "tenant": "Tenant",
-            "switchTenant": "Switch tenant"
+            "switchTenant": "Switch tenant",
+            "dashboards": "Dashboards"
         },
         "pipeline": {
             "error": "Something went wrong while",

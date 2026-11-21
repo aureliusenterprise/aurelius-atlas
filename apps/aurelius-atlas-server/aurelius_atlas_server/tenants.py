@@ -40,6 +40,7 @@ TENANTS_MAPPING: dict[str, Any] = {
         "updatedBy": {"type": "keyword"},
         "operatorMembers": {"type": "keyword"},
         "administrators": {"type": "keyword"},
+        "grafanaOrg": {"type": "long"},
     },
 }
 
@@ -66,6 +67,8 @@ class StoredTenant(AtlasModel):
     """The operators' user ids that trust made members of the tenant's organization (TRM-03, DD-601)."""
     administrators: list[str] = Field(default_factory=list)
     """The user ids of the tenant's administrators in the realm (TRM-06, DD-602)."""
+    grafana_org: int | None = None
+    """The id of the tenant's Grafana organization, which the command keeps (TDL-04, DD-768)."""
 
 
 class TenantsIndex:

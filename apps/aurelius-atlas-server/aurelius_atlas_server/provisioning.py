@@ -39,6 +39,9 @@ PROG = "python -m aurelius_atlas_server.provisioning"
 NO_REALM = "The realm is left as it is: tenancy_admin_client_secret is not set"
 """What the command says once when it can't keep the realm in step (TRM-01, DD-603)."""
 
+WRITE_ROLE = "atlas-write"
+"""The role group whose members, the tenant's administrators and stewards, see its dashboards (TDL-01, DD-767)."""
+
 NO_GRAFANA = "Grafana is left as it is: grafana_url or grafana_admin_password is not set"
 """What the command says once when it can't keep Grafana in step (TGF-11)."""
 
@@ -406,7 +409,8 @@ class Provisioner:
 
     async def grafana_sync(self) -> None:
         """Bring every ``active`` tenant's Grafana organization in step with the realm, the platform's organization
-        with the operators, and delete the Grafana users the realm gives no tenant (TGF-09, TGF-10, TGF-14).
+        with the operators, and delete the Grafana users who are Viewers of no tenant and no operator (TGF-09,
+        TGF-10, TDL-03).
         """  # noqa: D205 - one sentence
         if self._grafana is None:
             self._no_grafana()
@@ -423,17 +427,22 @@ class Provisioner:
         self._out(f"Grafana: {len(operators)} operators in the platform's organization, {len(deleted)} users deleted")
 
     async def _grafana_tenant(self, alias: str) -> list[GrafanaPerson]:
-        """The tenant's Grafana organization, data sources, dashboards and members in step with the realm; its
-        members (TGF-04 to TGF-08).
+        """The tenant's Grafana organization, data sources, dashboards and Viewers in step with the realm, and its id
+        in the tenant's record; its Viewers: the members in its group ``atlas-write`` and the operators its trust
+        made members (TGF-04 to TGF-08, TDL-01, TDL-04).
         """  # noqa: D205 - one sentence
         if self._grafana is None:
             self._no_grafana()
             return []
         realm = self._people_realm()
         org = await self._organization(realm, alias)
-        members = [GrafanaPerson(*await realm.username_and_email(user)) for user in sorted(await realm.members(org))]
+        record = await self._recorded(alias)
+        viewers = (await realm.group_members(org, WRITE_ROLE) | set(record.operator_members)) & await realm.members(org)
+        members = [GrafanaPerson(*await realm.username_and_email(user)) for user in sorted(viewers)]
         grafana_org = await self._grafana.ensure_tenant(alias)
         added, removed = await self._grafana.sync_members(grafana_org, members)
+        if record.grafana_org != grafana_org:
+            await self._tenants.put(record.model_copy(update={"grafana_org": grafana_org}))
         self._out(f"Grafana {alias}: organization {grafana_org}, {added} members added, {removed} removed")
         return members
 

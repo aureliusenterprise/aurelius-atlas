@@ -16,7 +16,8 @@
             "settings": "Instellingen",
             "alerts": "Meldingen",
             "tenant": "Tenant",
-            "switchTenant": "Andere tenant kiezen"
+            "switchTenant": "Andere tenant kiezen",
+            "dashboards": "Dashboards"
         },
         "pipeline": {
             "error": "Er is iets misgegaan tijden",

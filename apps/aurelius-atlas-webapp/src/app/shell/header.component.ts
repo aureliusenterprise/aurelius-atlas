@@ -9,6 +9,7 @@ import { AlertsService } from "../alerts/alerts.service";
 import { realmUrl } from "../settings/account-language.service";
 import { SIGN_IN_SCOPE, TENANCY } from "../tenancy";
 import { APP_CONFIG } from "../tokens";
+import { DashboardsService } from "./dashboards.service";
 import { Session } from "./session.service";
 
 /** The Aurelius Atlas documentation site, the legacy header's Documentation link. */
@@ -60,6 +61,9 @@ export class ShellHeader {
     protected readonly appLogo = "assets/aurelius-atlas-logo.png";
 
     protected readonly session = inject(Session);
+
+    /** The tenant's dashboards link, shown under "Switch tenant" when the server gives one (TDL-08). */
+    protected readonly dashboards = inject(DashboardsService);
 
     /** The alerts store, behind the bell's badge and ring (ALR-02, ALR-02a). */
     protected readonly alerts = inject(AlertsService);

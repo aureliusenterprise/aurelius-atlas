@@ -464,6 +464,9 @@ class AtlasErrorCode(Enum):
     # Aurelius's own, for its endpoints beside Atlas's: none of Atlas's answers them (SBM-05, SBM-06, DD-440).
     VIEW_REFUSED = (400, "AURELIUS-400-00-001", "The view door refuses the request: {0}")
     EMBEDDING_OFF = (404, "AURELIUS-404-00-001", "Search by meaning is off: no embedding service is configured")
+    # Aurelius's own, for the tenant's dashboards link: Atlas has no Grafana (TDL-07).
+    NO_DASHBOARDS = (404, "AURELIUS-404-00-002", "Tenant {0} has no dashboards to show")
+    DASHBOARDS_FORBIDDEN = (403, "AURELIUS-403-00-006", "{0} is not authorized to see tenant {1}'s dashboards")
     NO_EMBEDDING = (409, "AURELIUS-409-00-001", "Entity {0} has no embedding yet")
     EMBEDDER_UNAVAILABLE = (503, "AURELIUS-503-00-001", "The embedding service could not embed the query: {0}")
     # Aurelius's own, for a tenant a token doesn't name or isn't provisioned: Atlas has no tenants (TEN-03, TEN-04).

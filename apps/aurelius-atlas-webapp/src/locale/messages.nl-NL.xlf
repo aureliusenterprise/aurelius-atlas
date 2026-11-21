@@ -3767,6 +3767,11 @@ The technical data governance model consists of the following types of entities:
         <target>Meldingen</target>
         <note priority="1" from="description">Aurelius dictionary key: shell.header.alerts</note>
       </trans-unit>
+      <trans-unit id="shell.header.dashboards" datatype="html">
+        <source>Dashboards</source>
+        <target>Dashboards</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.dashboards</note>
+      </trans-unit>
       <trans-unit id="shell.header.documentation" datatype="html">
         <source>Documentation</source>
         <target>Documentatie</target>
