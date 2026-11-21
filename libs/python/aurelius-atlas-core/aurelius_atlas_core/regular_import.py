@@ -9,7 +9,7 @@ from typing import Any
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.impexp import AtlasImportResult
-from aurelius_atlas_model.instance import AtlasEntityWithExtInfo, EntityMutationResponse, EntityOperation
+from aurelius_atlas_model.instance import AtlasEntity, AtlasEntityWithExtInfo, EntityMutationResponse, EntityOperation
 from aurelius_atlas_typesystem.builtin.object_id_type import is_assigned_guid
 
 from aurelius_atlas_core.entity_store import WriteStore
@@ -77,20 +77,24 @@ class RegularImport:
     async def _standing_for(self, found: AtlasEntityWithExtInfo) -> AtlasEntityWithExtInfo:
         """The entity with each GUID a stored entity of the same values holds named by that entity's (DD-306)."""
         for entity in [found.entity, *(found.referred_entities or {}).values()]:
-            guid = None if entity is None else entity.guid
-            if entity is None or not guid or not is_assigned_guid(guid) or guid in self._guids:
-                continue
-            if await self._store.get(guid) is not None:
-                continue
-            entity_type = self._store.registry.entity_type(entity.type_name)
-            stored = None
-            if entity_type is not None:
-                stored = await self._store.find_by_unique_attributes(entity_type, entity.attributes or {})
-            if stored is not None and stored.entity.guid != guid:
-                self._guids[guid] = stored.entity.guid
+            await self._reassign(entity)
         if not self._guids:
             return found
         return AtlasEntityWithExtInfo.model_validate(_renamed(found.to_json(), self._guids))
+
+    async def _reassign(self, entity: AtlasEntity | None) -> None:
+        """Remember the stored GUID one request entity's free assigned GUID stands for (DD-306)."""
+        guid = None if entity is None else entity.guid
+        if entity is None or not guid or not is_assigned_guid(guid) or guid in self._guids:
+            return
+        if await self._store.get(guid) is not None:
+            return
+        entity_type = self._store.registry.entity_type(entity.type_name)
+        if entity_type is None:
+            return
+        stored = await self._store.find_by_unique_attributes(entity_type, entity.attributes or {})
+        if stored is not None and stored.entity.guid != guid:
+            self._guids[guid] = stored.entity.guid
 
 
 def _renamed(value: Any, guids: dict[str, str]) -> Any:  # noqa: ANN401 - a JSON value

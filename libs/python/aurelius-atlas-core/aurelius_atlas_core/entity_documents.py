@@ -306,7 +306,7 @@ class SearchDocuments(Protocol):
     the pattern ``FakeEmbedder`` uses.
     """
 
-    async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments, and the index
+    async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments; and the index
         self,
         *,
         query: dict[str, Any] | None,

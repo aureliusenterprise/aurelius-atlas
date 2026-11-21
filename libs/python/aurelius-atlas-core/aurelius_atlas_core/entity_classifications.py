@@ -60,7 +60,7 @@ class EntityClassifications:
     (AUZ-08).
     """
 
-    def __init__(  # noqa: PLR0913 - the request's options, each a keyword
+    def __init__(  # noqa: PLR0913 - the request's options; each a keyword
         self,
         store: WriteStore,
         *,
@@ -127,7 +127,7 @@ class EntityClassifications:
                 self._verify(AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, "add", guid, classification)
             for classification in given:
                 self._validate(classification)
-            await self._check_associations(found.entity, given)
+            self._check_associations(found.entity, given)
             return await self._write_added([(found, given)])
 
         await self._run(attempt)
@@ -150,7 +150,7 @@ class EntityClassifications:
             for guid in guids:
                 found = await self._entity(guid)
                 self._verify(AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, "add", guid, checked)
-                await self._check_associations(found.entity, [checked])
+                self._check_associations(found.entity, [checked])
                 targets.append((found, [checked.model_copy(deep=True)]))
             return await self._write_added(targets)
 
@@ -176,34 +176,53 @@ class EntityClassifications:
                 self._verify(AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, "update", guid, classification)
             for classification in given:
                 self._validate(classification)
-            instances = await self._instances(found.entity)
-            own = own_classifications(found.entity)
-            mapper = self._mapper()
-            changes: dict[str, ClassificationChange] = {}
             entity = found.entity.touched(now=self._store.now(), user=self._user)
             propagation = self._propagation({guid: (entity, found.version)})
-            notified: dict[str, None] = {guid: None}
-            updates: list[StoredClassification] = []
-            withdrawn: list[tuple[list[str], StoredClassification]] = []
-            for classification in given:
-                current = _attached(instances, classification, guid, own)
-                classification_type = self._validate(classification, update=True)
-                stored = changes[current.guid].classification if current.guid in changes else current.classification
-                updated = _updated(mapper, classification_type, classification, stored)
-                changes[current.guid] = ClassificationChange(updated, current.version)
-                if _changed(classification, stored):
-                    notified.update(dict.fromkeys(await propagation.propagated_to(stored)))
-                updates.append(updated.model_copy(update={"propagate": stored.propagate}))
-                reached, lost = await _propagate_change(
-                    propagation, guid, stored, updated, given=classification.propagate
-                )
-                notified.update(dict.fromkeys(reached))
-                if lost:
-                    withdrawn.append((lost, updated))
+            instances = await self._instances(found.entity)
+            own = own_classifications(found.entity)
+            changes, updates, withdrawn, notified = await self._apply_updates(guid, given, instances, own, propagation)
             await self._write_propagated(propagation, [(guid, found.version)], [], list(changes.values()))
-            return await self._updated_notes(list(notified), updates, withdrawn, propagation)
+            return self._updated_notes(list(notified), updates, withdrawn, propagation)
 
         await self._run(attempt)
+
+    async def _apply_updates(
+        self,
+        guid: str,
+        given: Sequence[AtlasClassification],
+        instances: list[_Instance],
+        own: list[str],
+        propagation: TagPropagation,
+    ) -> tuple[
+        dict[str, ClassificationChange],
+        list[StoredClassification],
+        list[tuple[list[str], StoredClassification]],
+        dict[str, None],
+    ]:
+        """``updateClassifications``' per-classification work, in CLS-08's order.
+
+        Returns the changes to write, the updated instances to tell, the instances withdrawn from entities they
+        reached, and the entities to notify, in the order they were first reached.
+        """
+        mapper = self._mapper()
+        changes: dict[str, ClassificationChange] = {}
+        notified: dict[str, None] = {guid: None}
+        updates: list[StoredClassification] = []
+        withdrawn: list[tuple[list[str], StoredClassification]] = []
+        for classification in given:
+            current = _attached(instances, classification, guid, own)
+            classification_type = self._validate(classification, update=True)
+            stored = changes[current.guid].classification if current.guid in changes else current.classification
+            updated = _updated(mapper, classification_type, classification, stored)
+            changes[current.guid] = ClassificationChange(updated, current.version)
+            if _changed(classification, stored):
+                notified.update(dict.fromkeys(await propagation.propagated_to(stored)))
+            updates.append(updated.model_copy(update={"propagate": stored.propagate}))
+            reached, lost = await _propagate_change(propagation, guid, stored, updated, given=classification.propagate)
+            notified.update(dict.fromkeys(reached))
+            if lost:
+                withdrawn.append((lost, updated))
+        return changes, updates, withdrawn, notified
 
     async def delete_classification(self, guid: str, name: str, associated_entity_guid: str | None = None) -> None:
         """``deleteClassification``: remove a classification the entity has attached directly (CLS-09, AUZ-08).
@@ -223,22 +242,9 @@ class EntityClassifications:
             if associated_entity_guid and associated_entity_guid != guid:  # AUZ-08: no check for a propagated one
                 await self._delete_propagated(found, name, associated_entity_guid)
                 return []  # CAU-04: Atlas records the removal and never tells it
-            removed = AtlasClassification(type_name=name)
-            self._verify(AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION, "remove", guid, removed)
-            own = own_classifications(found.entity)
-            instances = await self._instances(found.entity)
-            direct = [instance for instance in instances if instance.classification.type_name in own]
-            if not direct:
-                raise AtlasError(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, guid)
-            current = next((c for c in direct if c.classification.type_name == name), None)
-            if current is None:
-                raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
+            current = await self._direct_instance(found, name, guid)
             propagation = self._propagation({guid: (found.entity, found.version)})
-            lost: list[str] = []
-            if current.classification.propagate is not False:
-                if propagation.deferred:
-                    await self._check_no_pending(current.guid, guid)
-                lost = await propagation.withdraw(current.classification, guid)
+            lost = await self._withdraw(propagation, current, guid)
             entity = propagation.entity(guid) or found.entity
             listed = [listed for listed in entity.classification_guids or [] if listed != current.guid]
             entity = entity.model_copy(update={"classification_guids": listed or None})
@@ -250,6 +256,33 @@ class EntityClassifications:
             return self._note(self._deleted_note, guids, current.classification)
 
         await self._run(attempt)
+
+    async def _direct_instance(self, found: VersionedEntity, name: str, guid: str) -> _Instance:
+        """The entity's own instance of ``name`` to remove, after the access check (CLS-09, AUZ-08).
+
+        Raises:
+            AtlasError: ``UNAUTHORIZED_ACCESS``, ``NO_CLASSIFICATIONS_FOUND_FOR_ENTITY``,
+                ``CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``.
+        """
+        removed = AtlasClassification(type_name=name)
+        self._verify(AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION, "remove", guid, removed)
+        own = own_classifications(found.entity)
+        instances = await self._instances(found.entity)
+        direct = [instance for instance in instances if instance.classification.type_name in own]
+        if not direct:
+            raise AtlasError(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, guid)
+        current = next((c for c in direct if c.classification.type_name == name), None)
+        if current is None:
+            raise AtlasError(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, name)
+        return current
+
+    async def _withdraw(self, propagation: TagPropagation, current: _Instance, guid: str) -> list[str]:
+        """The entities a removed instance reached, withdrawn from (PRO-07); none for a non-propagating one."""
+        if current.classification.propagate is False:
+            return []
+        if propagation.deferred:
+            await self._check_no_pending(current.guid, guid)
+        return await propagation.withdraw(current.classification, guid)
 
     def _verify(self, privilege: AtlasPrivilege, verb: str, guid: str, classification: AtlasClassification) -> None:
         """``<verb> classification: guid=<guid>, classification=<name>`` needs the privilege (AUZ-08)."""
@@ -329,7 +362,7 @@ class EntityClassifications:
             classification_type.get_normalized_value(classification)
         return classification_type
 
-    async def _check_associations(self, entity: StoredEntity, classifications: Sequence[AtlasClassification]) -> None:
+    def _check_associations(self, entity: StoredEntity, classifications: Sequence[AtlasClassification]) -> None:
         """``validateEntityAssociations``: not attached directly yet, and allowed for the entity's type (CLS-04)."""
         names = own_classifications(entity)
         entity_type = _entity_type(self._store.registry, entity)
@@ -379,7 +412,7 @@ class EntityClassifications:
         if self._notifier is not None:
             await self._notifier.on_classifications_deleted(guids, [instance], user=self._user)
 
-    async def _updated_notes(
+    def _updated_notes(
         self,
         notified: list[str],
         updates: list[StoredClassification],

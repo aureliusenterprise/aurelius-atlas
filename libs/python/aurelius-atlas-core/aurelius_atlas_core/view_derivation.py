@@ -199,8 +199,7 @@ def _sections(document: StoredAppSearch | None, ends: RelationEnds | None) -> li
     for attribute, entities in (ends or {}).items():
         if attribute not in stored:  # the read end wins the GUID's stored place (VDR-02)
             for pair in stored.values():
-                for entity in entities:
-                    pair.pop(entity.guid, None)
+                _drop_ends(pair, entities)
         merged = sections.setdefault(attribute, {})
         for entity in entities:
             merged[entity.guid] = RelationEntity.model_validate(
@@ -211,6 +210,12 @@ def _sections(document: StoredAppSearch | None, ends: RelationEnds | None) -> li
         for attribute, by_guid in sections.items()
         if by_guid
     ]
+
+
+def _drop_ends(pair: dict[str, RelationEntity], entities: Sequence[StoredEntity]) -> None:
+    """Drop the read ends from one stored pair, so a read end never shows as a stored one too (VDR-02)."""
+    for entity in entities:
+        pair.pop(entity.guid, None)
 
 
 def _end_name(entity: StoredEntity) -> str | None:

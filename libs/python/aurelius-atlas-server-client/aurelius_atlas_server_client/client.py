@@ -275,7 +275,7 @@ class _Api:
         path: str,
         *,
         params: Mapping[str, Any] | list[tuple[str, Any]] | None = None,
-        body: Any = None,  # noqa: ANN401 - a JSON request body: a model's to_json(), or any JSON value (EWR-15)
+        body: Any = None,  # noqa: ANN401 - a JSON request body: a model's to_json(); or any JSON value (EWR-15)
         files: Mapping[str, tuple[str | None, str | bytes]] | None = None,
         on_error: Callable[[httpx.Response], AtlasClientError] | None = None,
     ) -> httpx.Response:
@@ -300,9 +300,9 @@ class _Api:
         path: str,
         *,
         params: Mapping[str, Any] | list[tuple[str, Any]] | None = None,
-        body: Any = None,  # noqa: ANN401 - the JSON body of the answer, parsed by the caller's model
+        body: Any = None,  # noqa: ANN401 - the JSON body of the answer; parsed by the caller's model
         on_error: Callable[[httpx.Response], AtlasClientError] | None = None,
-    ) -> Any:  # noqa: ANN401 - the JSON body of the answer, parsed by the caller's model
+    ) -> Any:  # noqa: ANN401 - the JSON body of the answer; parsed by the caller's model
         """One request answered with JSON (CL-11)."""
         return (await self.request(method, path, params=params, body=body, on_error=on_error)).json()
 
@@ -460,7 +460,7 @@ class AdminApi:
         """``GET /server/{serverName}``: the catalogue of the full name, with its replication (REP-01, CLW-10)."""
         return AtlasServer.model_validate(await self._api.json("GET", f"{ADMIN_ROOT}/server/{server_name}"))
 
-    async def export_import_audit(  # noqa: PLR0913 - the GET route's seven parameters, as routes/admin.py reads them
+    async def export_import_audit(  # noqa: PLR0913 - the GET route's seven parameters; as routes/admin.py reads them
         self,
         *,
         server_name: str | None = None,
@@ -638,7 +638,7 @@ class SearchApi:
             await self._api.json("POST", f"{DISCOVERY_ROOT}/basic", body=parameters.to_json())
         )
 
-    async def search_using_basic(  # noqa: PLR0913 - the GET route's query parameters, as routes/discovery.py reads them
+    async def search_using_basic(  # noqa: PLR0913 - the GET route's query parameters; as routes/discovery.py reads them
         self,
         *,
         query: str | None = None,
@@ -707,7 +707,7 @@ class SearchApi:
             await self._api.json("POST", f"{DISCOVERY_ROOT}/quick", body=parameters.to_json())
         )
 
-    async def quick_search_using_query(  # noqa: PLR0913 - the GET route's query parameters, as routes/discovery.py reads them
+    async def quick_search_using_query(  # noqa: PLR0913 - the GET route's query parameters; as routes/discovery.py reads them
         self,
         *,
         query: str | None = None,
@@ -885,7 +885,7 @@ class EntityApi:
             )
         )
 
-    async def audit_events(  # noqa: PLR0913 - the audit route's query parameters, as routes/entity.py reads them
+    async def audit_events(  # noqa: PLR0913 - the audit route's query parameters; as routes/entity.py reads them
         self,
         guid: str,
         *,
@@ -942,7 +942,7 @@ class EntityApi:
         self,
         guid: str,
         name: str | None,
-        value: Any,  # noqa: ANN401 - the attribute value, any JSON value (EWR-15)
+        value: Any,  # noqa: ANN401 - the attribute value; any JSON value (EWR-15)
     ) -> EntityMutationResponse:
         """``PUT /guid/{guid}``: set the attribute ``name`` of the entity to ``value`` (EWR-15).
 

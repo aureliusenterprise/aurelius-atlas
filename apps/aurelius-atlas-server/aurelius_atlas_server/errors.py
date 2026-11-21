@@ -49,7 +49,7 @@ async def atlas_error_handler(_request: Request, error: Exception) -> AtlasJSONR
     if error.messages:
         body["messages"] = error.messages
     headers: dict[str, str] = {}
-    if error.code.http_status >= 500:  # noqa: PLR2004 - server errors are logged, as Atlas does
+    if error.code.http_status >= 500:  # noqa: PLR2004 - server errors are logged; as Atlas does
         LOGGER.error("Atlas error %s: %s", error.code.code, error.message, exc_info=error.cause)
         trace_id = _trace_id()
         if trace_id is not None:

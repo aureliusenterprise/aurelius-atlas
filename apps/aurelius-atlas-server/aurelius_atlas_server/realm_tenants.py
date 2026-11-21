@@ -76,7 +76,7 @@ def permission_names(alias: str) -> tuple[str, str, str]:
 class KeycloakAdmin:
     """Keycloak's admin API of ``realm`` at ``server_url``, as the client ``client_id``'s service account (DD-600)."""
 
-    def __init__(  # noqa: PLR0913 - where, as whom, and over which connection
+    def __init__(  # noqa: PLR0913 - where; as whom; and over which connection
         self,
         server_url: str,
         realm: str,

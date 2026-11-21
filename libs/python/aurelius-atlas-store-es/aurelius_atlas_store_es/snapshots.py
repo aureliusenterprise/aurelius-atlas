@@ -181,7 +181,7 @@ class RestoreResult:
     seconds: float
 
 
-async def restore(  # noqa: PLR0913 - the restore's choices, each a keyword
+async def restore(  # noqa: PLR0913 - the restore's choices; each a keyword
     client: AsyncElasticsearch,
     *,
     indices: Sequence[str],

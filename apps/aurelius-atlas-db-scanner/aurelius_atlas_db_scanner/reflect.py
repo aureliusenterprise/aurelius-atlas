@@ -152,7 +152,7 @@ def _table_comment(inspector: Inspector, table: str, schema: str | None) -> str 
     """The table comment (DBS-07), or ``None`` on a dialect that carries none at all."""
     try:
         return inspector.get_table_comment(table, schema=schema).get("text") or None
-    except Exception:  # noqa: BLE001 - a dialect without comment support is the absence, not a failure (DBS-07)
+    except Exception:  # noqa: BLE001 - a dialect without comment support is the absence; not a failure (DBS-07)
         return None
 
 

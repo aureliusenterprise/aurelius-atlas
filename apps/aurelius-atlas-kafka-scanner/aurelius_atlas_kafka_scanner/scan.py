@@ -199,7 +199,7 @@ def _parse_schema(schema: SubjectSchema) -> tuple[tuple[FieldSpec, ...], str | N
     parse = parse_avro if schema.schema_type == "AVRO" else parse_json_schema
     try:
         return tuple(parse(schema.schema_str)), None
-    except Exception as cause:  # noqa: BLE001 - any parser failure is the topic's notice, not a crash (KSC-04)
+    except Exception as cause:  # noqa: BLE001 - any parser failure is the topic's notice; not a crash (KSC-04)
         return (), str(cause)
 
 

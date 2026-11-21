@@ -648,12 +648,14 @@ export class EntityEditor {
         // borrows the `definition` verdict (the legacy's alias). With both
         // controls rendered, each verdict names its own (DD-633).
         const hasDefinitionControl = this.fields().some((field) => field.name === "definition");
-        const keys = (GOV_CARD_KEYS[name] ?? [name]).filter(
-            (key) => !(name === "description" && hasDefinitionControl && key === "definition"),
+        const keys = new Set(
+            (GOV_CARD_KEYS[name] ?? [name]).filter(
+                (key) => !(name === "description" && hasDefinitionControl && key === "definition"),
+            ),
         );
 
         return answer.verdicts.filter((verdict) =>
-            [verdict.attribute, ...(verdict.anyOf ?? [])].some((measured) => keys.includes(measured)),
+            [verdict.attribute, ...(verdict.anyOf ?? [])].some((measured) => keys.has(measured)),
         );
     }
 

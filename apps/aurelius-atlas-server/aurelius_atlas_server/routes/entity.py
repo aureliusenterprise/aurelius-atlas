@@ -456,19 +456,29 @@ async def add_classification(associate_body: AssociateBody, store: Store, classi
     if classification is None or not classification.type_name:
         raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_CLASSIFICATION)
     guids = list(associate.entity_guids or [])
-    sets = associate.entities_unique_attributes or []
-    if not guids and (not sets or associate.entity_type_name is None):
+    if not guids and (not associate.entities_unique_attributes or associate.entity_type_name is None):
         raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_TARGETS)
-    if sets and associate.entity_type_name is not None:
-        entity_type = ensure_entity_type(store, associate.entity_type_name)
-        for attributes in sets:
-            found = await store.find_by_unique_attributes(entity_type, attributes)
-            if found is not None:
-                guids.append(found.entity.guid)
-        if not guids:
-            raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID_FOUND)
+    if associate.entities_unique_attributes and associate.entity_type_name is not None:
+        guids += await _targets_from_sets(store, associate)
     await classifications.add_classification(guids, classification)
     return Response(status_code=NO_CONTENT)
+
+
+async def _targets_from_sets(store: Store, associate: ClassificationAssociateRequest) -> list[str]:
+    """The GUIDs the request's unique-attribute sets name, refusing when none of them is an entity (CLS-07).
+
+    Raises:
+        AtlasError: ``INVALID_PARAMETERS`` when no set names a stored entity.
+    """
+    entity_type = ensure_entity_type(store, str(associate.entity_type_name))
+    guids: list[str] = []
+    for attributes in associate.entities_unique_attributes or []:
+        found = await store.find_by_unique_attributes(entity_type, attributes)
+        if found is not None:
+            guids.append(found.entity.guid)
+    if not guids:
+        raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID_FOUND)
+    return guids
 
 
 @ENTITY.post(

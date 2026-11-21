@@ -67,7 +67,7 @@ async def test__the_server_holds_a_mixed_load(
 
     reports = report(samples)
     record_property("load_report", json.dumps([found.as_dict() for found in reports]))
-    print(_table(reports, USERS, SECONDS))  # noqa: T201 - the run's report, on the e2e output
+    print(_table(reports, USERS, SECONDS))  # noqa: T201 - the run's report; on the e2e output
 
     assert {found.operation for found in reports} == {"read", "basic search", "quick search", "update", "create"}
     assert [found.operation for found in reports if found.failures] == []

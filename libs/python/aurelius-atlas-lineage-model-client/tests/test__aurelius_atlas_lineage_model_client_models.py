@@ -13,7 +13,7 @@ from aurelius_atlas_lineage_model_client.models import (
     LineageModelParams,
     LineageModelResponse,
 )
-from aurelius_atlas_server_client.lineage import Direction  # noqa: F401 - the shared vocabulary, CL-12/CL-30
+from aurelius_atlas_server_client.lineage import Direction  # noqa: F401 - the shared vocabulary; CL-12/CL-30
 from pydantic import ValidationError
 
 E_1 = UUID("00000000-0000-4000-8000-000000000001")

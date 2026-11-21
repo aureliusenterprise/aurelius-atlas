@@ -75,7 +75,7 @@ class GlossaryUtils:
     (GTA-02), and who may relate glossary objects (AUZ-09).
     """
 
-    def __init__(  # noqa: PLR0913 - the relationship store's options, each a keyword
+    def __init__(  # noqa: PLR0913 - the relationship store's options; each a keyword
         self,
         store: WriteStore,
         data_access: DataAccess,

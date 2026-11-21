@@ -41,7 +41,7 @@ async def test__a_write_wakes_the_listeners_only_when_the_wrapper_is_flushed() -
     await rewind.write([EntityChange(new(rewind, qualifiedName="t"))])
     assert heard == []  # nothing wakes while the apply is open (WRS-08)
 
-    await rewind.flush()
+    rewind.flush()
     assert heard == ["early", "late"]
     assert rewind.write_listeners == real.write_listeners
     assert rewind.task_listeners == real.task_listeners
@@ -63,7 +63,7 @@ async def test__a_rolled_back_write_wakes_no_worker() -> None:
 
     await rewind.undo()  # the apply fails and rewinds
     assert heard == []  # the pending wakes are dropped with the rolled-back write
-    await rewind.flush()  # a flush after the undo has nothing left to wake
+    rewind.flush()  # a flush after the undo has nothing left to wake
     assert heard == []
 
 
@@ -81,11 +81,11 @@ async def test__a_flush_wakes_the_task_worker_only_for_a_new_task() -> None:
 
     changed = RewindStore(real)
     await changed.write([EntityChange(new(changed, qualifiedName="t"))], task_changes=[TaskChange(task(), version)])
-    await changed.flush()
+    changed.flush()
     assert heard == ["write"]  # the task changed, none was recorded: the task worker stays quiet
 
     recorded = RewindStore(real)
     second = StoredTask(guid="task-2", type="PROPAGATION")
     await recorded.write([EntityChange(new(recorded, qualifiedName="u"))], task_changes=[TaskChange(second)])
-    await recorded.flush()
+    recorded.flush()
     assert heard == ["write", "write", "task"]

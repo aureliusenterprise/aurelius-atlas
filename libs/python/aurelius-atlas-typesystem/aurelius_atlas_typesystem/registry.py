@@ -105,7 +105,7 @@ class TypeRegistry:
         self._lock_timeout = lock_timeout
         self._under_update: TransientTypeRegistry | None = None
         self._holds = 0
-        ENTITY_ROOT._resolve_references(self)  # noqa: SLF001 - every registry resolves the root types, as Java's does
+        ENTITY_ROOT._resolve_references(self)  # noqa: SLF001 - every registry resolves the root types; as Java's does
         CLASSIFICATION_ROOT._resolve_references(self)  # noqa: SLF001
 
     def is_registered(self, type_name: str | None) -> bool:

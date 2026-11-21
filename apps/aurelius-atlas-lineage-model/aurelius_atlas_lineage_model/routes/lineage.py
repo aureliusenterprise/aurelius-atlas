@@ -87,7 +87,7 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
     return router
 
 
-async def _fetch(  # noqa: PLR0913, PLR0917 - the guarded call's own parts: client, breaker, query, token
+async def _fetch(  # noqa: PLR0913, PLR0917 - the guarded call's own parts: client; breaker; query; token
     atlas: AtlasClient, breaker: CircuitBreaker, guid: UUID, depth: int, direction: Direction, token: str
 ) -> LineageInfo | None:
     """One guarded fetch of the entity's lineage, on the caller's token (LM-04, CL-03).

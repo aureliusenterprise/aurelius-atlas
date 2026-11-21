@@ -151,13 +151,24 @@ class ElasticsearchEntityDocuments:
         index keeps each document's source as written beside its vector: a new one is created so, and an existing
         one that is not moves to a new generation behind its alias first (VEC-03, DD-434, DD-439).
         """
+        mappings = self._index_mappings()
+        limit = {"index.mapping.total_fields.limit": ENTITY_FIELD_LIMIT}
+        for alias, mapping in mappings.items():
+            settings = INDEX_SETTINGS | limit if alias == self._entities else INDEX_SETTINGS
+            await self._prepare_alias(alias, mapping, settings)
+
+    def _index_mappings(self) -> dict[str, dict[str, Any]]:
+        """The mapping of each index behind its alias, the entity's with its vector field when embedding is on.
+
+        ENS-01, VEC-01.
+        """
         entity_mapping = ENTITY_MAPPING
         if self._embedding_dimensions is not None:
             entity_mapping = ENTITY_MAPPING | {
                 "properties": ENTITY_MAPPING["properties"]
                 | {EMBEDDING_FIELD: embedding_mapping(self._embedding_dimensions)}
             }
-        mappings = {
+        return {
             self._entities: entity_mapping,
             self._unique_values: {"dynamic": False, "properties": {"guid": _KEYWORD, "writeId": _KEYWORD}},
             self._journal: {"dynamic": False, "properties": {"leaseUntil": {"type": "long"}}},
@@ -166,29 +177,32 @@ class ElasticsearchEntityDocuments:
             self._linked[LinkedKind.TASK]: TASK_MAPPING,
             self._verdicts: verdict_mapping(),
         }
-        limit = {"index.mapping.total_fields.limit": ENTITY_FIELD_LIMIT}
-        for alias, mapping in mappings.items():
-            settings = INDEX_SETTINGS | limit if alias == self._entities else INDEX_SETTINGS
-            vectors = alias == self._entities and self._embedding_dimensions is not None
-            if not await self._client.indices.exists_alias(name=alias):
-                made = await ensure_index(
-                    self._client,
-                    index=f"{alias}-000001",
-                    aliases={alias: {"is_write_index": True}},
-                    mappings=mapping,
-                    settings=settings | KEEP_SOURCE_VECTORS if vectors else settings,
-                )
-                if made:
-                    continue
-            if vectors:
-                await self._keep_source_vectors(mapping, settings)
-            if alias == self._entities:
-                await self._client.indices.put_mapping(
-                    index=alias, properties=mapping["properties"], dynamic_templates=mapping["dynamic_templates"]
-                )
-            elif alias == self._linked[LinkedKind.RELATIONSHIP]:
-                await self._client.indices.put_mapping(index=alias, properties=mapping["properties"])
-            await self._client.indices.put_settings(index=alias, settings=settings)
+
+    async def _prepare_alias(self, alias: str, mapping: dict[str, Any], settings: dict[str, Any]) -> None:
+        """Create one index behind its alias unless it exists, and bring an existing one up to date.
+
+        ENS-01, EDL-10, DD-520, IDX-02, VEC-03.
+        """
+        vectors = alias == self._entities and self._embedding_dimensions is not None
+        if not await self._client.indices.exists_alias(name=alias):
+            made = await ensure_index(
+                self._client,
+                index=f"{alias}-000001",
+                aliases={alias: {"is_write_index": True}},
+                mappings=mapping,
+                settings=settings | KEEP_SOURCE_VECTORS if vectors else settings,
+            )
+            if made:
+                return
+        if vectors:
+            await self._keep_source_vectors(mapping, settings)
+        if alias == self._entities:
+            await self._client.indices.put_mapping(
+                index=alias, properties=mapping["properties"], dynamic_templates=mapping["dynamic_templates"]
+            )
+        elif alias == self._linked[LinkedKind.RELATIONSHIP]:
+            await self._client.indices.put_mapping(index=alias, properties=mapping["properties"])
+        await self._client.indices.put_settings(index=alias, settings=settings)
 
     async def get(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
         """``mget`` of the entity index: real time, as a get by id is (ENS-04)."""
@@ -722,7 +736,7 @@ class ElasticsearchEntityDocuments:
                 return found
             after = hits[-1]["sort"]
 
-    async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments, and the index
+    async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments; and the index
         self,
         *,
         query: dict[str, Any] | None,

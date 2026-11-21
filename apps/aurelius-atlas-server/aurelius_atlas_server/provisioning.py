@@ -101,7 +101,7 @@ def parser() -> argparse.ArgumentParser:
     return commands
 
 
-async def run(  # noqa: PLR0913 - the command, its settings, and where it writes and waits
+async def run(  # noqa: PLR0913 - the command; its settings; and where it writes and waits
     args: argparse.Namespace,
     settings: ServerSettings,
     out: Callable[[str], None],
@@ -218,7 +218,7 @@ def grafana_of(settings: ServerSettings, store: ElasticsearchStore) -> GrafanaTe
 class Provisioner:
     """The commands on the tenants of ``store``, recorded in ``tenants`` as ``who``; ``out`` hears what was done."""
 
-    def __init__(  # noqa: PLR0913 - the store, its records, and where the commands write and wait
+    def __init__(  # noqa: PLR0913 - the store; its records; and where the commands write and wait
         self,
         settings: ServerSettings,
         store: ElasticsearchStore,

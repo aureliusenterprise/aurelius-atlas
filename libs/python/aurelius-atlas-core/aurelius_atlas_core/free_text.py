@@ -79,11 +79,16 @@ def has_tokenize_char(value: str) -> bool:
             continue
         if character not in _TOKENISING_NEXT_TO_LETTERS:
             return True
-        before = value[index - 1] if index > 0 else None
-        after = value[index + 1] if index < len(value) - 1 else None
-        if (before is not None and not before.isalpha()) or (after is not None and not after.isalpha()):
+        if _next_to_non_letter(value, index):
             return True
     return False
+
+
+def _next_to_non_letter(value: str, index: int) -> bool:
+    """Whether the character at ``index`` has a neighbour on either side that is not a letter (FTX-01)."""
+    neighbours = [value[index - 1]] if index > 0 else []
+    neighbours += [value[index + 1]] if index < len(value) - 1 else []
+    return any(not neighbour.isalpha() for neighbour in neighbours)
 
 
 def _is_cjk(character: str) -> bool:
@@ -100,6 +105,13 @@ def basic_query(query: str) -> str:
     return stripped if has_tokenize_char(stripped) else query
 
 
+def _as_words_list(value: object) -> list[object]:
+    """A field's value as a list to read word by word: a list as it is, none as empty, any other value as one item."""
+    if isinstance(value, list):
+        return value
+    return [] if value is None else [value]
+
+
 def text_matches(query: str, values: Mapping[str, object], fields: Mapping[str, int]) -> int:
     """The weight with which search field values match a query, 0 for none: the in-memory reading of DD-092.
 
@@ -108,8 +120,7 @@ def text_matches(query: str, values: Mapping[str, object], fields: Mapping[str, 
     terms = [term.lower() for term in QUERY_WORD.findall(query)]
     score = 0
     for field, weight in fields.items():
-        value = values.get(field)
-        items = value if isinstance(value, list) else [] if value is None else [value]
+        items = _as_words_list(values.get(field))
         found = {word for item in items for word in words(str(item))}
         if any(term_matches(term, found) for term in terms):
             score += weight
@@ -133,8 +144,7 @@ def field_terms(found: Sequence[Mapping[str, object]], field: str, prefix: str) 
     """  # noqa: D205 - one sentence
     tally: Counter[str] = Counter()
     for values in found:
-        value = values.get(field)
-        items = value if isinstance(value, list) else [] if value is None else [value]
+        items = _as_words_list(values.get(field))
         tally.update({word for item in items for word in words(str(item))})
     matching = [(term, count) for term, count in tally.items() if term.startswith(prefix)]
     return sorted(matching, key=lambda item: (-item[1], item[0]))[:TERM_COUNT]

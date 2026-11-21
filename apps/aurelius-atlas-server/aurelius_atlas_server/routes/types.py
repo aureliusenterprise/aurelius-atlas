@@ -1,6 +1,6 @@
 """The type endpoints of ``TypesREST`` under ``/api/atlas/v2/types`` (TYR-01 to TYR-12)."""
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from typing import Annotated, Any
 
 from aurelius_atlas_core.authorization import Granted, filter_types_def
@@ -161,13 +161,14 @@ async def delete_typedef_by_name(type_name: str, store: Store, authorized: Autho
     return Response(status_code=204)
 
 
-type Lookup = Callable[[str, TypedefStore, Granted], Awaitable[AtlasJSONResponse]]
+type Lookup = Callable[[str, TypedefStore, Granted], AtlasJSONResponse]
+"""A kind's lookup: it reads the in-memory registry and answers, so it is sync (FastAPI runs it as it is)."""
 
 
 def kind_by_name(kind: TypeCategory) -> Lookup:
     """The endpoint answering ``kind``'s definition with a name (``get{Kind}DefByName``, TYR-03)."""
 
-    async def lookup(name: str, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
+    def lookup(name: str, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
         validate_param_length("name", name)
         found = store.get_def_by_name(kind, name)
         if found is not root_def(kind, name):  # Atlas answers a root without the access check (TYR-13)
@@ -180,7 +181,7 @@ def kind_by_name(kind: TypeCategory) -> Lookup:
 def kind_by_guid(kind: TypeCategory) -> Lookup:
     """The endpoint answering ``kind``'s definition with a GUID (``get{Kind}DefByGuid``, TYR-03)."""
 
-    async def lookup(guid: str, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
+    def lookup(guid: str, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
         validate_guid("guid", guid)
         found = store.get_def_by_guid(kind, guid)
         verify_access(authorized, AtlasPrivilege.TYPE_READ, READ_TYPE, guid)

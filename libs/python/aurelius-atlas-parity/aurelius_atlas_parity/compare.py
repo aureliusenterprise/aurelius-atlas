@@ -117,7 +117,7 @@ def mask_volatile(document: Any, paths: list[JsonPath]) -> Any:  # noqa: ANN401 
 def apply_deviation(
     expected: object,
     *,
-    id: str,  # noqa: A002 - the deviation id, as the format names it
+    id: str,  # noqa: A002 - the deviation id; as the format names it
     path: JsonPath,
     value: object = None,
     absent: bool = False,

@@ -150,7 +150,7 @@ class OAuthTokenProvider(AbstractTokenProvider):
         return value
 
 
-def broker_config(  # noqa: PLR0913 - the transport and its credentials, one keyword each (KSC-10)
+def broker_config(  # noqa: PLR0913 - the transport and its credentials; one keyword each (KSC-10)
     bootstrap_servers: str,
     *,
     ca_file: str | None = None,
@@ -204,7 +204,7 @@ class KafkaCluster:
         oauth_source: The mint whose bearer ``OAUTHBEARER`` rides.
     """
 
-    def __init__(  # noqa: PLR0913 - the door's bounds and its auth, one keyword each (KSC-10)
+    def __init__(  # noqa: PLR0913 - the door's bounds and its auth; one keyword each (KSC-10)
         self,
         bootstrap_servers: str,
         *,

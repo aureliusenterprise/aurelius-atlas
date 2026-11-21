@@ -23,7 +23,7 @@ def _startup_report(compose: DockerCompose, context: Path) -> str:
     parts = []
     for args in (["ps", "-a"], ["logs", "--no-color", "--tail", "50"]):
         try:
-            run = subprocess.run(  # noqa: S603 - the fixed compose CLI, fixed arguments
+            run = subprocess.run(  # noqa: S603 - the fixed compose CLI; fixed arguments
                 [*command, *args],
                 cwd=context,
                 capture_output=True,

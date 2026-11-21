@@ -61,7 +61,7 @@ class TagPropagation:
     new or changed classification instances.
     """
 
-    def __init__(  # noqa: PLR0913 - the request's pending changes, as ``EntityMutationContext``
+    def __init__(  # noqa: PLR0913 - the request's pending changes; as ``EntityMutationContext``
         self,
         store: EntityView,
         *,
@@ -300,7 +300,7 @@ class TagPropagation:
     async def propagation_enabled(self, guid: str) -> list[StoredClassification]:
         """``getPropagationEnabledClassificationVertices``: the entity's classifications, attached or propagated,
         whose ``propagate`` is true.
-        """  # noqa: D205 - Java's name, then its meaning
+        """  # noqa: D205 - Java's name; then its meaning
         entity = await self._entity(guid)
         listed = [] if entity is None else entity.classification_guids or []
         found = await self._instances(listed)
