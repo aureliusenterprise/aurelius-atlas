@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 import pytest
-from aurelius_atlas_core.stored_entity import StoredEntity, stored_attributes
+from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity, stored_attributes
 from aurelius_atlas_model.instance import AtlasEntity, EntityStatus
 from aurelius_atlas_model.typedef import AtlasAttributeDef, AtlasEntityDef, AtlasTypesDef
 from aurelius_atlas_typesystem.entity_type import EntityType
@@ -99,3 +99,30 @@ def test__an_active_entity_holds_its_unique_values(table_type: EntityType) -> No
     ]
     assert stored.model_copy(update={"state": EntityStatus.DELETED}).unique_keys(table_type) == []
     assert StoredEntity(guid="h", type_name="table").unique_keys(table_type) == []
+
+
+@pytest.mark.covers(f"{M}.StoredEntity.to_json", rules=["PAR-03"])
+def test__the_governance_fields_keep_their_places_in_the_stored_record() -> None:
+    """19.7 kept the fields where they were: ``governed`` at the top, its two marks inside ``appSearch``.
+
+    The search engine reads ``governed`` from the top of the document and the indexer reads the two marks from
+    the App Search record, so the increment may not move either. This is the shape stored today.
+    """
+    stored = StoredEntity(
+        guid="g",
+        type_name="table",
+        governed=True,
+        app_search=StoredAppSearch(
+            source_hash="h", referenceablequalifiedname="t@cm", governed_by="d", governed_source="s"
+        ),
+    )
+
+    document = stored.to_json()
+    assert document["governed"] is True
+    assert "governedBy" not in document
+    assert "governedSource" not in document
+    assert document["appSearch"]["governedBy"] == "d"
+    assert document["appSearch"]["governedSource"] == "s"
+
+    read_back = StoredEntity.model_validate(document)
+    assert read_back == stored
