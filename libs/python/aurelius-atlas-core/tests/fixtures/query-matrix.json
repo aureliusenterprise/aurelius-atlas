@@ -1,0 +1,434 @@
+{
+  "entities": [
+    {
+      "guid": "a",
+      "type_name": "table",
+      "search": {
+        "keyword.__typeName": "table",
+        "keyword.__state": "ACTIVE",
+        "keyword.__guid": "a",
+        "long.__timestamp": 30,
+        "keyword.t.name": "alpha beta",
+        "long.t.n": 1,
+        "keyword.t.tags": ["x", "y"]
+      },
+      "embedding": { "vector": [1.0, 0.0], "model": "fake-model", "source_hash": "a" }
+    },
+    {
+      "guid": "b",
+      "type_name": "table",
+      "search": {
+        "keyword.__typeName": "table",
+        "keyword.__state": "DELETED",
+        "keyword.__guid": "b",
+        "long.__timestamp": 20,
+        "keyword.t.name": "a*b",
+        "long.t.n": 2,
+        "keyword.t.tags": ["z"]
+      },
+      "embedding": { "vector": [0.0, 1.0], "model": "fake-model", "source_hash": "b" }
+    },
+    {
+      "guid": "c",
+      "type_name": "table",
+      "search": {
+        "keyword.__typeName": "table",
+        "keyword.__state": "ACTIVE",
+        "keyword.__guid": "c",
+        "long.__timestamp": 10,
+        "keyword.t.name": "",
+        "long.t.n": 3,
+        "keyword.t.tags": []
+      }
+    },
+    {
+      "guid": "d",
+      "type_name": "table",
+      "search": {
+        "keyword.__typeName": "table",
+        "keyword.__state": "ACTIVE",
+        "keyword.__guid": "d",
+        "long.__timestamp": 0,
+        "long.t.n": 2,
+        "keyword.t.tags": ["x"]
+      }
+    },
+    {
+      "guid": "e",
+      "type_name": "view",
+      "search": {
+        "keyword.__typeName": "view",
+        "keyword.__state": "ACTIVE",
+        "keyword.__guid": "e",
+        "long.__timestamp": 5,
+        "keyword.t.name": "beta",
+        "keyword.t.tags": ["x"]
+      }
+    },
+    {
+      "guid": "f",
+      "type_name": "table",
+      "search": {
+        "keyword.__typeName": "table",
+        "keyword.__state": "ACTIVE",
+        "keyword.__guid": "f",
+        "long.__timestamp": 0,
+        "keyword.t.tags": ["x"]
+      }
+    }
+  ],
+  "rows": [
+    {
+      "name": "eq-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "EQ", "value": "alpha beta" }
+      },
+      "guids": ["a"],
+      "total": 1
+    },
+    {
+      "name": "neq-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "NEQ", "value": "alpha beta" }
+      },
+      "guids": ["d", "f", "e", "c", "b"],
+      "total": 5
+    },
+    {
+      "name": "lt-n",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "LT", "value": 2 }
+      },
+      "guids": ["a"],
+      "total": 1
+    },
+    {
+      "name": "lte-n",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "LTE", "value": 2 }
+      },
+      "guids": ["d", "b", "a"],
+      "total": 3
+    },
+    {
+      "name": "gt-n",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "GT", "value": 2 }
+      },
+      "guids": ["c"],
+      "total": 1
+    },
+    {
+      "name": "gte-n",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "GTE", "value": 2 }
+      },
+      "guids": ["d", "c", "b"],
+      "total": 3
+    },
+    {
+      "name": "range-n",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "RANGE", "value": 1, "value2": 2 }
+      },
+      "guids": ["d", "b", "a"],
+      "total": 3
+    },
+    {
+      "name": "starts-with-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "STARTS_WITH", "value": "al" }
+      },
+      "guids": ["a"],
+      "total": 1
+    },
+    {
+      "name": "ends-with-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "ENDS_WITH", "value": "*b" }
+      },
+      "guids": ["b"],
+      "total": 1
+    },
+    {
+      "name": "contains-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "CONTAINS", "value": "a" }
+      },
+      "guids": ["e", "b", "a"],
+      "total": 3
+    },
+    {
+      "name": "not-contains-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "NOT_CONTAINS", "value": "lp" }
+      },
+      "guids": ["d", "f", "e", "c", "b"],
+      "total": 5
+    },
+    {
+      "name": "contains-tag",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.tags", "test": "CONTAINS", "value": "x", "array": true }
+      },
+      "guids": ["d", "f", "e", "a"],
+      "total": 4
+    },
+    {
+      "name": "not-contains-tag",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.tags", "test": "NOT_CONTAINS", "value": "x", "array": true }
+      },
+      "guids": ["c", "b"],
+      "total": 2
+    },
+    {
+      "name": "is-null-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "IS_NULL" }
+      },
+      "guids": ["d", "f"],
+      "total": 2
+    },
+    {
+      "name": "not-null-n",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "NOT_NULL" }
+      },
+      "guids": ["d", "c", "b", "a"],
+      "total": 4
+    },
+    {
+      "name": "not-empty-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "NOT_EMPTY" }
+      },
+      "guids": ["e", "b", "a"],
+      "total": 3
+    },
+    {
+      "name": "not-empty-tags",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.tags", "test": "NOT_EMPTY" }
+      },
+      "guids": ["d", "f", "e", "b", "a"],
+      "total": 5
+    },
+    {
+      "name": "nothing",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "NOTHING" }
+      },
+      "guids": [],
+      "total": 0
+    },
+    {
+      "name": "anything",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "ANYTHING" }
+      },
+      "guids": ["d", "f", "e", "c", "b", "a"],
+      "total": 6
+    },
+    {
+      "name": "any-of-tags",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.tags", "test": "ANY_OF", "value": ["y", "q"], "array": true }
+      },
+      "guids": ["a"],
+      "total": 1
+    },
+    {
+      "name": "any-of-n",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "long.t.n", "test": "ANY_OF", "value": [2] }
+      },
+      "guids": ["d", "b"],
+      "total": 2
+    },
+    {
+      "name": "matches-glob",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "MATCHES", "value": "AL*" }
+      },
+      "guids": ["a"],
+      "total": 1
+    },
+    {
+      "name": "regex-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "REGEX", "value": "a\\*b" }
+      },
+      "guids": ["b"],
+      "total": 1
+    },
+    {
+      "name": "regex-tags",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.tags", "test": "REGEX", "value": "[xz]" }
+      },
+      "guids": ["d", "f", "e", "b", "a"],
+      "total": 5
+    },
+    {
+      "name": "word-regex-name",
+      "query": {
+        "type_names": null,
+        "filter": { "field": "keyword.t.name", "test": "WORD_REGEX", "value": "BETA" }
+      },
+      "guids": ["e", "a"],
+      "total": 2
+    },
+    {
+      "name": "or-group",
+      "query": {
+        "type_names": null,
+        "filter": {
+          "condition": "OR",
+          "criteria": [
+            { "field": "long.t.n", "test": "EQ", "value": 1 },
+            { "field": "keyword.t.name", "test": "EQ", "value": "" }
+          ]
+        }
+      },
+      "guids": ["c", "a"],
+      "total": 2
+    },
+    {
+      "name": "and-group",
+      "query": {
+        "type_names": null,
+        "filter": {
+          "condition": "AND",
+          "criteria": [
+            { "field": "long.t.n", "test": "NOT_NULL" },
+            { "field": "keyword.t.name", "test": "CONTAINS", "value": "a" }
+          ]
+        }
+      },
+      "guids": ["b", "a"],
+      "total": 2
+    },
+    {
+      "name": "active-only",
+      "query": { "type_names": null, "active_only": true },
+      "guids": ["d", "f", "e", "c", "a"],
+      "total": 5
+    },
+    {
+      "name": "type-names-table",
+      "query": { "type_names": ["table"] },
+      "guids": ["d", "f", "c", "b", "a"],
+      "total": 5
+    },
+    {
+      "name": "type-names-view",
+      "query": { "type_names": ["view"] },
+      "guids": ["e"],
+      "total": 1
+    },
+    {
+      "name": "page-two-of-all",
+      "query": { "type_names": null, "offset": 1, "size": 2 },
+      "guids": ["f", "e"],
+      "total": 6
+    },
+    {
+      "name": "sort-name-asc",
+      "query": { "type_names": null, "sort_field": "keyword.t.name" },
+      "guids": ["c", "b", "a", "e", "d", "f"],
+      "total": 6
+    },
+    {
+      "name": "sort-name-desc",
+      "query": { "type_names": null, "sort_field": "keyword.t.name", "descending": true },
+      "guids": ["e", "a", "b", "c", "d", "f"],
+      "total": 6
+    },
+    {
+      "name": "sort-n-asc",
+      "query": { "type_names": null, "sort_field": "long.t.n" },
+      "guids": ["a", "d", "b", "c", "f", "e"],
+      "total": 6
+    },
+    {
+      "name": "sort-n-desc",
+      "query": { "type_names": null, "sort_field": "long.t.n", "descending": true },
+      "guids": ["c", "d", "b", "a", "f", "e"],
+      "total": 6
+    },
+    {
+      "name": "sort-tags-asc",
+      "query": { "type_names": null, "sort_field": "keyword.t.tags" },
+      "guids": ["d", "f", "e", "a", "b", "c"],
+      "total": 6
+    },
+    {
+      "name": "vector-tables",
+      "query": {
+        "type_names": ["table"],
+        "active_only": true,
+        "vector": { "vector": [1.0, 0.0], "k": 2, "weight": 1.0 }
+      },
+      "guids": ["a"],
+      "total": 1
+    },
+    {
+      "name": "vector-every-type",
+      "query": {
+        "type_names": null,
+        "vector": { "vector": [1.0, 0.0], "k": 2, "weight": 1.0 }
+      },
+      "guids": ["a", "b"],
+      "total": 2
+    },
+    {
+      "name": "text-name",
+      "query": {
+        "type_names": null,
+        "text": { "text": "alpha", "fields": { "keyword.t.name": 1 } }
+      },
+      "guids": ["a"],
+      "total": 1
+    },
+    {
+      "name": "facets-over-all",
+      "query": {
+        "type_names": null,
+        "size": 1,
+        "facets": ["keyword.__typeName", "keyword.t.tags", "long.t.n"]
+      },
+      "guids": ["d"],
+      "total": 6,
+      "facets": {
+        "keyword.__typeName": [["table", 5], ["view", 1]],
+        "keyword.t.tags": [["x", 4], ["y", 1], ["z", 1]],
+        "long.t.n": [["2", 2], ["1", 1], ["3", 1]]
+      }
+    }
+  ]
+}
