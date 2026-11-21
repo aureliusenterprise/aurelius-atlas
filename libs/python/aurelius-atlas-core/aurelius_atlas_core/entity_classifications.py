@@ -26,11 +26,11 @@ from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import (
     ClassificationChange,
     EntityChange,
-    EntityStore,
     EntityVersionConflictError,
     EntityWriteError,
     TaskChange,
     UniqueValueTakenError,
+    WriteStore,
 )
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -68,7 +68,7 @@ class EntityClassifications:
 
     def __init__(  # noqa: PLR0913 - the request's options, each a keyword
         self,
-        store: EntityStore,
+        store: WriteStore,
         *,
         user: str | None = None,
         tasks: bool = False,

@@ -32,7 +32,7 @@ from aurelius_atlas_typesystem.map_type import MapType
 from aurelius_atlas_typesystem.relationship_type import RelationshipType
 from pydantic.alias_generators import to_camel
 
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.graph_helper import (
     collection_elements,
     edge_for_label,
@@ -60,7 +60,7 @@ _REFERENCES = {TypeCategory.OBJECT_ID_TYPE, TypeCategory.ENTITY}
 class EntityRetriever:
     """Reads entities of ``store`` as Atlas answers them; one instance per request's options."""
 
-    def __init__(self, store: EntityStore, *, min_ext_info: bool = False, ignore_relationships: bool = False) -> None:
+    def __init__(self, store: WriteStore, *, min_ext_info: bool = False, ignore_relationships: bool = False) -> None:
         self._store = store
         self._min_ext_info = min_ext_info
         self._ignore_relationships = ignore_relationships
@@ -241,7 +241,7 @@ class _Reading:
     """One response being built: the entities it has read, and those it holds in ``ext_info`` by GUID."""
 
     def __init__(
-        self, store: EntityStore, ext_info: AtlasEntityExtInfo, *, min_ext_info: bool, relationships: bool
+        self, store: WriteStore, ext_info: AtlasEntityExtInfo, *, min_ext_info: bool, relationships: bool
     ) -> None:
         self._store = store
         self._ext_info = ext_info

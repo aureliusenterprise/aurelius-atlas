@@ -12,7 +12,7 @@ from typing import Protocol
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 from aurelius_atlas_core.entity_documents import VersionedClassification, VersionedEntity, VersionedRelationship
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 
 
 class EntityView(Protocol):
@@ -46,7 +46,7 @@ class TransactionView:
 
     def __init__(
         self,
-        store: EntityStore,
+        store: WriteStore,
         *,
         entities: Mapping[str, VersionedEntity],
         relationships: Mapping[str, VersionedRelationship],

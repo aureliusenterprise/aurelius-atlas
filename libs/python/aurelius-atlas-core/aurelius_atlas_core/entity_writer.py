@@ -44,12 +44,12 @@ from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import (
     ClassificationChange,
     EntityChange,
-    EntityStore,
     EntityVersionConflictError,
     EntityWriteError,
     RelationshipChange,
     TaskChange,
     UniqueValueTakenError,
+    WriteStore,
 )
 from aurelius_atlas_core.guids import AssignedGuid, as_assigned_guid
 from aurelius_atlas_core.hard_delete_handler import HardDeleteHandler
@@ -126,7 +126,7 @@ class EntityWriter:
 
     def __init__(  # noqa: PLR0913 - the request's options, each a keyword
         self,
-        store: EntityStore,
+        store: WriteStore,
         *,
         user: str | None = None,
         delete_type: DeleteType = DeleteType.SOFT,
