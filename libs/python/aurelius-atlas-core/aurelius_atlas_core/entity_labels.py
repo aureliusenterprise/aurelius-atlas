@@ -13,13 +13,8 @@ from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authori
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_discovery import validate_labels
 from aurelius_atlas_core.entity_documents import VersionedEntity
-from aurelius_atlas_core.entity_store import (
-    EntityChange,
-    EntityVersionConflictError,
-    EntityWriteError,
-    UniqueValueTakenError,
-    WriteStore,
-)
+from aurelius_atlas_core.entity_store import EntityChange, WriteStore
+from aurelius_atlas_core.retry import failed_write, internal_error, retry_race
 
 ATTEMPTS = 2
 """A request that loses a race is run once more (DD-052)."""
@@ -161,18 +156,9 @@ class EntityLabels:
 
         What the write added and removed is told after it (LBL-05).
         """
-        for number in range(1, ATTEMPTS + 1):
-            try:
-                change = await attempt()
-            except EntityVersionConflictError as conflict:
-                if number == ATTEMPTS:
-                    raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
-            except (UniqueValueTakenError, EntityWriteError) as failure:
-                raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
-            else:
-                if change is not None and self._notifier is not None:
-                    await self._notifier.on_labels_updated(guid, *change, user=self._user)
-                return
+        change = await retry_race(failed_write(attempt), ATTEMPTS, lost_race=internal_error)
+        if change is not None and self._notifier is not None:
+            await self._notifier.on_labels_updated(guid, *change, user=self._user)
 
 
 def _difference(labels: list[str], others: list[str]) -> tuple[list[str], list[str]]:

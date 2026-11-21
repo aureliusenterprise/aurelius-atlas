@@ -13,7 +13,7 @@ from collections.abc import Awaitable, Callable
 
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 
-from aurelius_atlas_core.entity_store import EntityVersionConflictError
+from aurelius_atlas_core.entity_store import EntityVersionConflictError, EntityWriteError, UniqueValueTakenError
 
 
 def is_version_conflict(error: BaseException) -> bool:
@@ -24,6 +24,24 @@ def is_version_conflict(error: BaseException) -> bool:
 def internal_error(conflict: BaseException) -> AtlasError:
     """The answer a writer owes when the conflict survives every attempt: ``INTERNAL_ERROR`` (DD-052)."""
     return AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict))
+
+
+def failed_write[T](race: Callable[[], Awaitable[T]]) -> Callable[[], Awaitable[T]]:
+    """``race``, with a write that failed for another reason answered as ``INTERNAL_ERROR`` (DD-052).
+
+    A unique value another entity holds, or a write that failed outright, is no race: no writer reruns it, and
+    every writer answers it the way it answers a lost one. Callers that map those wrap their race in this and
+    pass the same ``lost_race`` to :func:`retry_race`; callers that let them through, like the propagation
+    tasks, do not.
+    """
+
+    async def mapped() -> T:
+        try:
+            return await race()
+        except (UniqueValueTakenError, EntityWriteError) as failure:
+            raise internal_error(failure) from failure
+
+    return mapped
 
 
 async def retry_race[T](
@@ -52,11 +70,11 @@ async def retry_race[T](
     for take in range(1, attempts + 1):
         try:
             return await race()
-        except Exception as error:
-            if not is_conflict(error):
+        except EntityVersionConflictError as conflict:
+            if not is_conflict(conflict):
                 raise
             if take == attempts:
                 if lost_race is None:
                     raise
-                raise lost_race(error) from error
+                raise lost_race(conflict) from conflict
     raise AssertionError  # pragma: no cover - the loop returns or raises

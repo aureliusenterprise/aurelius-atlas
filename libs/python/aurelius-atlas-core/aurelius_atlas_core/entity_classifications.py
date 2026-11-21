@@ -23,15 +23,8 @@ from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_mapper import EntityMapper
 from aurelius_atlas_core.entity_retriever import EntityRetriever
-from aurelius_atlas_core.entity_store import (
-    ClassificationChange,
-    EntityChange,
-    EntityVersionConflictError,
-    EntityWriteError,
-    TaskChange,
-    UniqueValueTakenError,
-    WriteStore,
-)
+from aurelius_atlas_core.entity_store import ClassificationChange, EntityChange, TaskChange, WriteStore
+from aurelius_atlas_core.retry import failed_write, internal_error, retry_race
 from aurelius_atlas_core.search_fields import own_classifications
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -470,18 +463,9 @@ class EntityClassifications:
 
         What the written attempt has to tell is told after it (DD-085).
         """
-        for number in range(1, ATTEMPTS + 1):
-            try:
-                notes = await attempt()
-            except EntityVersionConflictError as conflict:
-                if number == ATTEMPTS:
-                    raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
-            except (UniqueValueTakenError, EntityWriteError) as failure:
-                raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
-            else:
-                for note in notes:
-                    await note()
-                return
+        notes = await retry_race(failed_write(attempt), ATTEMPTS, lost_race=internal_error)
+        for note in notes:
+            await note()
 
 
 @dataclass(frozen=True)

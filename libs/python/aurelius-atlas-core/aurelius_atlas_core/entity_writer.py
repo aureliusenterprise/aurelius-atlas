@@ -49,16 +49,14 @@ from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import (
     ClassificationChange,
     EntityChange,
-    EntityVersionConflictError,
-    EntityWriteError,
     RelationshipChange,
     TaskChange,
-    UniqueValueTakenError,
     WriteStore,
 )
 from aurelius_atlas_core.guids import AssignedGuid, as_assigned_guid
 from aurelius_atlas_core.hard_delete_handler import HardDeleteHandler
 from aurelius_atlas_core.relationship_mapper import RelationshipMapper
+from aurelius_atlas_core.retry import failed_write, internal_error, retry_race
 from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -192,18 +190,14 @@ class WritePipeline:
     ) -> EntityMutationResponse:
         """``deleteVertices`` and ``purgeVertices``, run again once after a lost race (EDL-08, EDL-09)."""
         hard = (self._delete_type if delete_type is DeleteType.DEFAULT else delete_type) is DeleteType.HARD
-        for attempt in range(1, ATTEMPTS + 1):
+
+        async def race() -> EntityMutationResponse:
             handler: DeleteHandler = (HardDeleteHandler if hard else SoftDeleteHandler)(
                 self._store, now=self._store.now(), user=self._user, purge=purge, deferral=self._deferral(txn)
             )
-            try:
-                return await self._mutated(await self._deleted(handler, txn, await candidates(), purge=purge), txn)
-            except EntityVersionConflictError as conflict:
-                if attempt == ATTEMPTS:
-                    raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
-            except (UniqueValueTakenError, EntityWriteError) as failure:
-                raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
-        raise AssertionError  # pragma: no cover - the loop returns or raises
+            return await self._mutated(await self._deleted(handler, txn, await candidates(), purge=purge), txn)
+
+        return await retry_race(failed_write(race), ATTEMPTS, lost_race=internal_error)
 
     def _record_labels(self, txn: WriteTransaction, created: StoredEntity) -> None:
         """``setLabels`` of a created entity: its labels told as added once it is written (LBL-05)."""
@@ -299,18 +293,12 @@ class WritePipeline:
             AtlasError: ``INTERNAL_ERROR`` for a second lost race, a unique value held by another entity, or a
                 write that failed.
         """
-        for attempt in range(1, ATTEMPTS + 1):
-            try:
-                response, txn = await self._create_or_update(
-                    _copy(stream), partial=partial, importing=importing, hold=hold
-                )
-                return await self._mutated(response, txn), txn
-            except EntityVersionConflictError as conflict:
-                if attempt == ATTEMPTS:
-                    raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(conflict)) from conflict
-            except (UniqueValueTakenError, EntityWriteError) as failure:
-                raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
-        raise AssertionError  # pragma: no cover - the loop returns or raises
+
+        async def race() -> tuple[EntityMutationResponse, WriteTransaction]:
+            response, txn = await self._create_or_update(_copy(stream), partial=partial, importing=importing, hold=hold)
+            return await self._mutated(response, txn), txn
+
+        return await retry_race(failed_write(race), ATTEMPTS, lost_race=internal_error)
 
     async def _create_or_update(
         self, stream: EntityStream, *, partial: bool, importing: bool, hold: TaskHold | None

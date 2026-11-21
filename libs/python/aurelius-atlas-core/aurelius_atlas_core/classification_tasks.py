@@ -15,10 +15,10 @@ from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_store import (
     ClassificationChange,
     EntityStore,
-    EntityVersionConflictError,
     RelationshipChange,
     TaskChange,
 )
+from aurelius_atlas_core.retry import retry_race
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.tag_propagation import ADD, DELETE, RELATIONSHIP_UPDATE, TagPropagation
@@ -48,15 +48,8 @@ class ClassificationTasks:
         """
         if task.type not in {ADD, DELETE, RELATIONSHIP_UPDATE}:
             raise ValueError(UNKNOWN_TASK_TYPE.format(type=task.type))
-        for number in range(1, ATTEMPTS + 1):
-            try:
-                told = await self._attempt(task, version)
-            except EntityVersionConflictError:
-                if number == ATTEMPTS:
-                    raise
-            else:
-                await self._tell(task, *told)
-                return
+        told = await retry_race(lambda: self._attempt(task, version), ATTEMPTS)
+        await self._tell(task, *told)
 
     async def _attempt(
         self, task: StoredTask, version: DocumentVersion
