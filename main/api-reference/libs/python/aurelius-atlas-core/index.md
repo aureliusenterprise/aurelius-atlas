@@ -551,6 +551,9 @@ Classes:
 - **`UniqueValueTakenError`** –
 
   A write needs a unique value another entity holds (ENS-05); nothing was written.
+- **`WriteStore`** –
+
+  The store the write path calls (WRS-01, DD-773, DD-774).
 
 Attributes:
 
@@ -760,6 +763,9 @@ Methods:
 
 Attributes:
 
+- **`documents`** (`EntityDocuments`) –
+
+  The documents this store keeps (WRS-03, DD-775).
 - **`registry`** –
 - **`task_listeners`** (`list[Callable[[], None]]`) –
 
@@ -767,6 +773,16 @@ Attributes:
 - **`write_listeners`** (`list[Callable[[], None]]`) –
 
   Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).
+
+#### documents
+
+```
+documents: EntityDocuments
+```
+
+The documents this store keeps (WRS-03, DD-775).
+
+Public so the rewind wrapper reads before-images through the documents contract instead of reaching `_documents` of the class it composes.
 
 #### registry
 
@@ -1109,6 +1125,199 @@ holder = holder
 ```
 key = key
 ```
+
+### WriteStore
+
+Bases: `Protocol`
+
+The store the write path calls (WRS-01, DD-773, DD-774).
+
+`EntityWriter`, `ViewMutationDoor` and the internals they drive are typed on this instead of on `EntityStore`, so a spec can drive a write against a small fake or the in-memory store without a server. `EntityStore` is the contract's only production implementation; it satisfies it unchanged, and so do the in-memory store and the test fake.
+
+The contract names the members the whole write path reaches, not only the ones the writer and the door call themselves: the rewind store composes its real store instead of subclassing it (DD-775), so every member an internal forwards to the store has to be on the contract. `search` is here because the door's meanings step drives `GlossaryService`, which searches for a term.
+
+Methods:
+
+- **`classified`** –
+
+  The entities listing any of these classification instances (DD-075, DD-076).
+- **`find_by_unique_attributes`** –
+
+  The `ACTIVE` entity holding every given unique value, if any (ENS-06).
+- **`get`** –
+
+  The entity with `guid` as last written, or None (ENS-04).
+- **`get_classifications`** –
+
+  The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070).
+- **`get_many`** –
+
+  The entities with these GUIDs that exist (ENS-04).
+- **`get_relationships`** –
+
+  The relationships with these GUIDs that exist, as last written (REL-06, DD-061).
+- **`list_tasks`** –
+
+  Every task, or those `PENDING` or `IN_PROGRESS`, oldest first (TSK-04, TSK-06).
+- **`new_guid`** –
+
+  A new entity's GUID (ENS-02, DD-044).
+- **`now`** –
+
+  The current time in epoch milliseconds, as Atlas stores times.
+- **`referring`** –
+
+  The entities whose references name any of these GUIDs (EDL-10, DD-057).
+- **`search`** –
+
+  The entities of a search query's page, how many match it in all, their scores and facets (DD-089).
+- **`write`** –
+
+  Write the changes of one request, all or nothing (ENS-05, ENS-07, ENS-08).
+
+Attributes:
+
+- **`documents`** (`EntityDocuments`) –
+
+  The documents the store keeps, for a wrapper that records before-images (WRS-03, DD-775).
+- **`registry`** (`TypeRegistry`) –
+- **`task_listeners`** (`list[Callable[[], None]]`) –
+
+  Called after a write that recorded tasks, to wake a worker (DD-080).
+- **`write_listeners`** (`list[Callable[[], None]]`) –
+
+  Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).
+
+#### documents
+
+```
+documents: EntityDocuments
+```
+
+The documents the store keeps, for a wrapper that records before-images (WRS-03, DD-775).
+
+#### registry
+
+```
+registry: TypeRegistry
+```
+
+#### task\_listeners
+
+```
+task_listeners: list[Callable[[], None]]
+```
+
+Called after a write that recorded tasks, to wake a worker (DD-080).
+
+#### write\_listeners
+
+```
+write_listeners: list[Callable[[], None]]
+```
+
+Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).
+
+#### classified
+
+```
+classified(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities listing any of these classification instances (DD-075, DD-076).
+
+#### find\_by\_unique\_attributes
+
+```
+find_by_unique_attributes(entity_type: EntityType, values: Mapping[str, Any]) -> VersionedEntity | None
+```
+
+The `ACTIVE` entity holding every given unique value, if any (ENS-06).
+
+#### get
+
+```
+get(guid: str) -> VersionedEntity | None
+```
+
+The entity with `guid` as last written, or None (ENS-04).
+
+#### get\_classifications
+
+```
+get_classifications(guids: Sequence[str]) -> dict[str, VersionedClassification]
+```
+
+The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070).
+
+#### get\_many
+
+```
+get_many(guids: Sequence[str]) -> dict[str, VersionedEntity]
+```
+
+The entities with these GUIDs that exist (ENS-04).
+
+#### get\_relationships
+
+```
+get_relationships(guids: Sequence[str]) -> dict[str, VersionedRelationship]
+```
+
+The relationships with these GUIDs that exist, as last written (REL-06, DD-061).
+
+#### list\_tasks
+
+```
+list_tasks(*, open_only: bool = False) -> list[tuple[StoredTask, DocumentVersion]]
+```
+
+Every task, or those `PENDING` or `IN_PROGRESS`, oldest first (TSK-04, TSK-06).
+
+#### new\_guid
+
+```
+new_guid() -> AssignedGuid
+```
+
+A new entity's GUID (ENS-02, DD-044).
+
+#### now
+
+```
+now() -> int
+```
+
+The current time in epoch milliseconds, as Atlas stores times.
+
+#### referring
+
+```
+referring(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities whose references name any of these GUIDs (EDL-10, DD-057).
+
+#### search
+
+```
+search(query: SearchQuery) -> SearchHits
+```
+
+The entities of a search query's page, how many match it in all, their scores and facets (DD-089).
+
+#### write
+
+```
+write(
+    changes: Sequence[EntityChange],
+    relationship_changes: Sequence[RelationshipChange] = (),
+    classification_changes: Sequence[ClassificationChange] = (),
+    task_changes: Sequence[TaskChange] = (),
+) -> None
+```
+
+Write the changes of one request, all or nothing (ENS-05, ENS-07, ENS-08).
 
 ## aurelius\_atlas\_core.entity\_documents
 
