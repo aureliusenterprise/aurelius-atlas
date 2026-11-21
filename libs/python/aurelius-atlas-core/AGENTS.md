@@ -23,6 +23,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   Searches scrub what the user may not read, and type listings filter it (6.2c), instead of refusing
 - `aurelius_atlas_core/entity_store.py` — `EntityStore`: GUIDs, reads by GUID and unique attributes,
   all-or-nothing writes through the journal, recovery and the type usage check (DD-043 to DD-048)
+- `aurelius_atlas_core/retry.py` — `retry_race`: the one version-conflict retry every writer shares; each
+  caller keeps its own attempt budget and its own answer for a conflict that survives (PAR-01, PAR-02, DD-809)
 - `aurelius_atlas_core/relationship_store.py` — `RelationshipStore` (`AtlasRelationshipStoreV2`) and the
   checks and creation an entity write shares; `relationship_mapper.py` (`RelationshipMapper`) maps
   relationship attributes onto relationships in memory; `graph_helper.py` holds `GraphHelper`'s edge lookups
