@@ -8174,6 +8174,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The door body is one entity's view, so the parent the child leaves is a separate save; closing the gap would make the door read a save it was not given. No shipped client reaches it: the webapp's parent-side picker filters its search to candidates with no parent (DCP-06).</td>
 <td>19.3</td>
 </tr>
+<tr>
+<td>DV-190</td>
+<td>Webapp</td>
+<td>The legacy dashboard's editor history tab page-fetches the entity's whole audit trail. Its service walks the audit endpoint 100 events at a time until a page comes back short, and lists every event it collected.</td>
+<td>The editor's History tab lists the newest 100 audit events and offers no paging (HST-03).</td>
+<td>The read rides the ported Atlas v2 audit endpoint with no parameters, whose defaults answer the newest 100 events newest-first (AUD-08). No shipped screen asks for an older event, so the walk buys nothing a reader can reach. A <code>startKey</code> page or an infinite scroll stays out until a screen needs one.</td>
+<td>7.35</td>
+</tr>
 </tbody>
 </table>
 
