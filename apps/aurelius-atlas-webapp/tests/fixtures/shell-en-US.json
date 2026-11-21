@@ -62,6 +62,9 @@
             },
             "announcement": "New {{severity}} alert - {{message}}"
         },
+        "editor": {
+            "cancel": "Cancel"
+        },
         "skipToMain": "Skip to main content",
         "loadingBar": {
             "label": "Loading"

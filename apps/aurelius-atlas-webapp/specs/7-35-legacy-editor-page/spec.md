@@ -62,7 +62,7 @@ Not delivered:
 | EDP-19 | When editing, two tabs head the page: "Entity", the form, and "History" (`search.components.editor.entityPlaceholder`, `…historyPlaceholder`). The page opens on Entity. When creating there is no History tab: an entity not yet saved has none (`editor.component.html`) |
 | EDP-20 | History lists the entity's audit events from `GET /api/atlas/v2/entity/{guid}/audit`, newest first (`sortOrder=DESC`), read 100 at a time until a page comes back short, all of them shown (`entity-audit.service.ts`, `retrieveAuditsPaged`)                              |
 | EDP-21 | Each event is one entry: the action in bold, translated by its dictionary key (`ENTITY_CREATE` "Entity created", `ENTITY_UPDATE` "Entity updated", …), and under it, small, the user and the time as `yyyy-MM-dd HH:mm:ss` in the browser's time zone, joined by `·`       |
-| EDP-22 | The history is read when the tab is first opened, and again after a save on the same page. A failed read shows an empty list; the form is unaffected. With tenancy on the server answers the tenant's audit index alone (15.2)                                             |
+| EDP-22 | The history is read each time the History tab opens; a save leaves the page for the entity's details (EDP-03), so no list goes stale. A failed read shows an empty list; the form is unaffected. With tenancy on the server answers the tenant's audit index alone (15.2)  |
 | EDP-23 | Save and Delete show under the Entity tab only, as in the legacy (`*ngIf="currentTab === 'entity'"`)                                                                                                                                                                       |
 
 ### The verdicts

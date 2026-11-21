@@ -463,7 +463,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-details-edit")!.click();
 
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["edit", "pencil-guid"] } }]);
+        expect(navigate).toHaveBeenCalledWith(["/search/editor"], { queryParams: { guid: "pencil-guid" } });
     });
 
     it("the editor's save tick re-reads this screen's entity (DD-327)", () => {

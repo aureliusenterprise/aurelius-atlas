@@ -480,11 +480,11 @@ export class Details {
     }
 
     /**
-     * The pencil was clicked (EDT-01, DD-322): open the editor drawer over
-     * this screen — the `drawer` aux outlet carries `edit/:guid`.
+     * The pencil was clicked (EDP-01, DD-816): open the editor page for this
+     * entity.
      */
     protected edit(): void {
-        void this.router.navigate([{ outlets: { drawer: ["edit", this.guid()] } }]);
+        void this.router.navigate(["/search/editor"], { queryParams: { guid: this.guid() } });
     }
 
     /**

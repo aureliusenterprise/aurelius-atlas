@@ -19,7 +19,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, RouterOutlet, convertToParamMap, provideRouter } from "@angular/router";
 import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
-import { Subject, of } from "rxjs";
+import { Subject, of, startWith } from "rxjs";
 
 import { Holdable } from "aurelius-atlas-ui";
 
@@ -38,7 +38,6 @@ import {
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { APP_CONFIG } from "../../tokens";
-import { createEntityMatcher } from "../../routes";
 
 import { EntityEditor } from "./entity-editor.component";
 
@@ -47,7 +46,7 @@ import { EntityEditor } from "./entity-editor.component";
 @Component({
     selector: "aurelius-atlas-webapp-drawer-test-host",
     imports: [RouterOutlet],
-    template: `<router-outlet name="drawer" />`,
+    template: `<router-outlet />`,
 })
 class DrawerTestHost {}
 
@@ -310,7 +309,11 @@ function setup({
     atlasWrite?: boolean;
     query?: Record<string, string>;
 } = {}) {
-    const paramMap = new Subject<ParamMap>();
+    const initial = convertToParamMap({
+        ...query,
+        ...(create ? (createType === "" ? {} : { type: createType }) : { guid }),
+    });
+    const queryParams = new Subject<ParamMap>();
     TestBed.configureTestingModule({
         imports: [EntityEditor],
         providers: [
@@ -320,9 +323,8 @@ function setup({
             {
                 provide: ActivatedRoute,
                 useValue: {
-                    paramMap,
-                    queryParamMap: of(convertToParamMap(query)),
-                    snapshot: { data: { editorMode: create ? "create" : "edit" } },
+                    queryParamMap: queryParams.pipe(startWith(initial)),
+                    snapshot: { queryParamMap: initial },
                 },
             },
             { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
@@ -330,14 +332,9 @@ function setup({
         ],
     });
     const fixture = TestBed.createComponent(EntityEditor);
-    if (!create) {
-        paramMap.next(convertToParamMap({ guid }));
-    } else if (createType !== "") {
-        paramMap.next(convertToParamMap({ type: createType }));
-    }
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    return { fixture, compiled, httpMock: TestBed.inject(HttpTestingController), paramMap };
+    return { fixture, compiled, httpMock: TestBed.inject(HttpTestingController), paramMap: queryParams };
 }
 
 /** One verdict of the live answer (VEV-02, 12.7): the rule measuring `attribute`. */
@@ -487,18 +484,15 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
         // The drawer stays open (EDT-02): the panel is still rendered.
-        expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(fixture.nativeElement.querySelector("section.aurelius-editor-page")).toBeTruthy();
     });
 
-    it("opens in the wide drawer (UIC-43, DD-712)", () => {
+    it("opens as a page of its own, full content width (EDP-01, DD-816)", () => {
         const { fixture } = setup();
 
-        // The editor is the product's data-entry surface, so it asks the
-        // drawer for the wide panel — a form with roomy rows gets more of a
-        // large screen (7.31). The settings and alerts drawers keep narrow.
-        expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel").classList.contains("is-wide")).toBe(
-            true,
-        );
+        const page = fixture.nativeElement.querySelector("section.aurelius-editor-page");
+        expect(page.classList.contains("container")).toBe(true);
+        expect(fixture.nativeElement.querySelector("dialog")).toBeNull();
     });
 
     it("renders the edit form from the for-type chain (EDT-03, VDE-02)", () => {
@@ -523,7 +517,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
             "Curated variant calls.",
         );
         // The drawer title is the edit title (EDT-11's bridge strings).
-        expect(normalize(compiled.querySelector(".aurelius-drawer-title")?.textContent)).toBe("Edit entity");
+        expect(normalize(compiled.querySelector(".aurelius-editor-title")?.textContent)).toBe("Edit entity");
     });
 
     it("the description rides the markdown field: tabs, label seat, raw save (EDT-20)", () => {
@@ -999,7 +993,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         // The type is part of the path: the pick is a navigation, and the
         // form appears only when the route arrives with the type (DD-330).
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "m4i_dataset"] } }]);
+        expect(navigate).toHaveBeenCalledWith(["/search/editor"], { queryParams: { type: "m4i_dataset" } });
         expect(compiled.querySelector("form")).toBeNull();
         httpMock.verify(); // no entity read in create mode (EDT-02's edit-only)
     });
@@ -1068,7 +1062,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         select.value = datasetIndex;
         select.dispatchEvent(new Event("change"));
         fixture.detectChanges();
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "m4i_dataset"] } }]);
+        expect(navigate).toHaveBeenCalledWith(["/search/editor"], { queryParams: { type: "m4i_dataset" } });
 
         // The router answers: the same component with the new type param. The
         // new type asks nothing (its def already sits in the chain the
@@ -1109,14 +1103,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
             providers: [
                 provideHttpClient(),
                 provideHttpClientTesting(),
-                provideRouter([
-                    {
-                        matcher: createEntityMatcher,
-                        outlet: "drawer",
-                        data: { editorMode: "create" },
-                        loadComponent: () => Promise.resolve(EntityEditor),
-                    },
-                ]),
+                provideRouter([{ path: "search/editor", loadComponent: () => Promise.resolve(EntityEditor) }]),
                 { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
                 { provide: Keycloak, useValue: { hasResourceRole: () => true } },
             ],
@@ -1128,18 +1115,18 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         const http = TestBed.inject(HttpTestingController);
 
         fixture.detectChanges();
-        await router.navigate([{ outlets: { drawer: ["create"] } }]);
+        await router.navigate(["/search/editor"]);
         await fixture.whenStable(); // the loadComponent promise and the route activation
         fixture.detectChanges();
         arriveSlices(fixture, http);
 
         // The bare create route: the picker alone, no form (DD-330).
         expect(compiled.querySelector("form")).toBeNull();
-        const panel = compiled.querySelector(".aurelius-drawer-panel");
+        const panel = compiled.querySelector(".aurelius-editor-page");
         expect(panel).toBeTruthy();
 
         // The first pick, through the router — the typed segment arrives.
-        await router.navigate([{ outlets: { drawer: ["create", "DataSet"] } }]);
+        await router.navigate(["/search/editor"], { queryParams: { type: "DataSet" } });
         await fixture.whenStable();
         fixture.detectChanges(); // the typed route seeds the type and asks its chain (VDE-02)
         arriveChain(http, "DataSet", DATASET_CHAIN);
@@ -1147,7 +1134,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         // The same panel element survived (a rebuild would be a new node,
         // and the drawer would replay its slide-in), now showing the form.
-        expect(compiled.querySelector(".aurelius-drawer-panel")).toBe(panel);
+        expect(compiled.querySelector(".aurelius-editor-page")).toBe(panel);
         expect(compiled.querySelector("form")).toBeTruthy();
         flushValidation(http); // the open round the visible form fires (EDT-23)
         http.verify();
@@ -1588,7 +1575,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(compiled.querySelector(".aurelius-editor-notification")).toBeNull();
         expect(add).not.toHaveBeenCalled();
         expect(navigate).not.toHaveBeenCalled();
-        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(compiled.querySelector("section.aurelius-editor-page")).toBeTruthy();
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("renamed_variants"); // kept
         // The untouched control answers the stored value (VDE-07): the re-seed
         // ran against the seed the old view gave.
@@ -1637,7 +1624,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         });
         expect(compiled.querySelector(".aurelius-editor-conflict")).toBeNull();
         expect(navigate).not.toHaveBeenCalled();
-        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(compiled.querySelector("section.aurelius-editor-page")).toBeTruthy();
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("already_there");
     });
 
@@ -1727,7 +1714,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
             message: "Saving the entity",
         });
         expect(navigate).not.toHaveBeenCalled();
-        expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(fixture.nativeElement.querySelector("section.aurelius-editor-page")).toBeTruthy();
         // The edits survive the refusal (EDT-08): the form still holds the entity.
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("genomic_variants");
     });
@@ -1775,23 +1762,13 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(compiled.querySelector(".aurelius-editor-busy")).toBeNull();
     });
 
-    it("the head carries only the X; the foot holds Delete and Save (EDT-10, EDT-19, DD-347)", () => {
+    it("the page's foot holds Delete, Cancel and Save, and no X (EDP-03, EDT-19)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
-        const head = [
-            ...compiled.querySelectorAll<HTMLButtonElement>(
-                "dialog.aurelius-drawer-panel .aurelius-drawer-head button",
-            ),
-        ].map((button) => normalize(button.textContent) || button.getAttribute("aria-label"));
-        expect(head).toEqual(["Close"]); // the drawer's own X — Save left the head
-
-        const foot = [
-            ...compiled.querySelectorAll<HTMLButtonElement>(
-                "dialog.aurelius-drawer-panel .aurelius-drawer-foot button",
-            ),
-        ];
-        expect(foot.map((button) => normalize(button.textContent))).toEqual(["Delete", "Save"]);
+        expect(compiled.querySelector('button.delete[aria-label="Close"]')).toBeNull();
+        const foot = [...compiled.querySelectorAll<HTMLButtonElement>(".aurelius-editor-foot button")];
+        expect(foot.map((button) => normalize(button.textContent))).toEqual(["Delete", "Cancel", "Save"]);
         expect(compiled.querySelector(".aurelius-editor-foot")).toBeTruthy();
         // The pair rides Bulma's own group container (DD-350): it carries
         // the spacing between the buttons and their right alignment.
@@ -1800,7 +1777,6 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(actions?.classList.contains("is-right")).toBe(true);
         // Normally sized: Bulma's normal size is the absence of a class.
         expect(foot.every((button) => !button.classList.contains("is-small"))).toBe(true);
-        expect([...compiled.querySelectorAll("button")].some((b) => normalize(b.textContent) === "Cancel")).toBe(false);
     });
 
     it("the foot hides Delete in create mode (EDT-19: nothing to delete yet)", () => {
@@ -1865,7 +1841,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         httpMock.expectNone((req) => req.url.startsWith(ATLAS_ENTITY_URL) && req.method === "DELETE");
         expect(navigate).not.toHaveBeenCalled();
-        expect(compiled.querySelector(".aurelius-drawer-panel")).toBeTruthy();
+        expect(compiled.querySelector(".aurelius-editor-page")).toBeTruthy();
     });
 
     it("a refused delete alerts and keeps the drawer (EDT-19, EDT-08's shape)", () => {
@@ -1883,29 +1859,63 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
         expect(navigate).not.toHaveBeenCalled();
-        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(compiled.querySelector("section.aurelius-editor-page")).toBeTruthy();
     });
 
-    it("dismissal navigates the drawer outlet away (EDT-01)", () => {
+    it("editing shows the Entity and History tabs; History lists the entity's audit (EDP-19)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const tabs = [...compiled.querySelectorAll<HTMLAnchorElement>(".aurelius-editor-tabs a")];
+        expect(tabs.map((tab) => normalize(tab.textContent))).toEqual(["Entity", "History"]);
+        expect(compiled.querySelector("form")).toBeTruthy();
+
+        tabs[1].click();
+        fixture.detectChanges();
+
+        expect(compiled.querySelector("form")).toBeNull();
+        expect(compiled.querySelector("aurelius-atlas-webapp-entity-history")).toBeTruthy();
+        expect(compiled.querySelector(".aurelius-editor-foot")).toBeNull();
+        httpMock.match((request) => request.url.includes("/audit"));
+    });
+
+    it("creating shows no tabs (EDP-19)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true });
+        arriveTypeDefs(fixture, httpMock);
+
+        expect(compiled.querySelector(".aurelius-editor-tabs")).toBeNull();
+    });
+
+    it("Cancel returns to the entity's details when editing (EDP-03)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
-        compiled.querySelector<HTMLButtonElement>(".aurelius-drawer-head button.delete")!.click();
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-cancel")!.click();
         fixture.detectChanges();
 
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }]);
+        expect(navigate).toHaveBeenCalledWith(["/search/details", "7a1b"]);
+    });
+
+    it("Cancel returns to the search when creating (EDP-03)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true });
+        arriveTypeDefs(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-cancel")!.click();
+
+        expect(navigate).toHaveBeenCalledWith(["/search/browse"]);
     });
 
     it("the drawer titles are the bridge strings per mode (EDT-01, EDT-11)", () => {
         const edit = setup();
         arrive(edit.fixture, edit.httpMock);
-        expect(normalize(edit.compiled.querySelector(".aurelius-drawer-title")?.textContent)).toBe("Edit entity");
+        expect(normalize(edit.compiled.querySelector(".aurelius-editor-title")?.textContent)).toBe("Edit entity");
 
         TestBed.resetTestingModule();
         const create = setup({ create: true });
         arriveTypeDefs(create.fixture, create.httpMock);
-        expect(normalize(create.compiled.querySelector(".aurelius-drawer-title")?.textContent)).toBe(
+        expect(normalize(create.compiled.querySelector(".aurelius-editor-title")?.textContent)).toBe(
             "Create new entity",
         );
     });
@@ -1973,7 +1983,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         // The quiet swallow (DD-446): no lines, no alert, the drawer intact.
         expect(compiled.querySelectorAll("[data-gov-line]")).toHaveLength(0);
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(false);
-        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(compiled.querySelector("section.aurelius-editor-page")).toBeTruthy();
 
         // And the form still saves (the drawer stays usable).
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();

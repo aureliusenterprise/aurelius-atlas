@@ -106,10 +106,16 @@ export class SearchLayout {
     }
 
     /**
-     * The hero's `+` was clicked (EDT-01, DD-322): open the create-mode
-     * editor drawer — the `drawer` aux outlet carries `create`.
+     * The hero's `+` was clicked (EDP-01, DD-816): open the editor page to
+     * create. From the editor page itself (editing another entity), the page
+     * is left first, so the create starts on a fresh page, not the edit's.
      */
     protected openCreate(): void {
-        void this.router.navigate([{ outlets: { drawer: ["create"] } }]);
+        const create = () => this.router.navigate(["/search/editor"]);
+        if (this.router.url.startsWith("/search/editor")) {
+            void this.router.navigateByUrl("/search/browse", { skipLocationChange: true }).then(create);
+        } else {
+            void create();
+        }
     }
 }

@@ -17,7 +17,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
-import { Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
+import { Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
 import {
     QualityRuleService,
     type EntityValidationResponse,
@@ -32,6 +32,7 @@ import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
 import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState } from "./editor-state";
+import { EntityHistory } from "./entity-history.component";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import { EntityWritten } from "./entity-written";
 import {
@@ -97,7 +98,7 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
 @Component({
     imports: [
         ClassificationCombobox,
-        Drawer,
+        EntityHistory,
         EntityRelationshipInput,
         FontAwesomeModule,
         FormField,
@@ -154,14 +155,14 @@ export class EntityEditor {
 
     private readonly route = inject(ActivatedRoute);
 
-    /** The route's `:guid` (edit mode) — the editor reads its own entity. */
-    private readonly guid = toSignal(this.route.paramMap.pipe(map((params) => params.get("guid") ?? "")), {
-        initialValue: "",
+    /** The page's `?guid=` (edit mode, EDP-01) — the editor reads its own entity. */
+    protected readonly guid = toSignal(this.route.queryParamMap.pipe(map((params) => params.get("guid") ?? "")), {
+        initialValue: this.route.snapshot.queryParamMap.get("guid") ?? "",
     });
 
-    /** The route's `:type` (create mode, DD-330) — "" before the first pick. */
-    private readonly routeType = toSignal(this.route.paramMap.pipe(map((params) => params.get("type") ?? "")), {
-        initialValue: "",
+    /** The page's `?type=` (create mode, DD-330, EDP-01) — "" before the first pick. */
+    private readonly routeType = toSignal(this.route.queryParamMap.pipe(map((params) => params.get("type") ?? "")), {
+        initialValue: this.route.snapshot.queryParamMap.get("type") ?? "",
     });
 
     /** The mode, off the route's data — no store sentinel (EDT-01, DD-325).
@@ -170,7 +171,10 @@ export class EntityEditor {
      * rebuilt this component (and replayed the drawer's slide-in) on the
      * first type pick. One matcher route now serves both URLs, so the mode
      * cannot come from the path anymore. */
-    private readonly isCreate = this.route.snapshot.data["editorMode"] === "create";
+    protected readonly isCreate = (this.route.snapshot.queryParamMap.get("guid") ?? "") === "";
+
+    /** The page's tab (EDP-19): the form, or the entity's history (edit mode only). */
+    protected readonly tab = signal<"entity" | "history">("entity");
 
     /** Every field label the catalogue names (EDT-33): one localized string
      * per attribute the shipped metamodel can render (7-33, DD-722). */
@@ -774,7 +778,7 @@ export class EntityEditor {
      */
     protected pickType(row: PickerRow | null): void {
         if (row && row.name !== this.routeType()) {
-            void this.router.navigate([{ outlets: { drawer: ["create", row.name] } }]);
+            void this.router.navigate(["/search/editor"], { queryParams: { type: row.name } });
         }
     }
 
@@ -930,9 +934,9 @@ export class EntityEditor {
         }
     }
 
-    /** Dismiss (EDT-01): X, backdrop, Escape — navigate the outlet away. */
+    /** Cancel (EDP-03): back to the entity's details when editing, to the search when creating. */
     protected close(): void {
-        this.active.set(false);
-        void this.router.navigate([{ outlets: { drawer: null } }]);
+        const guid = this.guid();
+        void this.router.navigate(guid ? ["/search/details", guid] : ["/search/browse"]);
     }
 }

@@ -33,6 +33,14 @@ export const SEARCH_ROUTES: Routes = [
                 loadComponent: () => import("./results/results.component").then((m) => m.Results),
                 data: { title: $localize`:@@shell.title.results:Search results` },
             },
+            // The entity editor page (EDP-01, DD-816): one page for create and
+            // edit, as the legacy's page was — `?guid=<guid>` edits that
+            // entity, no guid creates, and `?type=<type>` carries the picked
+            // type of a create (DD-330's URL-is-the-state, now a query).
+            {
+                path: "editor",
+                loadComponent: () => import("./editor/entity-editor.component").then((m) => m.EntityEditor),
+            },
             {
                 path: "details/:guid",
                 loadComponent: () => import("./details/details.component").then((m) => m.Details),
