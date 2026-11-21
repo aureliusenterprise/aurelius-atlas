@@ -6,7 +6,7 @@ dependencies = [
     "aurelius-atlas-server-client",
     "httpx2>=2.0.0",
     "polars>=2.1.0",
-    "pydantic>=2.14.2",
+    "pydantic>=2.14.3",
     "pydantic-settings>=2.15.0",
 ]
 description = "The Aurelius Atlas quality scanner: a batch run of the quality rules over configured extracts, with the scores written back."
