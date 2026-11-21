@@ -22,6 +22,49 @@ aurelius-atlas-webapp-quality-fields + .aurelius-editor-field {
     margin-bottom: 1.25rem;
 }
 
+/*
+ * The Entity/History tab pair (HST-01, HST-02, DD-816): it rides the
+ * drawer's subhead slot (DD-180), so it keeps the drawer chrome's inset —
+ * Bulma carries the tabs and their own hairline. Bulma's `.tabs a` rule
+ * misses the native buttons (FORM-CUSTOM-002), so the same rules, read
+ * from Bulma's own custom properties, land on `button` instead — the
+ * markdown field's tab pair (UIC-26), line for line. No colour of the
+ * component's own (UIC-03): the tokens are Bulma's.
+ */
+.aurelius-editor-tabs {
+    margin-bottom: 0;
+    padding-inline: var(--bulma-modal-card-head-padding, 2rem);
+
+    button[role="tab"] {
+        align-items: center;
+        background: none;
+        border: 0;
+        border-bottom-color: var(--bulma-tabs-border-bottom-color);
+        border-bottom-style: solid;
+        border-bottom-width: var(--bulma-tabs-border-bottom-width);
+        color: var(--bulma-tabs-link-color);
+        cursor: pointer;
+        display: flex;
+        font-size: inherit;
+        justify-content: center;
+        margin-bottom: calc(-1 * var(--bulma-tabs-border-bottom-width));
+        padding: var(--bulma-tabs-link-padding);
+        transition-duration: var(--bulma-duration);
+        transition-property: background-color, border-color, color;
+        vertical-align: top;
+
+        &:hover {
+            border-bottom-color: var(--bulma-tabs-link-hover-border-bottom-color);
+            color: var(--bulma-tabs-link-hover-color);
+        }
+    }
+
+    li.is-active button[role="tab"] {
+        border-bottom-color: var(--bulma-tabs-link-active-border-bottom-color);
+        color: var(--bulma-tabs-link-active-color);
+    }
+}
+
 /* The commit foot (EDT-19, DD-347): the status line shares the pair's row,
    centred against it — one line, the buttons right-aligned (Delete then
    Save, the reference's order). The pair itself rides Bulma's
