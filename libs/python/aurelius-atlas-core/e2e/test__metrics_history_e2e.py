@@ -3,7 +3,7 @@
 import json
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.metrics_service import MetricsService
 from aurelius_atlas_core.metrics_util import AtlasMetricsUtil

@@ -29,7 +29,7 @@ from aurelius_atlas_core.app_search_engine import (
     query_body,
 )
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.import_writer import ImportWriter

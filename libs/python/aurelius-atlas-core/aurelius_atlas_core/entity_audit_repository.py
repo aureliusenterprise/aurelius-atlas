@@ -15,7 +15,7 @@ from aurelius_atlas_model.audit_reduction import AtlasAuditAgingType
 from elasticsearch import AsyncElasticsearch
 
 from aurelius_atlas_core import es_clauses
-from aurelius_atlas_core.entity_documents import INDEX_PREFIX, WRITE_REFRESH
+from aurelius_atlas_core.index_setup import INDEX_PREFIX, WRITE_REFRESH
 from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, ensure_index
 
 AUDIT_INDEX = f"{INDEX_PREFIX}-entity-audits"

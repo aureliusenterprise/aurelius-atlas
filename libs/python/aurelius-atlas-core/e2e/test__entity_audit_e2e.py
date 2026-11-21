@@ -5,6 +5,7 @@ Events are written in one bulk request after the change and read back newest fir
 
 import pytest
 from aurelius_atlas_core.classification_associator import ClassificationRetriever
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import (
     ElasticsearchEntityAuditRepository,
@@ -13,7 +14,6 @@ from aurelius_atlas_core.entity_audit_repository import (
 )
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.entity_samples import sample_registry

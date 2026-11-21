@@ -13,8 +13,9 @@ waits for its document, so it is embedded once with them (EMC-04, DD-540).
 from collections.abc import Sequence
 from typing import Protocol
 
-from aurelius_atlas_core.entity_documents import EntityDocuments, LinkedKind, VersionedEntity
+from aurelius_atlas_core.entity_documents import EntityDocuments, VersionedEntity
 from aurelius_atlas_core.entity_embedding import embedding_text, source_hash
+from aurelius_atlas_core.index_setup import LinkedKind
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEmbedding
 

@@ -6,8 +6,8 @@ A task is found by searching the task index after a refresh, claimed by a condit
 from typing import Any
 
 import pytest
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_classifications import EntityClassifications
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.task_management import TaskManagement
@@ -27,7 +27,7 @@ def data(guid: str, name: str) -> dict[str, Any]:
 @pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.task_management.TaskManagement.run_pending",
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.list_tasks",
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.list_tasks",
     rules=["TSK-02", "TSK-04", "TSK-05"],
 )
 async def test__a_task_is_claimed_and_run_on_elasticsearch(dev_store: ElasticsearchStore, entity_prefix: str) -> None:

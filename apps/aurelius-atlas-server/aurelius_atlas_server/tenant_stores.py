@@ -13,11 +13,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
-from aurelius_atlas_core.entity_documents import GOV_QUALITY, INDEX_PREFIX, ElasticsearchEntityDocuments, LinkedKind
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.index_setup import GOV_QUALITY, INDEX_PREFIX, LinkedKind
 from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_audit_listener import BufferedTypeDefAuditListener

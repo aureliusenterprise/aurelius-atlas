@@ -40,7 +40,6 @@ from aurelius_atlas_core.entity_discovery import HeldParent, held_parent_message
 from aurelius_atlas_core.entity_documents import (
     DocumentVersion,
     EntityDocuments,
-    LinkedKind,
     VersionedClassification,
     VersionedEntity,
     VersionedRelationship,
@@ -64,6 +63,7 @@ from aurelius_atlas_core.graph_helper import (
     relationship_type_name,
 )
 from aurelius_atlas_core.guids import AssignedGuid
+from aurelius_atlas_core.index_setup import LinkedKind
 from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.search_fields import own_classifications
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery

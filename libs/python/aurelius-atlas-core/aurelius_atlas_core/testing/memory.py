@@ -21,10 +21,7 @@ from aurelius_atlas_core.app_search_document import (
 )
 from aurelius_atlas_core.entity_audit_repository import DEFAULT_LIMIT, TAG_ACTIONS, sort_events
 from aurelius_atlas_core.entity_documents import (
-    LINKED_MODELS,
     JournalEntry,
-    Linked,
-    LinkedKind,
     LinkedWrite,
     Reservation,
     TypeCount,
@@ -34,6 +31,7 @@ from aurelius_atlas_core.entity_documents import (
 )
 from aurelius_atlas_core.entity_embedding import embeddable, with_current_embedding
 from aurelius_atlas_core.free_text import field_terms, text_matches
+from aurelius_atlas_core.index_setup import LINKED_MODELS, Linked, LinkedKind
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery, facet_counts, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity

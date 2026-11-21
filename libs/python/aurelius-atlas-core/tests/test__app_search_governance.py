@@ -13,7 +13,7 @@ import pytest
 from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, StoredVerdict, own_document, verdict_mapping
 from aurelius_atlas_core.app_search_governance import GovernanceIndexer, governance_rule, rules_digest
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
@@ -28,7 +28,7 @@ from test__app_search_engine import FIXTURES, indexed_sample
 
 G = "aurelius_atlas_core.app_search_governance"
 X = f"{G}.GovernanceIndexer"
-D = "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments"
+D = "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments"
 M = "aurelius_atlas_core.testing.memory.MemoryEntityDocuments"
 VERDICTS = "aurelius-atlas-gov-quality"
 

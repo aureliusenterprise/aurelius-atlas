@@ -8,12 +8,8 @@ from typing import cast
 import pytest
 from aurelius_atlas_core.app_search_document import DERIVATION_VERSION, awaits_document
 from aurelius_atlas_core.app_search_document import source_hash as document_hash
-from aurelius_atlas_core.entity_documents import (
-    ElasticsearchEntityDocuments,
-    EmbeddingDimensionsError,
-    LinkedKind,
-    LinkedWrite,
-)
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import LinkedWrite
 from aurelius_atlas_core.entity_embedding import (
     MAX_CHARACTERS,
     document_names,
@@ -27,6 +23,7 @@ from aurelius_atlas_core.entity_embedding import (
 from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
+from aurelius_atlas_core.index_setup import EmbeddingDimensionsError, LinkedKind
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import (
     StoredAppSearch,
@@ -43,7 +40,7 @@ from elasticsearch import AsyncElasticsearch
 
 E = "aurelius_atlas_core.entity_embedding"
 X = "aurelius_atlas_core.entity_embedding_indexer.EntityEmbeddingIndexer"
-D = "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments"
+D = "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments"
 M = "aurelius_atlas_core.testing.memory.MemoryEntityDocuments"
 MODEL = "intfloat/multilingual-e5-small"
 

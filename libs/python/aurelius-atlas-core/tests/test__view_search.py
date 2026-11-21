@@ -11,7 +11,7 @@ from typing import Any, cast
 import pytest
 from aurelius_atlas_core.app_search_document import own_document
 from aurelius_atlas_core.app_search_engine import AppSearchEngine
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.search_fields import search_fields
 from aurelius_atlas_core.stored_entity import (
     StoredDimensionTotals,

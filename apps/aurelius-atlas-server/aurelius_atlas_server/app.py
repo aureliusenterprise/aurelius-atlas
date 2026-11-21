@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
-from aurelius_atlas_core.entity_documents import INDEX_PREFIX
+from aurelius_atlas_core.index_setup import INDEX_PREFIX
 from aurelius_atlas_core.metrics_util import AtlasMetricsUtil
 from aurelius_atlas_model.atlas_audit import AuditOperation
 from aurelius_atlas_otel import (

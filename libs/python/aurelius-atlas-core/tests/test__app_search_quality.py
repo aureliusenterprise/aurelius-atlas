@@ -16,7 +16,7 @@ from aurelius_atlas_core.app_search_document import DIMENSIONS, quality_result_m
 from aurelius_atlas_core.app_search_engine import FIELDS
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.app_search_quality import QualityIndexer
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
@@ -30,7 +30,7 @@ from elasticsearch import AsyncElasticsearch
 from test__app_search_engine import FIXTURES, indexed_sample, legacy
 
 Q = "aurelius_atlas_core.app_search_quality.QualityIndexer"
-D = "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments"
+D = "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments"
 
 _LOADED: dict[str, TypedefStore] = {}
 

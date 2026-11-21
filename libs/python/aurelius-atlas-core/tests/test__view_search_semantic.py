@@ -10,7 +10,7 @@ import asyncio
 from typing import Any, cast
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding import source_hash
 from aurelius_atlas_core.stored_entity import StoredEmbedding
 from aurelius_atlas_core.view_search import ViewSearchEngine

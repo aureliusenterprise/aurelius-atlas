@@ -16,8 +16,6 @@ from aurelius_atlas_typesystem.registry import TypeRegistry
 from aurelius_atlas_core.entity_documents import (
     EntityDocuments,
     JournalEntry,
-    Linked,
-    LinkedKind,
     LinkedWrite,
     Reservation,
     TypeCount,
@@ -27,6 +25,7 @@ from aurelius_atlas_core.entity_documents import (
     WriteResult,
 )
 from aurelius_atlas_core.guids import AssignedGuid
+from aurelius_atlas_core.index_setup import Linked, LinkedKind
 from aurelius_atlas_core.search_fields import search_fields
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery
 from aurelius_atlas_core.stored_classification import StoredClassification

@@ -11,7 +11,9 @@ from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.app_search_engine import AppSearchEngine
-from aurelius_atlas_core.entity_documents import ENTITY_DOCUMENTS, ElasticsearchEntityDocuments, SearchDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import SearchDocuments
+from aurelius_atlas_core.index_setup import ENTITY_DOCUMENTS
 from aurelius_atlas_core.search_fields import search_fields
 from aurelius_atlas_core.search_query import SearchQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -78,9 +80,7 @@ async def test__the_door_runs_on_the_contract_alone(m4i: TypeRegistry) -> None:
     assert answer["total"] == 1
 
 
-@pytest.mark.covers(
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search", rules=["QRY-05"]
-)
+@pytest.mark.covers("aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.search_app_search", rules=["QRY-05"])
 async def test__the_elasticsearch_documents_satisfy_the_contract() -> None:
     """The concrete store satisfies the protocol unchanged (DD-770)."""
     documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))

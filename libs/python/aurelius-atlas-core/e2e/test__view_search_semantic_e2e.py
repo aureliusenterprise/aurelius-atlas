@@ -9,7 +9,7 @@ weighted similarity (DD-596, DD-597, DD-598 — 11.4's e2e draws the same vector
 from typing import Any
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding import source_hash
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.stored_entity import StoredEmbedding

@@ -9,9 +9,10 @@ import json
 
 import pytest
 from aurelius_atlas_core.authorization import AtlasPrivilege
-from aurelius_atlas_core.entity_documents import LinkedKind, TypeCount
+from aurelius_atlas_core.entity_documents import TypeCount
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.index_setup import LinkedKind
 from aurelius_atlas_core.metrics_service import MetricsService
 from aurelius_atlas_core.metrics_util import (
     AtlasMetricsUtil,

@@ -5,20 +5,16 @@ from collections.abc import Mapping, Sequence
 from decimal import Decimal
 
 import pytest
-from aurelius_atlas_core import entity_documents
-from aurelius_atlas_core.entity_documents import (
-    ElasticsearchEntityDocuments,
-    LinkedKind,
-    LinkedWrite,
-    TypeCount,
-    WriteResult,
-)
+from aurelius_atlas_core import documents_es
+from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import LinkedWrite, TypeCount, WriteResult
 from aurelius_atlas_core.entity_store import (
     LEASE_MILLISECONDS,
     EntityChange,
     EntityStore,
     UniqueValueTakenError,
 )
+from aurelius_atlas_core.index_setup import LinkedKind
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.typedef_document import DocumentVersion
 from aurelius_atlas_model.instance import AtlasEntity, EntityStatus
@@ -173,15 +169,15 @@ async def test__a_write_cut_short_is_undone_by_another_process(
 
 
 @pytest.mark.critical
-@pytest.mark.covers("aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.type_counts", rules=["MET-02"])
+@pytest.mark.covers("aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.type_counts", rules=["MET-02"])
 @pytest.mark.covers(
-    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.linked_type_counts", rules=["MET-02"]
+    "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.linked_type_counts", rules=["MET-02"]
 )
 async def test__the_entities_and_classifications_are_counted_by_type(
     dev_store: ElasticsearchStore, entity_prefix: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A composite aggregation by type, state and shell flag, read page by page; classifications by type."""
-    monkeypatch.setattr(entity_documents, "COUNT_PAGE", 1)
+    monkeypatch.setattr(documents_es, "COUNT_PAGE", 1)
     store = await opened(dev_store, entity_prefix)
     active = table(store, qualifiedName="a@e2e")
     deleted = table(store, qualifiedName="d@e2e").model_copy(update={"state": EntityStatus.DELETED})

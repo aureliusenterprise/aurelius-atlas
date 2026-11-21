@@ -34,7 +34,8 @@ from aurelius_atlas_core.app_search_document import (
     SOURCE_HASH_FIELD,
     VERDICT_FIELDS,
 )
-from aurelius_atlas_core.entity_documents import ENTITY_DOCUMENTS, GOV_QUALITY, SearchDocuments
+from aurelius_atlas_core.entity_documents import SearchDocuments
+from aurelius_atlas_core.index_setup import ENTITY_DOCUMENTS, GOV_QUALITY
 from aurelius_atlas_core.search_query import ACTIVE, MAX_RESULT_WINDOW, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredQualityResult
 
