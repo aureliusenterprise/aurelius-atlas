@@ -18,7 +18,11 @@ Entity/History tab pair, in edit mode only. The drawer's `drawer-subhead` slot
 carries the pair (DD-180), the Entity pane holds the form as before, and the
 History pane holds the audit list. The audit read fires on every switch to the
 History tab, never while the form is shown. The commit foot (Save, Delete)
-renders in the Entity pane only.
+renders in the Entity pane only. The pair is full width and the halves split
+evenly, like the lineage pair: `is-fullwidth` (DD-402) with a zero flex basis,
+`width: 100%` on the native buttons so label and underline centre (Bulma's own
+rule targets `<a>` only, FORM-CUSTOM-002), and `flex-shrink: 0` on the strip so
+the hairline under the tabs cannot shift over a long body (DD-416).
 
 **Reason.** The legacy app had it exactly this way: `editor.component.html`
 swapped the form for the audit list through `currentTab`, and the foot rendered
