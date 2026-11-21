@@ -145,7 +145,13 @@ Attributes:
 - **`ATTR_OPTION_APPLICABLE_ENTITY_TYPES`** –
 - **`ATTR_VALID_PATTERN`** –
 - **`CONSTRAINT_PARAM_ATTRIBUTE`** –
+- **`CONSTRAINT_PARAM_GROUP`** –
+
+  The parameter of a `mutuallyExclusive` constraint naming its group (PME-03).
 - **`CONSTRAINT_TYPE_INVERSE_REF`** –
+- **`CONSTRAINT_TYPE_MUTUAL_EXCLUSION`** –
+
+  The constraint type that names the parent group a relationship end belongs to (18.3, PME-01).
 - **`CONSTRAINT_TYPE_OWNED_REF`** –
 - **`COUNT_NOT_SET`** –
 - **`DEFAULT_SEARCH_WEIGHT`** –
@@ -321,11 +327,29 @@ ATTR_VALID_PATTERN = 'validPattern'
 CONSTRAINT_PARAM_ATTRIBUTE = 'attribute'
 ```
 
+### CONSTRAINT\_PARAM\_GROUP
+
+```
+CONSTRAINT_PARAM_GROUP = 'group'
+```
+
+The parameter of a `mutuallyExclusive` constraint naming its group (PME-03).
+
 ### CONSTRAINT\_TYPE\_INVERSE\_REF
 
 ```
 CONSTRAINT_TYPE_INVERSE_REF = 'inverseRef'
 ```
+
+### CONSTRAINT\_TYPE\_MUTUAL\_EXCLUSION
+
+```
+CONSTRAINT_TYPE_MUTUAL_EXCLUSION = 'mutuallyExclusive'
+```
+
+The constraint type that names the parent group a relationship end belongs to (18.3, PME-01).
+
+Apache Atlas has no such constraint (DV-183).
 
 ### CONSTRAINT\_TYPE\_OWNED\_REF
 
@@ -4753,6 +4777,22 @@ A relationship type between two entity types.
           "default": null,
           "description": "A description of this end of the relationship.",
           "title": "Description"
+        },
+        "constraints": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasConstraintDef"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Constraints on the attribute this end adds, in the shape an attribute definition uses. A ``mutuallyExclusive`` constraint names the parent group this end belongs to (PME-01, DV-183).",
+          "title": "Constraints"
         }
       },
       "title": "AtlasRelationshipEndDef",
@@ -5284,6 +5324,40 @@ One end of a relationship type: the entity type there and the attribute it gets.
 ```
 {
   "$defs": {
+    "AtlasConstraintDef": {
+      "description": "A constraint on an attribute, such as ``ownedRef`` or ``inverseRef``.",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The constraint type name, e.g. ``ownedRef``.",
+          "title": "Type"
+        },
+        "params": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The constraint's parameters, e.g. ``attribute`` for a ref constraint.",
+          "title": "Params"
+        }
+      },
+      "title": "AtlasConstraintDef",
+      "type": "object"
+    },
     "Cardinality": {
       "description": "How many values an attribute or relationship end holds.",
       "enum": [
@@ -5360,6 +5434,22 @@ One end of a relationship type: the entity type there and the attribute it gets.
       "default": null,
       "description": "A description of this end of the relationship.",
       "title": "Description"
+    },
+    "constraints": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/AtlasConstraintDef"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Constraints on the attribute this end adds, in the shape an attribute definition uses. A ``mutuallyExclusive`` constraint names the parent group this end belongs to (PME-01, DV-183).",
+      "title": "Constraints"
     }
   },
   "title": "AtlasRelationshipEndDef",
@@ -5375,6 +5465,7 @@ Fields:
 - `cardinality` (`Cardinality | None`)
 - `is_legacy_attribute` (`JavaBool`)
 - `description` (`str | None`)
+- `constraints` (`list[AtlasConstraintDef] | None`)
 
 #### cardinality
 
@@ -5383,6 +5474,14 @@ cardinality: Cardinality | None = Cardinality.SINGLE
 ```
 
 How many entities sit at this end: SINGLE, LIST, or SET.
+
+#### constraints
+
+```
+constraints: list[AtlasConstraintDef] | None = None
+```
+
+Constraints on the attribute this end adds, in the shape an attribute definition uses. A `mutuallyExclusive` constraint names the parent group this end belongs to (PME-01, DV-183).
 
 #### description
 
@@ -7609,6 +7708,22 @@ Type definitions of every kind: the body of `/v2/types/typedefs`.
           "default": null,
           "description": "A description of this end of the relationship.",
           "title": "Description"
+        },
+        "constraints": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AtlasConstraintDef"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Constraints on the attribute this end adds, in the shape an attribute definition uses. A ``mutuallyExclusive`` constraint names the parent group this end belongs to (PME-01, DV-183).",
+          "title": "Constraints"
         }
       },
       "title": "AtlasRelationshipEndDef",
@@ -8920,15 +9035,6 @@ Java camelCase aliases, lenient input (extra keys ignored, numbers coerce to str
   "type": "object"
 }
 ```
-
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
 
 #### model\_config
 

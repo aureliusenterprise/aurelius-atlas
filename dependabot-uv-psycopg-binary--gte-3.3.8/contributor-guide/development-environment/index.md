@@ -104,7 +104,7 @@ Local TLS material is not prewarmed: every `serve` or `e2e` target that needs it
 
 ## Dev Topology
 
-The development infrastructure is a set of **slices**: each slice under `dev/` is its own compose project with its own network, named `aurelius-atlas-dev-<slice>-network`. An app's `serve` target starts the slices it needs via `dependsOn` (ADR 005); a slice's services reach each other by service name on a shared network.
+The development infrastructure is a set of **slices**: each slice under `infra/` is its own compose project with its own network, named `aurelius-atlas-infra-<slice>-network`. An app's `serve` target starts the slices it needs via `dependsOn` (ADR 005); a slice's services reach each other by service name on a shared network.
 
 The rule that surprises people: **services are reached by service name, not `localhost`**. The store's certificate is issued for `elasticsearch`, so an IP or `localhost` fails certificate verification, not connectivity. The server's e2e container attaches to the Elasticsearch and observability networks and reaches the store as `https://elasticsearch:9200`. Certificate plumbing is in [TLS Certificates](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/tls-certificates/index.md>).
 
@@ -117,7 +117,7 @@ The rule that surprises people: **services are reached by service name, not `loc
 | Prometheus / Loki / Tempo | 127.0.0.1:9090 / 3100 / 3200 | `observability` | Loopback-pinned (CHT-101); Grafana datasources ride the compose network |
 | Grafana | 127.0.0.1:3000 | `observability` | Loopback only |
 
-Each slice documents its own services, images, and run commands in its colocated README: `dev/elasticsearch`, `dev/keycloak`, `dev/observability`.
+Each slice documents its own services, images, and run commands in its colocated README: `infra/elasticsearch`, `infra/keycloak`, `infra/observability`.
 
 > [!WARNING]
 >
@@ -134,9 +134,9 @@ Per [ADR 031](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary
 | Python | 3.14 only | `pyproject.toml` (`requires-python`), `.devcontainer` python feature, server `Dockerfile` base image, pyright/ruff target |
 | Node.js | 24 (LTS jod) | `.devcontainer` node feature, dashboard `build.Dockerfile` |
 | Java | 21 (dev tooling for the vendored dashboards' build only) | `.devcontainer` java feature |
-| Elasticsearch | 9.x (dev image 9.5) | `dev/elasticsearch/docker-compose.yaml` image tag |
-| Keycloak | 26.x | `dev/keycloak/docker-compose.yaml` image tag |
-| PostgreSQL | 18 (Keycloak's database only — ADR 047) | `dev/keycloak` compose image tags |
+| Elasticsearch | 9.x (dev image 9.5) | `infra/elasticsearch/docker-compose.yaml` image tag |
+| Keycloak | 26.x | `infra/keycloak/docker-compose.yaml` image tag |
+| PostgreSQL | 18 (Keycloak's database only — ADR 047) | `infra/keycloak` compose image tags |
 
 Minor and patch releases inside a window follow the dependency rule ([ADR 020](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/020-dependencies-stay-current-by-default/index.md>)); the floor rises only when every pin above moves in one change.
 

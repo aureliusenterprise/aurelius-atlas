@@ -2399,6 +2399,9 @@ Methods:
 - **`normalize_relationship_attribute_values`** –
 
   Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
+- **`parent_groups`** –
+
+  This type's parent groups by group name: each the relationship attributes that hold one parent
 - **`populate_default_values`** –
 
   Defaults for each super type's mandatory attributes, then this type's (EVL-05).
@@ -2715,6 +2718,16 @@ normalize_relationship_attribute_values(value: StructValue, *, for_update: bool)
 Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
 
 An entity's `relationshipAttributes`; a map at its top level, as Java's map overload does.
+
+#### parent\_groups
+
+```
+parent_groups() -> dict[str, frozenset[str]]
+```
+
+This type's parent groups by group name: each the relationship attributes that hold one parent (PME-03, DV-183).
+
+A group comes from a `mutuallyExclusive` constraint on a relationship attribute of this type, so a group that names no second attribute of this type holds one attribute and enforces nothing.
 
 #### populate\_default\_values
 
@@ -4884,6 +4897,9 @@ Methods:
 - **`normalize_relationship_attribute_values`** –
 
   Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
+- **`parent_groups`** –
+
+  This type's parent groups by group name: each the relationship attributes that hold one parent
 - **`populate_default_values`** –
 
   Defaults for each super type's mandatory attributes, then this type's (EVL-05).
@@ -5200,6 +5216,16 @@ normalize_relationship_attribute_values(value: StructValue, *, for_update: bool)
 Normalise the value of each relationship attribute that holds object ids or entities (EVL-09).
 
 An entity's `relationshipAttributes`; a map at its top level, as Java's map overload does.
+
+#### parent\_groups
+
+```
+parent_groups() -> dict[str, frozenset[str]]
+```
+
+This type's parent groups by group name: each the relationship attributes that hold one parent (PME-03, DV-183).
+
+A group comes from a `mutuallyExclusive` constraint on a relationship attribute of this type, so a group that names no second attribute of this type holds one attribute and enforces nothing.
 
 #### populate\_default\_values
 

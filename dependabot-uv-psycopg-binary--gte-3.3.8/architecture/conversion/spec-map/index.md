@@ -9,7 +9,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | Increment | Spec | Home | Rules |
 | --- | --- | --- | --- |
 | 0.1 | Adopt the template | `specs/` (workspace root) | ADO |
-| 0.2 | Elasticsearch infrastructure | `dev/elasticsearch` + `libs/python/aurelius-atlas-store-es` | ESD, STO |
+| 0.2 | Elasticsearch infrastructure | `infra/elasticsearch` + `libs/python/aurelius-atlas-store-es` | ESD, STO |
 | 0.3 | Test report and traceability | `libs/python/aurelius-atlas-trace` | TRC |
 | 0.4 | Parity harness | `libs/python/aurelius-atlas-parity` + `libs/python/aurelius-atlas-trace` | SCN, TRC |
 | 0.5 | Server skeleton | `apps/aurelius-atlas-server` | ADM, SRV |
@@ -69,8 +69,8 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.14 | Settings panel | `apps/aurelius-atlas-webapp` | SPL |
 | 7.15 | Alerts drawer | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | ALR |
 | 7.16 | UI components: details chrome set | `libs/angular/aurelius-atlas-ui` | UIC |
-| 7.17 | Collector ingest auth | `libs/python/aurelius-atlas-otel` + `dev/observability` | CIA |
-| 7.18 | Collector ingest identity | `libs/python/aurelius-atlas-otel` + `dev/keycloak` + `dev/observability` | CIA |
+| 7.17 | Collector ingest auth | `libs/python/aurelius-atlas-otel` + `infra/observability` | CIA |
+| 7.18 | Collector ingest identity | `libs/python/aurelius-atlas-otel` + `infra/keycloak` + `infra/observability` | CIA |
 | 7.19 | Frontend failure UX | `apps/aurelius-atlas-webapp` | – (no new ids, DD-214) |
 | 7.20 | Details data spine | `apps/aurelius-atlas-webapp` | DET |
 | 7.21a | Details sections: the seven m4i pages | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | DET |
@@ -78,6 +78,9 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.21c | Details sections: producers, consumers, the process page | `apps/aurelius-atlas-webapp` | DET |
 | 7.23 | Webapp Sonar findings | `apps/aurelius-atlas-webapp` | – (no new ids, except CHT-112; DD-428) |
 | 7.30 | Overlay, scheme and accessibility platform fixes | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SPL-15/16, UIC-40/41, a11y sweep (DD-542..547) |
+| 7.31 | Editor drawer room and richer relationship rows | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | UIC-43, EDT-33 (EDT-14 amended, DD-711/712) |
+| 7.32 | A dumb relationship picker in the ui library | `libs/angular/aurelius-atlas-ui` + `apps/aurelius-atlas-webapp` | UIC-44 (DD-713/714; EDT-14/33 unchanged) |
+| 7.34 | Version and copyright leave the config | `apps/aurelius-atlas-webapp` | VER (DD-725/726, DV-182) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
@@ -95,10 +98,26 @@ This table is the reference for a move: it fixes the home before files are touch
 | 10.3a | App and edge charts | `helm/` | CHT |
 | 10.3b | Observability chart | `helm/` | CHT |
 | 10.6 | Network segmentation | `helm/` | CHT |
-| 10.7 | Production identity realm | `helm/` + `dev/keycloak` | CHT |
-| 10.8 | Grafana login via the production realm | `helm/` + `dev/observability` | CHT |
-| 10.9 | Per-producer ingest credentials | `helm/` + `dev/keycloak` | CHT |
+| 10.7 | Production identity realm | `helm/` + `infra/keycloak` | CHT |
+| 10.8 | Grafana login via the production realm | `helm/` + `infra/observability` | CHT |
+| 10.9 | Per-producer ingest credentials | `helm/` + `infra/keycloak` | CHT |
 | 10.10 | Digest-pinned images and signed charts | `helm/` | CHT |
 | 10.11 | Low-findings hardening | `helm/` | CHT |
 | 10.12 | Server authentication, chart wiring | `helm/` | CHT |
 | 10.13 | GKE-ready edge: split trust, CA sync, health checks | `helm/` | CHT |
+| 10.14 | Grafana at the edge, TLS-internal observability | `helm/` + `infra/observability` + `infra/keycloak` | CHT |
+| 10.15 | Browser host names, Grafana role gate | `helm/` + `infra/observability` + `infra/keycloak` | CHT |
+| 17.1 | Infrastructure components at the root | `specs/17-1-infra-root/` + `infra/` | IRT |
+| 17.2 | Standalone host and certificates | `specs/17-2-standalone-host-and-certs/` + `docker/` | SPS |
+| 17.3 | The standalone bundle | `specs/17-3-standalone-bundle/` + `docker/` + `tools/` | SBD |
+| 17.4 | The standalone stack simplified | `specs/17-4-standalone-simplification/` + `docker/` | SPC |
+| 18.1 | Bootstrap only the metamodel the system serves | `specs/18-1-metamodel-scope/` + `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` + `apps/aurelius-atlas-webapp` + `apps/aurelius-atlas-lineage-model` | MMS |
+| 18.2 | The metamodel gives every hierarchy child one parent | `specs/18-2-hierarchy-cardinality/` + `libs/python/aurelius-atlas-core` + `libs/python/aurelius-atlas-typesystem` + `apps/aurelius-atlas-server` + `apps/aurelius-atlas-webapp` + `data/atlas-sample` | HCA |
+| 18.3 | A child that can sit under two parents picks one | `specs/18-3-parent-mutual-exclusion/` + `libs/python/aurelius-atlas-model` + `libs/python/aurelius-atlas-typesystem` + `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` + `data/atlas-sample` | PME |
+| 19.1 | One query semantics for the store and its fakes | `specs/19-1-query-semantics/` + `libs/python/aurelius-atlas-store-es` + `libs/python/aurelius-atlas-core` | QRY |
+| 19.2 | A store the write path can be tested against | `specs/19-2-write-path-seams/` + `libs/python/aurelius-atlas-core` | WRS |
+| 19.3 | One owner for the shared classification and parent rules | `specs/19-3-shared-rule-owners/` + `libs/python/aurelius-atlas-core` | RUL |
+| 19.4 | One document module set and one narrow engine seam | `specs/19-4-documents-engine-split/` + `libs/python/aurelius-atlas-core` | EDS |
+| 19.5 | A server whose routes state their dependencies | `specs/19-5-server-routes/` + `apps/aurelius-atlas-server` | SVC |
+| 19.6 | An editor that reports its own outcome | `specs/19-6-webapp-editor/` + `apps/aurelius-atlas-webapp` | WFE |
+| 19.7 | Small deletions | `specs/19-7-small-deletions/` + `libs/python/aurelius-atlas-core` | PAR |

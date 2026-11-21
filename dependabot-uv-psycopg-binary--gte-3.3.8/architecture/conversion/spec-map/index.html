@@ -229,6 +229,8 @@
       
         
       
+        
+      
     
     
     
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -2033,6 +2064,14 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -3976,6 +4015,114 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -5569,6 +5716,8 @@
       
         
       
+        
+      
     
     
     
@@ -5745,6 +5894,33 @@
     
   
   CI Test Tiers Plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/separation-and-seams-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Separation and Seams Plan
 
     
   </span>
@@ -6767,7 +6943,7 @@ rule belongs to the project whose code it constrains.</p>
 <tr>
 <td>0.2</td>
 <td>Elasticsearch infrastructure</td>
-<td><code>dev/elasticsearch</code> + <code>libs/python/aurelius-atlas-store-es</code></td>
+<td><code>infra/elasticsearch</code> + <code>libs/python/aurelius-atlas-store-es</code></td>
 <td>ESD, STO</td>
 </tr>
 <tr>
@@ -7127,13 +7303,13 @@ rule belongs to the project whose code it constrains.</p>
 <tr>
 <td>7.17</td>
 <td>Collector ingest auth</td>
-<td><code>libs/python/aurelius-atlas-otel</code> + <code>dev/observability</code></td>
+<td><code>libs/python/aurelius-atlas-otel</code> + <code>infra/observability</code></td>
 <td>CIA</td>
 </tr>
 <tr>
 <td>7.18</td>
 <td>Collector ingest identity</td>
-<td><code>libs/python/aurelius-atlas-otel</code> + <code>dev/keycloak</code> + <code>dev/observability</code></td>
+<td><code>libs/python/aurelius-atlas-otel</code> + <code>infra/keycloak</code> + <code>infra/observability</code></td>
 <td>CIA</td>
 </tr>
 <tr>
@@ -7177,6 +7353,24 @@ rule belongs to the project whose code it constrains.</p>
 <td>Overlay, scheme and accessibility platform fixes</td>
 <td><code>apps/aurelius-atlas-webapp</code> + <code>libs/angular/aurelius-atlas-ui</code></td>
 <td>SPL-15/16, UIC-40/41, a11y sweep (DD-542..547)</td>
+</tr>
+<tr>
+<td>7.31</td>
+<td>Editor drawer room and richer relationship rows</td>
+<td><code>apps/aurelius-atlas-webapp</code> + <code>libs/angular/aurelius-atlas-ui</code></td>
+<td>UIC-43, EDT-33 (EDT-14 amended, DD-711/712)</td>
+</tr>
+<tr>
+<td>7.32</td>
+<td>A dumb relationship picker in the ui library</td>
+<td><code>libs/angular/aurelius-atlas-ui</code> + <code>apps/aurelius-atlas-webapp</code></td>
+<td>UIC-44 (DD-713/714; EDT-14/33 unchanged)</td>
+</tr>
+<tr>
+<td>7.34</td>
+<td>Version and copyright leave the config</td>
+<td><code>apps/aurelius-atlas-webapp</code></td>
+<td>VER (DD-725/726, DV-182)</td>
 </tr>
 <tr>
 <td>8.0</td>
@@ -7283,19 +7477,19 @@ rule belongs to the project whose code it constrains.</p>
 <tr>
 <td>10.7</td>
 <td>Production identity realm</td>
-<td><code>helm/</code> + <code>dev/keycloak</code></td>
+<td><code>helm/</code> + <code>infra/keycloak</code></td>
 <td>CHT</td>
 </tr>
 <tr>
 <td>10.8</td>
 <td>Grafana login via the production realm</td>
-<td><code>helm/</code> + <code>dev/observability</code></td>
+<td><code>helm/</code> + <code>infra/observability</code></td>
 <td>CHT</td>
 </tr>
 <tr>
 <td>10.9</td>
 <td>Per-producer ingest credentials</td>
-<td><code>helm/</code> + <code>dev/keycloak</code></td>
+<td><code>helm/</code> + <code>infra/keycloak</code></td>
 <td>CHT</td>
 </tr>
 <tr>
@@ -7321,6 +7515,102 @@ rule belongs to the project whose code it constrains.</p>
 <td>GKE-ready edge: split trust, CA sync, health checks</td>
 <td><code>helm/</code></td>
 <td>CHT</td>
+</tr>
+<tr>
+<td>10.14</td>
+<td>Grafana at the edge, TLS-internal observability</td>
+<td><code>helm/</code> + <code>infra/observability</code> + <code>infra/keycloak</code></td>
+<td>CHT</td>
+</tr>
+<tr>
+<td>10.15</td>
+<td>Browser host names, Grafana role gate</td>
+<td><code>helm/</code> + <code>infra/observability</code> + <code>infra/keycloak</code></td>
+<td>CHT</td>
+</tr>
+<tr>
+<td>17.1</td>
+<td>Infrastructure components at the root</td>
+<td><code>specs/17-1-infra-root/</code> + <code>infra/</code></td>
+<td>IRT</td>
+</tr>
+<tr>
+<td>17.2</td>
+<td>Standalone host and certificates</td>
+<td><code>specs/17-2-standalone-host-and-certs/</code> + <code>docker/</code></td>
+<td>SPS</td>
+</tr>
+<tr>
+<td>17.3</td>
+<td>The standalone bundle</td>
+<td><code>specs/17-3-standalone-bundle/</code> + <code>docker/</code> + <code>tools/</code></td>
+<td>SBD</td>
+</tr>
+<tr>
+<td>17.4</td>
+<td>The standalone stack simplified</td>
+<td><code>specs/17-4-standalone-simplification/</code> + <code>docker/</code></td>
+<td>SPC</td>
+</tr>
+<tr>
+<td>18.1</td>
+<td>Bootstrap only the metamodel the system serves</td>
+<td><code>specs/18-1-metamodel-scope/</code> + <code>libs/python/aurelius-atlas-core</code> + <code>apps/aurelius-atlas-server</code> + <code>apps/aurelius-atlas-webapp</code> + <code>apps/aurelius-atlas-lineage-model</code></td>
+<td>MMS</td>
+</tr>
+<tr>
+<td>18.2</td>
+<td>The metamodel gives every hierarchy child one parent</td>
+<td><code>specs/18-2-hierarchy-cardinality/</code> + <code>libs/python/aurelius-atlas-core</code> + <code>libs/python/aurelius-atlas-typesystem</code> + <code>apps/aurelius-atlas-server</code> + <code>apps/aurelius-atlas-webapp</code> + <code>data/atlas-sample</code></td>
+<td>HCA</td>
+</tr>
+<tr>
+<td>18.3</td>
+<td>A child that can sit under two parents picks one</td>
+<td><code>specs/18-3-parent-mutual-exclusion/</code> + <code>libs/python/aurelius-atlas-model</code> + <code>libs/python/aurelius-atlas-typesystem</code> + <code>libs/python/aurelius-atlas-core</code> + <code>apps/aurelius-atlas-server</code> + <code>data/atlas-sample</code></td>
+<td>PME</td>
+</tr>
+<tr>
+<td>19.1</td>
+<td>One query semantics for the store and its fakes</td>
+<td><code>specs/19-1-query-semantics/</code> + <code>libs/python/aurelius-atlas-store-es</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>QRY</td>
+</tr>
+<tr>
+<td>19.2</td>
+<td>A store the write path can be tested against</td>
+<td><code>specs/19-2-write-path-seams/</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>WRS</td>
+</tr>
+<tr>
+<td>19.3</td>
+<td>One owner for the shared classification and parent rules</td>
+<td><code>specs/19-3-shared-rule-owners/</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>RUL</td>
+</tr>
+<tr>
+<td>19.4</td>
+<td>One document module set and one narrow engine seam</td>
+<td><code>specs/19-4-documents-engine-split/</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>EDS</td>
+</tr>
+<tr>
+<td>19.5</td>
+<td>A server whose routes state their dependencies</td>
+<td><code>specs/19-5-server-routes/</code> + <code>apps/aurelius-atlas-server</code></td>
+<td>SVC</td>
+</tr>
+<tr>
+<td>19.6</td>
+<td>An editor that reports its own outcome</td>
+<td><code>specs/19-6-webapp-editor/</code> + <code>apps/aurelius-atlas-webapp</code></td>
+<td>WFE</td>
+</tr>
+<tr>
+<td>19.7</td>
+<td>Small deletions</td>
+<td><code>specs/19-7-small-deletions/</code> + <code>libs/python/aurelius-atlas-core</code></td>
+<td>PAR</td>
 </tr>
 </tbody>
 </table>

@@ -18,7 +18,7 @@ The knobs that make each row true — the setting names, verification flags, and
 
 ## Proven in development and CI
 
-The posture is tested, not just configured: the store library rejects plain endpoints; the dev store serves TLS only and is health-checked over it; the server's e2e runs the built image over HTTPS against that store; the template examples' relational-store containers start with TLS-only client authentication and connect with full verification. The per-command proofs are in the slice READMEs under `dev/` and each project's `e2e/`.
+The posture is tested, not just configured: the store library rejects plain endpoints; the dev store serves TLS only and is health-checked over it; the server's e2e runs the built image over HTTPS against that store; the template examples' relational-store containers start with TLS-only client authentication and connect with full verification. The per-command proofs are in the slice READMEs under `infra/` and each project's `e2e/`.
 
 ## At rest
 
