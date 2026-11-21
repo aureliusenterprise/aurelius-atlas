@@ -8223,6 +8223,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>12.7f</td>
+<td>The verdicts per tenant</td>
+<td>With tenancy on, <code>aurelius-atlas-validate-entity</code> reads a tenant's governance rules with the caller's token and caches them per tenant, so the editor's verdicts appear again (VET-01..05, DD-820)</td>
+<td>none</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td>13.1</td>
 <td>The Kafka cluster scanner</td>
 <td><code>apps/aurelius-atlas-kafka-scanner</code>: a batch CLI that lists a broker's external topics, reads each schema from the Schema Registry or infers one from the topic's messages, and writes the System/Collection/Dataset/Field tree in one bulk request as its own service identity; the broker-and-Registry e2e stack (KSC-01..10, DD-465..469; the stack joined the app's <code>e2e/</code> with DD-541)</td>
