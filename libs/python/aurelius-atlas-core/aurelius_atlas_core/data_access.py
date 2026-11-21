@@ -14,7 +14,7 @@ from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity,
 from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_retriever import EntityRetriever
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 
 
@@ -56,7 +56,7 @@ class DataAccess:
     """
 
     def __init__(
-        self, store: EntityStore, dtos: Registry, *, user: str | None = None, authorizer: Authorizer = ALLOW_ALL
+        self, store: WriteStore, dtos: Registry, *, user: str | None = None, authorizer: Authorizer = ALLOW_ALL
     ) -> None:
         self._store = store
         self._dtos = dtos

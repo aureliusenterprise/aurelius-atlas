@@ -20,7 +20,7 @@ from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.data_access import DataAccess
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.relationship_store import RelationshipStore
 
 
@@ -77,7 +77,7 @@ class GlossaryUtils:
 
     def __init__(  # noqa: PLR0913 - the relationship store's options, each a keyword
         self,
-        store: EntityStore,
+        store: WriteStore,
         data_access: DataAccess,
         *,
         user: str | None = None,

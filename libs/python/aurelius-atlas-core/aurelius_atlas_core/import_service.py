@@ -19,7 +19,7 @@ from aurelius_atlas_model.impexp import (
 )
 
 from aurelius_atlas_core.audits_writer import AuditsWriter
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_transforms import ImportTransforms, shape
 from aurelius_atlas_core.import_type_def_processor import ImportTypeDefProcessor
@@ -40,7 +40,7 @@ class ImportService:
 
     def __init__(
         self,
-        store: EntityStore,
+        store: WriteStore,
         typedef_store: TypedefStore,
         writer: EntityWriter,
         *,

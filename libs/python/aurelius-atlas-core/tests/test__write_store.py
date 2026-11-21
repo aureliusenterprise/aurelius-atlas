@@ -44,6 +44,11 @@ class OnlyContract:
         self.write_listeners = real.write_listeners
         self._real = real
 
+    @property
+    def documents(self) -> Any:  # noqa: ANN401 - the store's EntityDocuments
+        """The real store's documents."""
+        return self._real.documents
+
     def new_guid(self) -> Any:  # noqa: ANN401 - the store's AssignedGuid
         """The real store's minted GUID."""
         return self._real.new_guid()

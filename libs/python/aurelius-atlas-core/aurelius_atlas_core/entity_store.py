@@ -139,6 +139,11 @@ class WriteStore(Protocol):
 
     registry: TypeRegistry
 
+    @property
+    def documents(self) -> EntityDocuments:
+        """The documents the store keeps, for a wrapper that records before-images (WRS-03, DD-775)."""
+        ...
+
     task_listeners: list[Callable[[], None]]
     """Called after a write that recorded tasks, to wake a worker (DD-080)."""
 
@@ -221,6 +226,15 @@ class EntityStore:
         """Called after a write that recorded tasks, to wake a worker (DD-080)."""
         self.write_listeners: list[Callable[[], None]] = []
         """Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678)."""
+
+    @property
+    def documents(self) -> EntityDocuments:
+        """The documents this store keeps (WRS-03, DD-775).
+
+        Public so the rewind wrapper reads before-images through the documents contract instead of reaching
+        ``_documents`` of the class it composes.
+        """
+        return self._documents
 
     async def prepare(self) -> None:
         """Create the indices that are missing (ENS-01)."""
