@@ -234,7 +234,10 @@ class EntityChangeNotifier:
     ) -> None:
         """``notifyPropagatedEntities``: each entity's added, then each one's removed propagations (CAU-05).
 
-        Entities the request deleted, and those that no longer exist, are left out.
+        Entities the request deleted, those that no longer exist, and those left ``DELETED`` or ``PURGED`` are
+        left out (DD-818): Atlas skips the ones ``getAndCacheEntity`` cannot read (its comment: "if entity is
+        deleted, don't send propagated classifications add/remove notifications"), and an Aurelius tombstone
+        is just such an entity.
         """
         if not self._listeners or not (added or removed):
             return
@@ -244,7 +247,8 @@ class EntityChangeNotifier:
             (removed, self.on_classifications_deleted),
         ):
             for guid, classifications in propagations.items():
-                if guid not in deleted and guid in existing:
+                found = existing.get(guid)
+                if guid not in deleted and found is not None and found.entity.state is EntityStatus.ACTIVE:
                     await notify([guid], classifications, user=user)
 
     async def _read(self, classifications: Sequence[StoredClassification]) -> list[AtlasClassification]:
