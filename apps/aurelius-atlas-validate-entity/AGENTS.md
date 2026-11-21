@@ -69,7 +69,9 @@ by 12.7a) survives in the webapp (EDT-23).
 - The catalogue leg is the app's OWN identity (VEV-04, DD-499): the client-credentials
   mint of `aurelius-atlas-validate-entity` (`SERVER_CLIENT_SECRET`), `atlas-read` on the
   realm client, one circuit breaker for the leg (VEV-06, DD-500). Without the secret the
-  leg answers 502, never invented verdicts. Nothing of the caller is forwarded.
+  leg answers 502, never invented verdicts. Nothing of the caller is forwarded, except for a
+  caller acting in a tenant: its own token reads that tenant's rules, cached per tenant
+  (VET-02, VET-04, DD-820). Never share a tenant's cached set with another tenant.
 - OTLP export is app-owned (DD-196/DD-197): `otel_*` settings, `otel-validate-entity`
   client, collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-210).
 - Every HTTP call is visible (DD-210): `HTTPX2ClientInstrumentor` covers the httpx2
