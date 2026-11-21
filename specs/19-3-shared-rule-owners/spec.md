@@ -1,7 +1,7 @@
 # 19.3 One owner for the shared classification and parent rules
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** #429
 - **Records:** DD-782 to DD-787, plan in [plan.md](./plan.md), design in [design.md](./design.md)
 
 ## Scope
