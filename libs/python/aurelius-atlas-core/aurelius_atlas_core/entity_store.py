@@ -14,10 +14,10 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 from aurelius_atlas_core.entity_documents import (
-    EntityDocuments,
     JournalEntry,
     LinkedWrite,
     Reservation,
+    StoreDocuments,
     TypeCount,
     VersionedClassification,
     VersionedEntity,
@@ -139,7 +139,7 @@ class WriteStore(Protocol):
     registry: TypeRegistry
 
     @property
-    def documents(self) -> EntityDocuments:
+    def documents(self) -> StoreDocuments:
         """The documents the store keeps, for a wrapper that records before-images (WRS-03, DD-775)."""
         ...
 
@@ -207,12 +207,12 @@ class WriteStore(Protocol):
 
 
 class EntityStore:
-    """Entities of the registry's entity types, and the relationships between them, in ``EntityDocuments``."""
+    """Entities of the registry's entity types, and the relationships between them, in ``StoreDocuments``."""
 
     def __init__(
         self,
         registry: TypeRegistry,
-        documents: EntityDocuments,
+        documents: StoreDocuments,
         *,
         clock: Callable[[], float] = time.time,
         new_id: Callable[[], str] = lambda: str(uuid.uuid4()),
@@ -227,7 +227,7 @@ class EntityStore:
         """Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678)."""
 
     @property
-    def documents(self) -> EntityDocuments:
+    def documents(self) -> StoreDocuments:
         """The documents this store keeps (WRS-03, DD-775).
 
         Public so the rewind wrapper reads before-images through the documents contract instead of reaching

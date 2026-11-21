@@ -12,6 +12,7 @@ from aurelius_atlas_core.entity_documents import (
     JournalEntry,
     LinkedWrite,
     Reservation,
+    StoreDocuments,
 )
 from aurelius_atlas_core.free_text import TextQuery
 from aurelius_atlas_core.index_setup import (
@@ -240,9 +241,24 @@ async def test__entities_of_a_type_are_counted_on_the_written_index(
     *(
         f"{D}.EntityDocuments.{name}"
         for name in (
-            "prepare",
             "get",
+            "get_linked",
+            "without_app_search",
+            "naming",
+            "unseen_relationships",
+            "without_embedding",
+            "scores",
+            "quality_holders",
+            "governance_rules",
+            "to_govern",
+            "replace_verdicts",
             "write",
+        )
+    ),
+    *(
+        f"{D}.StoreDocuments.{name}"
+        for name in (
+            "prepare",
             "restore",
             "reserve",
             "reservations",
@@ -253,22 +269,24 @@ async def test__entities_of_a_type_are_counted_on_the_written_index(
             "get_journal",
             "count_type",
             "referring",
+            "of_types",
             "classified",
             "list_tasks",
             "search",
             "classifications_of_types",
             "terms",
-            "get_linked",
             "restore_linked",
             "count_linked_type",
         )
     ),
-    rules=["ENS-07"],
+    rules=["ENS-07", "EDS-03"],
 )
 def test__both_implementations_are_entity_documents(documents: ElasticsearchEntityDocuments) -> None:
-    """The store takes any ``EntityDocuments``: Elasticsearch in the server, memory in tests."""
+    """The store takes any ``StoreDocuments``, an indexer any ``EntityDocuments``: ES in the server, memory in tests."""
     assert isinstance(documents, EntityDocuments)
     assert isinstance(MemoryEntityDocuments(), EntityDocuments)
+    assert isinstance(documents, StoreDocuments)
+    assert isinstance(MemoryEntityDocuments(), StoreDocuments)
 
 
 @pytest.mark.covers(

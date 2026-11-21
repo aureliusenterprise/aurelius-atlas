@@ -53,7 +53,7 @@ class OnlyContract:
         self._real = real
 
     @property
-    def documents(self) -> Any:  # noqa: ANN401 - the store's EntityDocuments
+    def documents(self) -> Any:  # noqa: ANN401 - the store's StoreDocuments
         """The real store's documents."""
         return self._real.documents
 

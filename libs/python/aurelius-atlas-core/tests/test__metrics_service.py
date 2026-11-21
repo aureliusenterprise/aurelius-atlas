@@ -149,8 +149,8 @@ async def test__a_user_who_may_not_read_types_gets_no_counts_of_them() -> None:
 
 @pytest.mark.covers("aurelius_atlas_core.entity_store.EntityStore.type_counts", rules=["MET-02"])
 @pytest.mark.covers("aurelius_atlas_core.entity_store.EntityStore.classification_type_counts", rules=["MET-02"])
-@pytest.mark.covers("aurelius_atlas_core.entity_documents.EntityDocuments.type_counts")
-@pytest.mark.covers("aurelius_atlas_core.entity_documents.EntityDocuments.linked_type_counts")
+@pytest.mark.covers("aurelius_atlas_core.entity_documents.StoreDocuments.type_counts")
+@pytest.mark.covers("aurelius_atlas_core.entity_documents.StoreDocuments.linked_type_counts")
 @pytest.mark.covers("aurelius_atlas_core.testing.memory.MemoryEntityDocuments.type_counts")
 @pytest.mark.covers("aurelius_atlas_core.testing.memory.MemoryEntityDocuments.linked_type_counts")
 async def test__the_store_counts_the_entities_and_classifications_by_type() -> None:

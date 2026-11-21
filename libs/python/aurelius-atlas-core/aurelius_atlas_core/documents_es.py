@@ -121,7 +121,7 @@ def _awaiting_document() -> dict[str, Any]:
 
 
 class ElasticsearchEntityDocuments:
-    """``EntityDocuments`` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046)."""
+    """``StoreDocuments`` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046)."""
 
     def __init__(
         self, client: AsyncElasticsearch, prefix: str = INDEX_PREFIX, *, embedding_dimensions: int | None = None

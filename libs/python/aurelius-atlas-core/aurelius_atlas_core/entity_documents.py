@@ -126,14 +126,63 @@ class JournalEntry(AtlasModel):
 
 @runtime_checkable
 class EntityDocuments(Protocol):
-    """Where ``EntityStore`` keeps entities, reservations and its journal."""
+    """The documents the indexers and the doors reach (EDS-03, DD-791).
 
-    async def prepare(self) -> None:
-        """Create the indices that are missing."""
-        ...
+    A narrow contract on purpose: an indexer or a door reads entities and linked documents, finds the ones it
+    has work for, and writes its results back — nothing else. ``StoreDocuments`` is the contract
+    ``EntityStore`` is typed on, and it lists the rest.
+    """
 
     async def get(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
         """The stored entities with these GUIDs, in real time; unknown GUIDs are left out."""
+        ...
+
+    async def get_linked(self, kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]:
+        """The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061)."""
+        ...
+
+    async def without_app_search(self, limit: int) -> list[VersionedEntity]:
+        """Up to ``limit`` entities that should have an App Search document and have none, or a stale one (ASD-04,
+        ASU-02).
+        """  # noqa: D205 - one sentence
+        ...
+
+    async def naming(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03)."""
+        ...
+
+    async def unseen_relationships(self, limit: int) -> list[VersionedRelationship]:
+        """Up to ``limit`` relationships deleted or restored since their ends' documents saw them (ASU-04)."""
+        ...
+
+    async def without_embedding(
+        self, model: str, limit: int, *, wait_for_documents: bool = False
+    ) -> list[VersionedEntity]:
+        """Up to ``limit`` entities without an embedding of ``model``, internal types left out (VEC-06, DD-436);
+        with ``wait_for_documents``, also those awaiting their App Search document (EMC-04, DD-540).
+        """  # noqa: D205 - one sentence
+        ...
+
+    async def scores(self) -> list[VersionedEntity]:
+        """Every active score entity, by GUID (ASQ-02)."""
+        ...
+
+    async def quality_holders(self) -> list[VersionedEntity]:
+        """Every entity holding a quality result or score totals, by GUID (ASQ-07)."""
+        ...
+
+    async def governance_rules(self) -> list[VersionedEntity]:
+        """The active governance rule entities, by GUID (ASG-03)."""
+        ...
+
+    async def to_govern(self, digests: Mapping[str, str], limit: int) -> list[VersionedEntity]:
+        """The entities to judge, by GUID: those with a document of a type in ``digests`` judged by another digest
+        or none, and those with verdicts no longer judged (ASG-06, DD-535).
+        """  # noqa: D205 - one sentence
+        ...
+
+    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None:
+        """Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534)."""
         ...
 
     async def write(
@@ -149,8 +198,17 @@ class EntityDocuments(Protocol):
         """
         ...
 
-    async def get_linked(self, kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]:
-        """The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061)."""
+
+@runtime_checkable
+class StoreDocuments(EntityDocuments, Protocol):
+    """The documents ``EntityStore`` keeps: everything the narrow contract has, plus the store's reads.
+
+    The store drives writes, reservations, the journal, the counts, and the searches the basic door answers, so
+    it is typed on the wide contract; an indexer or a door stays on the narrow one (EDS-03, DD-791).
+    """
+
+    async def prepare(self) -> None:
+        """Create the indices that are missing."""
         ...
 
     async def restore_linked(self, kind: LinkedKind, guid: str, before: Linked | None) -> None:
@@ -235,50 +293,6 @@ class EntityDocuments(Protocol):
 
     async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
         """The classification instances of these types, or of every type for None, as of now (DD-090)."""
-        ...
-
-    async def without_embedding(
-        self, model: str, limit: int, *, wait_for_documents: bool = False
-    ) -> list[VersionedEntity]:
-        """Up to ``limit`` entities without an embedding of ``model``, internal types left out (VEC-06, DD-436);
-        with ``wait_for_documents``, also those awaiting their App Search document (EMC-04, DD-540).
-        """  # noqa: D205 - one sentence
-        ...
-
-    async def without_app_search(self, limit: int) -> list[VersionedEntity]:
-        """Up to ``limit`` entities that should have an App Search document and have none, or a stale one (ASD-04,
-        ASU-02).
-        """  # noqa: D205 - one sentence
-        ...
-
-    async def naming(self, guids: Sequence[str]) -> list[VersionedEntity]:
-        """The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03)."""
-        ...
-
-    async def unseen_relationships(self, limit: int) -> list[VersionedRelationship]:
-        """Up to ``limit`` relationships deleted or restored since their ends' documents saw them (ASU-04)."""
-        ...
-
-    async def scores(self) -> list[VersionedEntity]:
-        """Every active score entity, by GUID (ASQ-02)."""
-        ...
-
-    async def quality_holders(self) -> list[VersionedEntity]:
-        """Every entity holding a quality result or score totals, by GUID (ASQ-07)."""
-        ...
-
-    async def governance_rules(self) -> list[VersionedEntity]:
-        """The active governance rule entities, by GUID (ASG-03)."""
-        ...
-
-    async def to_govern(self, digests: Mapping[str, str], limit: int) -> list[VersionedEntity]:
-        """The entities to judge, by GUID: those with a document of a type in ``digests`` judged by another digest
-        or none, and those with verdicts no longer judged (ASG-06, DD-535).
-        """  # noqa: D205 - one sentence
-        ...
-
-    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None:
-        """Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534)."""
         ...
 
 

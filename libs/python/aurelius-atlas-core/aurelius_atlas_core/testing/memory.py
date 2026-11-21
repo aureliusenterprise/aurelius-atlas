@@ -99,7 +99,7 @@ class SimulatedCrashError(RuntimeError):
 
 
 class MemoryEntityDocuments:
-    """``EntityDocuments`` in memory, entities and linked documents kept as JSON with a version per document.
+    """``StoreDocuments`` in memory, entities and linked documents kept as JSON with a version per document.
 
     ``fail`` maps a GUID to ``"conflict"`` or ``"error"`` for the next bulk write of it; ``crash_after_write`` makes
     the next bulk write raise ``SimulatedCrashError`` after writing, as if the process died.

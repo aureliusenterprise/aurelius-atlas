@@ -39,7 +39,7 @@ from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_discovery import HeldParent, held_parent_message, held_parents_of
 from aurelius_atlas_core.entity_documents import (
     DocumentVersion,
-    EntityDocuments,
+    StoreDocuments,
     VersionedClassification,
     VersionedEntity,
     VersionedRelationship,
@@ -154,7 +154,7 @@ class RewindStore:
         """Whether one of those writes recorded a new task, which wakes the task listeners too (DD-080)."""
 
     @property
-    def documents(self) -> EntityDocuments:
+    def documents(self) -> StoreDocuments:
         """The real store's documents, read through the documents contract for before-images (WRS-03)."""
         return self._real.documents
 
