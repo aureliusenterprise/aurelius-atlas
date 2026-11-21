@@ -1,7 +1,7 @@
 # 19.6 An editor that reports its own outcome
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** #432
 - **Records:** DD-802 to DD-808, plan in [plan.md](./plan.md), design in [design.md](./design.md)
 
 ## Scope

@@ -8,6 +8,11 @@ import type { AtlasEntity, EntityView } from "aurelius-atlas-data-access";
  * uniform body became the shared rich card, whose description is the
  * card's `definition`, DD-614), and a card badge reads the card shape's
  * own `typeAlias` field since 18.1 (MMS-09, DD-721).
+ *
+ * It lives in `search/shared/` because both screens own it (WFE-06, DD-807):
+ * it started life in the details feature and the editor reached across for
+ * it, which let a details refactor break the editor over a display rule
+ * neither feature owns alone.
  */
 
 /** What the rule reads: an entity's attribute values, from either door. */

@@ -365,104 +365,18 @@
                 </div>
             }
 
-            <!-- The classification box (EDT-05, DD-335, DD-336): one bordered
-                 box — the control's own look — holding the chosen chips (the
-                 details page's chips, UIC-24 delete) inline before the
-                 caret, and the text input. The box is a Bulma dropdown:
-                 while it holds focus, the applicable types that match the
-                 text ride a full-width panel above the box — the box is
-                 the form's last field, so the panel opens upward over the
-                 fields instead of down past the fold (Bulma's is-up;
-                 the menu's stretch to the box's width is the component's
-                 own rule — Bulma has no dropdown full-width modifier).
-                 Typed-or-clicked in. Clicks commit through mousedown (the
-                 panel's click never lands — focus moves first, DD-335).
-                 The input is the combobox (DD-336): the label names it,
-                 Down/Up move the active option (aria-activedescendant),
-                 Enter commits it; with nothing applicable left the input
-                 disables and says so through the help line, so the box
-                 cannot invite typing that matches nothing. -->
-            <div class="field aurelius-editor-classifications">
-                <p class="label" id="editor-classifications-label">{{ classificationsLabel }}</p>
-                <div
-                    class="dropdown is-up control aurelius-editor-classification-box"
-                    [class.is-disabled]="classificationDisabled()"
-                    [class.is-active]="dropdownShown()"
-                    (focusin)="onBoxFocusIn()"
-                    (focusout)="onBoxFocusOut($event)"
-                >
-                    @for (tag of chosenTags(); track tag.typeName) {
-                        <aurelius-atlas-ui-classification-chip
-                            class="aurelius-editor-tag"
-                            [label]="display(tag.typeName)"
-                            [tooltip]="chipTooltip(tag.typeName)"
-                            [deletable]="true"
-                            [deleteLabel]="deleteLabel"
-                            (remove)="removeClassification(tag.typeName)"
-                        ></aurelius-atlas-ui-classification-chip>
-                    }
-                    <input
-                        type="text"
-                        id="editor-classification-input"
-                        class="aurelius-editor-classification-input"
-                        [value]="classificationText()"
-                        [disabled]="classificationDisabled()"
-                        (input)="classificationText.set($any($event.target).value)"
-                        [attr.placeholder]="classificationsPlaceholder"
-                        [attr.aria-labelledby]="'editor-classifications-label'"
-                        [attr.aria-describedby]="helpLineShown() ? 'editor-classifications-help' : null"
-                        [attr.aria-expanded]="dropdownShown()"
-                        [attr.aria-autocomplete]="'list'"
-                        [attr.aria-controls]="dropdownShown() ? 'editor-classification-listbox' : null"
-                        [attr.aria-activedescendant]="activeSuggestionId()"
-                        role="combobox"
-                        autocomplete="off"
-                        (keyup.enter)="addClassification()"
-                        (keydown.escape)="onSuggestionEscape($event)"
-                        (keydown)="onSuggestionKeys($event)"
-                    />
-                    <!-- The ARIA 1.2 combobox's popup (DD-336): a Bulma dropdown
-                         panel, not a native select — the input keeps the typed
-                         text and the rows are buttons styled by Bulma. The
-                         listbox/option roles are the pattern's own semantics
-                         (S6819's native <select> cannot carry them), so each
-                         site carries a reason marker. This div cannot:
-                         Prettier always splits a comment off a block tag, so
-                         the marker would land off-line and stop working — its
-                         line stays flagged until the server's S6819
-                         allowedRoles parameter lists listbox. The option
-                         buttons keep their markers — Prettier preserves the
-                         inline glue. -->
-                    <div
-                        class="dropdown-menu"
-                        id="editor-classification-listbox"
-                        role="listbox"
-                        [attr.aria-label]="classificationsLabel"
-                    >
-                        <div class="dropdown-content">
-                            @for (name of filteredSuggestions(); track name; let i = $index) {
-                                <!-- //NOSONAR --><button
-                                    type="button"
-                                    class="dropdown-item"
-                                    role="option"
-                                    [id]="'editor-classification-option-' + i"
-                                    [attr.aria-selected]="i === activeSuggestion()"
-                                    [class.is-active]="i === activeSuggestion()"
-                                    (mousedown)="pickSuggestion($event, name)"
-                                    (click)="pickSuggestion($event, name)"
-                                >
-                                    {{ display(name) }}
-                                </button>
-                            }
-                        </div>
-                    </div>
-                </div>
-                @if (helpLineShown()) {
-                    <p class="help aurelius-editor-no-classifications" id="editor-classifications-help">
-                        {{ noClassifications }}
-                    </p>
-                }
-            </div>
+            <!-- The classification box (EDT-05, DD-335, DD-336) is its own
+                 component since WFE-03 (DD-804): the editor hands it the
+                 applicable names and the chosen ones, and the store keeps
+                 the set the door's body carries (VDE-03). -->
+            <aurelius-atlas-webapp-classification-combobox
+                [suggestions]="suggestions()"
+                [chosen]="state.chosen()"
+                [tooltips]="classificationTooltips()"
+                [deleteLabel]="deleteLabel"
+                (added)="state.addClassification($event)"
+                (removed)="state.removeClassification($event)"
+            />
         </form>
     }
 

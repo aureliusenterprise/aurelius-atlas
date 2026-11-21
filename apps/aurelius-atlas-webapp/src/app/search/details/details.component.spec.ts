@@ -17,7 +17,7 @@ import modelFixture from "../../../../tests/fixtures/lineage-graph.extract.json"
 import { AlertsService } from "../../alerts/alerts.service";
 import { VersionService } from "../../shell/version.service";
 import { APP_CONFIG } from "../../tokens";
-import { EntitySaved } from "../editor/entity-saved";
+import { EntityWritten } from "../editor/entity-written";
 
 import { Details } from "./details.component";
 
@@ -470,7 +470,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const { fixture, compiled, httpMock } = setup("saved-guid");
         arrive(fixture, httpMock);
 
-        TestBed.inject(EntitySaved).notify("saved-guid");
+        TestBed.inject(EntityWritten).notify("saved-guid", "saved");
         fixture.detectChanges();
 
         // The still-mounted screen re-reads the saved entity: the save tick
@@ -488,7 +488,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const { fixture, compiled, httpMock } = setup("saved-guid");
         arrive(fixture, httpMock);
 
-        TestBed.inject(EntitySaved).notify("some-other-guid");
+        TestBed.inject(EntityWritten).notify("some-other-guid", "saved");
         fixture.detectChanges();
 
         httpMock.expectNone("/api/aurelius/v1/entity/guid/saved-guid");
@@ -1219,7 +1219,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(fixture, httpMock);
 
-        TestBed.inject(EntitySaved).notify("m4i-1");
+        TestBed.inject(EntityWritten).notify("m4i-1", "saved");
         fixture.detectChanges();
         httpMock.expectOne("/api/aurelius/v1/entity/guid/m4i-1").flush(m4iEntity({ sections: [] }));
         fixture.detectChanges();

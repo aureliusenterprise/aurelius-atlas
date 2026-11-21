@@ -1187,108 +1187,6 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(tags()).toEqual(["CONFIDENTIAL"]);
     });
 
-    it("the suggestion panel filters on typing and a pick adds the tag (EDT-05, DD-335)", () => {
-        const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock);
-
-        const input = compiled.querySelector<HTMLInputElement>("input.aurelius-editor-classification-input")!;
-        const items = () =>
-            [...compiled.querySelectorAll<HTMLButtonElement>(".aurelius-editor-classification-box .dropdown-item")].map(
-                (item) => normalize(item.textContent),
-            );
-
-        // Focus with no text lists the applicable types (PII already chosen,
-        // so only CONFIDENTIAL applies; FINANCE never does).
-        input.dispatchEvent(new Event("focusin", { bubbles: true }));
-        fixture.detectChanges();
-        expect(items()).toEqual(["CONFIDENTIAL"]);
-
-        // The chosen tag does not reappear as a suggestion; a pick through
-        // the panel's mousedown adds it and clears the input (DD-335 — the
-        // pointer commits before blur, the path the datalist took before).
-        const item = compiled.querySelector<HTMLButtonElement>(".aurelius-editor-classification-box .dropdown-item")!;
-        item.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-        fixture.detectChanges();
-        const tags = () =>
-            [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
-        expect(tags()).toEqual(["Has PII", "CONFIDENTIAL"]);
-
-        // Escape inside the box hides the panel, not the drawer (DD-335).
-        input.dispatchEvent(new Event("focusin", { bubbles: true }));
-        fixture.detectChanges();
-        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-        fixture.detectChanges();
-        expect(compiled.querySelector(".aurelius-editor-classification-box .dropdown-item")).toBeNull();
-        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
-    });
-
-    it("the panel filters to the typed text (EDT-05, DD-335)", () => {
-        const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock);
-
-        const input = compiled.querySelector<HTMLInputElement>("input.aurelius-editor-classification-input")!;
-        input.value = "conf"; // matches CONFIDENTIAL, not PII
-        input.dispatchEvent(new Event("input"));
-        input.dispatchEvent(new Event("focusin", { bubbles: true }));
-        fixture.detectChanges();
-
-        const items = [
-            ...compiled.querySelectorAll<HTMLButtonElement>(".aurelius-editor-classification-box .dropdown-item"),
-        ];
-        expect(items.map((item) => normalize(item.textContent))).toEqual(["CONFIDENTIAL"]);
-    });
-
-    it("the input is a labelled combobox pointing at the active option (EDT-05, DD-336)", () => {
-        const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
-        arriveTypeDefs(fixture, httpMock, "DataSet");
-
-        const input = compiled.querySelector<HTMLInputElement>("#editor-classification-input")!;
-        expect(input.getAttribute("role")).toBe("combobox");
-        expect(input.getAttribute("aria-autocomplete")).toBe("list");
-        // The label names it (no unlabeled-field ambiguity for a reader).
-        const label = compiled.querySelector<HTMLElement>("#editor-classifications-label")!;
-        expect(input.getAttribute("aria-labelledby")).toBe(label.id);
-        // With nothing typed the panel is shut, so no activedescendant yet.
-        expect(input.getAttribute("aria-expanded")).toBe("false");
-
-        input.dispatchEvent(new Event("focusin", { bubbles: true }));
-        fixture.detectChanges();
-        // PII and CONFIDENTIAL apply to DataSet; Down moves the active row.
-        expect(input.getAttribute("aria-expanded")).toBe("true");
-        expect(input.getAttribute("aria-controls")).toBe("editor-classification-listbox");
-        expect(input.getAttribute("aria-activedescendant")).toBe("editor-classification-option-0");
-        input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
-        fixture.detectChanges();
-        expect(input.getAttribute("aria-activedescendant")).toBe("editor-classification-option-1");
-    });
-
-    it("Enter commits the keyboard-active option (EDT-05, DD-336)", () => {
-        const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
-        arriveTypeDefs(fixture, httpMock, "DataSet");
-
-        const input = compiled.querySelector<HTMLInputElement>("#editor-classification-input")!;
-        input.dispatchEvent(new Event("focusin", { bubbles: true }));
-        fixture.detectChanges();
-        // Down lands on the second row (CONFIDENTIAL); Enter adds it.
-        input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
-        fixture.detectChanges();
-        input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
-        fixture.detectChanges();
-
-        const tags = [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
-        expect(tags).toEqual(["CONFIDENTIAL"]);
-    });
-
-    it("a type with nothing applicable disables the box and says so (EDT-05, DD-336)", () => {
-        // Referenceable has no applicable classification among the defs.
-        const { fixture, compiled, httpMock } = setup({ create: true, createType: "Referenceable" });
-        arriveTypeDefs(fixture, httpMock, "Referenceable", chainFor(TYPEDEFS, "Referenceable"));
-
-        expect(compiled.querySelector(".aurelius-editor-classification-box.is-disabled")).toBeTruthy();
-        expect(compiled.querySelector<HTMLInputElement>("#editor-classification-input")!.disabled).toBe(true);
-        expect(compiled.querySelector(".aurelius-editor-no-classifications")).toBeTruthy();
-    });
-
     it("save posts one door body; the tag box rides it whole (EDT-06, VDE-03, VDE-05)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
@@ -1743,7 +1641,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("already_there");
     });
 
-    it("the delete's outcome is announced, not just acted on (LR-005, VDE-11)", () => {
+    it("the delete's outcome is announced, not just acted on (LR-005, VDE-11, WFE-01, WFE-02)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
         // The store navigates on success; the spy keeps the empty test-bed
@@ -1776,6 +1674,32 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         // The refusal is an alert (EDT-08's shape), not an "Entity deleted"
         // lie on the outcome line.
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
+        expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent ?? "")).toBe("");
+    });
+
+    it("a reworded delete line keeps the refusal a refusal (WFE-01, DD-802)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        // Reword the refusal alert the way a copy change or a translation
+        // would: the stored text no longer equals the editor's deleting
+        // line. Inferring the outcome from alert text (the old effect) would
+        // read this refusal as a success and lie "Entity deleted"; the tick
+        // (WFE-01) never compares text, so the outcome line stays empty.
+        const alerts = TestBed.inject(AlertsService);
+        const original = alerts.add.bind(alerts);
+        vi.spyOn(alerts, "add").mockImplementation((alert) => {
+            original({ ...alert, message: "Die entiteit kan nie verwijder word nie" });
+        });
+
+        holdDirective(fixture).held.emit(true);
+        const request = httpMock.expectOne(`${ATLAS_ENTITY_URL}7a1b`);
+        request.flush(
+            { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
+            { status: 403, statusText: "Forbidden" },
+        );
+        fixture.detectChanges();
+        fixture.detectChanges();
+
         expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent ?? "")).toBe("");
     });
 

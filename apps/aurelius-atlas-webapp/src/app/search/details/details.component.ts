@@ -24,7 +24,7 @@ import {
 } from "aurelius-atlas-ui";
 
 import { canWriteEntities } from "../editor/can-write-entities";
-import { EntitySaved } from "../editor/entity-saved";
+import { EntityWritten } from "../editor/entity-written";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { APP_CONFIG } from "../../tokens";
@@ -39,9 +39,9 @@ import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
 import type { StatDef } from "./sections/section-config";
-import { cardTypeAlias } from "./shared/card";
 import { peopleRowsOfSections } from "./shared/people";
 import { trailOf } from "../shared/trail";
+import { cardTypeAlias } from "../shared/type-alias";
 
 /**
  * The entity details screen (DET-01, 7.6; the data spine 7.20): the Aurelius
@@ -164,17 +164,19 @@ export class Details {
             }
         });
 
-        // The editor's save tick (DD-327): the drawer overlay left this
-        // screen's URL untouched, so the router reuses this component — the
-        // tick for this guid re-reads the entity the editor just wrote. The
-        // seq guard keeps a screen that mounts *after* the save (the create
-        // flow) from loading twice: the URL effect above already reads it.
-        const saved = inject(EntitySaved);
-        let consumedSeq = saved.latest()?.seq ?? 0;
+        // The editor's write tick (DD-327, DD-803): the drawer overlay left
+        // this screen's URL untouched, so the router reuses this component —
+        // a saved tick for this guid re-reads the entity the editor just
+        // wrote. A deleted tick asks nothing: the delete's own navigation
+        // leaves the Atlas browse landing, not this screen. The seq guard
+        // keeps a screen that mounts *after* the save (the create flow) from
+        // loading twice: the URL effect above already reads it.
+        const written = inject(EntityWritten);
+        let consumedSeq = written.latest()?.seq ?? 0;
 
         effect(() => {
-            const event = saved.latest();
-            if (event !== null && event.guid === this.guid() && event.seq > consumedSeq) {
+            const event = written.latest();
+            if (event !== null && event.outcome === "saved" && event.guid === this.guid() && event.seq > consumedSeq) {
                 consumedSeq = event.seq;
                 this.state.reload(event.guid); // VDR-07: the saved view leaves the cache first (DD-605)
             }

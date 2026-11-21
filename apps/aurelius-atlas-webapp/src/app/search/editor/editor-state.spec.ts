@@ -15,7 +15,7 @@ import { ViewEntityService, type EntityView, type ViewSaveRequest } from "aureli
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { EditorState } from "./editor-state";
-import { EntitySaved } from "./entity-saved";
+import { EntityWritten } from "./entity-written";
 
 const VIEW_URL = "/api/aurelius/v1/entity/guid/";
 const VIEW_POST_URL = "/api/aurelius/v1/entity";
@@ -143,12 +143,12 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "9999"], drawer: null } }]);
     });
 
-    it("a success evicts the saved guid, fires the tick, and navigates (VDE-10, DD-327)", () => {
+    it("a success evicts the saved guid, fires the saved tick, and navigates (VDE-10, DD-327, WFE-02)", () => {
         const { state, httpMock } = setup();
         state.view.set(view());
         const evict = vi.spyOn(TestBed.inject(ViewEntityService), "evict");
-        const saved = TestBed.inject(EntitySaved);
-        const before = saved.latest()?.seq ?? 0;
+        const written = TestBed.inject(EntityWritten);
+        const before = written.latest()?.seq ?? 0;
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         state.save(body());
@@ -156,8 +156,9 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
 
         // The eviction runs before the tick, so the details re-read asks the door.
         expect(evict).toHaveBeenCalledWith("7a1b");
-        expect(saved.latest()?.seq).toBeGreaterThan(before);
-        expect(saved.latest()?.guid).toBe("7a1b");
+        expect(written.latest()?.seq).toBeGreaterThan(before);
+        expect(written.latest()?.guid).toBe("7a1b");
+        expect(written.latest()?.outcome).toBe("saved");
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
     });
 
@@ -244,11 +245,19 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         const { state, httpMock } = setup();
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
+        const written = TestBed.inject(EntityWritten);
+        const before = written.latest()?.seq ?? 0;
+
         state.delete("7a1b");
         const request = httpMock.expectOne(ATLAS_DELETE_URL);
         expect(request.request.method).toBe("DELETE");
         request.flush({ guidAssignments: {} });
 
+        // The code that performed the delete says so (WFE-01, DD-802): the
+        // outcome rides the tick before the navigation takes the drawer away.
+        expect(written.latest()?.seq).toBeGreaterThan(before);
+        expect(written.latest()?.guid).toBe("7a1b");
+        expect(written.latest()?.outcome).toBe("deleted");
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "browse"], drawer: null } }]);
     });
 

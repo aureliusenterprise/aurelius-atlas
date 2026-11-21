@@ -1881,6 +1881,73 @@ def test__the_editor_edits_a_seeded_entity(authenticated: Page, root_url: str, u
         _delete_entity(authenticated, root_url, user_token, guid)
 
 
+@pytest.mark.critical
+def test__the_editor_deletes_an_entity(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The drawer's hold-to-confirm Delete deletes the entity and lands on browse (EDT-19, VDE-11, WFE-01, WFE-02).
+
+    The live flow behind 19.6's outcome signal (DD-803): a quick tap on the
+    Delete button releases the hold early, so nothing is deleted and the
+    drawer stays open (the hold control gates the action); the full three-
+    second hold completes the delete, the drawer closes, and the app lands on
+    the browse landing — the deleted entity's details are no longer a
+    destination (VDE-11). The read-back is the store's own answer: the entity
+    reads ``DELETED`` (the e2e server deletes softly, DD-059). The drawer's
+    "Entity deleted" line rides the outcome tick the delete code fires
+    (WFE-01, WFE-02, DD-803) and is proven where it lives, in the component's
+    own test (LR-005's reword case) — a line gone by the time the browser
+    arrives is not a browser assertion (a timing pin, not a user interaction).
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}deleted"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+
+        delete_button = authenticated.locator("button.aurelius-editor-delete")
+        expect(delete_button).to_be_visible()
+
+        # An early release is a cancellation (the hold control's rule): the
+        # pointer goes down and up well inside the three seconds, and the
+        # drawer stays open with the entity untouched (EDT-19).
+        delete_button.scroll_into_view_if_needed()
+        box = delete_button.bounding_box()
+        assert box is not None
+        authenticated.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        authenticated.mouse.down()
+        authenticated.mouse.up()
+
+        expect(authenticated).to_have_url(re.compile(r"\(drawer:edit"))
+        expect(authenticated.locator(".aurelius-drawer")).to_be_visible()
+
+        # Nothing is deleted: the store still reads the entity ACTIVE.
+        still = authenticated.request.get(
+            urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}"),
+            headers={"authorization": f"Bearer {user_token}"},
+        ).json()["entity"]
+        assert still["status"] == "ACTIVE", still["status"]
+
+        # The full hold confirms: the pointer stays down past the three
+        # seconds, the delete goes out, and the app navigates itself to the
+        # browse landing (VDE-11) — the drawer outlet is cleared (DD-330's
+        # shape) and the details screen underneath is gone with it.
+        authenticated.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        authenticated.mouse.down()
+        authenticated.wait_for_timeout(4_200)
+        authenticated.mouse.up()
+
+        expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse$"), timeout=15_000)
+        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator("#browse-placeholder")).to_be_visible()
+
+        _wait_entity_read(
+            authenticated, root_url, user_token, guid, predicate=lambda entity: entity["status"] == "DELETED"
+        )
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+
+
 # impact=minor, likelihood=medium (the preview render inside the drawer; the save is proven by the editor suite)
 @pytest.mark.medium
 def test__the_editor_previews_markdown_it_saves(authenticated: Page, root_url: str, user_token: str) -> None:
