@@ -39,9 +39,9 @@ import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
 import type { StatDef } from "./sections/section-config";
-import { cardTypeAlias } from "./shared/card";
 import { peopleRowsOfSections } from "./shared/people";
 import { trailOf } from "../shared/trail";
+import { cardTypeAlias } from "../shared/type-alias";
 
 /**
  * The entity details screen (DET-01, 7.6; the data spine 7.20): the Aurelius

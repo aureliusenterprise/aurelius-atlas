@@ -27,7 +27,7 @@ import {
 
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
-import { cardTypeAlias } from "../details/shared/card";
+import { cardTypeAlias } from "../shared/type-alias";
 import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
 import { ClassificationCombobox } from "./classification-combobox.component";
