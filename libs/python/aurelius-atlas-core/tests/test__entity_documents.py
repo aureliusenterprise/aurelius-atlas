@@ -89,7 +89,11 @@ def entity(guid: str, **attributes: object) -> StoredEntity:
     return StoredEntity(guid=guid, type_name="table", attributes=attributes)
 
 
-@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05", "CLS-02", "TSK-02", "ASG-03"])
+@pytest.mark.covers(
+    f"{E}.prepare",
+    f"{E}.aliases",
+    rules=["ENS-01", "REL-05", "CLS-02", "TSK-02", "ASG-03", "EDS-01", "EDS-02"],
+)
 async def test__seven_aliases_are_created_once(fake: FakeClient) -> None:
     """An index behind each alias; a second prepare changes nothing."""
     documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake))

@@ -203,7 +203,7 @@ def test__the_engine_s_fields_are_atlas_dev_s() -> None:
     assert FIELDS["qualityguid_accuracy"].value({}) == []
 
 
-@pytest.mark.covers(X, rules=["ASE-03", "ASE-10", "ASE-11"])
+@pytest.mark.covers(X, rules=["ASE-03", "ASE-10", "ASE-11", "EDS-04"])
 async def test__a_document_answers_its_entity_s_fields_stored_fields_and_constants() -> None:
     """Every field as raw when none is asked for; ``id`` and ``_meta``; meta as App Search's."""
     engine = await engine_of(stored("e", deriveddatasetguid=["s"], deriveddataset=["S"]))

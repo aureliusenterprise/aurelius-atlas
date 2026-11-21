@@ -441,7 +441,9 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
     return asyncio.run(build())
 
 
-@pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09", "QRY-06", "RUL-06"])
+@pytest.mark.covers(
+    f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09", "QRY-06", "RUL-06", "EDS-05"]
+)
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
     """28 of 66 rules read; 1,785 verdicts; 1,585 of the 1,612 legacy verdicts of a rule that reads as it
     were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).
