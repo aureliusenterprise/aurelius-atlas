@@ -242,6 +242,7 @@ nav:
                       - Testing: architecture/platform/delivery/testing.md
                       - Test Suite Review: architecture/platform/delivery/testing-review.md
                       - CI Test Tiers Plan: architecture/platform/ci-test-tiers-plan.md
+                      - Separation and Seams Plan: architecture/platform/separation-and-seams-plan.md
                       - Release Management: architecture/platform/delivery/release-management.md
                       - Deployment: architecture/platform/delivery/deployment.md
                       - Self-hosted CI: architecture/self-hosted-ci.md
