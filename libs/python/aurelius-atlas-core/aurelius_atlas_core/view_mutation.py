@@ -58,6 +58,7 @@ from aurelius_atlas_core.glossary_service import GlossaryService
 from aurelius_atlas_core.glossary_term_utils import TERM_ASSIGNMENT
 from aurelius_atlas_core.graph_helper import (
     collection_elements,
+    parent_end,
     parent_side_children,
     referenced_end,
     relationship_type_name,
@@ -609,14 +610,16 @@ class ViewMutationDoor:
     ) -> None:
         attribute = _section_attribute(entity_type, section.attribute)
         type_name = _relationship_type_name(guid, relationships, entity_type, section.attribute)
+        label, direction = _section_end(attribute)
         ends = {end.guid: end for end in section.ends}
         current = {
-            referenced_end(relationship, attribute.relationship_edge_direction, guid): relationship
+            referenced_end(relationship, direction, guid): relationship
             for relationship in collection_elements(guid, relationships, attribute)
             if relationship.state is RelationshipStatus.ACTIVE
         }
         new = [end for end, wanted in ends.items() if not wanted.deleted and end not in current]
         if not self._unsafe_reparent:
+            # The door has no same-request parent release (DV-189): a held child is refused, not moved.
             held = [entry for end in new for entry in await self._held_child_parents(guid, entity_type, attribute, end)]
             if held:
                 messages = [held_parent_message(entry) for entry in held]
@@ -630,7 +633,7 @@ class ViewMutationDoor:
                 continue
             if self._unsafe_reparent:
                 await self._clear_held_child(store, guid, entity_type, attribute, end)
-            await self._create_end(store, guid, type_name, end, attribute, relationships)
+            await self._create_end(store, guid, type_name, end, label, direction, relationships)
         for end, relationship in current.items():
             if end not in ends:
                 await store.delete_by_id(relationship.guid, DeleteType.HARD)
@@ -661,16 +664,15 @@ class ViewMutationDoor:
         guid: str,
         type_name: str,
         end: str,
-        attribute: AtlasAttribute,
+        label: str,
+        direction: EdgeDirection,
         relationships: list[StoredRelationship],
     ) -> None:
         """Create the edge the entry asks for, clearing a soft-deleted one of the same pair first (AVW-09)."""
         for relationship in relationships:
-            if _is_pair(
-                relationship, guid, end, attribute.relationship_edge_direction, attribute.relationship_edge_label
-            ):
+            if _is_pair(relationship, guid, end, direction, label):
                 await store.delete_by_id(relationship.guid, DeleteType.HARD)
-        end1, end2 = (end, guid) if attribute.relationship_edge_direction is EdgeDirection.IN else (guid, end)
+        end1, end2 = (end, guid) if direction is EdgeDirection.IN else (guid, end)
         await store.create(
             AtlasRelationship.model_validate(
                 {
@@ -750,6 +752,14 @@ def _section_attribute(entity_type: EntityType | None, name: str) -> AtlasAttrib
     if not by_type:
         _refuse([f"The sections entry names an unknown relationship attribute: {name}"])
     return next(iter(by_type.values()))
+
+
+def _section_end(attribute: AtlasAttribute) -> tuple[str, EdgeDirection]:
+    """The parent end of the attribute a sections entry names, refused when it names no edge (AVW-09, RUL-03)."""
+    end = parent_end(attribute)
+    if end is None:  # pragma: no cover - a sections attribute always names a relationship edge
+        _refuse([f"The sections entry names an attribute with no relationship edge: {attribute.name}"])
+    return end
 
 
 def _relationship_type_name(

@@ -719,7 +719,7 @@ async def test__the_opt_in_moves_a_held_child_through_the_door(typed: httpx.Asyn
     assert await active_children(typed, note, "noted") == [choice]
 
 
-@pytest.mark.covers(D, rules=["RUL-04"])
+@pytest.mark.covers(D, rules=["RUL-04", "RUL-05"])
 async def test__the_door_has_no_same_request_parent_release(typed: httpx.AsyncClient) -> None:
     """The move one wire request makes (RPS-02) the door refuses: a view body is one entity (DV-189).
 
