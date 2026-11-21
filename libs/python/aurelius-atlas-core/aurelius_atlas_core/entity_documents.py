@@ -12,12 +12,12 @@ from typing import Any, Protocol, runtime_checkable
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.base import AtlasModel
-from aurelius_atlas_model.discovery import Condition
 from aurelius_atlas_model.instance import RelationshipStatus
 from aurelius_atlas_model.tasks import TaskStatus
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
+from aurelius_atlas_core import es_clauses
 from aurelius_atlas_core.app_search_document import (
     APP_SEARCH_FIELD,
     DERIVATION_VERSION,
@@ -44,22 +44,18 @@ from aurelius_atlas_core.entity_embedding import (
     EMBEDDING_FIELD,
     INTERNAL_PREFIX,
     MODEL_FIELD,
-    VECTOR_FIELD,
     embedding_mapping,
     with_current_embedding,
 )
-from aurelius_atlas_core.free_text import TERM_COUNT, TextQuery
+from aurelius_atlas_core.free_text import TERM_COUNT
 from aurelius_atlas_core.search_fields import KEYWORD, KINDS, TEXT
 from aurelius_atlas_core.search_query import (
     ACTIVE,
     FACET_SIZE,
     STATE_FIELD,
     TYPE_NAME_FIELD,
-    Filter,
-    Group,
     SearchHits,
     SearchQuery,
-    Test,
 )
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -506,34 +502,25 @@ def _awaiting_document() -> dict[str, Any]:
     that have none, those with a stale one, and those derived under older rules (LAS-01, ASD-04, ASD-07, ASU-02,
     DD-500).
     """  # noqa: D205 - one sentence
-    missing = {
-        "bool": {
-            "filter": [{"term": {"state": ACTIVE}}, {"prefix": {"typeName": M4I_PREFIX}}],
-            "must_not": [
-                {"terms": {"typeName": sorted(WITHOUT_DOCUMENT)}},
-                {"exists": {"field": SOURCE_HASH_FIELD}},
-            ],
-        }
-    }
-    outdated = {
-        "bool": {
-            "filter": [
-                {"term": {"state": ACTIVE}},
-                {"prefix": {"typeName": M4I_PREFIX}},
-                {"exists": {"field": SOURCE_HASH_FIELD}},
-            ],
-            "must_not": [
-                {"terms": {"typeName": sorted(WITHOUT_DOCUMENT)}},
-                {"term": {DERIVATION_VERSION_FIELD: DERIVATION_VERSION}},
-            ],
-        }
-    }
-    return {
-        "bool": {
-            "should": [missing, {"term": {STALE_FIELD: True}}, outdated],
-            "minimum_should_match": 1,
-        }
-    }
+    missing = es_clauses.bool_(
+        filter=[es_clauses.term("state", ACTIVE), es_clauses.prefix("typeName", M4I_PREFIX)],
+        must_not=[
+            es_clauses.terms("typeName", sorted(WITHOUT_DOCUMENT)),
+            es_clauses.exists(SOURCE_HASH_FIELD),
+        ],
+    )
+    outdated = es_clauses.bool_(
+        filter=[
+            es_clauses.term("state", ACTIVE),
+            es_clauses.prefix("typeName", M4I_PREFIX),
+            es_clauses.exists(SOURCE_HASH_FIELD),
+        ],
+        must_not=[
+            es_clauses.terms("typeName", sorted(WITHOUT_DOCUMENT)),
+            es_clauses.term(DERIVATION_VERSION_FIELD, DERIVATION_VERSION),
+        ],
+    )
+    return es_clauses.should([missing, es_clauses.term(STALE_FIELD, value=True), outdated])
 
 
 def _next_generation(index: str) -> str:
@@ -709,7 +696,7 @@ class ElasticsearchEntityDocuments:
     async def count_linked_type(self, kind: LinkedKind, type_name: str) -> int:
         """Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11)."""
         index = self._linked[kind]
-        response = await self._client.count(index=index, query={"term": {"typeName": type_name}})
+        response = await self._client.count(index=index, query=es_clauses.term("typeName", type_name))
         return int(response["count"])
 
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
@@ -728,9 +715,9 @@ class ElasticsearchEntityDocuments:
         """Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11)."""
         index = self._linked[LinkedKind.TASK]
         query: dict[str, Any] = (
-            {"terms": {"status": [TaskStatus.PENDING.value, TaskStatus.IN_PROGRESS.value]}}
+            es_clauses.terms("status", [TaskStatus.PENDING.value, TaskStatus.IN_PROGRESS.value])
             if open_only
-            else {"match_all": {}}
+            else es_clauses.match_all()
         )
         found: list[tuple[StoredTask, DocumentVersion]] = []
         after: list[Any] | None = None
@@ -755,7 +742,7 @@ class ElasticsearchEntityDocuments:
     async def _listing(self, field: str, guids: Sequence[str]) -> list[VersionedEntity]:
         if not guids:
             return []
-        return await self._paged({"terms": {field: list(guids)}})
+        return await self._paged(es_clauses.terms(field, list(guids)))
 
     async def _paged(self, query: dict[str, Any]) -> list[VersionedEntity]:
         found: list[VersionedEntity] = []
@@ -858,12 +845,12 @@ class ElasticsearchEntityDocuments:
         """The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has
         passed, long after the index's own refresh (DD-247), and acts on each as ``get_journal`` reads it.
         """  # noqa: D205 - one sentence
-        response = await self._client.search(index=self._journal, size=JOURNAL_PAGE, query={"match_all": {}})
+        response = await self._client.search(index=self._journal, size=JOURNAL_PAGE, query=es_clauses.match_all())
         return [JournalEntry.model_validate(hit["_source"]) for hit in response["hits"]["hits"]]
 
     async def count_type(self, type_name: str) -> int:
         """Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11)."""
-        response = await self._client.count(index=self._entities, query={"term": {"typeName": type_name}})
+        response = await self._client.count(index=self._entities, query=es_clauses.term("typeName", type_name))
         return int(response["count"])
 
     async def type_counts(self) -> list[TypeCount]:
@@ -905,7 +892,9 @@ class ElasticsearchEntityDocuments:
         Writes refresh (ENS-11).
         """
         index = self._linked[LinkedKind.CLASSIFICATION]
-        query: dict[str, Any] = {"match_all": {}} if type_names is None else {"terms": {"typeName": sorted(type_names)}}
+        query: dict[str, Any] = (
+            es_clauses.match_all() if type_names is None else es_clauses.terms("typeName", sorted(type_names))
+        )
         found: list[StoredClassification] = []
         after: list[Any] | None = None
         while True:
@@ -971,13 +960,16 @@ class ElasticsearchEntityDocuments:
         """The entities without an embedding of ``model``, internal types left out, by GUID (VEC-06, DD-436); with
         ``wait_for_documents``, also those awaiting their App Search document (EMC-04, DD-540).
         """  # noqa: D205 - one sentence
-        left_out: list[dict[str, Any]] = [{"term": {MODEL_FIELD: model}}, {"prefix": {"typeName": INTERNAL_PREFIX}}]
+        left_out: list[dict[str, Any]] = [
+            es_clauses.term(MODEL_FIELD, model),
+            es_clauses.prefix("typeName", INTERNAL_PREFIX),
+        ]
         if wait_for_documents:
             left_out.append(_awaiting_document())
         response = await self._client.search(
             index=self._entities,
             size=limit,
-            query={"bool": {"must_not": left_out}},
+            query=es_clauses.must_not(left_out),
             sort=[{"guid": "asc"}],
             seq_no_primary_term=True,
         )
@@ -1010,8 +1002,8 @@ class ElasticsearchEntityDocuments:
         """Page through the entities whose App Search GUID fields hold one (ASU-03): writes refresh (ENS-11)."""
         if not guids:
             return []
-        fields = [{"terms": {f"{APP_SEARCH_FIELD}.{field}": list(guids)}} for field in GUID_FIELDS]
-        return await self._paged({"bool": {"should": fields, "minimum_should_match": 1}})
+        fields = [es_clauses.terms(f"{APP_SEARCH_FIELD}.{field}", list(guids)) for field in GUID_FIELDS]
+        return await self._paged(es_clauses.should(fields))
 
     async def unseen_relationships(self, limit: int) -> list[VersionedRelationship]:
         """The relationships deleted whose record is not, and those active whose record is, by GUID (ASU-04)."""
@@ -1019,20 +1011,15 @@ class ElasticsearchEntityDocuments:
         response = await self._client.search(
             index=self._linked[LinkedKind.RELATIONSHIP],
             size=limit,
-            query={
-                "bool": {
-                    "should": [
-                        {
-                            "bool": {
-                                "filter": [{"term": {"state": deleted}}],
-                                "must_not": [{"term": {"appSearchState": deleted}}],
-                            }
-                        },
-                        {"bool": {"filter": [{"term": {"state": ACTIVE}}, {"term": {"appSearchState": deleted}}]}},
-                    ],
-                    "minimum_should_match": 1,
-                }
-            },
+            query=es_clauses.should(
+                [
+                    es_clauses.bool_(
+                        filter=[es_clauses.term("state", deleted)],
+                        must_not=[es_clauses.term("appSearchState", deleted)],
+                    ),
+                    es_clauses.filter_([es_clauses.term("state", ACTIVE), es_clauses.term("appSearchState", deleted)]),
+                ]
+            ),
             sort=[{"guid": "asc"}],
             seq_no_primary_term=True,
         )
@@ -1045,49 +1032,45 @@ class ElasticsearchEntityDocuments:
 
     async def scores(self) -> list[VersionedEntity]:
         """Page through the active score entities (ASQ-02): writes refresh (ENS-11)."""
-        active = [{"term": {"state": ACTIVE}}, {"term": {"typeName": SCORE_TYPE}}]
-        return await self._paged({"bool": {"filter": active}})
+        active = [es_clauses.term("state", ACTIVE), es_clauses.term("typeName", SCORE_TYPE)]
+        return await self._paged(es_clauses.filter_(active))
 
     async def quality_holders(self) -> list[VersionedEntity]:
         """Page through the entities holding a quality result or score totals (ASQ-07): writes refresh (ENS-11)."""
         held = [
-            {"exists": {"field": f"{QUALITY_RESULT_FIELD}.qualityguid"}},
-            {"exists": {"field": f"{QUALITY_TOTALS_FIELD}.overall.count"}},
+            es_clauses.exists(f"{QUALITY_RESULT_FIELD}.qualityguid"),
+            es_clauses.exists(f"{QUALITY_TOTALS_FIELD}.overall.count"),
         ]
-        return await self._paged({"bool": {"should": held, "minimum_should_match": 1}})
+        return await self._paged(es_clauses.should(held))
 
     async def governance_rules(self) -> list[VersionedEntity]:
         """Page through the active governance rule entities (ASG-03): writes refresh (ENS-11)."""
-        rules = [{"term": {"state": ACTIVE}}, {"term": {"typeName": GOV_RULE_TYPE}}]
-        return await self._paged({"bool": {"filter": rules}})
+        rules = [es_clauses.term("state", ACTIVE), es_clauses.term("typeName", GOV_RULE_TYPE)]
+        return await self._paged(es_clauses.filter_(rules))
 
     async def to_govern(self, digests: Mapping[str, str], limit: int) -> list[VersionedEntity]:
         """The entities to judge by GUID, a page of them: those of a ruled type judged otherwise, those that lost
         their verdicts' cause (ASG-06, DD-535).
         """  # noqa: D205 - one sentence
-        judged = [{"term": {"state": ACTIVE}}, {"exists": {"field": SOURCE_HASH_FIELD}}]
+        judged = [es_clauses.term("state", ACTIVE), es_clauses.exists(SOURCE_HASH_FIELD)]
         stale = [
-            {
-                "bool": {
-                    "filter": [{"term": {"typeName": type_name}}],
-                    "must_not": [{"term": {GOVERNED_BY_FIELD: digest}}],
-                }
-            }
+            es_clauses.bool_(
+                filter=[es_clauses.term("typeName", type_name)],
+                must_not=[es_clauses.term(GOVERNED_BY_FIELD, digest)],
+            )
             for type_name, digest in digests.items()
         ]
-        lost = {
-            "bool": {
-                "filter": [{"term": {GOVERNED_FIELD: True}}],
-                "must_not": [{"bool": {"filter": [*judged, {"terms": {"typeName": sorted(digests)}}]}}],
-            }
-        }
+        lost = es_clauses.bool_(
+            filter=[es_clauses.term(GOVERNED_FIELD, value=True)],
+            must_not=[es_clauses.filter_([*judged, es_clauses.terms("typeName", sorted(digests))])],
+        )
         should: list[dict[str, Any]] = [lost]
         if stale:
-            should.append({"bool": {"filter": judged, "should": stale, "minimum_should_match": 1}})
+            should.append(es_clauses.bool_(filter=judged, should=stale, minimum_should_match=1))
         response = await self._client.search(
             index=self._entities,
             size=limit,
-            query={"bool": {"should": should, "minimum_should_match": 1}},
+            query=es_clauses.should(should),
             sort=[{"guid": "asc"}],
             seq_no_primary_term=True,
         )
@@ -1138,7 +1121,7 @@ class ElasticsearchEntityDocuments:
             response = await self._client.search(
                 index=self._verdicts,
                 size=REFERRING_PAGE,
-                query={"terms": {"entity_guid": entity_guids}},
+                query=es_clauses.terms("entity_guid", entity_guids),
                 sort=[{"id": "asc"}],
                 search_after=after,
             )
@@ -1185,12 +1168,12 @@ class ElasticsearchEntityDocuments:
         """
         clauses: list[dict[str, Any]] = []
         if query.type_names is not None:
-            clauses.append({"terms": {_search_path(TYPE_NAME_FIELD): sorted(query.type_names)}})
+            clauses.append(es_clauses.terms(es_clauses.search_path(TYPE_NAME_FIELD), sorted(query.type_names)))
         if query.active_only:
-            clauses.append({"term": {_search_path(STATE_FIELD): ACTIVE}})
+            clauses.append(es_clauses.term(es_clauses.search_path(STATE_FIELD), ACTIVE))
         if query.filter is not None:
-            clauses.append(_es_filter(query.filter))
-        must = [] if query.text is None else [_es_text(query.text)]
+            clauses.append(es_clauses.filter_clause(query.filter))
+        must = [] if query.text is None else [es_clauses.text_clause(query.text)]
         excluded = [{"ids": {"values": sorted(query.exclude_guids)}}] if query.exclude_guids else []
         sort: list[dict[str, Any]] = []
         if query.sort_field is not None and query.vector is None:
@@ -1198,17 +1181,13 @@ class ElasticsearchEntityDocuments:
         elif query.text is not None or query.vector is not None:
             sort.append({"_score": {"order": "desc"}})
         sort += [_es_sort(name, descending=False) for name in query.tie_break]
-        selected = {"bool": {"filter": clauses, "must": must, "must_not": excluded}}
+        selected = es_clauses.bool_(filter=clauses, must=must, must_not=excluded)
         knn = None
         if query.vector is not None:
-            knn = {
-                "field": VECTOR_FIELD,
-                "query_vector": list(query.vector.vector),
-                "k": query.vector.k,
-                "num_candidates": query.vector.num_candidates,
-                "filter": {"bool": {"filter": clauses, "must_not": excluded}},
-                "boost": query.vector.weight,
-            }
+            knn = es_clauses.knn(
+                query.vector,
+                es_clauses.bool_(filter=clauses, must_not=excluded),
+            )
         response = await self._client.search(
             index=self._entities,
             query=None if knn is not None and query.text is None else selected,
@@ -1218,7 +1197,10 @@ class ElasticsearchEntityDocuments:
             size=query.size,
             track_total_hits=True,
             track_scores=True,
-            aggs={str(index): _es_terms(_search_path(name), FACET_SIZE) for index, name in enumerate(query.facets)}
+            aggs={
+                str(index): es_clauses.terms_agg(es_clauses.search_path(name), FACET_SIZE)
+                for index, name in enumerate(query.facets)
+            }
             or None,
         )
         hits = response["hits"]
@@ -1236,9 +1218,11 @@ class ElasticsearchEntityDocuments:
         response = await self._client.search(
             index=self._entities,
             size=0,
-            query={"match_all": {}},
+            query=es_clauses.match_all(),
             aggs={
-                str(index): _es_terms(f"{_search_path(name)}.{TEXT}", TERM_COUNT, include=f"{include}.*")
+                str(index): es_clauses.terms_agg(
+                    f"{es_clauses.search_path(name)}.{TEXT}", TERM_COUNT, include=f"{include}.*"
+                )
                 for index, name in enumerate(fields)
             },
         )
@@ -1246,98 +1230,21 @@ class ElasticsearchEntityDocuments:
         return {name: _buckets(aggregations, str(index)) for index, name in enumerate(fields)}
 
 
-def _search_path(name: str) -> str:
-    return f"search.{name}"
-
-
 _REGEX_RESERVED = set('.?+*|{}[]()"\\#@&<>~')
 """Characters Lucene's regular expressions reserve, escaped in a prefix."""
-
-
-def _es_terms(field: str, size: int, *, include: str | None = None) -> dict[str, Any]:
-    """A ``terms`` aggregation of a field, most documents first, then by value."""
-    terms: dict[str, Any] = {"field": field, "size": size, "order": [{"_count": "desc"}, {"_key": "asc"}]}
-    if include is not None:
-        terms["include"] = include
-    return {"terms": terms}
 
 
 def _buckets(aggregations: Mapping[str, Any], name: str) -> list[tuple[str, int]]:
     return [(str(bucket["key"]), int(bucket["doc_count"])) for bucket in aggregations.get(name, {}).get("buckets", [])]
 
 
-def _es_text(text: TextQuery) -> dict[str, Any]:
-    """Free text: ``simple_query_string`` over the text sub-fields, each boosted by its weight (DD-092)."""
-    fields = [f"{_search_path(name)}.{TEXT}^{weight}" for name, weight in text.fields.items()]
-    return {
-        "simple_query_string": {
-            "query": text.text,
-            "fields": fields,
-            "default_operator": "or",
-            "analyze_wildcard": True,
-            "lenient": True,
-        }
-    }
-
-
 def _es_sort(name: str, *, descending: bool) -> dict[str, Any]:
     """A sort on a search field, entities without a value last; a field no entity has yet sorts as its kind."""
     kind = name.partition(".")[0]
-    return {_search_path(name): {"order": "desc" if descending else "asc", "missing": "_last", "unmapped_type": kind}}
-
-
-def _escape_wildcard(value: str) -> str:
-    return "".join(f"\\{character}" if character in "*?\\" else character for character in value)
-
-
-def _es_filter(node: Filter) -> dict[str, Any]:  # noqa: C901, PLR0911, PLR0912 - one clause per test
-    """A filter of the search query as an Elasticsearch query (SRC-05, DD-089)."""
-    if isinstance(node, Group):
-        clauses = [_es_filter(child) for child in node.criteria]
-        if node.condition is Condition.AND:
-            return {"bool": {"filter": clauses}}
-        return {"bool": {"should": clauses, "minimum_should_match": 1}}
-    path, value = _search_path(node.field), node.value
-    match node.test:
-        case Test.NOTHING:
-            return {"match_none": {}}
-        case Test.ANYTHING:
-            return {"match_all": {}}
-        case Test.ANY_OF:
-            return {"terms": {path: sorted(value)}}
-        case Test.MATCHES:
-            pattern = "*".join(_escape_wildcard(part) for part in str(value).split("*"))
-            return {"wildcard": {path: {"value": pattern, "case_insensitive": True}}}
-        case Test.REGEX:
-            return {"regexp": {path: {"value": value, "flags": "NONE"}}}
-        case Test.WORD_REGEX:
-            return {"regexp": {f"{path}.{TEXT}": {"value": value, "flags": "NONE", "case_insensitive": True}}}
-        case Test.EQ:
-            return {"term": {path: value}}
-        case Test.NEQ:
-            return {"bool": {"must_not": [{"term": {path: value}}]}}
-        case Test.LT | Test.LTE | Test.GT | Test.GTE:
-            return {"range": {path: {node.test.value.lower(): value}}}
-        case Test.RANGE:
-            return {"range": {path: {"gte": value, "lte": node.value2}}}
-        case Test.STARTS_WITH:
-            return {"prefix": {path: value}}
-        case Test.ENDS_WITH:
-            return {"wildcard": {path: {"value": "*" + _escape_wildcard(value)}}}
-        case Test.CONTAINS:
-            return _es_contains(path, value, array=node.array)
-        case Test.NOT_CONTAINS:
-            return {"bool": {"must_not": [_es_contains(path, value, array=node.array)]}}
-        case Test.IS_NULL:
-            return {"bool": {"must_not": [{"exists": {"field": path}}]}}
-        case Test.NOT_NULL:
-            return {"exists": {"field": path}}
-        case _:  # Test.NOT_EMPTY
-            empty = [{"term": {path: ""}}] if node.field.startswith(f"{KEYWORD}.") else []
-            return {"bool": {"filter": [{"exists": {"field": path}}], "must_not": empty}}
-
-
-def _es_contains(path: str, value: Any, *, array: bool) -> dict[str, Any]:  # noqa: ANN401 - a field's value
-    if array:
-        return {"term": {path: value}}
-    return {"wildcard": {path: {"value": "*" + _escape_wildcard(str(value)) + "*"}}}
+    return {
+        es_clauses.search_path(name): {
+            "order": "desc" if descending else "asc",
+            "missing": "_last",
+            "unmapped_type": kind,
+        }
+    }

@@ -14,6 +14,7 @@ from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
 from aurelius_atlas_model.audit_reduction import AtlasAuditAgingType
 from elasticsearch import AsyncElasticsearch
 
+from aurelius_atlas_core import es_clauses
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX, WRITE_REFRESH
 from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, ensure_index
 
@@ -137,7 +138,7 @@ class ElasticsearchEntityAuditRepository:
             response = await self._client.search(
                 index=self.alias,
                 size=AUDIT_PAGE,
-                query={"bool": {"must_not": [{"exists": {"field": "userKey"}}]}},
+                query=es_clauses.must_not([es_clauses.exists("userKey")]),
             )
             hits = response["hits"]["hits"]
             if not hits:
@@ -188,11 +189,11 @@ class ElasticsearchEntityAuditRepository:
         """
         if count == 0 or count < -1:
             return []
-        clauses: list[dict[str, Any]] = [{"term": {"entityId": entity_id}}]
+        clauses: list[dict[str, Any]] = [es_clauses.term("entityId", entity_id)]
         if action is not None:
-            clauses.append({"term": {"action": action.value}})
+            clauses.append(es_clauses.term("action", action.value))
         if start_key is not None:
-            clauses.append({"range": {"eventKey": {"lte": start_key}}})
+            clauses.append(es_clauses.range_("eventKey", {"lte": start_key}))
         found: list[EntityAuditEventV2] = []
         after: list[Any] | None = None
         while count == -1 or len(found) < count:
@@ -200,7 +201,7 @@ class ElasticsearchEntityAuditRepository:
             response = await self._client.search(
                 index=self.alias,
                 size=size,
-                query={"bool": {"filter": clauses}},
+                query=es_clauses.filter_(clauses),
                 sort=[{"eventKey": "desc"}, {"auditId": "desc"}],
                 search_after=after,
             )
@@ -230,9 +231,9 @@ class ElasticsearchEntityAuditRepository:
         offset = max(offset, 0)
         if limit < 0:
             limit = DEFAULT_LIMIT
-        clauses: list[dict[str, Any]] = [{"term": {"entityId": entity_id}}]
+        clauses: list[dict[str, Any]] = [es_clauses.term("entityId", entity_id)]
         if action is not None:
-            clauses.append({"term": {"action": action.value}})
+            clauses.append(es_clauses.term("action", action.value))
         keys = _sort_keys((sort_by or SORT_COLUMN_TIMESTAMP).lower(), descending=descending)
         found: list[EntityAuditEventV2] = []
         after: list[Any] | None = None
@@ -241,7 +242,7 @@ class ElasticsearchEntityAuditRepository:
             response = await self._client.search(
                 index=self.alias,
                 size=size,
-                query={"bool": {"filter": clauses}},
+                query=es_clauses.filter_(clauses),
                 sort=keys,
                 search_after=after,
             )
@@ -256,19 +257,19 @@ class ElasticsearchEntityAuditRepository:
         """Delete the entity's events of these keys by query, refreshed so the next listing misses them (AGE-04)."""
         if not event_keys:
             return
-        query = {"bool": {"filter": [{"term": {"entityId": entity_id}}, {"terms": {"eventKey": list(event_keys)}}]}}
+        query = es_clauses.filter_(
+            [es_clauses.term("entityId", entity_id), es_clauses.terms("eventKey", list(event_keys))]
+        )
         await self._client.delete_by_query(index=self.alias, query=query, refresh=True, conflicts="proceed")
 
     async def entities_with_tag_changes(self, from_timestamp: int, to_timestamp: int) -> list[str]:
         """Page through the classification events of the time range (ENS-11: appends refresh)."""
-        query = {
-            "bool": {
-                "filter": [
-                    {"terms": {"action": [action.value for action in TAG_ACTIONS]}},
-                    {"range": {"timestamp": {"gte": from_timestamp, "lt": to_timestamp}}},
-                ]
-            }
-        }
+        query = es_clauses.filter_(
+            [
+                es_clauses.terms("action", [action.value for action in TAG_ACTIONS]),
+                es_clauses.range_("timestamp", {"gte": from_timestamp, "lt": to_timestamp}),
+            ]
+        )
         found: dict[str, None] = {}
         after: list[Any] | None = None
         while True:

@@ -16,10 +16,11 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
 from aurelius_atlas_store_es.text_analysis import WORD, words
 
+from aurelius_atlas_core import es_clauses
 from aurelius_atlas_core.app_search_document import (
     APP_SEARCH_FIELD,
     DIMENSIONS,
@@ -34,7 +35,6 @@ from aurelius_atlas_core.app_search_document import (
     VERDICT_FIELDS,
 )
 from aurelius_atlas_core.entity_documents import ENTITY_DOCUMENTS, GOV_QUALITY, ElasticsearchEntityDocuments
-from aurelius_atlas_core.entity_embedding import VECTOR_FIELD
 from aurelius_atlas_core.search_query import ACTIVE, MAX_RESULT_WINDOW, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredQualityResult
 
@@ -218,12 +218,15 @@ class Engine:
     id_field: str = "guid"
 
 
-ATLAS_DEV = Engine(ENGINE, ({"term": {"state": ACTIVE}}, {"exists": {"field": SOURCE_HASH_FIELD}}), FIELDS)
+ATLAS_DEV = Engine(ENGINE, (es_clauses.term("state", ACTIVE), es_clauses.exists(SOURCE_HASH_FIELD)), FIELDS)
 """The active entities with an App Search document, stale or not (ASE-03, DD-524)."""
 
 ATLAS_DEV_QUALITY = Engine(
     QUALITY_ENGINE,
-    ({"term": {"state": ACTIVE}}, {"exists": {"field": f"{QUALITY_RESULT_FIELD}.qualityguid"}}),
+    (
+        es_clauses.term("state", ACTIVE),
+        es_clauses.exists(f"{QUALITY_RESULT_FIELD}.qualityguid"),
+    ),
     QUALITY_FIELDS,
 )
 """The active score entities with a quality result (ASQ-02)."""
@@ -345,8 +348,8 @@ def known(name: object, errors: Errors, what: str) -> EngineField | None:
     return found
 
 
-_ALL = {"match_all": {}}
-_NONE = {"match_none": {}}
+_ALL = es_clauses.match_all()
+_NONE = es_clauses.match_none()
 
 
 def filter_clauses(node: object, errors: Errors, what: str) -> dict[str, Any]:
@@ -362,14 +365,14 @@ def filter_clauses(node: object, errors: Errors, what: str) -> dict[str, Any]:
                 continue
             nested = [filter_clauses(item, errors, what) for item in value]
             if key == "all":
-                clauses.append({"bool": {"filter": nested}})
+                clauses.append(es_clauses.filter_(nested))
             elif key == "any":
-                clauses.append({"bool": {"should": nested, "minimum_should_match": 1}} if nested else _NONE)
+                clauses.append(es_clauses.should(nested) if nested else _NONE)
             else:
-                clauses.append({"bool": {"must_not": nested}})
+                clauses.append(es_clauses.must_not(nested))
         elif (engine_field := known(key, errors, what)) is not None:
             clauses.append(field_filter(key, engine_field, value, errors))
-    return {"bool": {"filter": clauses}}
+    return es_clauses.filter_(clauses)
 
 
 def field_filter(name: str, engine_field: EngineField, value: object, errors: Errors) -> dict[str, Any]:
@@ -383,20 +386,20 @@ def field_filter(name: str, engine_field: EngineField, value: object, errors: Er
     values = value if isinstance(value, list) else [value]
     wanted = [filter_value(name, engine_field, item, errors) for item in values]
     if engine_field.paths is not None:
-        terms = [{"terms": {path: [item for item in wanted if item is not None]}} for path in engine_field.paths]
-        return {"bool": {"should": terms, "minimum_should_match": 1}} if terms else _NONE
+        terms = [es_clauses.terms(path, [item for item in wanted if item is not None]) for path in engine_field.paths]
+        return es_clauses.should(terms) if terms else _NONE
     if engine_field.path is None:
         held = engine_field.constant if isinstance(engine_field.constant, list) else [engine_field.constant]
         return _ALL if any(item in held for item in wanted if item is not None) else _NONE
-    terms = {"terms": {engine_field.path: [item for item in wanted if item is not None]}}
+    terms = es_clauses.terms(engine_field.path, [item for item in wanted if item is not None])
     missing = engine_field.missing
-    return _or_missing(engine_field, terms) if missing is not None and missing in wanted else terms
+    return _or_missing(engine_field.path, terms) if missing is not None and missing in wanted else terms
 
 
-def _or_missing(engine_field: EngineField, clause: dict[str, Any]) -> dict[str, Any]:
+def _or_missing(path: str, clause: dict[str, Any]) -> dict[str, Any]:
     """The clause, or the field missing: a document without it holds the field's ``missing`` value (DD-530)."""
-    absent = {"bool": {"must_not": [{"exists": {"field": engine_field.path}}]}}
-    return {"bool": {"should": [clause, absent], "minimum_should_match": 1}}
+    absent = es_clauses.must_not([es_clauses.exists(path)])
+    return es_clauses.should([clause, absent])
 
 
 _KIND_WORDS = {Kind.TEXT: "string", Kind.NUMBER: "number", Kind.BOOL: "boolean"}
@@ -427,9 +430,9 @@ def range_filter(name: str, engine_field: EngineField, bounds: dict[str, Any], e
     if engine_field.path is None:
         return _ALL if _within(engine_field.constant, lower, upper) else _NONE
     limits = ({"gte": lower} if lower is not None else {}) | ({"lt": upper} if upper is not None else {})
-    clause = {"range": {engine_field.path: limits}}
+    clause = es_clauses.range_(engine_field.path, limits)
     missing = engine_field.missing
-    return _or_missing(engine_field, clause) if missing is not None and _within(missing, lower, upper) else clause
+    return _or_missing(engine_field.path, clause) if missing is not None and _within(missing, lower, upper) else clause
 
 
 def _within(value: float, lower: float | None, upper: float | None) -> bool:
@@ -595,20 +598,11 @@ def query_body(search: Search) -> dict[str, Any]:
     """The search of the entity index: the engine's documents, the query, filters, facets, sort, page."""
     must: list[dict[str, Any]] = []
     if search.query.strip():
-        must.append(
-            {
-                "simple_query_string": {
-                    "query": search.query,
-                    "fields": _matched_fields(search),
-                    "default_operator": "or",
-                    "lenient": True,
-                }
-            }
-        )
+        must.append(es_clauses.engine_text(search.query, _matched_fields(search)))
     start = search.start if search.start is not None else (search.current - 1) * search.size
     fields = search.engine.fields
     aggs = {
-        f"{name}#{index}": {"terms": facet_terms(fields[name], facet)}
+        f"{name}#{index}": facet_terms(fields[name], facet)
         for name, facets in search.facets.items()
         if fields[name].path is not None
         for index, facet in enumerate(facets)
@@ -616,16 +610,9 @@ def query_body(search: Search) -> dict[str, Any]:
     holds = [*search.engine.holds, *search.filters]
     knn = None
     if search.vector is not None:
-        knn = {
-            "field": VECTOR_FIELD,
-            "query_vector": list(search.vector.vector),
-            "k": search.vector.k,
-            "num_candidates": search.vector.num_candidates,
-            "filter": {"bool": {"filter": holds}},
-            "boost": search.vector.weight,
-        }
+        knn = es_clauses.knn(search.vector, es_clauses.filter_(holds))
     return {
-        "query": None if knn is not None and not must else {"bool": {"filter": holds, "must": must}},
+        "query": None if knn is not None and not must else es_clauses.bool_(filter=holds, must=must),
         "knn": knn,
         "sort": sort_clauses(search.sort, fields, search.engine.id_field),
         "aggs": aggs,
@@ -636,9 +623,10 @@ def query_body(search: Search) -> dict[str, Any]:
 
 
 def facet_terms(engine_field: EngineField, facet: Facet) -> dict[str, Any]:
-    """A facet's ``terms``: one more value than asked, to drop an empty one; missing values counted (DD-530)."""
-    terms = {"field": engine_field.path, "size": facet.size + 1, "order": facet_order(facet)}
-    return terms if engine_field.missing is None else terms | {"missing": engine_field.missing}
+    """A facet's ``terms`` aggregation: one more value than asked, to drop an empty one; missing counted (DD-530)."""
+    return es_clauses.terms_agg(
+        cast("str", engine_field.path), facet.size + 1, order=facet_order(facet), missing=engine_field.missing
+    )
 
 
 def facet_order(facet: Facet) -> list[dict[str, str]]:
