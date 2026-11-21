@@ -1,6 +1,6 @@
 # Plan: 19.6 An editor that reports its own outcome
 
-The rules are WFE-01 to WFE-07 of [the spec](./spec.md), the design DD-802 to DD-808.
+The rules are WFE-01 to WFE-06 of [the spec](./spec.md), the design DD-802 to DD-808.
 
 ## Analysis
 

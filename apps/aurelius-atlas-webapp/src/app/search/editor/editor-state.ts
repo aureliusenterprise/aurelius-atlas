@@ -214,15 +214,6 @@ export class EditorState {
     });
 
     /**
-     * A classification type's description for the chip tooltip (UIC-16): the
-     * classification slice answers it (DD-612 — the whole-typedefs dump retired).
-     * @param typeName the tag's type
-     */
-    classificationDescription(typeName: string): string | undefined {
-        return this.classificationDefs().find((def) => def.name === typeName)?.description ?? undefined;
-    }
-
-    /**
      * The chain for the type being edited (VDE-02): the for-type door's client
      * caches it by name (DD-611), so a re-pick of the same type asks nothing.
      * @param typeName the type to build a form for

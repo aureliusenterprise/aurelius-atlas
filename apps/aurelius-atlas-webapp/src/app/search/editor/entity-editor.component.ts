@@ -17,7 +17,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
-import { ClassificationChip, Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
+import { Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
 import {
     QualityRuleService,
     type EntityValidationResponse,
@@ -30,6 +30,7 @@ import { typeIcon } from "../meta/type-icons";
 import { cardTypeAlias } from "../details/shared/card";
 import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
+import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState } from "./editor-state";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import { EntityWritten } from "./entity-written";
@@ -94,7 +95,7 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  */
 @Component({
     imports: [
-        ClassificationChip,
+        ClassificationCombobox,
         Drawer,
         EntityRelationshipInput,
         FontAwesomeModule,
@@ -286,35 +287,12 @@ export class EntityEditor {
         this.state.pickerTypes().map(({ name, label }) => ({ name, label })),
     );
 
-    /** The classification box's datalist suggestions (EDT-05). */
+    /** The classification box's applicable type names (EDT-05): the defs the
+     * chain answers, minus the chosen ones (VDE-02) — the combobox filters
+     * and renders them, the store owns the chosen set (WFE-03, DD-804). */
     protected readonly suggestions = computed(() =>
         this.state.applicableClassifications().map((def) => def.name ?? ""),
     );
-
-    /**
-     * The chosen tags (EDT-05, VDE-03) — the template's tag row. The box
-     * holds names since 16.5c; the row keeps the raw name (the tooltip
-     * lookup and the remove emit ride it); the chip's label is the
-     * dictionary display name, rendered below (DD-379).
-     */
-    protected readonly chosenTags = computed(() =>
-        this.state
-            .chosen()
-            .filter((name) => name !== "")
-            .map((name) => ({ typeName: name })),
-    );
-
-    /**
-     * A type or classification name's display name for the template
-     * (EDT-05, DD-379): the legacy `name | translate` — the dictionary
-     * display name, raw for a name the dictionary never saw. The tag
-     * chips and the suggestion rows render through it; the values stored
-     * and sent keep the raw name (EDT-16).
-     * @param name the raw classification name
-     */
-    protected display(name: string): string {
-        return nameDisplay(name);
-    }
 
     /** The create-mode type field: the picker stays above the form (EDT-04, DD-330). */
     protected readonly pickerVisible = computed(() => this.isCreate);
@@ -368,58 +346,13 @@ export class EntityEditor {
      * field-state signals, not the old FormGroup's `invalid` (DD-354). */
     protected readonly formInvalid = computed(() => this.form()().invalid());
 
-    /** The tag box's typed text (EDT-05): typing filters, Enter adds. The
-     * box is not a form field — the tags ride the store, not the model —
-     * so it is a plain signal, not a control (DD-354). */
-    protected readonly classificationText = signal("");
-
-    /** Whether the classification box holds focus (EDT-05, DD-335). */
-    protected readonly boxFocused = signal(false);
-
-    /** Whether the panel is open for the current typing run (EDT-05,
-     * DD-335): Escape closes it, the next typed character opens it again. */
-    protected readonly suggestionsOpen = signal(true);
-
-    /** The suggestions the typed text filters (EDT-05, DD-335): a match
-     * that starts with the text leads, so Enter (which adds the active
-     * option, DD-336) commits the closest name — the old exact-else-first
-     * rule kept in the panel order. */
-    protected readonly filteredSuggestions = computed(() => {
-        const typed = this.classificationText().trim().toLowerCase();
-        if (typed === "") {
-            return this.suggestions();
-        }
-        const matches = this.suggestions().filter((name) => name.toLowerCase().includes(typed));
-
-        return [
-            ...matches.filter((name) => name.toLowerCase().startsWith(typed)),
-            ...matches.filter((name) => !name.toLowerCase().startsWith(typed)),
-        ];
-    });
-
-    /** Whether the suggestion panel shows (EDT-05, DD-335). */
-    protected readonly dropdownShown = computed(
-        () => this.boxFocused() && this.suggestionsOpen() && this.filteredSuggestions().length > 0,
+    /** The classification box's chip tooltips (UIC-16) by name: the defs'
+     * descriptions, read off the classification slice (VDE-02, DD-612). */
+    protected readonly classificationTooltips = computed<Record<string, string | undefined>>(() =>
+        Object.fromEntries(
+            this.state.classificationDefs().map((def) => [def.name ?? "", def.description ?? undefined]),
+        ),
     );
-
-    /** The keyboard-active option (DD-336): the panel's first row until
-     * Down/Up move it; re-clamped as the filter narrows. */
-    protected readonly activeSuggestion = signal(0);
-
-    /** The active option's id, for the combobox's aria-activedescendant. */
-    protected readonly activeSuggestionId = computed(() =>
-        this.dropdownShown() ? `editor-classification-option-${this.activeSuggestion()}` : null,
-    );
-
-    /** Whether the box has nothing to offer (DD-336): with no applicable
-     * type left to add, the input disables — typing could only match
-     * nothing. Chosen tags keep their delete (they ride the chips, not
-     * this control), so the field can still hand a tag back. */
-    protected readonly classificationDisabled = computed(() => this.suggestions().length === 0);
-
-    /** Whether the "no classifications" help line shows (DD-336): the
-     * field explains its disabled state, so a dead input is not a puzzle. */
-    protected readonly helpLineShown = computed(() => this.suggestions().length === 0);
 
     protected readonly closeLabel = $localize`:@@components.modal.close:Close`;
 
@@ -428,12 +361,6 @@ export class EntityEditor {
     protected readonly createTitle = $localize`:@@search.createEntity.newEntity:Create new entity`;
 
     protected readonly pickerLabel = $localize`:@@search.details.typeSelect.label:Entity type`;
-
-    protected readonly classificationsLabel = $localize`:@@search.components.editor.attribute.classifications:Classifications`;
-
-    protected readonly classificationsPlaceholder = $localize`:@@search.components.editor.components.classificationsInput.addPlaceholder:Add a classification...`;
-
-    protected readonly noClassifications = $localize`:@@search.components.editor.components.classificationsInput.noClassificationsAvailable:No classifications available`;
 
     protected readonly deleteLabel = $localize`:@@search.components.editor.delete:Delete`;
 
@@ -658,15 +585,6 @@ export class EntityEditor {
             }
         });
 
-        // The active option re-clamps as the filter narrows (DD-336): a
-        // typed prefix can shrink the list under the current index.
-        effect(() => {
-            const count = this.filteredSuggestions().length;
-            if (count > 0 && this.activeSuggestion() >= count) {
-                this.activeSuggestion.set(0);
-            }
-        });
-
         // The governance validation (EDT-23, DD-446): the draft rides the
         // validate-entity aux API when the form opens — the legacy's
         // entityDetails merge, immediate — and after every change debounced
@@ -867,111 +785,6 @@ export class EntityEditor {
     /** Write an enum pick into the model (the Select carries no accessor). */
     protected enumPicked(field: EditorField, row: EnumRow | null): void {
         this.values.update((current) => ({ ...current, [field.name]: row?.value ?? "" }));
-    }
-
-    /**
-     * Add the typed classification (EDT-05). With the panel open, Enter
-     * commits the active option (DD-336) — the panel is the listbox and
-     * Down/Up move what Enter adds. With it shut, the old rule stands: the
-     * typed text must name an applicable type exactly. The input clears
-     * only on a real add: a miss keeps the text so the user can see what
-     * did not apply. (DD-329's `change` commit retired with the datalist,
-     * DD-335.)
-     */
-    protected addClassification(): void {
-        if (this.dropdownShown()) {
-            const name = this.filteredSuggestions()[this.activeSuggestion()];
-            if (name !== undefined) {
-                this.addNamed(name);
-            }
-
-            return;
-        }
-        const typed = this.classificationText().trim();
-
-        if (typed !== "" && this.suggestions().includes(typed)) {
-            this.addNamed(typed);
-        }
-    }
-
-    /** The box gained focus (EDT-05, DD-335): the panel opens for the box. */
-    protected onBoxFocusIn(): void {
-        this.boxFocused.set(true);
-        this.suggestionsOpen.set(true);
-        this.activeSuggestion.set(0);
-    }
-
-    /** Focus left the box (EDT-05, DD-335): the panel closes. Moving into
-     * the panel itself (a keyboard tab) keeps the box focused. */
-    protected onBoxFocusOut(event: FocusEvent): void {
-        const next = event.relatedTarget as Node | null;
-        if (next !== null && (event.currentTarget as Node).contains(next)) {
-            return;
-        }
-        this.boxFocused.set(false);
-    }
-
-    /** Pick a suggestion from the panel (EDT-05, DD-335). The click lands
-     * on mousedown, before the input's blur closes the panel — the pointer
-     * path the native datalist took before (DD-329's note retired here). */
-    protected pickSuggestion(event: MouseEvent, name: string): void {
-        event.preventDefault();
-        this.addNamed(name);
-    }
-
-    /** Add a named tag and clear the input (the pick and Enter path). */
-    private addNamed(name: string): void {
-        this.state.addClassification(name);
-        this.classificationText.set("");
-    }
-
-    /**
-     * Down/Up move the combobox's active option (DD-336) — the panel is
-     * the listbox, the input keeps focus and carries
-     * `aria-activedescendant`; Enter (the keyup path above) adds the
-     * active option. A closed panel (typed text matching nothing, or a
-     * fresh focus) falls through to the old Enter rule (DD-336 keeps
-     * exact-name Enter working with the panel shut).
-     */
-    protected onSuggestionKeys(event: KeyboardEvent): void {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
-            return;
-        }
-        event.preventDefault();
-        const count = this.filteredSuggestions().length;
-        if (count === 0) {
-            return;
-        }
-        this.suggestionsOpen.set(true);
-        const step = event.key === "ArrowDown" ? 1 : -1;
-        // A shut panel starts from just before the first row (going down) or
-        // just past the last (going up), so the first keypress lands on the
-        // near end (DD-336).
-        const closedStart = step === 1 ? -1 : count;
-        const from = this.dropdownShown() ? this.activeSuggestion() : closedStart;
-        const next = (from + step + count) % count;
-        this.activeSuggestion.set(next);
-    }
-
-    /** Escape inside the box (EDT-05, DD-335): close the panel, keep the
-     * drawer open — the panel is the innermost layer, like a menu. */
-    protected onSuggestionEscape(event: Event): void {
-        if (!this.dropdownShown()) {
-            return;
-        }
-        event.stopPropagation();
-        this.suggestionsOpen.set(false);
-    }
-
-    /** The chip's tooltip: the classification def's description (UIC-16),
-     * read off the classification slice (VDE-02, DD-612). */
-    protected chipTooltip(typeName: string): string | undefined {
-        return this.state.classificationDescription(typeName);
-    }
-
-    /** Remove a chosen tag (EDT-05). */
-    protected removeClassification(typeName: string): void {
-        this.state.removeClassification(typeName);
     }
 
     /**
