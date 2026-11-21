@@ -203,7 +203,7 @@ async def test__entities_are_read_with_entity_read(client: httpx.AsyncClient, is
     "aurelius_atlas_server.routes.entity.updater",
     "aurelius_atlas_server.routes.entity.classifications",
     "aurelius_atlas_server.routes.relationship.relationships",
-    "aurelius_atlas_server.routes.glossary._service",
+    "aurelius_atlas_server.routes.glossary.glossary_service",
     rules=["AUZ-07", "AUZ-08", "AUZ-10"],
 )
 async def test__a_reader_changes_nothing(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:

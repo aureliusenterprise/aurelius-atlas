@@ -9,12 +9,13 @@ from fastapi import Request
 from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode
+from aurelius_atlas_server.settings import ServerSettings
 
 CHUNK_SIZE = 64 * 1024
 """Bytes of an upload read at a time."""
 
 
-async def read_upload(request: Request, field: str, what: str) -> bytes:
+async def read_upload(request: Request, settings: ServerSettings, field: str, what: str) -> bytes:
     """The form's file of ``field``, read to the end; no file or a non-file part is empty (DV-119, DV-104).
 
     The file is read in chunks and refused once it passes ``upload_max_bytes``, so the server never holds more
@@ -22,6 +23,7 @@ async def read_upload(request: Request, field: str, what: str) -> bytes:
 
     Args:
         request: The request whose form holds the file.
+        settings: The server's settings, for the size limit (SVC-02).
         field: The form field that names the file.
         what: What the file is, for the refusal's message: ``"data"``, ``"file"`.
 
@@ -31,7 +33,7 @@ async def read_upload(request: Request, field: str, what: str) -> bytes:
     upload = (await request.form()).get(field)
     if not isinstance(upload, UploadFile):
         return b""
-    limit = request.app.state.settings.upload_max_bytes
+    limit = settings.upload_max_bytes
     chunks: list[bytes] = []
     size = 0
     while chunk := await upload.read(CHUNK_SIZE):

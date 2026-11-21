@@ -54,8 +54,9 @@ from pydantic import BaseModel
 from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.authentication import acting_user
-from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, verify_access
+from aurelius_atlas_server.authorization import AtlasPrivilege, verify_access
 from aurelius_atlas_server.bodies import Body, json_model, json_root, model_body
+from aurelius_atlas_server.deps import Authorizer, Settings, StoreSet
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import (
     array_of,
@@ -65,7 +66,6 @@ from aurelius_atlas_server.openapi import (
     request_body,
 )
 from aurelius_atlas_server.openapi import no_content as no_content_response
-from aurelius_atlas_server.tenant_stores import stores
 from aurelius_atlas_server.uploads import read_upload
 
 ENTITY = APIRouter(prefix="/api/atlas/v2/entity", tags=["Entity"])
@@ -73,9 +73,11 @@ ENTITY = APIRouter(prefix="/api/atlas/v2/entity", tags=["Entity"])
 READ_ENTITY_GUID = "read entity: guid="
 
 
-async def entity_store(request: Request) -> EntityStore:
-    """The entity store of the request's tenant, its registry refreshed when due (ERD-10, TDS-13, TSS-06)."""
-    found = stores(request)
+async def entity_store(found: StoreSet) -> EntityStore:
+    """The entity store of the request's tenant, its registry refreshed when due (ERD-10, TDS-13, TSS-06).
+
+    The store set arrives as a dependency, so a request that needs both resolves it once (DD-794, DD-799).
+    """
     await found.typedef_store.refresh()
     return found.entity_store
 
@@ -103,33 +105,37 @@ def retriever(request: Request, store: EntityStore) -> EntityRetriever:
     return EntityRetriever(store, min_ext_info=given.min_ext_info, ignore_relationships=given.ignore_relationships)
 
 
-def tasks_enabled(request: Request) -> bool:
+def tasks_enabled(settings: Settings) -> bool:
     """Whether propagation is deferred to tasks: the server's ``tasks_enabled`` setting (TSK-02, DD-081)."""
-    return bool(request.app.state.settings.tasks_enabled)
+    return bool(settings.tasks_enabled)
 
 
-def notifier(request: Request, store: EntityStore) -> EntityChangeNotifier:
+def notifier(store: Store, found: StoreSet) -> EntityChangeNotifier:
     """The change notifier of a request: its changes recorded in the server's audit (DD-084)."""
-    return EntityChangeNotifier(store, [EntityAuditListener(stores(request).entity_audits, store.now)])
+    return EntityChangeNotifier(store, [EntityAuditListener(found.entity_audits, store.now)])
 
 
-def writer(request: Request, store: EntityStore) -> EntityWriter:
+def writer(request: Request, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer) -> EntityWriter:
     """A writer deleting as the server's ``delete_type`` setting says unless a request chooses (EDL-04).
 
     Propagation is deferred as ``tasks_enabled`` says; the changes are audited (DD-084) and checked (AUZ-07).
     """
-    settings = request.app.state.settings
     return EntityWriter(
         store,
         delete_type=DeleteType.of(settings.delete_type),
         user=acting_user(request),
-        tasks=tasks_enabled(request),
-        notifier=notifier(request, store),
-        authorizer=authorizer(request),
+        tasks=tasks_enabled(settings),
+        notifier=notifier(store, found),
+        authorizer=authorized,
     )
 
 
-def updater(request: Request, store: EntityStore) -> EntityWriter:
+type Writer = Annotated[EntityWriter, Depends(writer)]
+
+
+def updater(
+    request: Request, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> EntityWriter:
     """A writer creating and updating as the request's user, audited and checked (EWR-02, AUZ-07).
 
     The request may opt in to moving a child it does not own with ``unsafeReparent`` (RPS-04, DD-756).
@@ -137,14 +143,19 @@ def updater(request: Request, store: EntityStore) -> EntityWriter:
     return EntityWriter(
         store,
         user=acting_user(request),
-        tasks=tasks_enabled(request),
-        notifier=notifier(request, store),
-        authorizer=authorizer(request),
+        tasks=tasks_enabled(settings),
+        notifier=notifier(store, found),
+        authorizer=authorized,
         unsafe_reparent=read_query(EntityWriteParams, request).unsafe_reparent,
     )
 
 
-def importer(request: Request, store: EntityStore) -> ImportWriter:
+type Updater = Annotated[EntityWriter, Depends(updater)]
+
+
+def importer(
+    request: Request, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> ImportWriter:
     """A writer creating entities as an import, as the request's user, audited (IMS-04, WRS-07).
 
     An import keeps the exported GUIDs and is checked against no privilege, so no delete type and no
@@ -153,13 +164,15 @@ def importer(request: Request, store: EntityStore) -> ImportWriter:
     return ImportWriter(
         store,
         user=acting_user(request),
-        tasks=tasks_enabled(request),
-        notifier=notifier(request, store),
-        authorizer=authorizer(request),
+        tasks=tasks_enabled(settings),
+        notifier=notifier(store, found),
+        authorizer=authorized,
     )
 
 
-def classifications(request: Request, store: EntityStore) -> EntityClassifications:
+def classifications(
+    request: Request, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> EntityClassifications:
     """Classification changes, propagation deferred as the server's ``tasks_enabled`` setting says (TSK-02).
 
     Each read and change is checked (AUZ-08).
@@ -167,29 +180,42 @@ def classifications(request: Request, store: EntityStore) -> EntityClassificatio
     return EntityClassifications(
         store,
         user=acting_user(request),
-        tasks=tasks_enabled(request),
-        notifier=notifier(request, store),
-        authorizer=authorizer(request),
+        tasks=tasks_enabled(settings),
+        notifier=notifier(store, found),
+        authorizer=authorized,
     )
 
 
-def labels(request: Request, store: EntityStore) -> EntityLabels:
+type Classifications = Annotated[EntityClassifications, Depends(classifications)]
+
+
+def labels(request: Request, store: Store, found: StoreSet, authorized: Authorizer) -> EntityLabels:
     """Label changes as the request's user, audited (LBL-05) and checked (AUZ-16)."""
-    return EntityLabels(
-        store, user=acting_user(request), notifier=notifier(request, store), authorizer=authorizer(request)
-    )
+    return EntityLabels(store, user=acting_user(request), notifier=notifier(store, found), authorizer=authorized)
 
 
-def business_metadata(request: Request, store: EntityStore) -> EntityBusinessMetadata:
+type LabelsService = Annotated[EntityLabels, Depends(labels)]
+
+
+def business_metadata(
+    request: Request, store: Store, found: StoreSet, authorized: Authorizer
+) -> EntityBusinessMetadata:
     """Business attribute changes as the request's user, audited (BMD-06) and checked (AUZ-17)."""
     return EntityBusinessMetadata(
-        store, user=acting_user(request), notifier=notifier(request, store), authorizer=authorizer(request)
+        store, user=acting_user(request), notifier=notifier(store, found), authorizer=authorized
     )
 
 
-def delete_type(request: Request) -> DeleteType:
-    """The request's ``deleteType`` when the override is enabled, else ``DEFAULT`` (EDL-04, DD-059)."""
-    if not request.app.state.settings.delete_type_override:
+type BusinessMetadataService = Annotated[EntityBusinessMetadata, Depends(business_metadata)]
+
+
+def delete_type(request: Request, settings: Settings) -> DeleteType:
+    """The request's ``deleteType`` when the override is enabled, else ``DEFAULT`` (EDL-04, DD-059).
+
+    The body asks for it rather than the signature: a bad ``deleteType`` is refused only after the GUID or
+    type name it names, as Atlas's checks run in that order (EDL-04).
+    """
+    if not settings.delete_type_override:
         return DeleteType.DEFAULT
     return DeleteType.of(read_query(EntityDeleteParams, request).delete_type)
 
@@ -302,21 +328,21 @@ async def guid_by_unique_attributes(store: EntityStore, type_name: str, request:
     return found.entity.guid
 
 
-def _verify_read_by_unique_attributes(request: Request, type_name: str, attributes: Mapping[str, Any]) -> None:
+def _verify_read_by_unique_attributes(authorized: Authorizer, type_name: str, attributes: Mapping[str, Any]) -> None:
     """``read entity: typeName=<type>, uniqueAttributes={...}`` needs ``ENTITY_READ`` (AUZ-11)."""
     action = ("read entity: typeName=", type_name, ", uniqueAttributes=", dict(attributes))
-    verify_access(request, AtlasPrivilege.ENTITY_READ, *action)
+    verify_access(authorized, AtlasPrivilege.ENTITY_READ, *action)
 
 
 @ENTITY.get(
     "/guid/{guid}",
     responses=json_response(AtlasEntityWithExtInfo, description="The entity and the entities it owns (ERD-02)."),
 )
-async def get_by_id(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_by_id(guid: str, request: Request, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
     """``getById``: the entity and the entities it owns (ERD-02, AUZ-11)."""
     validate_guid("guid", guid)
     found = await retriever(request, store).entity_with_ext_info(guid)
-    verify_access(request, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
+    verify_access(authorized, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
     return _json(found.to_json())
 
 
@@ -324,11 +350,11 @@ async def get_by_id(guid: str, request: Request, store: Store) -> AtlasJSONRespo
     "/guid/{guid}/header",
     responses=json_response(AtlasEntityHeader, description="The entity's header with its classifications (ERD-07)."),
 )
-async def get_header_by_id(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_header_by_id(guid: str, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
     """``getHeaderById``: the entity's header with its classifications (ERD-07, AUZ-11)."""
     validate_guid("guid", guid)
     found = await EntityRetriever(store).header(guid)
-    verify_access(request, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
+    verify_access(authorized, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
     return _json(found.to_json())
 
 
@@ -336,14 +362,16 @@ async def get_header_by_id(guid: str, request: Request, store: Store) -> AtlasJS
     "/uniqueAttribute/type/{type_name}",
     responses=json_response(AtlasEntityWithExtInfo, description="The entity holding the attr: values (ERD-08)."),
 )
-async def get_by_unique_attributes(type_name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_by_unique_attributes(
+    type_name: str, request: Request, store: Store, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``getByUniqueAttributes``: the entity holding the ``attr:`` values (ERD-08, ERD-09, AUZ-11)."""
     validate_param_length("typeName", type_name)
     attributes = unique_attributes(request)
     entity_type = ensure_entity_type(store, type_name)
     validate_unique_attributes(entity_type, attributes)
     found = await retriever(request, store).entity_by_unique_attributes(entity_type, attributes)
-    _verify_read_by_unique_attributes(request, type_name, attributes)
+    _verify_read_by_unique_attributes(authorized, type_name, attributes)
     return _json(found.to_json())
 
 
@@ -353,14 +381,16 @@ async def get_by_unique_attributes(type_name: str, request: Request, store: Stor
         AtlasEntityHeader, description="The header of the entity holding the attr: values (ERD-07)."
     ),
 )
-async def get_entity_header_by_unique_attributes(type_name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_entity_header_by_unique_attributes(
+    type_name: str, request: Request, store: Store, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``getEntityHeaderByUniqueAttributes``: the header of the entity holding the ``attr:`` values (ERD-07, AUZ-11)."""
     validate_param_length("typeName", type_name)
     attributes = unique_attributes(request)
     entity_type = ensure_entity_type(store, type_name)
     validate_unique_attributes(entity_type, attributes)
     found = await EntityRetriever(store).header_by_unique_attributes(entity_type, attributes)
-    _verify_read_by_unique_attributes(request, type_name, attributes)
+    _verify_read_by_unique_attributes(authorized, type_name, attributes)
     return _json(found.to_json())
 
 
@@ -368,7 +398,9 @@ async def get_entity_header_by_unique_attributes(type_name: str, request: Reques
     "/bulk/uniqueAttribute/type/{type_name}",
     responses=json_response(AtlasEntitiesWithExtInfo, description="The entity each attr_<n>: set finds (ERD-08)."),
 )
-async def get_entities_by_unique_attributes(type_name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_entities_by_unique_attributes(
+    type_name: str, request: Request, store: Store, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``getEntitiesByUniqueAttributes``: the entity each ``attr_<n>:`` set finds (ERD-08, ERD-09)."""
     validate_param_length("typeName", type_name)
     sets = unique_attribute_sets(request)
@@ -377,7 +409,9 @@ async def get_entities_by_unique_attributes(type_name: str, request: Request, st
         validate_unique_attributes(entity_type, attributes)
     found = await retriever(request, store).entities_by_unique_attributes(entity_type, sets)
     for entity in found.entities or []:
-        verify_access(request, AtlasPrivilege.ENTITY_READ, "read entity: typeName=", type_name, ", guid=", entity.guid)
+        verify_access(
+            authorized, AtlasPrivilege.ENTITY_READ, "read entity: typeName=", type_name, ", guid=", entity.guid
+        )
     return _json(found.to_json())
 
 
@@ -387,7 +421,7 @@ async def get_entities_by_unique_attributes(type_name: str, request: Request, st
         AtlasEntitiesWithExtInfo, description="The entities of every guid query parameter, in order (ERD-01)."
     ),
 )
-async def get_by_guids(request: Request, store: Store) -> AtlasJSONResponse:
+async def get_by_guids(request: Request, store: Store, authorized: Authorizer) -> AtlasJSONResponse:
     """``getByGuids``: the entities of every ``guid``, in order (ERD-01, ERD-02).
 
     Raises:
@@ -398,7 +432,7 @@ async def get_by_guids(request: Request, store: Store) -> AtlasJSONResponse:
         raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids)
     found = await retriever(request, store).entities_with_ext_info(guids)
     for guid in guids:
-        verify_access(request, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
+        verify_access(authorized, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
     return _json(found.to_json())
 
 
@@ -407,10 +441,10 @@ async def get_by_guids(request: Request, store: Store) -> AtlasJSONResponse:
     responses=json_response(EntityMutationResponse, description="The created and updated entities (EWR-02)."),
     **request_body(AtlasEntityWithExtInfo, description="The entity to create or update, with the entities it names."),
 )
-async def create_or_update(request: Request, entity_body: EntityBody, store: Store) -> AtlasJSONResponse:
+async def create_or_update(entity_body: EntityBody, updater: Updater) -> AtlasJSONResponse:
     """``createOrUpdate``: create the entity, and the entities it names, or update them (EWR-02)."""
     entity = entity_body or AtlasEntityWithExtInfo()
-    return _json((await updater(request, store).create_or_update(entity)).to_json())
+    return _json((await updater.create_or_update(entity)).to_json())
 
 
 @ENTITY.post(
@@ -418,9 +452,9 @@ async def create_or_update(request: Request, entity_body: EntityBody, store: Sto
     responses=json_response(EntityMutationResponse, description="The created and updated entities (EWR-02)."),
     **request_body(AtlasEntitiesWithExtInfo, description="The entities to create or update."),
 )
-async def create_or_update_bulk(request: Request, entities_body: EntitiesBody, store: Store) -> AtlasJSONResponse:
+async def create_or_update_bulk(entities_body: EntitiesBody, updater: Updater) -> AtlasJSONResponse:
     """``createOrUpdate`` of a bulk request: create or update every entity (EWR-02)."""
-    return _json((await updater(request, store).create_or_update(entities_body)).to_json())
+    return _json((await updater.create_or_update(entities_body)).to_json())
 
 
 @ENTITY.put(
@@ -429,7 +463,7 @@ async def create_or_update_bulk(request: Request, entities_body: EntitiesBody, s
     **request_body(AtlasEntityWithExtInfo, description="The attribute values to set, with the entity's typeName."),
 )
 async def partial_update_entity_by_unique_attrs(
-    type_name: str, request: Request, body: Body, store: Store
+    type_name: str, request: Request, body: Body, store: Store, updater: Updater
 ) -> AtlasJSONResponse:
     """``partialUpdateEntityByUniqueAttrs``: partially update the entity holding the ``attr:`` values (EWR-14)."""
     validate_param_length("typeName", type_name)
@@ -438,7 +472,7 @@ async def partial_update_entity_by_unique_attrs(
     attributes = unique_attributes(request)
     entity_type = ensure_entity_type(store, type_name)
     validate_unique_attributes(entity_type, attributes)
-    updated = await updater(request, store).update_by_unique_attributes(entity_type, attributes, entity_body)
+    updated = await updater.update_by_unique_attributes(entity_type, attributes, entity_body)
     return _json(updated.to_json())
 
 
@@ -448,44 +482,46 @@ async def partial_update_entity_by_unique_attrs(
     **request_body(JsonValue, description="The attribute's new value: any JSON value."),
 )
 async def partial_update_entity_attr_by_guid(
-    guid: str, request: Request, value: AttributeValueBody, store: Store
+    guid: str, request: Request, value: AttributeValueBody, updater: Updater
 ) -> AtlasJSONResponse:
     """``partialUpdateEntityAttrByGuid``: set the attribute ``name`` of the entity to the body (EWR-15)."""
     validate_guid("guid", guid)
     name = read_query(PartialAttributeParams, request).checked()
-    return _json((await updater(request, store).update_attribute_by_guid(guid, name, value)).to_json())
+    return _json((await updater.update_attribute_by_guid(guid, name, value)).to_json())
 
 
 @ENTITY.delete(
     "/guid/{guid}",
     responses=json_response(EntityMutationResponse, description="The deleted entity (EDL-01)."),
 )
-async def delete_by_guid(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def delete_by_guid(guid: str, request: Request, writer: Writer, settings: Settings) -> AtlasJSONResponse:
     """``deleteByGuid``: the entity and what it owns (EDL-01, EDL-03)."""
     validate_guid("guid", guid)
-    return _json((await writer(request, store).delete_by_id(guid, delete_type(request))).to_json())
+    return _json((await writer.delete_by_id(guid, delete_type(request, settings))).to_json())
 
 
 @ENTITY.delete(
     "/bulk",
     responses=json_response(EntityMutationResponse, description="The deleted entities (EDL-02)."),
 )
-async def delete_by_guids(request: Request, store: Store) -> AtlasJSONResponse:
+async def delete_by_guids(request: Request, writer: Writer, settings: Settings) -> AtlasJSONResponse:
     """``deleteByGuids``: the entities of every ``guid`` and what they own (EDL-01, EDL-02)."""
     guids = read_query(EntityGuidParams, request).checked()
-    return _json((await writer(request, store).delete_by_ids(guids, delete_type(request))).to_json())
+    return _json((await writer.delete_by_ids(guids, delete_type(request, settings))).to_json())
 
 
 @ENTITY.delete(
     "/uniqueAttribute/type/{type_name}",
     responses=json_response(EntityMutationResponse, description="The deleted entity (EDL-02)."),
 )
-async def delete_by_unique_attribute(type_name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def delete_by_unique_attribute(
+    type_name: str, request: Request, store: Store, writer: Writer, settings: Settings
+) -> AtlasJSONResponse:
     """``deleteByUniqueAttribute``: the entity holding the ``attr:`` values; they are not checked (EDL-02)."""
     validate_param_length("typeName", type_name)
     attributes = unique_attributes(request)
     entity_type = ensure_entity_type(store, type_name)
-    deleted = await writer(request, store).delete_by_unique_attributes(entity_type, attributes, delete_type(request))
+    deleted = await writer.delete_by_unique_attributes(entity_type, attributes, delete_type(request, settings))
     return _json(deleted.to_json())
 
 
@@ -493,12 +529,14 @@ async def delete_by_unique_attribute(type_name: str, request: Request, store: St
     "/guid/{guid}/classification/{classification_name}",
     responses=json_response(AtlasClassification, description="The entity's classification of the name (CLS-03)."),
 )
-async def get_classification(guid: str, classification_name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_classification(
+    guid: str, classification_name: str, store: Store, classifications: Classifications
+) -> AtlasJSONResponse:
     """``getClassification``: the entity's classification of the name (CLS-03)."""
     validate_guid("guid", guid)
     validate_param_length("classificationName", classification_name)
     ensure_classification_type(store, classification_name)
-    found = await classifications(request, store).get_classification(guid, classification_name)
+    found = await classifications.get_classification(guid, classification_name)
     return _json(found.to_json())
 
 
@@ -506,10 +544,10 @@ async def get_classification(guid: str, classification_name: str, request: Reque
     "/guid/{guid}/classifications",
     responses=json_response(AtlasClassifications, description="The entity's classifications as a PList (CLS-03)."),
 )
-async def get_classifications(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_classifications(guid: str, classifications: Classifications) -> AtlasJSONResponse:
     """``getClassifications``: the entity's classifications as a ``PList`` (CLS-03, AUZ-08)."""
     validate_guid("guid", guid)
-    found = await classifications(request, store).get_classifications(guid)
+    found = await classifications.get_classifications(guid)
     return _json(AtlasClassifications.of(found).to_json())
 
 
@@ -519,11 +557,15 @@ async def get_classifications(guid: str, request: Request, store: Store) -> Atla
     **request_body(array_of(AtlasClassification), description="The classifications to attach."),
 )
 async def add_classifications_by_unique_attribute(
-    type_name: str, request: Request, classifications_body: ClassificationsBody, store: Store
+    type_name: str,
+    request: Request,
+    classifications_body: ClassificationsBody,
+    store: Store,
+    classifications: Classifications,
 ) -> Response:
     """``addClassificationsByUniqueAttribute`` (CLS-04 to CLS-06)."""
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await classifications(request, store).add_classifications(guid, classifications_body)
+    await classifications.add_classifications(guid, classifications_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -533,11 +575,11 @@ async def add_classifications_by_unique_attribute(
     **request_body(array_of(AtlasClassification), description="The classifications to attach."),
 )
 async def add_classifications(
-    guid: str, request: Request, classifications_body: ClassificationsBody, store: Store
+    guid: str, classifications_body: ClassificationsBody, classifications: Classifications
 ) -> Response:
     """``addClassifications``: attach the classifications to the entity (CLS-04, CLS-05)."""
     validate_guid("guid", guid)
-    await classifications(request, store).add_classifications(guid, classifications_body)
+    await classifications.add_classifications(guid, classifications_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -547,11 +589,15 @@ async def add_classifications(
     **request_body(array_of(AtlasClassification), description="The classifications to keep."),
 )
 async def update_classifications_by_unique_attribute(
-    type_name: str, request: Request, classifications_body: ClassificationsBody, store: Store
+    type_name: str,
+    request: Request,
+    classifications_body: ClassificationsBody,
+    store: Store,
+    classifications: Classifications,
 ) -> Response:
     """``updateClassificationsByUniqueAttribute`` (CLS-06, CLS-08)."""
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await classifications(request, store).update_classifications(guid, classifications_body)
+    await classifications.update_classifications(guid, classifications_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -561,11 +607,11 @@ async def update_classifications_by_unique_attribute(
     **request_body(array_of(AtlasClassification), description="The classifications to keep."),
 )
 async def update_classifications(
-    guid: str, request: Request, classifications_body: ClassificationsBody, store: Store
+    guid: str, classifications_body: ClassificationsBody, classifications: Classifications
 ) -> Response:
     """``updateClassifications``: change the entity's classifications (CLS-08)."""
     validate_guid("guid", guid)
-    await classifications(request, store).update_classifications(guid, classifications_body)
+    await classifications.update_classifications(guid, classifications_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -574,12 +620,12 @@ async def update_classifications(
     responses=no_content_response("The classification is removed (CLS-09)."),
 )
 async def delete_classification_by_unique_attribute(
-    type_name: str, classification_name: str, request: Request, store: Store
+    type_name: str, classification_name: str, request: Request, store: Store, classifications: Classifications
 ) -> Response:
     """``deleteClassificationByUniqueAttribute`` (CLS-06, CLS-09)."""
     validate_param_length("classificationName", classification_name)
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await classifications(request, store).delete_classification(guid, classification_name)
+    await classifications.delete_classification(guid, classification_name)
     return Response(status_code=NO_CONTENT)
 
 
@@ -587,13 +633,15 @@ async def delete_classification_by_unique_attribute(
     "/guid/{guid}/classification/{classification_name}",
     responses=no_content_response("The classification is removed (CLS-09)."),
 )
-async def delete_classification(guid: str, classification_name: str, request: Request, store: Store) -> Response:
+async def delete_classification(
+    guid: str, classification_name: str, request: Request, store: Store, classifications: Classifications
+) -> Response:
     """``deleteClassification``: remove the entity's classification of the name (CLS-09)."""
     associated = read_query(ClassificationDeleteParams, request).checked()
     validate_guid("guid", guid)
     validate_param_length("classificationName", classification_name)
     ensure_classification_type(store, classification_name)
-    await classifications(request, store).delete_classification(guid, classification_name, associated)
+    await classifications.delete_classification(guid, classification_name, associated)
     return Response(status_code=NO_CONTENT)
 
 
@@ -605,7 +653,7 @@ async def delete_classification(guid: str, classification_name: str, request: Re
         description="One classification and the entities to attach it to: by GUIDs, or type name and attributes.",
     ),
 )
-async def add_classification(request: Request, associate_body: AssociateBody, store: Store) -> Response:
+async def add_classification(associate_body: AssociateBody, store: Store, classifications: Classifications) -> Response:
     """``addClassification``: attach one classification to entities by GUID or by unique attributes (CLS-07).
 
     Raises:
@@ -627,7 +675,7 @@ async def add_classification(request: Request, associate_body: AssociateBody, st
                 guids.append(found.entity.guid)
         if not guids:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID_FOUND)
-    await classifications(request, store).add_classification(guids, classification)
+    await classifications.add_classification(guids, classification)
     return Response(status_code=NO_CONTENT)
 
 
@@ -638,7 +686,14 @@ async def add_classification(request: Request, associate_body: AssociateBody, st
     ),
     **request_body(AtlasEntityHeaders, description="The classifications to set on each named entity."),
 )
-async def set_classifications(request: Request, headers: EntityHeadersBody, store: Store) -> Response:
+async def set_classifications(  # noqa: PLR0913, PLR0917 - FastAPI dependencies
+    request: Request,
+    headers: EntityHeadersBody,
+    store: Store,
+    found: StoreSet,
+    settings: Settings,
+    authorized: Authorizer,
+) -> Response:
     """``setClassifications``: each header's entity gets its classifications; a JSON array of summaries (CLA-04).
 
     The array is Java's text, answered as it is; no body answers ``[]`` (DV-36).
@@ -646,9 +701,9 @@ async def set_classifications(request: Request, headers: EntityHeadersBody, stor
     associator = ClassificationAssociator(
         store,
         user=acting_user(request),
-        tasks=tasks_enabled(request),
-        notifier=notifier(request, store),
-        authorizer=authorizer(request),
+        tasks=tasks_enabled(settings),
+        notifier=notifier(store, found),
+        authorizer=authorized,
     )
     summary = await associator.set_classifications(None if headers is None else headers.guid_header_map)
     return Response(content=summary, media_type="application/json")
@@ -662,13 +717,11 @@ async def set_classifications(request: Request, headers: EntityHeadersBody, stor
     ),
 )
 async def add_or_update_business_attributes(
-    guid: str, request: Request, given: BusinessAttributesBody, store: Store
+    guid: str, request: Request, given: BusinessAttributesBody, business_metadata: BusinessMetadataService
 ) -> Response:
     """``addOrUpdateBusinessAttributes``: the body's values set, or with ``isOverwrite`` all replaced (BMD-01)."""
     validate_guid("guid", guid)
-    await business_metadata(request, store).add_or_update_business_attributes(
-        guid, given, is_overwrite=flag(request, "isOverwrite")
-    )
+    await business_metadata.add_or_update_business_attributes(guid, given, is_overwrite=flag(request, "isOverwrite"))
     return Response(status_code=NO_CONTENT)
 
 
@@ -682,11 +735,11 @@ async def add_or_update_business_attributes(
     ),
 )
 async def remove_business_attributes(
-    guid: str, request: Request, given: BusinessAttributesBody, store: Store
+    guid: str, given: BusinessAttributesBody, business_metadata: BusinessMetadataService
 ) -> Response:
     """``removeBusinessAttributes``: the body's attributes removed (BMD-01, BMD-05)."""
     validate_guid("guid", guid)
-    await business_metadata(request, store).remove_business_attributes(guid, given)
+    await business_metadata.remove_business_attributes(guid, given)
     return Response(status_code=NO_CONTENT)
 
 
@@ -698,11 +751,11 @@ async def remove_business_attributes(
     ),
 )
 async def add_or_update_business_attributes_of(
-    guid: str, bm_name: str, request: Request, values: AttributeValuesBody, store: Store
+    guid: str, bm_name: str, values: AttributeValuesBody, business_metadata: BusinessMetadataService
 ) -> Response:
     """``addOrUpdateBusinessAttributes`` of one business metadata: the body's values set (BMD-01, BMD-03)."""
     validate_guid("guid", guid)
-    await business_metadata(request, store).add_or_update_business_attributes(guid, {bm_name: values})
+    await business_metadata.add_or_update_business_attributes(guid, {bm_name: values})
     return Response(status_code=NO_CONTENT)
 
 
@@ -714,11 +767,11 @@ async def add_or_update_business_attributes_of(
     ),
 )
 async def remove_business_attributes_of(
-    guid: str, bm_name: str, request: Request, values: AttributeValuesBody, store: Store
+    guid: str, bm_name: str, values: AttributeValuesBody, business_metadata: BusinessMetadataService
 ) -> Response:
     """``removeBusinessAttributes`` of one business metadata: the body's attributes, or all, removed (BMD-05)."""
     validate_guid("guid", guid)
-    await business_metadata(request, store).remove_business_attributes(guid, {bm_name: values})
+    await business_metadata.remove_business_attributes(guid, {bm_name: values})
     return Response(status_code=NO_CONTENT)
 
 
@@ -742,14 +795,16 @@ async def produce_template() -> Response:
     responses=json_response(BulkImportResponse, description="The outcome per line of the file (BMI-02 to BMI-05)."),
     **form_request(fields={"file": "A CSV or Excel file of business attribute values."}),
 )
-async def import_bm_attributes(request: Request, store: Store) -> AtlasJSONResponse:
+async def import_bm_attributes(
+    request: Request, settings: Settings, business_metadata: BusinessMetadataService
+) -> AtlasJSONResponse:
     """``importBMAttributes``: the form's ``file``, a CSV or Excel file of business attribute values (BMI-02 to
     BMI-05); no file is a blank file name (DV-119).
     """  # noqa: D205 - one sentence
     upload = (await request.form()).get("file")
     file_name = upload.filename if isinstance(upload, UploadFile) else None
-    content = await read_upload(request, "file", "file")
-    found = await business_metadata(request, store).bulk_create_or_update_business_attributes(file_name, content)
+    content = await read_upload(request, settings, "file", "file")
+    found = await business_metadata.bulk_create_or_update_business_attributes(file_name, content)
     return _json(found.to_json())
 
 
@@ -758,10 +813,10 @@ async def import_bm_attributes(request: Request, store: Store) -> AtlasJSONRespo
     responses=no_content_response("The entity's labels become those given (LBL-01)."),
     **request_body(array_of(str), description="The labels to set."),
 )
-async def set_labels(guid: str, request: Request, labels_body: LabelsBody, store: Store) -> Response:
+async def set_labels(guid: str, labels_body: LabelsBody, labels: LabelsService) -> Response:
     """``setLabels``: the entity's labels become those of the body (LBL-01, LBL-02)."""
     validate_guid("guid", guid)
-    await labels(request, store).set_labels(guid, labels_body)
+    await labels.set_labels(guid, labels_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -770,10 +825,10 @@ async def set_labels(guid: str, request: Request, labels_body: LabelsBody, store
     responses=no_content_response("The labels given are added to the entity's (LBL-01)."),
     **request_body(array_of(str), description="The labels to add."),
 )
-async def add_labels(guid: str, request: Request, labels_body: LabelsBody, store: Store) -> Response:
+async def add_labels(guid: str, labels_body: LabelsBody, labels: LabelsService) -> Response:
     """``addLabels``: the body's labels added to the entity's (LBL-01, LBL-03)."""
     validate_guid("guid", guid)
-    await labels(request, store).add_labels(guid, labels_body)
+    await labels.add_labels(guid, labels_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -782,10 +837,10 @@ async def add_labels(guid: str, request: Request, labels_body: LabelsBody, store
     responses=no_content_response("The labels given are taken from the entity's (LBL-01)."),
     **request_body(array_of(str), description="The labels to remove."),
 )
-async def remove_labels(guid: str, request: Request, labels_body: LabelsBody, store: Store) -> Response:
+async def remove_labels(guid: str, labels_body: LabelsBody, labels: LabelsService) -> Response:
     """``removeLabels``: the body's labels taken from the entity's (LBL-01, LBL-04)."""
     validate_guid("guid", guid)
-    await labels(request, store).remove_labels(guid, labels_body)
+    await labels.remove_labels(guid, labels_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -795,11 +850,11 @@ async def remove_labels(guid: str, request: Request, labels_body: LabelsBody, st
     **request_body(array_of(str), description="The labels to set."),
 )
 async def set_labels_by_unique_attribute(
-    type_name: str, request: Request, labels_body: LabelsBody, store: Store
+    type_name: str, request: Request, labels_body: LabelsBody, store: Store, labels: LabelsService
 ) -> Response:
     """``setLabels`` of the entity holding the ``attr:`` values (LBL-01, LBL-02)."""
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await labels(request, store).set_labels(guid, labels_body)
+    await labels.set_labels(guid, labels_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -809,11 +864,11 @@ async def set_labels_by_unique_attribute(
     **request_body(array_of(str), description="The labels to add."),
 )
 async def add_labels_by_unique_attribute(
-    type_name: str, request: Request, labels_body: LabelsBody, store: Store
+    type_name: str, request: Request, labels_body: LabelsBody, store: Store, labels: LabelsService
 ) -> Response:
     """``addLabels`` to the entity holding the ``attr:`` values (LBL-01, LBL-03)."""
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await labels(request, store).add_labels(guid, labels_body)
+    await labels.add_labels(guid, labels_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -823,11 +878,11 @@ async def add_labels_by_unique_attribute(
     **request_body(array_of(str), description="The labels to remove."),
 )
 async def remove_labels_by_unique_attribute(
-    type_name: str, request: Request, labels_body: LabelsBody, store: Store
+    type_name: str, request: Request, labels_body: LabelsBody, store: Store, labels: LabelsService
 ) -> Response:
     """``removeLabels`` from the entity holding the ``attr:`` values (LBL-01, LBL-04)."""
     guid = await guid_by_unique_attributes(store, type_name, request)
-    await labels(request, store).remove_labels(guid, labels_body)
+    await labels.remove_labels(guid, labels_body)
     return Response(status_code=NO_CONTENT)
 
 
@@ -837,7 +892,9 @@ async def remove_labels_by_unique_attribute(
         array_of(EntityAuditEventV2), description="The entity's audit events, sorted as asked (AUD-06)."
     ),
 )
-async def get_audit_events(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_audit_events(
+    guid: str, request: Request, store: Store, found: StoreSet, authorized: Authorizer
+) -> AtlasJSONResponse:
     """``getAuditEvents``: the entity's audit events, sorted and paged, or newest first from a key (AUD-06 to AUD-09).
 
     Reading them needs ``ENTITY_READ``, ``read entity audit`` for a purged entity (AUZ-11).
@@ -847,7 +904,7 @@ async def get_audit_events(guid: str, request: Request, store: Store) -> AtlasJS
             a parameter that is no value of its type (DV-39), ``UNAUTHORIZED_ACCESS``.
     """
     validate_guid("guid", guid)
-    audits: EntityAuditRepository = stores(request).entity_audits
+    audits: EntityAuditRepository = found.entity_audits
     asked = read_query(EntityAuditParams, request)
     action, count, offset = asked.audit_action, asked.count, asked.offset
     sort_by, sort_order = asked.sort_by, asked.sort_order
@@ -855,9 +912,9 @@ async def get_audit_events(guid: str, request: Request, store: Store) -> AtlasJS
         purges = await audits.list_events(guid, EntityAuditActionV2.ENTITY_PURGE, None, 1)
         if not purges or purges[0].entity_header() is None:
             raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
-        verify_access(request, AtlasPrivilege.ENTITY_READ, "read entity audit: guid=", guid)
+        verify_access(authorized, AtlasPrivilege.ENTITY_READ, "read entity audit: guid=", guid)
     else:
-        verify_access(request, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
+        verify_access(authorized, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
     if sort_by is not None or offset > -1:
         descending = (sort_order or "").lower() == "desc"
         events = await list_events_sorted(
@@ -874,7 +931,7 @@ async def get_audit_events(guid: str, request: Request, store: Store) -> AtlasJS
         AtlasEntityHeaders, description="The entities whose classifications changed since the start time (CAU-07)."
     ),
 )
-async def get_entity_headers(request: Request, store: Store) -> AtlasJSONResponse:
+async def get_entity_headers(request: Request, store: Store, found: StoreSet) -> AtlasJSONResponse:
     """``getEntityHeaders``: the entities whose classifications changed since ``tagUpdateStartTime`` (CAU-07).
 
     Raises:
@@ -882,7 +939,7 @@ async def get_entity_headers(request: Request, store: Store) -> AtlasJSONRespons
     """
     end = store.now()
     start = read_query(EntityHeadersParams, request).checked(end)
-    headers = await ClassificationRetriever(store, stores(request).entity_audits).get(start, end)
+    headers = await ClassificationRetriever(store, found.entity_audits).get(start, end)
     return _json(headers.to_json())
 
 

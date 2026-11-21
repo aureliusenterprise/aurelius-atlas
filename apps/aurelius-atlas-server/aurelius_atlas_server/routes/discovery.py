@@ -8,7 +8,6 @@ SVS-07).
 from typing import Annotated
 
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
-from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.suggestions_provider import SuggestionsProvider
 from aurelius_atlas_model.discovery import (
     AtlasQuickSearchResult,
@@ -35,8 +34,8 @@ from aurelius_atlas_model.profile import AtlasUserSavedSearch
 from fastapi import APIRouter, Depends, Request, Response
 
 from aurelius_atlas_server.authentication import acting_user
-from aurelius_atlas_server.authorization import authorizer
 from aurelius_atlas_server.bodies import json_model
+from aurelius_atlas_server.deps import Authorizer
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import array_of, json_response, request_body
 from aurelius_atlas_server.openapi import no_content as no_content_response
@@ -100,13 +99,16 @@ def _validate_lengths(parameters: SearchParameters) -> None:
     ).checked()
 
 
-def _discovery(request: Request, store: EntityStore) -> EntityDiscoveryService:
+def discovery(store: Store, authorized: Authorizer) -> EntityDiscoveryService:
     """The discovery service of a request, its saved searches checked as the entity store checks them (AUZ-10)."""
-    return EntityDiscoveryService(store, authorizer=authorizer(request))
+    return EntityDiscoveryService(store, authorizer=authorized)
 
 
-async def _search(request: Request, store: Store, parameters: SearchParameters) -> AtlasJSONResponse:
-    result = await _discovery(request, store).search_with_parameters(parameters)
+type Discovery = Annotated[EntityDiscoveryService, Depends(discovery)]
+
+
+async def _search(discovery: Discovery, parameters: SearchParameters) -> AtlasJSONResponse:
+    result = await discovery.search_with_parameters(parameters)
     return AtlasJSONResponse(content=result.to_json())
 
 
@@ -115,18 +117,18 @@ async def _search(request: Request, store: Store, parameters: SearchParameters) 
     responses=json_response(AtlasSearchResult, description="The entities the search finds (SRC-02)."),
     **request_body(SearchParameters, required=False, description="The search parameters; no body is an empty search."),
 )
-async def search_with_parameters(request: Request, search_body: SearchBody, store: Store) -> AtlasJSONResponse:
+async def search_with_parameters(search_body: SearchBody, discovery: Discovery) -> AtlasJSONResponse:
     """``searchWithParameters``: the entities the body's search finds, validated first (SRC-02, SRC-09)."""
     parameters = search_body or SearchParameters()
     validate_basic_search_parameters(parameters)
-    return await _search(request, store, parameters)
+    return await _search(discovery, parameters)
 
 
 @DISCOVERY.get(
     "/basic",
     responses=json_response(AtlasSearchResult, description="The entities the query parameters find (SRC-11)."),
 )
-async def search_using_basic(request: Request, store: Store) -> AtlasJSONResponse:
+async def search_using_basic(request: Request, discovery: Discovery) -> AtlasJSONResponse:
     """``searchUsingBasic``: a search of the query parameters, not validated as the body's is (SRC-11)."""
     asked = read_params(BasicSearchParams, request.query_params)
     asked.checked()
@@ -141,7 +143,7 @@ async def search_using_basic(request: Request, store: Store) -> AtlasJSONRespons
         offset=asked.offset,
         marker=asked.marker,
     )
-    return await _search(request, store, parameters)
+    return await _search(discovery, parameters)
 
 
 @DISCOVERY.get(
@@ -150,10 +152,10 @@ async def search_using_basic(request: Request, store: Store) -> AtlasJSONRespons
         AtlasSearchResult, description="The entities matching the query, best first, with scores (FTX-05)."
     ),
 )
-async def search_using_full_text(request: Request, store: Store) -> AtlasJSONResponse:
+async def search_using_full_text(request: Request, discovery: Discovery) -> AtlasJSONResponse:
     """``searchUsingFullText``: the entities matching ``query``, best first, with their scores (FTX-05)."""
     asked = read_params(FullTextSearchParams, request.query_params)
-    result = await _discovery(request, store).search_using_full_text(
+    result = await discovery.search_using_full_text(
         asked.checked(),
         exclude_deleted_entities=asked.exclude_deleted_entities,
         limit=asked.limit,
@@ -166,11 +168,11 @@ async def search_using_full_text(request: Request, store: Store) -> AtlasJSONRes
     "/dsl",
     responses=json_response(AtlasSearchResult, description="The entities a DSL query finds (DSE-01)."),
 )
-async def search_using_dsl(request: Request, store: Store) -> AtlasJSONResponse:
+async def search_using_dsl(request: Request, discovery: Discovery) -> AtlasJSONResponse:
     """``searchUsingDSL``: the entities a DSL query finds, of ``typeName`` and ``classification`` (DSE-01, DSE-02)."""
     asked = read_params(DslSearchParams, request.query_params)
     validate_dsl_search_parameters(asked.query, asked.type_name, asked.classification)
-    service = _discovery(request, store)
+    service = discovery
     result = await service.search_using_dsl_query(
         service.get_dsl_query_using_type_name_classification(asked.query, asked.type_name, asked.classification),
         asked.limit,
@@ -206,8 +208,8 @@ def validate_quick_search_parameters(parameters: QuickSearchParameters) -> None:
     _validate_lengths(parameters.search_parameters())
 
 
-async def _quick(request: Request, store: Store, parameters: QuickSearchParameters) -> AtlasJSONResponse:
-    result = await _discovery(request, store).quick_search(parameters)
+async def _quick(discovery: Discovery, parameters: QuickSearchParameters) -> AtlasJSONResponse:
+    result = await discovery.quick_search(parameters)
     return AtlasJSONResponse(content=result.to_json())
 
 
@@ -217,7 +219,7 @@ async def _quick(request: Request, store: Store, parameters: QuickSearchParamete
         AtlasQuickSearchResult, description="The entities and the relation count the query quick-finds (QSR-01)."
     ),
 )
-async def quick_search_using_query(request: Request, store: Store) -> AtlasJSONResponse:
+async def quick_search_using_query(request: Request, discovery: Discovery) -> AtlasJSONResponse:
     """``quickSearch`` of query parameters: without sub types, only the query's length checked (QSR-01, QSR-02)."""
     asked = read_params(QuickQueryParams, request.query_params)
     asked.checked()
@@ -230,7 +232,7 @@ async def quick_search_using_query(request: Request, store: Store) -> AtlasJSONR
         sort_by=asked.sort_by,
         sort_order=asked.sort_order,
     )
-    return await _quick(request, store, parameters)
+    return await _quick(discovery, parameters)
 
 
 @DISCOVERY.post(
@@ -242,11 +244,11 @@ async def quick_search_using_query(request: Request, store: Store) -> AtlasJSONR
         QuickSearchParameters, required=False, description="The quick-search parameters; no body is an empty search."
     ),
 )
-async def quick_search(request: Request, quick_body: QuickBody, store: Store) -> AtlasJSONResponse:
+async def quick_search(quick_body: QuickBody, discovery: Discovery) -> AtlasJSONResponse:
     """``quickSearch`` of ``QuickSearchParameters``, validated first (QSR-01 to QSR-04)."""
     parameters = quick_body or QuickSearchParameters()
     validate_quick_search_parameters(parameters)
-    return await _quick(request, store, parameters)
+    return await _quick(discovery, parameters)
 
 
 @DISCOVERY.get(
@@ -266,7 +268,7 @@ async def get_suggestions(request: Request, store: Store) -> AtlasJSONResponse:
     "/attribute",
     responses=json_response(AtlasSearchResult, description="Entities whose attribute starts with the prefix (SRC-11)."),
 )
-async def search_using_attribute(request: Request, store: Store) -> AtlasJSONResponse:
+async def search_using_attribute(request: Request, store: Store, discovery: Discovery) -> AtlasJSONResponse:
     """``searchUsingAttribute``: entities whose attribute starts with the prefix (SRC-11).
 
     Raises:
@@ -290,7 +292,7 @@ async def search_using_attribute(request: Request, store: Store) -> AtlasJSONRes
         offset=asked.offset,
     )
     validate_basic_search_parameters(parameters)
-    return await _search(request, store, parameters)
+    return await _search(discovery, parameters)
 
 
 NO_SAVED_SEARCH = "The saved search is missing"
@@ -326,9 +328,9 @@ def _validate_user(request: Request) -> str | None:
     responses=json_response(AtlasUserSavedSearch, description="The saved search, with its GUID and owner (SVS-02)."),
     **request_body(AtlasUserSavedSearch, description="The search to save for the acting user."),
 )
-async def add_saved_search(request: Request, saved_body: SavedBody, store: Store) -> AtlasJSONResponse:
+async def add_saved_search(request: Request, saved_body: SavedBody, discovery: Discovery) -> AtlasJSONResponse:
     """``addSavedSearch``: the body's search, saved for the acting user (SVS-02)."""
-    found = await _discovery(request, store).add_saved_search(acting_user(request), _saved_search(saved_body))
+    found = await discovery.add_saved_search(acting_user(request), _saved_search(saved_body))
     return AtlasJSONResponse(content=found.to_json())
 
 
@@ -337,9 +339,9 @@ async def add_saved_search(request: Request, saved_body: SavedBody, store: Store
     responses=json_response(AtlasUserSavedSearch, description="The updated saved search (SVS-03)."),
     **request_body(AtlasUserSavedSearch, description="The saved search to update, by its GUID."),
 )
-async def update_saved_search(request: Request, saved_body: SavedBody, store: Store) -> AtlasJSONResponse:
+async def update_saved_search(request: Request, saved_body: SavedBody, discovery: Discovery) -> AtlasJSONResponse:
     """``updateSavedSearch``: the acting user's search of the body's GUID (SVS-03)."""
-    found = await _discovery(request, store).update_saved_search(acting_user(request), _saved_search(saved_body))
+    found = await discovery.update_saved_search(acting_user(request), _saved_search(saved_body))
     return AtlasJSONResponse(content=found.to_json())
 
 
@@ -350,9 +352,9 @@ async def update_saved_search(request: Request, saved_body: SavedBody, store: St
         204: {"description": "The user has no saved searches."},
     },
 )
-async def get_saved_searches(request: Request, store: Store) -> Response:
+async def get_saved_searches(request: Request, discovery: Discovery) -> Response:
     """``getSavedSearches``: the acting user's searches, nothing (204) without a profile (SVS-04)."""
-    found = await _discovery(request, store).get_saved_searches(acting_user(request), _validate_user(request))
+    found = await discovery.get_saved_searches(acting_user(request), _validate_user(request))
     if found is None:
         return Response(status_code=204)
     return AtlasJSONResponse(content=[saved.to_json() for saved in found])
@@ -362,10 +364,10 @@ async def get_saved_searches(request: Request, store: Store) -> Response:
     "/saved/execute/guid/{guid}",
     responses=json_response(AtlasSearchResult, description="The result of running the saved search (SVS-06)."),
 )
-async def execute_saved_search_by_guid(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def execute_saved_search_by_guid(guid: str, request: Request, discovery: Discovery) -> AtlasJSONResponse:
     """``executeSavedSearchByGuid``: the acting user's search of the GUID, run (SVS-06)."""
     validate_param_length("guid", guid)
-    service = _discovery(request, store)
+    service = discovery
     found = await service.get_saved_search_by_guid(acting_user(request), guid)
     return AtlasJSONResponse(content=(await service.execute_saved_search(found)).to_json())
 
@@ -374,10 +376,10 @@ async def execute_saved_search_by_guid(guid: str, request: Request, store: Store
     "/saved/execute/{name}",
     responses=json_response(AtlasSearchResult, description="The result of running the saved search (SVS-06)."),
 )
-async def execute_saved_search_by_name(name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def execute_saved_search_by_name(name: str, request: Request, discovery: Discovery) -> AtlasJSONResponse:
     """``executeSavedSearchByName``: the acting user's search of the name, run (SVS-06)."""
     validate_param_length("name", name)
-    service = _discovery(request, store)
+    service = discovery
     found = await service.get_saved_search_by_name(acting_user(request), _validate_user(request), name)
     return AtlasJSONResponse(content=(await service.execute_saved_search(found)).to_json())
 
@@ -386,12 +388,10 @@ async def execute_saved_search_by_name(name: str, request: Request, store: Store
     "/saved/{name}",
     responses=json_response(AtlasUserSavedSearch, description="The user's saved search of the name (SVS-04)."),
 )
-async def get_saved_search(name: str, request: Request, store: Store) -> AtlasJSONResponse:
+async def get_saved_search(name: str, request: Request, discovery: Discovery) -> AtlasJSONResponse:
     """``getSavedSearch``: the acting user's search of the name (SVS-04)."""
     validate_param_length("name", name)
-    found = await _discovery(request, store).get_saved_search_by_name(
-        acting_user(request), _validate_user(request), name
-    )
+    found = await discovery.get_saved_search_by_name(acting_user(request), _validate_user(request), name)
     return AtlasJSONResponse(content=found.to_json())
 
 
@@ -400,8 +400,8 @@ async def get_saved_search(name: str, request: Request, store: Store) -> AtlasJS
     status_code=204,
     responses=no_content_response("The saved search is deleted (SVS-05)."),
 )
-async def delete_saved_search(guid: str, request: Request, store: Store) -> Response:
+async def delete_saved_search(guid: str, request: Request, discovery: Discovery) -> Response:
     """``deleteSavedSearch``: the acting user's search of the GUID (SVS-05)."""
     validate_param_length("guid", guid)
-    await _discovery(request, store).delete_saved_search(acting_user(request), guid)
+    await discovery.delete_saved_search(acting_user(request), guid)
     return Response(status_code=204)

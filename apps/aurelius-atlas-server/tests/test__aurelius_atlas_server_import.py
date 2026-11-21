@@ -6,6 +6,7 @@ from pathlib import Path
 
 import httpx2 as httpx
 import pytest
+from aurelius_atlas_server.deps import read_settings
 from base_models import base_models
 from fake_issuer import FakeIssuer
 from fastapi import FastAPI
@@ -70,13 +71,17 @@ async def test__an_upload_is_imported(client: httpx.AsyncClient, issuer: FakeIss
     rules=["IMS-06"],
 )
 async def test__a_file_is_imported_from_the_import_folder(
-    app: FastAPI, client: httpx.AsyncClient, tmp_path: Path
+    app: FastAPI, client: httpx.AsyncClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Only with an import folder; another import running refuses an upload."""
     (tmp_path / "e.zip").write_bytes(await exported(client))
 
     refused = await client.post(f"{ADMIN}/importfile", json={"options": {"fileName": "e.zip"}})
-    app.state.settings = app.state.settings.model_copy(update={"import_folder": tmp_path})
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        read_settings,
+        lambda: app.state.settings.model_copy(update={"import_folder": tmp_path}),
+    )
     found = await client.post(f"{ADMIN}/importfile", json={"options": {"fileName": "e.zip"}})
     lock = app.state.import_export_lock
     await lock.acquire()
@@ -95,9 +100,15 @@ async def test__a_file_is_imported_from_the_import_folder(
     "aurelius_atlas_server.uploads.read_upload",
     rules=["SRV-12"],
 )
-async def test__an_upload_past_the_limit_is_refused(app: FastAPI, client: httpx.AsyncClient) -> None:
+async def test__an_upload_past_the_limit_is_refused(
+    app: FastAPI, client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The refusal names the field and the limit, before the ZIP is read or the import lock taken (SRV-12)."""
-    app.state.settings = app.state.settings.model_copy(update={"upload_max_bytes": 1024})
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        read_settings,
+        lambda: app.state.settings.model_copy(update={"upload_max_bytes": 1024}),
+    )
     padding = "0" * 4096
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as archive:

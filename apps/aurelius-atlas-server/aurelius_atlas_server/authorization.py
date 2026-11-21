@@ -1,8 +1,9 @@
 """Authorization: Atlas's privileges, granted by four roles of the server's client (AUZ-01 to AUZ-03, DD-300).
 
 What a user may do is decided in one place (ADR 038): the identity provider holds who has which role, and this
-module what each role grants. The stores check a request as Atlas's do, through the request's ``authorizer``; a
-check refused is Atlas's ``UNAUTHORIZED_ACCESS``.
+module what each role grants. The stores check a request as Atlas's do, through the request's authorizer; a
+check refused is Atlas's ``UNAUTHORIZED_ACCESS``. The checks take the authorizer, which a route gets as a
+dependency (SVC-02, DD-794).
 """
 
 from aurelius_atlas_core.authorization import AtlasPrivilege, Granted
@@ -51,15 +52,15 @@ def authorizer(request: Request) -> Granted:
     return Granted(None if user is None else user.name, privileges(user))
 
 
-def is_access_allowed(request: Request, privilege: AtlasPrivilege) -> bool:
-    """``isAccessAllowed``: whether the request's user holds the privilege (AUZ-02)."""
-    return authorizer(request).is_access_allowed(privilege)
+def is_access_allowed(authorized: Granted, privilege: AtlasPrivilege) -> bool:
+    """``isAccessAllowed``: whether the user holds the privilege (AUZ-02)."""
+    return authorized.is_access_allowed(privilege)
 
 
-def verify_access(request: Request, privilege: AtlasPrivilege, *action: object) -> None:
-    """``verifyAccess``: refuse the request without the privilege, naming the action (AUZ-03).
+def verify_access(authorized: Granted, privilege: AtlasPrivilege, *action: object) -> None:
+    """``verifyAccess``: refuse without the privilege, naming the action (AUZ-03).
 
     Raises:
         AtlasError: ``UNAUTHORIZED_ACCESS``, ``<user> is not authorized to perform <action>``.
     """
-    authorizer(request).verify_access(privilege, *action)
+    authorized.verify_access(privilege, *action)
