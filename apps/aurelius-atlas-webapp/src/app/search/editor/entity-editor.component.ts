@@ -33,6 +33,7 @@ import { canWriteEntities } from "./can-write-entities";
 import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState } from "./editor-state";
 import { EntityHistory } from "./entity-history.component";
+import { formDefinitions, formLabels, inFormOrder } from "./form-definitions";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import { EntityWritten } from "./entity-written";
 import {
@@ -180,13 +181,33 @@ export class EntityEditor {
      * per attribute the shipped metamodel can render (7-33, DD-722). */
     private readonly labels: EditorLabels = attributeLabels();
 
-    /** The fields the form renders (EDT-03), from the store's typedefs. */
+    /** The legacy forms by type (EDP-05, DD-817). */
+    private readonly definitions = formDefinitions();
+
+    /** The legacy form of the rendered type, or none: the generic form then (EDP-13). */
+    protected readonly formDefinition = computed(() => {
+        const typeName = this.state.typeName();
+        return typeName ? this.definitions[typeName] : undefined;
+    });
+
+    /** The labels the fields carry: the legacy form's own over the catalogue's (EDP-05). */
+    private readonly fieldLabels = computed<EditorLabels>(() => {
+        const form = this.formDefinition();
+        return form ? { ...this.labels, ...formLabels(form) } : this.labels;
+    });
+
+    /** The fields the form renders (EDT-03), from the store's typedefs: the
+     * legacy form's, in its order, where the type has one (EDP-05). */
     protected readonly fields = computed(() => {
         const typeName = this.state.typeName();
         const defs = this.state.entityDefsByName();
         const def = typeName ? defs.get(typeName) : undefined;
-
-        return def ? buildFields(def, defs, this.state.enumsByName(), this.labels) : [];
+        if (!def) {
+            return [];
+        }
+        const all = buildFields(def, defs, this.state.enumsByName(), this.fieldLabels());
+        const form = this.formDefinition();
+        return form ? inFormOrder(form, all) : all;
     });
 
     // The form trio sits below `fields` on purpose: `form()` compiles the
@@ -212,8 +233,16 @@ export class EntityEditor {
         const defs = this.state.entityDefsByName();
         const def = typeName ? defs.get(typeName) : undefined;
 
-        return def ? buildRelationshipFields(def, defs, this.labels, this.state.relationshipDefs()) : [];
+        if (!def) {
+            return [];
+        }
+        const all = buildRelationshipFields(def, defs, this.fieldLabels(), this.state.relationshipDefs());
+        const form = this.formDefinition();
+        return form ? inFormOrder(form, all) : all;
     });
+
+    /** Whether the tag box shows: on every generic form, and on the legacy forms that had it (EDP-11). */
+    protected readonly tagBoxShown = computed(() => this.formDefinition()?.classifications ?? true);
 
     /** The picker values the form holds (EDT-15's seed, EDT-14's edits). They
      * ride their own signal, not the form model: a picker's value is a chip

@@ -526,7 +526,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         // The tab pair renders with Write active (the field's start, EDT-20).
-        const tabs = [...compiled.querySelectorAll<HTMLElement>('[role="tab"]')];
+        const tabs = [...compiled.querySelectorAll<HTMLElement>('aurelius-atlas-ui-markdown-editor [role="tab"]')];
         expect(tabs.map((tab) => normalize(tab.textContent))).toEqual(["Write", "Preview"]);
         expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
 

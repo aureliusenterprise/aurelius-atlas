@@ -305,6 +305,9 @@
                  Quality mode renders the rule's `fields` end only (EDT-25):
                  the derived typedefs also carry the inherited lineage ends,
                  which the rule form does not edit. -->
+                @if (formDefinition() && tagBoxShown()) {
+                    <ng-container *ngTemplateOutlet="tagBox"></ng-container>
+                }
                 @for (field of renderedRelationshipFields(); track field.name) {
                     <div
                         class="field aurelius-editor-field aurelius-editor-relationship"
@@ -351,18 +354,9 @@
                     </div>
                 }
 
-                <!-- The classification box (EDT-05, DD-335, DD-336) is its own
-                 component since WFE-03 (DD-804): the editor hands it the
-                 applicable names and the chosen ones, and the store keeps
-                 the set the door's body carries (VDE-03). -->
-                <aurelius-atlas-webapp-classification-combobox
-                    [suggestions]="suggestions()"
-                    [chosen]="state.chosen()"
-                    [tooltips]="classificationTooltips()"
-                    [deleteLabel]="deleteLabel"
-                    (added)="state.addClassification($event)"
-                    (removed)="state.removeClassification($event)"
-                />
+                @if (!formDefinition()) {
+                    <ng-container *ngTemplateOutlet="tagBox"></ng-container>
+                }
             </form>
         }
 
@@ -418,6 +412,22 @@
             </div>
         </div>
     }
+
+    <!-- The tag box (EDT-05), placed by the form (EDP-11): before the pickers on a legacy form, last on the generic one. -->
+    <ng-template #tagBox>
+        <!-- The classification box (EDT-05, DD-335, DD-336) is its own
+                     component since WFE-03 (DD-804): the editor hands it the
+                     applicable names and the chosen ones, and the store keeps
+                     the set the door's body carries (VDE-03). -->
+        <aurelius-atlas-webapp-classification-combobox
+            [suggestions]="suggestions()"
+            [chosen]="state.chosen()"
+            [tooltips]="classificationTooltips()"
+            [deleteLabel]="deleteLabel"
+            (added)="state.addClassification($event)"
+            (removed)="state.removeClassification($event)"
+        />
+    </ng-template>
 
     <!-- The governance banner lines (EDT-24 as amended by 12.7, DD-446/DD-498):
          one per verdict measuring the control — the icon by the boolean
