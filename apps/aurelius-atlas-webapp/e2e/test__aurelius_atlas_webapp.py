@@ -15,6 +15,7 @@ from conftest import (
     SERVICE_PORT,
     TEMPO_HOST,
     TEMPO_PORT,
+    Settings,
     _goto_app,
 )
 from playwright.sync_api import Locator, Page, Route, expect
@@ -1944,6 +1945,60 @@ def test__the_editor_deletes_an_entity(authenticated: Page, root_url: str, user_
         _wait_entity_read(
             authenticated, root_url, user_token, guid, predicate=lambda entity: entity["status"] == "DELETED"
         )
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+
+
+# impact=major, likelihood=medium (the drawer's new read path; the drawer's own
+# chrome churns, and the rows ride the server's audit index)
+@pytest.mark.high
+def test__the_editor_shows_its_edit_history(
+    authenticated: Page, root_url: str, user_token: str, settings: Settings
+) -> None:
+    """The drawer's History tab lists the entity's changes, newest first (HST-03, HST-04).
+
+    The legacy editor's history tab on the ported audit read (AUD-08, AEN-05):
+    a seeded entity that was then edited shows its update above its create in
+    the History pane, each row naming the writer. The audit append refreshes
+    its index (ENS-11), so the rows are there as soon as the write answered.
+    The tab pair itself and the foot's pane rule are proven in the drawer's
+    own spec (HST-01, HST-02, HST-07) — here the wire, the order, and the
+    reader's act of switching tabs.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}history"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    updated = authenticated.request.put(
+        urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}"),
+        params={"name": "description"},
+        data=json.dumps("An edited description."),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert updated.status == 200, updated.text()
+
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+
+        # The read fires on the switch, not before (HST-03): the drawer opens
+        # on the form, and the History tab is the act that asks for the trail.
+        authenticated.locator("#editor-history-tab").click()
+
+        rows = authenticated.locator(".aurelius-editor-audit")
+        expect(rows).to_have_count(2)
+        expect(rows.nth(0).locator(".title")).to_have_text("Entity updated")
+        expect(rows.nth(1).locator(".title")).to_have_text("Entity created")
+        # Each row's meta line names the writer the store recorded (HST-04).
+        expect(rows.nth(0).locator("small")).to_contain_text(settings.username)
+        expect(rows.nth(0).locator("time")).to_contain_text(re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"))
+
+        # The foot belongs to the form alone (HST-07): in History the commit
+        # pair is gone, and the Entity tab's form is still there behind it.
+        expect(authenticated.locator(".aurelius-editor-foot")).to_have_count(0)
+        authenticated.locator("#editor-entity-tab").click()
+        expect(authenticated.locator(".aurelius-editor-foot")).to_be_visible()
+        expect(authenticated.locator("#editor-name")).to_have_value(name)
     finally:
         _delete_entity(authenticated, root_url, user_token, guid)
 
