@@ -1,7 +1,7 @@
 # 19.1 One query semantics for the store and its fakes
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** #427
 - **Records:** DD-767 to DD-772, plan in [plan.md](./plan.md), design in [design.md](./design.md)
 
 ## Scope
