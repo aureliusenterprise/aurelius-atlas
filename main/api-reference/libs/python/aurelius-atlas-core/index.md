@@ -1145,6 +1145,9 @@ Classes:
 - **`Reservation`** –
 
   A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+- **`SearchDocuments`** –
+
+  The one search the App Search engine and the view door run on (QRY-05, DD-770).
 - **`TypeCount`** –
 
   How many entities of a type are in a state, shells (`isIncomplete`) or not (MET-02).
@@ -2500,6 +2503,37 @@ key: str = Field(exclude=True)
 ```
 write_id: str
 ```
+
+### SearchDocuments
+
+Bases: `Protocol`
+
+The one search the App Search engine and the view door run on (QRY-05, DD-770).
+
+A narrow contract on purpose: an App Search search needs the engine's field table, its nested index paths and its weighted vector scoring, so the in-memory store answers the basic search and the terms search it already answers and does not become a third query engine. Specs that drive an engine pass a small fake for this method, the pattern `FakeEmbedder` uses.
+
+Methods:
+
+- **`search_app_search`** –
+
+  One search of an engine's index: hits with scores, the exact total, the aggregations (DD-523, DD-534).
+
+#### search\_app\_search
+
+```
+search_app_search(
+    *,
+    query: dict[str, Any] | None,
+    sort: list[dict[str, Any]],
+    aggs: dict[str, Any],
+    from_: int,
+    size: int,
+    index: str = ENTITY_DOCUMENTS,
+    knn: dict[str, Any] | None = None,
+) -> Mapping[str, Any]
+```
+
+One search of an engine's index: hits with scores, the exact total, the aggregations (DD-523, DD-534).
 
 ### TypeCount
 

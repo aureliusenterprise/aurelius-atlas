@@ -4033,6 +4033,34 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.SearchDocuments" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SearchDocuments
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SearchDocuments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;search_app_search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.TypeCount" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -10797,6 +10825,8 @@
       
         
       
+        
+      
     
     
     
@@ -10973,6 +11003,33 @@
     
   
   CI Test Tiers Plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/platform/separation-and-seams-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Separation and Seams Plan
 
     
   </span>
@@ -14275,6 +14332,34 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;write_id
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.SearchDocuments" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SearchDocuments
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SearchDocuments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;search_app_search
       </span>
     </span>
   </a>
@@ -21221,6 +21306,13 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
           </div>
         </li>
         <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            SearchDocuments (aurelius_atlas_core.entity_documents.SearchDocuments)" href="./#aurelius_atlas_core.entity_documents.SearchDocuments">SearchDocuments</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>The one search the App Search engine and the view door run on (QRY-05, DD-770).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            TypeCount
 
 
@@ -26165,6 +26257,118 @@ with <code>wait_for_documents</code>, also those awaiting their App Search docum
 
 
 
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="aurelius_atlas_core.entity_documents.SearchDocuments" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">SearchDocuments</span>
+
+
+<a href="#aurelius_atlas_core.entity_documents.SearchDocuments" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
+
+
+
+        <p>The one search the App Search engine and the view door run on (QRY-05, DD-770).</p>
+<p>A narrow contract on purpose: an App Search search needs the engine's field table, its nested index paths and
+its weighted vector scoring, so the in-memory store answers the basic search and the terms search it already
+answers and does not become a third query engine. Specs that drive an engine pass a small fake for this method,
+the pattern <code>FakeEmbedder</code> uses.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            search_app_search
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search)" href="./#aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search">search_app_search</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>One search of an engine's index: hits with scores, the exact total, the aggregations (DD-523, DD-534).</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">search_app_search</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">search_app_search</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search(query)">query</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search(sort)">sort</span></span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]],</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search(aggs)">aggs</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">],</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search(from_)">from_</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search(size)">size</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search(index)">index</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            ENTITY_DOCUMENTS
+
+
+  
+      module-attribute
+   (aurelius_atlas_core.entity_documents.ENTITY_DOCUMENTS)" href="./#aurelius_atlas_core.entity_documents.ENTITY_DOCUMENTS">ENTITY_DOCUMENTS</a></span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.SearchDocuments.search_app_search(knn)">knn</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>One search of an engine's index: hits with scores, the exact total, the aggregations (DD-523, DD-534).</p>
+
+
+    </div>
+
+</div>
 
 
 
