@@ -28,6 +28,7 @@ def models_dir(models_dir: Path, tmp_path: Path, request: pytest.FixtureRequest)
     return core_models(tmp_path / "core-models") if scenario.id.startswith(NEEDS_CORE_MODELS) else models_dir
 
 
+@pytest.mark.covers(rules=["QRY-06"])
 @pytest.mark.parametrize("scenario", load_scenarios(SCENARIOS))
 async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
     """Each parity scenario passes against the application in-process (ADR 052), as the user ``admin`` (USR-04)."""

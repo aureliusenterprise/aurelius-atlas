@@ -4,7 +4,7 @@ failed round, its settings, and the wiring (ASU-06, LAS-10, ASQ-07, ASG-06), on 
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
@@ -13,6 +13,7 @@ from aurelius_atlas_server.app import create_app
 from aurelius_atlas_server.app_search import AppSearchWorker, DeriveBeforeAnsweringMiddleware, derive
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from elasticsearch import AsyncElasticsearch
 
 W = "aurelius_atlas_server.app_search.AppSearchWorker"
 
@@ -160,7 +161,7 @@ async def test__the_server_derives_a_written_entity_s_document_in_the_background
     app = create_app(settings.model_copy(update={"app_search_enabled": True, "app_search_poll_seconds": 0.01}))
 
     async with app.router.lifespan_context(app):
-        documents = ElasticsearchEntityDocuments(fake_es)  # type: ignore[arg-type]
+        documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake_es))
         await documents.write([(StoredEntity(guid="d", type_name="m4i_data_domain", attributes={}), None)])
         for _ in range(200):
             if (await documents.get(["d"]))["d"].entity.app_search is not None:
@@ -195,7 +196,7 @@ async def test__turned_off_the_server_derives_no_document(settings: ServerSettin
     app = create_app(settings.model_copy(update={"app_search_poll_seconds": 0.01}))
 
     async with app.router.lifespan_context(app):
-        documents = ElasticsearchEntityDocuments(fake_es)  # type: ignore[arg-type]
+        documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake_es))
         await documents.write([(StoredEntity(guid="d", type_name="m4i_data_domain", attributes={}), None)])
         await asyncio.sleep(0.05)
         stored = (await documents.get(["d"]))["d"].entity

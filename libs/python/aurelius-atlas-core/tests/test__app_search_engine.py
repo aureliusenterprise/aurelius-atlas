@@ -10,7 +10,7 @@ import json
 from collections import Counter
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.app_search_document import StoredVerdict, own_document
@@ -46,6 +46,7 @@ from aurelius_atlas_model.impexp import AtlasImportRequest
 from aurelius_atlas_model.instance import EntityStatus
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from elasticsearch import AsyncElasticsearch
 
 E = "aurelius_atlas_core.app_search_engine"
 X = f"{E}.AppSearchEngine.search"
@@ -144,7 +145,7 @@ def stored(guid: str, type_name: str = "m4i_data_entity", **fields: Any) -> Stor
 
 async def engine_of(*entities: StoredEntity, engine: Engine = ATLAS_DEV) -> AppSearchEngine:
     """``engine`` over the entities, written to a fake store."""
-    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
     await documents.prepare()
     await documents.write([(entity, None) for entity in entities])
     return AppSearchEngine(documents, engine)
@@ -508,7 +509,7 @@ async def indexed_sample() -> ElasticsearchEntityDocuments:
     await types.load()
     for models_dir in (BUILTIN_MODELS_DIR, M4I_MODELS_DIR):
         await ModelLoader(types).load(models_dir)
-    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
     store = EntityStore(types.registry, documents)
     await store.prepare()
     result = await ImportService(store, types, EntityWriter(store, user="importer")).run(
@@ -614,7 +615,7 @@ def verdict(entity: str, rule: str, compliant: str, **fields: str) -> StoredVerd
 
 async def gov_engine(*verdicts: StoredVerdict) -> AppSearchEngine:
     """``atlas-dev-gov-quality`` over the verdicts, written to a fake store."""
-    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
     await documents.prepare()
     by_entity: dict[str, list[StoredVerdict]] = {}
     for found in verdicts:

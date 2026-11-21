@@ -7,7 +7,7 @@ sample catalogue gives each legacy verdict of a rule that reads back.
 import asyncio
 import json
 from collections import Counter
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, StoredVerdict, own_document, verdict_mapping
@@ -23,6 +23,7 @@ from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity, AtlasObjectId, EntityStatus
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from aurelius_atlas_typesystem.registry import TypeRegistry
+from elasticsearch import AsyncElasticsearch
 from test__app_search_engine import FIXTURES, indexed_sample
 
 G = "aurelius_atlas_core.app_search_governance"
@@ -122,7 +123,7 @@ class Catalogue:
 
     def __init__(self, types: TypedefStore) -> None:
         self.client = FakeClient()
-        self.documents = ElasticsearchEntityDocuments(self.client)  # type: ignore[arg-type]
+        self.documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", self.client))
         self.store = EntityStore(types.registry, self.documents)
         self.indexer = AppSearchIndexer(self.documents, types.registry)
         self.governance = GovernanceIndexer(self.documents, types.registry, batch_size=2)
@@ -440,7 +441,7 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
     return asyncio.run(build())
 
 
-@pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09"])
+@pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09", "QRY-06"])
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
     """28 of 66 rules read; 1,785 verdicts; 1,585 of the 1,612 legacy verdicts of a rule that reads as it
     were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).

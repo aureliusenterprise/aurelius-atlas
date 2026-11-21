@@ -15,3 +15,8 @@ for the sample catalogue, copied unchanged from `backend/m4i-atlas-post-install/
 They are what the legacy pipeline produced from the catalogue of `data/atlas-sample/sample_data.zip`: all 684
 entity documents' GUIDs are entities of that import. The series 14 tests derive the same documents from the
 store and compare them with these (14.1, DD-484).
+
+`query-matrix.json` is the differential matrix this repository wrote: six entities and the searches that run
+over them, each with the hit GUID sequence, the total and the facet counts both stores answer. It covers every
+predicate of `Test`, both sort tie-breaks, present-before-absent ordering and a vector query (19.1, QRY-04,
+DD-771). The 19.1 test compares both stores against it, and against each other.

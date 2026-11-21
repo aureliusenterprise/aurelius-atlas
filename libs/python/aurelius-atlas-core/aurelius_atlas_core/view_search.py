@@ -18,6 +18,7 @@ from aurelius_atlas_model.views import EntityCard
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
+from aurelius_atlas_core import es_clauses
 from aurelius_atlas_core.app_search_document import APP_SEARCH_FIELD, QUALITY_TOTALS_FIELD
 from aurelius_atlas_core.app_search_engine import (
     MAX_FACET_SIZE,
@@ -33,7 +34,7 @@ from aurelius_atlas_core.app_search_engine import (
     plain,
     query_body,
 )
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import SearchDocuments
 from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH
 from aurelius_atlas_core.search_aggregator import ASSET_ENTITY_TYPE, OWNER_ATTRIBUTE
 from aurelius_atlas_core.search_fields import KEYWORD, field_name, kind_of
@@ -44,7 +45,7 @@ from aurelius_atlas_core.view_derivation import QUALITY_DIMENSIONS, card_of, vie
 VIEW_ENGINE = "view"
 """The door's population by name: every active entity, typed out by ``filters.typeName`` (AVR-11, DD-586)."""
 
-HOLDS = ({"term": {"state": "ACTIVE"}},)
+HOLDS = (es_clauses.term("state", "ACTIVE"),)
 """The door holds every active entity — not only the ones with a document, as the engine's population does
 (AVR-11, DD-586); ``filters.typeName`` narrows as ASE-03's population did."""
 
@@ -338,7 +339,7 @@ def _refuse(messages: list[str]) -> NoReturn:
 class ViewSearchEngine:
     """The search door over ``documents``' entity index, typed by ``registry`` (AVR-08, DD-584)."""
 
-    def __init__(self, documents: ElasticsearchEntityDocuments, registry: TypeRegistry) -> None:
+    def __init__(self, documents: SearchDocuments, registry: TypeRegistry) -> None:
         """The door reading ``documents`` and naming attributes and fields through ``registry``."""
         self._documents = documents
         self._registry = registry
@@ -400,9 +401,7 @@ def _asked(search: Search, request: DoorRequest) -> dict[str, Any]:
     if SERVICE_TYPE in request.facets:
         asked = request.facets.get("typeName")
         if (asked is None or asked.size < FACET_SIZE) and search.engine.fields["typeName"].path is not None:
-            body["aggs"][_FEED] = {
-                "terms": {"field": "typeName", "size": FACET_SIZE + 1, "order": [{"_count": "desc"}, {"_key": "asc"}]}
-            }
+            body["aggs"][_FEED] = es_clauses.terms_agg("typeName", FACET_SIZE + 1)
     return body
 
 
