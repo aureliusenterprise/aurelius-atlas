@@ -40,6 +40,11 @@
     "aliases": []
   },
   {
+    "version": "feat-webapp-7-35-editor-history-tab",
+    "title": "feat-webapp-7-35-editor-history-tab",
+    "aliases": []
+  },
+  {
     "version": "feat-infra-root",
     "title": "feat-infra-root",
     "aliases": []
