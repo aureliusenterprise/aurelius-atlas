@@ -2,6 +2,8 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
+    DestroyRef,
+    ElementRef,
     effect,
     inject,
     Injector,
@@ -10,7 +12,7 @@ import {
     viewChild,
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { NgTemplateOutlet } from "@angular/common";
+import { DatePipe, NgTemplateOutlet } from "@angular/common";
 import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
 import { ActivatedRoute, Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
@@ -19,15 +21,19 @@ import { map, Subscription } from "rxjs";
 
 import { Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
 import {
+    AtlasEntitiesService,
     QualityRuleService,
+    type EntityAuditEventV2,
     type EntityValidationResponse,
     type GovernanceVerdict,
     ValidateEntityService,
 } from "aurelius-atlas-data-access";
 
+import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { cardTypeAlias } from "../shared/type-alias";
+import { auditActionDisplay } from "./audit-display";
 import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
 import { ClassificationCombobox } from "./classification-combobox.component";
@@ -55,6 +61,9 @@ type PickerRow = { name: string; label: string };
 
 /** An enum option row (EDT-03's enum kind — the Select's `displayField`). */
 type EnumRow = { value: string };
+
+/** The drawer's pane (HST-01, DD-816): the entity form or the audit list. */
+type EditorTab = "entity" | "history";
 
 /** One model slot: the value a field of any kind holds (DD-354). */
 type EditorValue = string | number | boolean | string[] | null;
@@ -93,10 +102,16 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  * on open and after every change debounced 200 ms, and the answer's verdicts
  * render as lines under the control their attribute names — failures swallow
  * quietly.
+ *
+ * Since 7.35 the drawer carries the legacy's Entity/History tab pair in edit
+ * mode (HST-01, DD-816): the History pane lists the entity's newest audit
+ * events, re-read from the Atlas v2 audit endpoint on every switch (HST-03,
+ * DD-817), and the commit foot belongs to the Entity pane alone (HST-07).
  */
 @Component({
     imports: [
         ClassificationCombobox,
+        DatePipe,
         Drawer,
         EntityRelationshipInput,
         FontAwesomeModule,
@@ -122,6 +137,16 @@ export class EntityEditor {
     private readonly validateEntity = inject(ValidateEntityService);
 
     private readonly qualityRule = inject(QualityRuleService);
+
+    /** The Atlas entity endpoints (7.35): the drawer's own audit read rides
+     * them directly, not the view doors (DD-817). */
+    private readonly entities = inject(AtlasEntitiesService);
+
+    /** The app's alert store (HST-06): a failed audit read lands here. */
+    private readonly alerts = inject(AlertsService);
+
+    /** The component's teardown (the audit read does not outlive the drawer). */
+    private readonly destroyRef = inject(DestroyRef);
 
     /** The write-tick bus (DD-327, DD-803): the code that performs a save
      * or a delete fires its outcome here, heard to fill the outcome line
@@ -151,6 +176,21 @@ export class EntityEditor {
 
     /** Whether the notification's X hid it — until the next Save (DD-331). */
     protected readonly notificationDismissed = signal(false);
+
+    /** The drawer's pane (HST-01, DD-816): the form or the audit list. */
+    protected readonly tab = signal<EditorTab>("entity");
+
+    /** The History pane's events (HST-03), newest first as the server
+     * answered them (AUD-08) — the client never re-sorts. */
+    protected readonly audits = signal<EntityAuditEventV2[]>([]);
+
+    /** Whether the audit read is in flight (HST-05's loading line). */
+    protected readonly auditsLoading = signal(false);
+
+    /** The in-flight audit read (HST-03): a switch while one runs does not
+     * repeat it, and the drawer's teardown drops the answer it no longer
+     * needs — the constructor's onDestroy unsubscribes. */
+    private auditsPending: Subscription | null = null;
 
     private readonly route = inject(ActivatedRoute);
 
@@ -271,6 +311,10 @@ export class EntityEditor {
         this.state.applicableClassifications().map((def) => def.name ?? ""),
     );
 
+    /** Whether the Entity/History tab pair renders (HST-01): edit mode only.
+     * A create has no entity, so it has no audit trail to show. */
+    protected readonly tabsShown = computed(() => !this.isCreate);
+
     /** The create-mode type field: the picker stays above the form (EDT-04, DD-330). */
     protected readonly pickerVisible = computed(() => this.isCreate);
 
@@ -367,6 +411,10 @@ export class EntityEditor {
 
     protected readonly loadingLine = $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`;
 
+    /** The History pane's loading line and its failure alert (HST-05, HST-06):
+     * the vendored audit-retrieve string, one key for both states. */
+    protected readonly auditRetrieveLine = $localize`:@@search.services.entityAudit.retrieve:Retrieving the audit log`;
+
     protected readonly savingLine = $localize`:@@search.services.entityUpdate.save:Saving the entity`;
 
     protected readonly deletingLine = $localize`:@@search.services.entityDelete.delete:Deleting the entity`;
@@ -447,6 +495,9 @@ export class EntityEditor {
     constructor() {
         this.state.mode.set(this.isCreate ? "create" : "edit");
         this.state.loadSlices();
+
+        // The audit read does not outlive the drawer (HST-03).
+        this.destroyRef.onDestroy(() => this.auditsPending?.unsubscribe());
 
         // The entity read follows the route's guid (EDT-02, VDE-01) — edit
         // mode only. The read door's client answers it (DD-608).
@@ -915,6 +966,102 @@ export class EntityEditor {
             },
             error: () => qualityForm.showTransportFailure(),
         });
+    }
+
+    /**
+     * Open one pane (HST-02): the tab click and the arrow keys both land
+     * here. Switching to History fires the audit read (HST-03); the panes
+     * stay mounted and the inactive hides, so the form keeps its DOM state.
+     * @param tab the pane to show
+     */
+    protected showTab(tab: EditorTab): void {
+        this.tab.set(tab);
+        if (tab === "history") {
+            this.loadAudits();
+        }
+    }
+
+    /** The tabs in display order — the pair the arrow keys walk. */
+    private static readonly TAB_ORDER: readonly EditorTab[] = ["entity", "history"];
+
+    /** The Entity tab button, so an arrow-key switch carries focus (the
+     * markdown field's roving-tabindex pattern, UIC-26). */
+    private readonly entityTabRef = viewChild<ElementRef<HTMLButtonElement>>("entityTab");
+
+    /** The History tab button. */
+    private readonly historyTabRef = viewChild<ElementRef<HTMLButtonElement>>("historyTab");
+
+    /**
+     * The tablist's keys (HST-02, UIC-26): Left/Right move the active tab
+     * (wrapping), Home/End jump to the ends — the buttons carry the roving
+     * tabindex, so focus follows the active tab. Activation is the native
+     * button's (click/Space/Enter), nothing to re-implement here.
+     * @param event the keydown event bubbling from the active tab
+     */
+    protected onTabKeys(event: KeyboardEvent): void {
+        const order = EntityEditor.TAB_ORDER;
+        const current = order.indexOf(this.tab());
+        let next: number;
+        switch (event.key) {
+            case "ArrowRight":
+                next = (current + 1) % order.length;
+                break;
+            case "ArrowLeft":
+                next = (current - 1 + order.length) % order.length;
+                break;
+            case "Home":
+                next = 0;
+                break;
+            case "End":
+                next = order.length - 1;
+                break;
+            default:
+                return;
+        }
+        event.preventDefault();
+        this.showTab(order[next]);
+        const active = order[next] === "entity" ? this.entityTabRef() : this.historyTabRef();
+        active?.nativeElement.focus();
+    }
+
+    /**
+     * The audit read (HST-03, DD-817): one `GET /v2/entity/{guid}/audit`
+     * with no query parameters, so the server's defaults answer its newest
+     * 100 events in newest-first key order (AUD-08) — an explicit `offset`
+     * would move the server onto its sorted, oldest-first path (AUD-07).
+     * Every switch re-reads (no caching rule applies), and a switch does not
+     * stack reads: an in-flight read is not repeated, and the drawer's
+     * teardown drops the answer it no longer needs (the read dies with it).
+     * A failed read alerts once and leaves the list empty (HST-06).
+     */
+    private loadAudits(): void {
+        const guid = this.state.entity()?.guid ?? this.guid();
+        if (!guid || this.auditsPending !== null) {
+            return;
+        }
+        this.auditsLoading.set(true);
+        this.auditsPending = this.entities.getAuditEvents(guid).subscribe({
+            next: (events) => {
+                this.auditsPending = null;
+                this.auditsLoading.set(false);
+                this.audits.set(events);
+            },
+            error: () => {
+                this.auditsPending = null;
+                this.auditsLoading.set(false);
+                this.alerts.add({
+                    severity: "error",
+                    message: this.auditRetrieveLine,
+                    source: "search",
+                });
+            },
+        });
+    }
+
+    /** The audit row's change label (HST-04): the display map over the
+     * event's raw action name, the legacy's `| translate` lookup. */
+    protected auditActionLabel(event: EntityAuditEventV2): string {
+        return auditActionDisplay(event.action) ?? "";
     }
 
     /**

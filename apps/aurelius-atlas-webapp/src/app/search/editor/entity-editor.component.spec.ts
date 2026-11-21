@@ -26,6 +26,7 @@ import { Holdable } from "aurelius-atlas-ui";
 import {
     ViewEntityService,
     type AtlasEntityDef,
+    type EntityAuditEventV2,
     type AtlasRelationshipAttributeDef,
     type AtlasRelationshipDef,
     type AtlasTypeDefHeader,
@@ -447,6 +448,41 @@ function savedView(overrides: Partial<EntityView> = {}): EntityView {
     return { ...ANSWER, updateTime: 1_700_000_090_000, ...overrides };
 }
 
+/** The Atlas v2 audit read (7.35, HST-03): `GET /api/atlas/v2/entity/{guid}/audit`
+ * — no `/guid/` segment, unlike the entity reads. */
+const AUDIT_URL = "/api/atlas/v2/entity/7a1b/audit";
+
+/** The audit trail of the fixture entity, newest first as the server answers
+ * it (AUD-08): the update, then the create. */
+const AUDIT_EVENTS: EntityAuditEventV2[] = [
+    {
+        entityId: "7a1b",
+        eventKey: "1700000021000:0",
+        timestamp: 1_700_000_021_000,
+        user: "analyst-3",
+        action: "ENTITY_UPDATE",
+    },
+    {
+        entityId: "7a1b",
+        eventKey: "1700000000000:0",
+        timestamp: 1_700_000_000_000,
+        user: "analyst-3",
+        action: "ENTITY_CREATE",
+    },
+];
+
+/** Click the drawer's History tab (HST-01): the switch a reader performs. */
+function openHistoryTab(compiled: HTMLElement, fixture: ComponentFixture<EntityEditor>): void {
+    compiled.querySelector<HTMLButtonElement>("#editor-history-tab")!.click();
+    fixture.detectChanges();
+}
+
+/** Click the drawer's Entity tab. */
+function openEntityTab(compiled: HTMLElement, fixture: ComponentFixture<EntityEditor>): void {
+    compiled.querySelector<HTMLButtonElement>("#editor-entity-tab")!.click();
+    fixture.detectChanges();
+}
+
 const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
 /**
@@ -532,7 +568,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         // The tab pair renders with Write active (the field's start, EDT-20).
-        const tabs = [...compiled.querySelectorAll<HTMLElement>('[role="tab"]')];
+        // The drawer's own Entity/History pair (HST-01) rides the subhead, so
+        // this query names the field's strip, not every tab in the panel.
+        const tabs = [...compiled.querySelectorAll<HTMLElement>(".aurelius-markdown-editor-tabs [role='tab']")];
         expect(tabs.map((tab) => normalize(tab.textContent))).toEqual(["Write", "Preview"]);
         expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
 
@@ -2430,5 +2468,200 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29, VDE-11)", () => {
         expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
             "This entity can't be saved because one or more required fields are missing.",
         );
+    });
+});
+
+describe("EntityEditor history tab (HST-01..HST-07)", () => {
+    it("the edit drawer carries the Entity/History tab pair, create does not (HST-01)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        // The pair sits in the drawer's subhead slot (DD-180), so a long form
+        // cannot scroll it away (HST-01).
+        const tabs = compiled.querySelector<HTMLElement>("nav[drawer-subhead].tabs")!;
+        expect(tabs.getAttribute("role")).toBe("tablist");
+        expect(
+            [...tabs.querySelectorAll<HTMLButtonElement>("button[role='tab']")].map((tab) =>
+                normalize(tab.textContent),
+            ),
+        ).toEqual(["Entity", "History"]);
+        httpMock.verify();
+    });
+
+    it("create mode renders the form alone, with no tab pair (HST-01)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true });
+        arriveTypeDefs(fixture, httpMock);
+
+        expect(compiled.querySelector("nav[drawer-subhead]")).toBeNull();
+        expect(compiled.querySelector("#editor-entity-tab")).toBeNull();
+        expect(compiled.querySelector("#editor-history-tab")).toBeNull();
+        expect(compiled.querySelector("button.aurelius-editor-save")).toBeTruthy();
+        httpMock.verify();
+    });
+
+    it("the tab pair is one tablist with the roving tabindex and the aria pair (HST-02)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const entityTab = compiled.querySelector<HTMLButtonElement>("#editor-entity-tab")!;
+        const historyTab = compiled.querySelector<HTMLButtonElement>("#editor-history-tab")!;
+
+        // The drawer opens on the form: Entity is the active tab (UIC-26).
+        expect(entityTab.getAttribute("aria-selected")).toBe("true");
+        expect(entityTab.tabIndex).toBe(0);
+        expect(historyTab.getAttribute("aria-selected")).toBe("false");
+        expect(historyTab.tabIndex).toBe(-1);
+        // Each tab names its pane and each pane names its tab (UIC-26).
+        expect(entityTab.getAttribute("aria-controls")).toBe("editor-entity-pane");
+        expect(compiled.querySelector("#editor-entity-pane")?.getAttribute("aria-labelledby")).toBe(
+            "editor-entity-tab",
+        );
+        expect(historyTab.getAttribute("aria-controls")).toBe("editor-history-pane");
+        expect(compiled.querySelector("#editor-history-pane")?.getAttribute("aria-labelledby")).toBe(
+            "editor-history-tab",
+        );
+        httpMock.expectNone(AUDIT_URL); // the trail is read only on the tab (HST-03)
+    });
+
+    it("the arrow keys move the active tab and carry focus with it (HST-02)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        // The keys walk the active tab (the markdown field's pattern), so the
+        // drawer starts on Entity: Right moves to History, Left back.
+        compiled
+            .querySelector<HTMLButtonElement>("#editor-entity-tab")!
+            .dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+        fixture.detectChanges();
+
+        expect(document.activeElement).toBe(compiled.querySelector("#editor-history-tab"));
+        expect(compiled.querySelector("#editor-history-tab")?.closest("li")?.classList.contains("is-active")).toBe(
+            true,
+        );
+        httpMock.expectOne(AUDIT_URL).flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+
+        // Left from History moves to Entity (UIC-26).
+        compiled
+            .querySelector<HTMLButtonElement>("#editor-history-tab")!
+            .dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true }));
+        fixture.detectChanges();
+
+        expect(document.activeElement).toBe(compiled.querySelector("#editor-entity-tab"));
+        expect(compiled.querySelector<HTMLButtonElement>("#editor-entity-tab")?.getAttribute("aria-selected")).toBe(
+            "true",
+        );
+    });
+
+    it("switching to History fires one unparameterised audit read and lists the rows newest first (HST-03, HST-04)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+
+        // One GET with no query parameters (HST-03): the server's defaults
+        // answer its newest 100 events newest-first (AUD-08). An `offset` of
+        // 0 would move it onto its sorted, oldest-first path (AUD-07).
+        const request = httpMock.expectOne(AUDIT_URL);
+        expect(request.request.method).toBe("GET");
+        expect(request.request.params.keys()).toEqual([]);
+        request.flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+
+        const rows = [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-audit")];
+        expect(rows.map((row) => normalize(row.querySelector(".title")?.textContent))).toEqual([
+            "Entity updated",
+            "Entity created",
+        ]);
+        // The meta line is the legacy's anatomy: the user, the separator, the time.
+        const meta = normalize(rows[0]?.querySelector("small")?.textContent);
+        expect(meta).toContain("analyst-3");
+        expect(rows[0]?.querySelector("time")?.getAttribute("datetime")).toBe("1700000021000");
+        expect(normalize(rows[0]?.querySelector("time")?.textContent)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+    });
+
+    it("the audit read is repeated per visit and never stacks while in flight (HST-03)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        const first = httpMock.expectOne(AUDIT_URL);
+
+        // A second switch while the read runs does not ask again (HST-03).
+        compiled.querySelector<HTMLButtonElement>("#editor-history-tab")!.click();
+        fixture.detectChanges();
+        httpMock.expectNone(AUDIT_URL);
+
+        first.flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(2);
+
+        // Coming back re-reads: no caching rule applies to the trail.
+        openEntityTab(compiled, fixture);
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+        httpMock.verify();
+    });
+
+    it("the History pane shows the loading line while the read runs (HST-05)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        fixture.detectChanges();
+
+        // The persistent region (LR-002): the history pane's loading line
+        // carries the vendored audit-retrieve string while in flight.
+        const line = compiled.querySelector("#editor-history-pane .aurelius-editor-loading");
+        expect(normalize(line?.textContent)).toBe("Retrieving the audit log");
+
+        httpMock.expectOne(AUDIT_URL).flush([]);
+        fixture.detectChanges();
+
+        expect(normalize(compiled.querySelector("#editor-history-pane .aurelius-editor-loading")?.textContent)).toBe(
+            "",
+        );
+        // An answered read with no events shows no rows (HST-05's aged case).
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(0);
+    });
+
+    it("a failed audit read adds one alert, leaves the list empty and keeps the drawer (HST-06)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush({}, { status: 500, statusText: "Server Error" });
+        fixture.detectChanges();
+
+        const alerts = TestBed.inject(AlertsService);
+        expect(alerts.hasAlerts()).toBe(true);
+        expect(alerts.alerts()[0]?.message).toBe("Retrieving the audit log");
+        expect(alerts.alerts()[0]?.severity).toBe("error");
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(0);
+        // The drawer stays open (EDT-08's posture).
+        expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+    });
+
+    it("the foot holds Save and Delete on the Entity tab and hides on History (HST-07)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        expect(compiled.querySelector(".aurelius-editor-foot")).toBeTruthy();
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+
+        // The foot holds nothing in History, which hides it (the drawer's
+        // empty-foot rule, HST-07 — the legacy's footer rule).
+        expect(compiled.querySelector(".aurelius-editor-foot")).toBeNull();
+        expect(compiled.querySelector(".aurelius-drawer-foot")?.children.length).toBe(0);
+        // The form stayed mounted behind the hidden pane (HST-02, DD-352).
+        expect(compiled.querySelector("#editor-entity-pane")?.hasAttribute("hidden")).toBe(true);
+        expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("genomic_variants");
+
+        openEntityTab(compiled, fixture);
+        expect(compiled.querySelector(".aurelius-editor-foot")).toBeTruthy();
     });
 });
