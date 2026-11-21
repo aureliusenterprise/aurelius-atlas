@@ -1,7 +1,7 @@
 # 19.7 Small deletions
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** #433
 - **Records:** DD-809 to DD-811, plan in [plan.md](./plan.md), design in [design.md](./design.md)
 
 ## Scope
