@@ -2,7 +2,7 @@
 
 The steps, in order, with the rules each delivers. The spec is [`spec.md`](./spec.md).
 
-## 0. Before it: the verdicts under tenancy (12.7b, its own increment)
+## 0. Before it: the verdicts under tenancy (12.7f, its own increment)
 
 On the standalone stack today, with tenancy on, the editor shows no verdict at all. The validate-entity service
 reads the rules as its own service account (VEV-04, DD-499), whose token names no tenant, and the server refuses
@@ -13,7 +13,7 @@ Decided (2026-11-21): **read with the caller's token, cache per tenant.** The ca
 on a cache miss the service reads that tenant's rules with it and caches them per tenant. This supersedes DD-499
 for tenancy: DD-499 refused forwarding because a cache filled under one user's visibility leaked to another, and
 per tenant there is no leak, as every member of a tenant reads its rules (`atlas-read`). Without tenancy the
-service keeps its own identity. 12.7b's spec lives in `apps/aurelius-atlas-validate-entity/specs/`.
+service keeps its own identity. 12.7f's spec lives in `apps/aurelius-atlas-validate-entity/specs/`.
 
 ## 1. The page (EDP-01 to EDP-04, EDP-19)
 

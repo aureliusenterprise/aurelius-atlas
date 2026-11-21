@@ -24,7 +24,7 @@ legacy fields in their legacy order; and the verdicts sit next to their field, r
     - one form definition per type (below), replacing EDT-03's every-attribute field set for those types;
     - the verdict column beside each field.
 - The validate-entity service answering under tenancy, which the verdicts need on a tenancy stack: a separate
-  increment (12.7b), see [the plan](./plan.md).
+  increment (12.7f), see [the plan](./plan.md).
 
 Not delivered:
 
@@ -223,4 +223,4 @@ Apache Atlas.
 - The webapp's unit tests: EDP-01 to EDP-19, one form definition test per table naming each field in order.
 - The webapp's e2e: create a data entity on the page, the name rule's verdict turning from warning to check
   while typing, and the save returning to the details screen.
-- By hand on the standalone stack (with 12.7b): each of the ten forms against the tables above.
+- By hand on the standalone stack (with 12.7f): each of the ten forms against the tables above.
