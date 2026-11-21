@@ -39,8 +39,8 @@ from aurelius_atlas_server.deps import Authorizer
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import array_of, json_response, request_body
 from aurelius_atlas_server.openapi import no_content as no_content_response
-from aurelius_atlas_server.routes.entity import Store
 from aurelius_atlas_server.routes.types import validate_param_length
+from aurelius_atlas_server.services import Store
 
 DISCOVERY = APIRouter(prefix="/api/atlas/v2/search", tags=["Discovery"])
 

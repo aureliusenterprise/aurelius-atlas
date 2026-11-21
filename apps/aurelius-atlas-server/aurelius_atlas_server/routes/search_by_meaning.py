@@ -20,7 +20,7 @@ from aurelius_atlas_server.embedding import embed_query, query_embedder
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.models import SemanticSearchParameters
 from aurelius_atlas_server.openapi import json_response, request_body
-from aurelius_atlas_server.routes.entity import READ_ENTITY_GUID, Store
+from aurelius_atlas_server.services import READ_ENTITY_GUID, Store
 
 SEARCH_BY_MEANING = APIRouter(prefix="/api/aurelius/v1", tags=["Search by meaning"])
 

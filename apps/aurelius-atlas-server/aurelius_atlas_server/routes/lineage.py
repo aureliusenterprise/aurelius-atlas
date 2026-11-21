@@ -17,7 +17,7 @@ from aurelius_atlas_server.bodies import json_root
 from aurelius_atlas_server.deps import Authorizer, Settings
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import json_response, request_body
-from aurelius_atlas_server.routes.entity import Store, guid_by_unique_attributes
+from aurelius_atlas_server.services import Store, guid_by_unique_attributes
 
 LINEAGE = APIRouter(prefix="/api/atlas/v2/lineage", tags=["Lineage"])
 

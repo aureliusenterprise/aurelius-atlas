@@ -22,7 +22,7 @@ from aurelius_atlas_server.bodies import Body
 from aurelius_atlas_server.deps import Authorizer, Settings, StoreSet
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import json_response, request_body
-from aurelius_atlas_server.routes.entity import Store, notifier, read_query, tasks_enabled
+from aurelius_atlas_server.services import Store, notifier, read_query, tasks_enabled
 
 VIEW_ENTITY = APIRouter(prefix="/api/aurelius/v1", tags=["View family"])
 

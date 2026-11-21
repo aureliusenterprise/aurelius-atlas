@@ -15,7 +15,7 @@ from aurelius_atlas_server.deps import Authorizer, Settings, StoreSet
 from aurelius_atlas_server.errors import AtlasJSONResponse
 from aurelius_atlas_server.openapi import json_response, request_body
 from aurelius_atlas_server.openapi import no_content as no_content_response
-from aurelius_atlas_server.routes.entity import Store, delete_type, notifier, tasks_enabled
+from aurelius_atlas_server.services import Store, delete_type, notifier, tasks_enabled
 
 RELATIONSHIP = APIRouter(prefix="/api/atlas/v2/relationship", tags=["Relationship"])
 

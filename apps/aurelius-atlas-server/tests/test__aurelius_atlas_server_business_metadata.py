@@ -50,7 +50,7 @@ async def business(client: httpx.AsyncClient, guid: str) -> dict[str, Any] | Non
 
 
 @pytest.mark.covers(
-    f"{R}.business_metadata",
+    "aurelius_atlas_server.services.business_metadata",
     "aurelius_atlas_model.maps.BusinessAttributesMap._json_object_of_value_maps",
     "aurelius_atlas_model.maps.AttributeValues._json_object",
     f"{R}.add_or_update_business_attributes",
@@ -102,7 +102,7 @@ async def test__a_body_that_is_no_map_of_values_is_refused(client: httpx.AsyncCl
     assert (await client.post(f"{ENTITY}/guid/missing/businessmetadata", json={"bm_a": {}})).status_code == 400
 
 
-@pytest.mark.covers(f"{R}.business_metadata", rules=["AUZ-17"])
+@pytest.mark.covers("aurelius_atlas_server.services.business_metadata", rules=["AUZ-17"])
 async def test__a_reader_changes_no_business_attributes(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
     """``atlas-read`` may not update or remove business metadata; nothing changes."""
     guid = await entity(client, bm_a={"n": 1})

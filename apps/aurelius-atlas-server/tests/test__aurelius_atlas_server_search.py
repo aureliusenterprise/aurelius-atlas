@@ -11,7 +11,6 @@ import pytest
 from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES
 
 D = "aurelius_atlas_server.routes.discovery"
-E = "aurelius_atlas_server.routes.entity"
 SEARCH = "/api/atlas/v2/search"
 
 
@@ -39,7 +38,9 @@ def names(body: dict[str, Any]) -> list[str]:
     return sorted(entity["attributes"]["name"] for entity in body.get("entities", []))
 
 
-@pytest.mark.covers(f"{D}.search_with_parameters", f"{D}.validate_basic_search_parameters", rules=["SRC-02", "SRC-09"])
+@pytest.mark.covers(
+    f"{D}.search_with_parameters", f"{D}.validate_basic_search_parameters", f"{D}.discovery", rules=["SRC-02", "SRC-09"]
+)
 async def test__a_posted_search_is_validated_then_answered(client: httpx.AsyncClient, tables: list[str]) -> None:
     """An entity filter finds its table; each invalid body fails with Atlas's message."""
     status, found = await send(
@@ -76,10 +77,10 @@ async def test__a_posted_search_is_validated_then_answered(client: httpx.AsyncCl
 
 @pytest.mark.covers(
     f"{D}.search_using_basic",
-    f"{E}.first_value",
-    f"{E}.java_number",
-    f"{E}.parsed_value",
-    rules=["SRC-11"],
+    "aurelius_atlas_model.params.first_value",
+    "aurelius_atlas_model.params.parse_number",
+    "aurelius_atlas_model.params.parse_choice",
+    rules=["SRC-11", "SVC-04"],
 )
 async def test__a_basic_search_by_query_parameters(client: httpx.AsyncClient, tables: list[str]) -> None:
     """Sorted and paged by parameters, unvalidated; a parameter of the wrong type is a bad request (DV-39)."""

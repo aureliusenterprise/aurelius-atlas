@@ -37,8 +37,8 @@ from aurelius_atlas_server.openapi import (
     request_body,
 )
 from aurelius_atlas_server.openapi import no_content as no_content_response
-from aurelius_atlas_server.routes.entity import Store, notifier, tasks_enabled
 from aurelius_atlas_server.routes.types import validate_param_length
+from aurelius_atlas_server.services import Store, notifier, tasks_enabled
 from aurelius_atlas_server.uploads import read_upload
 
 GLOSSARY = APIRouter(prefix="/api/atlas/v2/glossary", tags=["Glossary"])

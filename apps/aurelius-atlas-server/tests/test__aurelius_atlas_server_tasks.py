@@ -71,8 +71,8 @@ async def names(client: httpx.AsyncClient, guid: str) -> list[str]:
     f"{A}.get_session",
     f"{W}.wake",
     f"{W}.start",
-    "aurelius_atlas_server.routes.entity.tasks_enabled",
-    "aurelius_atlas_server.routes.entity.classifications",
+    "aurelius_atlas_server.services.tasks_enabled",
+    "aurelius_atlas_server.services.classifications",
     rules=["TSK-04", "TSK-06", "TSK-07"],
 )
 async def test__a_classification_propagates_after_the_request_through_its_task(
