@@ -64,6 +64,7 @@ from aurelius_atlas_core.graph_helper import (
 )
 from aurelius_atlas_core.guids import AssignedGuid
 from aurelius_atlas_core.relationship_store import RelationshipStore
+from aurelius_atlas_core.search_fields import own_classifications
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -526,18 +527,20 @@ class ViewMutationDoor:
             await service.delete_classification(guid, own[name])
 
     async def _tags(self, guid: str) -> tuple[dict[str, str], dict[str, tuple[str, str]]]:
-        """The entity's own tags by name, and the propagated ones by name with their display name and source."""
+        """The entity's own tags by name, and the propagated ones by name with their display name and source.
+
+        The own set is the shared owner's answer (RUL-01); only the propagated sources, which the owner leaves
+        out, are read from the instances here.
+        """
         found = await self._store.get(guid)
-        listed = (found.entity.classification_guids or []) if found else []
-        own: dict[str, str] = {}
+        own = {name.lower(): name for name in own_classifications(found.entity)} if found else {}
         propagated: dict[str, tuple[str, str]] = {}
+        listed = (found.entity.classification_guids or []) if found else []
         for versioned in (await self._store.get_classifications(listed)).values():
             name = str(versioned.classification.type_name)
             attached = versioned.classification.entity_guid
             if attached and attached != guid:
                 propagated[name.lower()] = (name, str(attached))
-            else:
-                own[name.lower()] = name
         return own, propagated
 
     def _labels(self, rewind: RewindStore, buffer: _BufferedNotifier) -> EntityLabels:

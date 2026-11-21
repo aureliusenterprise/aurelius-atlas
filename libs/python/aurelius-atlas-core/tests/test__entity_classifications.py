@@ -15,6 +15,7 @@ from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.search_fields import PROPAGATED_TRAIT_NAMES, TRAIT_NAMES, own_classifications
 from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_model import codec
@@ -252,6 +253,22 @@ async def test__a_delete_removes_the_instance_and_the_type_is_free_again(store: 
     assert found is not None
     assert found.entity.classification_guids is None
     assert not await store.type_in_use("c_pii")
+
+
+@pytest.mark.covers("aurelius_atlas_core.search_fields.own_classifications", rules=["RUL-01", "RUL-02"])
+async def test__one_owner_answers_the_own_classifications_of_a_stored_entity(store: EntityStore) -> None:
+    """The owner reads the stored field: what the user set stays, propagation's names never join (RUL-01, RUL-02)."""
+    await write(store, entity("s_table", "-1", qualifiedName="t@own"))
+    await EntityClassifications(store).add_classifications(g("-1"), [tag("c_pii")])
+    found = await store.get(g("-1"))
+
+    assert found is not None
+    stored = found.entity
+
+    assert own_classifications(stored) == ["c_pii"]  # the field the write stamped (RUL-02)
+    assert stored.search is not None
+    assert TRAIT_NAMES in stored.search
+    assert PROPAGATED_TRAIT_NAMES not in stored.search
 
 
 @pytest.mark.covers(

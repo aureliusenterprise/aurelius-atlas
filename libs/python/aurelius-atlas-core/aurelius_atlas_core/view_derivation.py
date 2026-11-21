@@ -26,7 +26,7 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_core.app_search_document import RELATION_FIELDS, ROLE_FIELDS, awaits_document
 from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.graph_helper import collection_elements, other_end, relationship_type_name
-from aurelius_atlas_core.search_fields import TRAIT_NAMES
+from aurelius_atlas_core.search_fields import own_classifications
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity, StoredQualityTotals
 
 QUALITY_DIMENSIONS = ("accuracy", "completeness", "timeliness", "uniqueness", "validity", "overall")
@@ -65,7 +65,7 @@ def view_of(stored: StoredEntity, entity_type: EntityType, *, ends: RelationEnds
         "update_time": stored.update_time,
         "created_by": stored.created_by,
         "updated_by": stored.updated_by,
-        "classification_names": _classification_names(stored),
+        "classification_names": own_classifications(stored),
         "labels": list(stored.labels or []),
         "breadcrumb": _breadcrumb(document) if document else [],
         "relations": _relations(document) if document else [],
@@ -101,16 +101,6 @@ def _card_definition(stored: StoredEntity, entity_type: EntityType) -> str | Non
     carries one field for both. The view's ``attributes`` keep each value as the store holds it.
     """
     return _text(stored.attributes, entity_type, "definition") or _text(stored.attributes, entity_type, "description")
-
-
-def _classification_names(stored: StoredEntity) -> list[str]:
-    """The names of the classifications attached to the entity, from its stored search fields (DD-090).
-
-    Propagated names are not included: they belong to their source, as DD-326's client rule leaves them and
-    AVW-08's server rule protects them.
-    """
-    names = (stored.search or {}).get(TRAIT_NAMES)
-    return [str(name) for name in names] if isinstance(names, list) else []
 
 
 def _breadcrumb(document: StoredAppSearch) -> list[CardBreadcrumb]:
