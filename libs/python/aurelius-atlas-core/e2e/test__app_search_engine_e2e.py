@@ -5,7 +5,7 @@ emails, the facets and sorts read the keyword fields, and the total is exact.
 """
 
 import pytest
-from aurelius_atlas_core.app_search_engine import AppSearchEngine
+from aurelius_atlas_core.app_search_answer import AppSearchEngine
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore

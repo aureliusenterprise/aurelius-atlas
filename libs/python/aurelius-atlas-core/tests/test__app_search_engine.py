@@ -13,22 +13,21 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+from aurelius_atlas_core.app_search_answer import AppSearchEngine
 from aurelius_atlas_core.app_search_document import StoredVerdict, own_document
-from aurelius_atlas_core.app_search_engine import (
+from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
+from aurelius_atlas_core.app_search_query import parse, query_body
+from aurelius_atlas_core.app_search_schema import (
     ATLAS_DEV,
     ATLAS_DEV_GOV_QUALITY,
     ATLAS_DEV_QUALITY,
     FIELDS,
     GOV_QUALITY_FIELDS,
     QUALITY_FIELDS,
-    AppSearchEngine,
     AppSearchError,
     Engine,
     Kind,
-    parse,
-    query_body,
 )
-from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.import_service import ImportService
@@ -48,8 +47,10 @@ from aurelius_atlas_store_es.testing.fake import FakeClient
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from elasticsearch import AsyncElasticsearch
 
-E = "aurelius_atlas_core.app_search_engine"
-X = f"{E}.AppSearchEngine.search"
+S = "aurelius_atlas_core.app_search_schema"
+Q = "aurelius_atlas_core.app_search_query"
+A = "aurelius_atlas_core.app_search_answer"
+X = f"{A}.AppSearchEngine.search"
 FIXTURES = Path(__file__).parent / "fixtures"
 SAMPLE = Path(__file__).parents[4] / "data" / "atlas-sample" / "sample_data.zip"
 
@@ -188,7 +189,7 @@ def refused(body: object) -> list[str]:
     return refusal.value.messages
 
 
-@pytest.mark.covers(f"{E}._fields", rules=["ASE-03", "LAS-07"])
+@pytest.mark.covers(f"{S}._fields", rules=["ASE-03", "LAS-07"])
 def test__the_engine_s_fields_are_atlas_dev_s() -> None:
     """Every field of the legacy documents, and no other; LAS-07's constants; the scores 0 without totals."""
     legacy = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev.json").read_text())
@@ -248,7 +249,7 @@ async def test__stale_documents_are_answered_and_deleted_or_unindexed_entities_a
 
 
 @pytest.mark.covers(X, rules=["ASE-05"])
-@pytest.mark.covers(f"{E}.query_body", rules=["ASE-05"])
+@pytest.mark.covers(f"{Q}.query_body", rules=["ASE-05"])
 async def test__a_query_s_words_match_the_text_fields_more_matches_first() -> None:
     """Any word matches; the document matching in more fields ranks first; ``search_fields`` narrows and weighs."""
     engine = await engine_of(
@@ -290,7 +291,7 @@ async def test__filters_match_values_ranges_and_nested_all_any_and_none() -> Non
     assert await found({"any": []}) == []
 
 
-@pytest.mark.covers(f"{E}.parse", rules=["ASE-04", "ASE-06", "ASE-07", "ASE-08", "ASE-09", "ASE-10"])
+@pytest.mark.covers(f"{Q}.parse", rules=["ASE-04", "ASE-06", "ASE-07", "ASE-08", "ASE-09", "ASE-10"])
 def test__a_request_app_search_refuses_is_answered_with_each_problem() -> None:
     """One message per problem, all of them; other keys are ignored (DD-527)."""
     assert refused([]) == ["The request body must be a JSON object"]
@@ -358,7 +359,7 @@ async def test__facets_count_the_matches_values_most_first_or_by_value() -> None
 
 
 @pytest.mark.covers(X, rules=["ASE-08"])
-@pytest.mark.covers(f"{E}.sort_clauses", rules=["ASE-08"])
+@pytest.mark.covers(f"{Q}.sort_clauses", rules=["ASE-08"])
 async def test__a_sort_orders_by_fields_or_score_arrays_by_their_ends_ties_by_id() -> None:
     """By name both ways; an array by its least ascending and greatest descending; a constant sorts nothing."""
     engine = await engine_of(
@@ -375,7 +376,7 @@ async def test__a_sort_orders_by_fields_or_score_arrays_by_their_ends_ties_by_id
     assert query_body(parse({}))["sort"] == [{"_score": {"order": "desc"}}, {"guid": {"order": "asc"}}]
 
 
-@pytest.mark.covers(f"{E}._quality_fields", rules=["ASQ-02", "ASQ-03", "LAS-11"])
+@pytest.mark.covers(f"{S}._quality_fields", rules=["ASQ-02", "ASQ-03", "LAS-11"])
 def test__the_quality_engine_s_fields_are_atlas_dev_quality_s() -> None:
     """Every field of the legacy results, and no other; ``dqscore`` and ``businessruleid`` numbers, the rest text."""
     legacy_results = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-quality.json").read_text())
@@ -429,7 +430,7 @@ async def test__a_field_page_s_request_answers_the_field_s_results() -> None:
 
 
 @pytest.mark.covers(X, rules=["ASQ-04", "ASQ-06"])
-@pytest.mark.covers(f"{E}.sort_clauses", rules=["ASQ-06"])
+@pytest.mark.covers(f"{Q}.sort_clauses", rules=["ASQ-06"])
 async def test__the_score_fields_read_filter_facet_and_sort_with_and_without_totals() -> None:
     """``a`` holds totals; ``b`` none, read, filtered, faceted and sorted as 0 (DD-530)."""
     engine = await engine_of(with_totals(stored("a"), 1.5, 2, ["r"]), stored("b"))
@@ -464,7 +465,7 @@ async def test__the_score_fields_read_filter_facet_and_sort_with_and_without_tot
 
 
 @pytest.mark.covers(X, rules=["ASE-09"])
-@pytest.mark.covers(f"{E}.query_body", rules=["ASE-09"])
+@pytest.mark.covers(f"{Q}.query_body", rules=["ASE-09"])
 async def test__pages_answer_their_slice_and_the_totals_and_nothing_past_the_window() -> None:
     """Page 2 of size 2 of five; the pages rounded up; a page past the 10,000th result is empty."""
     engine = await engine_of(*(stored(f"e{index}") for index in range(5)))
@@ -480,7 +481,7 @@ async def test__pages_answer_their_slice_and_the_totals_and_nothing_past_the_win
 
 
 @pytest.mark.covers(X, rules=["ASE-10"])
-@pytest.mark.covers(f"{E}._snippet", rules=["ASE-10"])
+@pytest.mark.covers(f"{A}._snippet", rules=["ASE-10"])
 async def test__results_hold_the_fields_asked_raw_cut_and_snippets_escaped_with_the_words_marked() -> None:
     """``raw.size`` cuts texts; a snippet marks the query's words, escaped; without a match only a fallback."""
     engine = await engine_of(stored("a", definition="Orders & <b>invoices</b> of a customer"))
@@ -624,7 +625,7 @@ async def gov_engine(*verdicts: StoredVerdict) -> AppSearchEngine:
     return AppSearchEngine(documents, ATLAS_DEV_GOV_QUALITY)
 
 
-@pytest.mark.covers(f"{E}._gov_quality_fields", rules=["ASG-03", "ASG-05", "LAS-13"])
+@pytest.mark.covers(f"{S}._gov_quality_fields", rules=["ASG-03", "ASG-05", "LAS-13"])
 def test__the_governance_engine_s_fields_are_the_legacy_schema_s() -> None:
     """Every field of the legacy verdicts and the schema's two never filled, all text."""
     legacy_verdicts = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-gov-quality.json").read_text())

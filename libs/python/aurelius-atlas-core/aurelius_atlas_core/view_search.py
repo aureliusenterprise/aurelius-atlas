@@ -19,20 +19,17 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 from aurelius_atlas_core import es_clauses
+from aurelius_atlas_core.app_search_answer import plain
 from aurelius_atlas_core.app_search_document import APP_SEARCH_FIELD, QUALITY_TOTALS_FIELD
-from aurelius_atlas_core.app_search_engine import (
+from aurelius_atlas_core.app_search_query import Facet, Search, parse_sort, query_body
+from aurelius_atlas_core.app_search_schema import (
     MAX_FACET_SIZE,
     Engine,
     EngineField,
     Errors,
-    Facet,
     Kind,
-    Search,
     filter_clauses,
     known,
-    parse_sort,
-    plain,
-    query_body,
 )
 from aurelius_atlas_core.entity_documents import SearchDocuments
 from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH

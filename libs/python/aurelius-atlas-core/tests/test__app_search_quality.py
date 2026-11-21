@@ -13,9 +13,9 @@ from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.app_search_document import DIMENSIONS, quality_result_mapping, quality_totals_mapping
-from aurelius_atlas_core.app_search_engine import FIELDS
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.app_search_quality import QualityIndexer
+from aurelius_atlas_core.app_search_schema import FIELDS
 from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter

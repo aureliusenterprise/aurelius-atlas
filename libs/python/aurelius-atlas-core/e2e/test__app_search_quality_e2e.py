@@ -7,9 +7,10 @@ take part in as 0.
 """  # noqa: D205 - one sentence
 
 import pytest
-from aurelius_atlas_core.app_search_engine import ATLAS_DEV_QUALITY, AppSearchEngine
+from aurelius_atlas_core.app_search_answer import AppSearchEngine
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.app_search_quality import QualityIndexer
+from aurelius_atlas_core.app_search_schema import ATLAS_DEV_QUALITY
 from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter

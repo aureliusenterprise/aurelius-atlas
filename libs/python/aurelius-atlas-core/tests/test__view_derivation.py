@@ -11,8 +11,8 @@ import asyncio
 from typing import Any
 
 import pytest
+from aurelius_atlas_core.app_search_answer import AppSearchEngine
 from aurelius_atlas_core.app_search_document import own_document
-from aurelius_atlas_core.app_search_engine import AppSearchEngine
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.relationship_store import RelationshipStore
