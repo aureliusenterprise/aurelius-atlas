@@ -13,6 +13,9 @@ engine judges a stored entity, and a rule naming no type answers nothing at all.
 record the check reads is the draft's unwrapped attributes beside its unwrapped
 relationship picks (VEV-08, ASG-04/DD-536's reading of 14.6).
 
+A caller acting in a tenant reads that tenant's rules with its own token, and each tenant's set is cached
+apart from the others and from the app's own (VET-02 to VET-04, DD-820).
+
 One read travels the app's one circuit breaker (DD-500): the 502 of VEV-06 is
 raised as :class:`~aurelius_atlas_validate_entity.errors.UpstreamError` for the
 root's handler — an open circuit, an unreachable server, a refused search and a
@@ -119,10 +122,11 @@ class VerdictEngine:
         self._atlas = atlas
         self._breaker = breaker
         self._cache_seconds = cache_seconds
-        self._cached: tuple[RuleEntry, ...] | None = None
-        self._expires_at = 0.0
+        self._cached: dict[str | None, tuple[tuple[RuleEntry, ...], float]] = {}
 
-    async def evaluate_draft(self, draft: DraftEntity) -> ValidationResponse:
+    async def evaluate_draft(
+        self, draft: DraftEntity, *, tenant: str | None = None, bearer: str | None = None
+    ) -> ValidationResponse:
         """Run the draft's type's ACTIVE readable rules over the draft (VEV-02/05/07/08).
 
         The rules ride the cache; the draft never does — each call answers over
@@ -131,7 +135,7 @@ class VerdictEngine:
         call wholly. A failed rules read raises as VEV-05/06 say: a 502, never an
         answer with no rules.
         """
-        entries = await self.rules()
+        entries = await self.rules(tenant=tenant, bearer=bearer)
         matching = [entry for entry in entries if entry.type_name == draft.type_name]
         record = _draft_record(draft)
         verdicts = [
@@ -153,8 +157,11 @@ class VerdictEngine:
             unreadRules=[entry.unread for entry in matching if entry.check is None],
         )
 
-    async def rules(self) -> tuple[RuleEntry, ...]:
-        """The read set: the cached one while fresh, a fresh read otherwise (VEV-05).
+    async def rules(self, *, tenant: str | None = None, bearer: str | None = None) -> tuple[RuleEntry, ...]:
+        """The read set of ``tenant``: the cached one while fresh, a fresh read otherwise (VEV-05, VET-04).
+
+        A tenant's set is read with the caller's ``bearer`` and cached under the tenant (VET-02, DD-820); with no
+        tenant, the app's own identity reads it into its own entry (VET-03).
 
         A failed read caches nothing — the next call reads again — and answers
         the 502 of VEV-06. The breaker wraps the whole walk: one circuit counts
@@ -162,21 +169,22 @@ class VerdictEngine:
         type filter of VEV-07 runs per call on it.
         """
         now = time.monotonic()
-        if self._cached is not None and now < self._expires_at:
-            return self._cached
+        cached = self._cached.get(tenant)
+        if cached is not None and now < cached[1]:
+            return cached[0]
+        atlas = self._atlas if tenant is None or bearer is None else self._atlas.with_token(bearer)
         try:
             with self._breaker.calling():
-                rules = await self._read()
+                rules = await self._read(atlas)
         except CircuitBreakerError as error:
             raise UpstreamError(BAD_GATEWAY, FAST_FAIL_SERVER) from error
         except AtlasClientError as error:
             LOGGER.warning("The rule search failed, answered 502: %s", error)
             raise UpstreamError(BAD_GATEWAY, "the catalogue refused the rule search") from error
-        self._cached = rules
-        self._expires_at = now + self._cache_seconds
+        self._cached[tenant] = (rules, now + self._cache_seconds)
         return rules
 
-    async def _read(self) -> tuple[RuleEntry, ...]:
+    async def _read(self, atlas: AtlasClient) -> tuple[RuleEntry, ...]:
         """The paged walk of the rule search (VEV-03): every header, until the end marker."""
         entries: list[RuleEntry] = []
         marker: str | None = MARKER_START
@@ -189,7 +197,7 @@ class VerdictEngine:
                 marker=marker,
                 attributes=list(RULE_ATTRIBUTES),
             )
-            result = await self._atlas.search.search_with_parameters(parameters)
+            result = await atlas.search.search_with_parameters(parameters)
             for header in result.entities or []:
                 entry = _entry_from_header(header)
                 if entry is not None:
