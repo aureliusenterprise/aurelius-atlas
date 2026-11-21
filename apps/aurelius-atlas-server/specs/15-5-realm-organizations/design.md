@@ -109,3 +109,28 @@ deployment signs operators in to the store, which is its own, not the repository
 - No role: each deployment writes its own, and the access ADR 063 describes differs between deployments.
 
 **Consequences.** The role reaches every tenant's indices, trusted or not, as ADR 063's sharp edge says.
+
+### DD-770. The webapp's tokens carry the operator realm role
+
+- **Status:** Proposed
+- **Increment:** 15.5a
+- **Date:** 2026-11-21
+
+**Decision.** Each realm maps the realm role `atlas-operator` to the client `aurelius` (`scopeMappings`), so a
+token the webapp gets names it in `realm_access.roles` (RLM-10). The client keeps `fullScopeAllowed` off.
+
+**Reason.** With `fullScopeAllowed` off, Keycloak puts in a token only the realm roles mapped to its client.
+None was, so the webapp's tokens carried no `realm_access` at all and the server never saw an operator acting
+in a tenant: TEN-06's read cap held only because the trust gives operators the read group alone (TRM-03).
+Found while building 15.10, whose dashboards link checks operators by the tenant record instead (DD-767). With
+the role in the token, every operator is known by role, whatever their name and however many there are.
+
+**Alternatives.**
+
+- `fullScopeAllowed` on: every realm role, the default ones included, would reach the webapp's tokens; the
+  mapping adds the one the server reads.
+- Operators known by the record's `operatorMembers` everywhere: a lookup per request, for a fact the token can
+  carry.
+
+**Consequences.** The scanner clients and the server's own client keep `fullScopeAllowed` on and are
+unchanged. A running Keycloak gets the mapping at its next realm import, or through the admin API.

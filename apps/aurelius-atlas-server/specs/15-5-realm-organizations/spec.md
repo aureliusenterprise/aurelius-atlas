@@ -48,6 +48,7 @@ with their groups: `"organization": {"operators": {"groups": ["/atlas-read"]}}`.
 | RLM-07 | Every user keeps the server client's roles they held, so with the tenancy setting off a user's roles are as before (AUZ-01). The production realm still seeds no person                                                                                                                                                                                                                                                                         |
 | RLM-08 | The store defines the role `aurelius_atlas_operator`: `read`, `view_index_metadata` and `monitor` on `aurelius-atlas-*`, and the cluster's `monitor`, in dev and the chart. The deployment decides who holds it (DD-583)                                                                                                                                                                                                                        |
 | RLM-09 | With the tenancy setting off, no answer of Apache Atlas's API changes                                                                                                                                                                                                                                                                                                                                                                           |
+| RLM-10 | The webapp's client `aurelius` puts the operator realm role `atlas-operator` in its tokens' `realm_access` through a realm-role scope mapping: the client has `fullScopeAllowed` off, which otherwise drops every realm role, and with them TEN-06's read cap (DD-770)                                                                                                                                                                          |
 
 Keycloak imports a realm only when it doesn't exist yet. A deployment whose realm exists keeps it as it was;
 its administrator adds the organizations, groups, role, mappers and scopes by hand, as for any change of the
@@ -64,9 +65,9 @@ None beyond DV-163: no Atlas endpoint changes, and with tenancy off the tokens' 
 
 ## Acceptance
 
-- `tests/test__realm_organizations.py`: RLM-01, RLM-02, RLM-04 to RLM-07 on the three realm files, the dev
-  realm byte-equal in the chart (CHT-75's existing test); RLM-08 on the dev store's role file and the chart's
-  render.
+- `tests/test__realm_organizations.py`: RLM-01, RLM-02, RLM-04 to RLM-07 and RLM-10 on the three realm files,
+  the dev realm byte-equal in the chart (CHT-75's existing test); RLM-08 on the dev store's role file and the
+  chart's render.
 - `apps/aurelius-atlas-server/tests/test__aurelius_atlas_server_authentication.py` and `…_tenants.py`: RLM-03,
   the authorization URL's scope with tenancy off and on.
 - A run against Keycloak 26.7.4 (recorded in DD-580 and DD-582): the realms import, a token of each kind names

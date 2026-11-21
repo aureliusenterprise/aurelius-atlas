@@ -200,3 +200,16 @@ def test__each_realm_has_the_provisioning_client_with_the_roles_it_needs(path: A
     accounts = [user for user in loaded["users"] if user.get("serviceAccountClientId") == found["clientId"]]
     assert [set(account["clientRoles"]) for account in accounts] == [{management}]
     assert set(accounts[0]["clientRoles"][management]) == PROVISIONING_ROLES
+
+
+@pytest.mark.covers(rules=["RLM-10"])
+@pytest.mark.parametrize("path", [DEV_REALM, PROD_REALM, DEMO_REALM], ids=["dev", "prod", "demo"])
+def test__the_webapps_tokens_carry_the_operator_role(path: Any) -> None:  # noqa: ANN401 - a path
+    """The webapp's client keeps its scope narrow and maps the operator realm role into it, in one scopeMappings."""
+    text = path.read_text()
+    assert text.count('"scopeMappings"') == 1, "a second key would silently replace the first"
+    found = realm(path)
+    client = next(c for c in found["clients"] if c["clientId"] == "aurelius")
+    assert client["fullScopeAllowed"] is False
+    mapped = {role for m in found["scopeMappings"] if m.get("client") == "aurelius" for role in m["roles"]}
+    assert "atlas-operator" in mapped
