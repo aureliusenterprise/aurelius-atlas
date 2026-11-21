@@ -2021,7 +2021,7 @@ PurgeBody = list[str] | None
 ### ageout\_audit\_data
 
 ```
-ageout_audit_data(request: Request, store: Store, body: Body) -> Response
+ageout_audit_data(request: Request, store: Store, body: Body, settings: Settings, authorized: Authorizer) -> Response
 ```
 
 `ageoutAuditData`: the agings the criteria ask for, or with `useAuditConfig` the configuration's, queued as tasks and answered; none queued is 204 (AGE-01 to AGE-03). It needs `ADMIN_AUDITS`.
@@ -2035,7 +2035,7 @@ Raises:
 ### delete\_task
 
 ```
-delete_task(request: Request) -> Response
+delete_task(request: Request, found: StoreSet) -> Response
 ```
 
 `deleteTask`: remove the tasks of the `guids` given (TSK-06).
@@ -2043,7 +2043,9 @@ delete_task(request: Request) -> Response
 ### export
 
 ```
-export(request: Request, store: Store, body: Body) -> Response
+export(
+    request: Request, store: Store, body: Body, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> Response
 ```
 
 `export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
@@ -2059,7 +2061,7 @@ Raises:
 ### get\_all\_metrics
 
 ```
-get_all_metrics(request: Request, store: Store) -> list[dict[str, Any]]
+get_all_metrics(request: Request, store: Store, settings: Settings, authorized: Authorizer) -> list[dict[str, Any]]
 ```
 
 `getAllMetrics`: every stored metric, the latest first; with `mininfo`, the default, without the metrics (MHS-02).
@@ -2067,7 +2069,7 @@ get_all_metrics(request: Request, store: Store) -> list[dict[str, Any]]
 ### get\_atlas\_audits
 
 ```
-get_atlas_audits(request: Request, store: Store, body: Body) -> AtlasJSONResponse
+get_atlas_audits(store: Store, body: Body, authorized: Authorizer) -> AtlasJSONResponse
 ```
 
 `getAtlasAudits`: the admin audits the search parameters find (ADA-04); it needs `ADMIN_AUDITS`.
@@ -2081,7 +2083,9 @@ Raises:
 ### get\_audit\_details
 
 ```
-get_audit_details(audit_guid: str, request: Request, store: Store) -> AtlasJSONResponse
+get_audit_details(
+    audit_guid: str, request: Request, store: Store, found: StoreSet, authorized: Authorizer
+) -> AtlasJSONResponse
 ```
 
 `getAuditDetails`: the entity headers a purge's audit names, `limit` (10) from `offset` (ADA-05).
@@ -2097,7 +2101,7 @@ Raises:
 ### get\_cluster
 
 ```
-get_cluster(server_name: str, request: Request, store: Store) -> AtlasJSONResponse
+get_cluster(server_name: str, request: Request, store: Store, authorized: Authorizer) -> AtlasJSONResponse
 ```
 
 `getCluster`: the server of the full name, with the replication it recorded (REP-01).
@@ -2113,7 +2117,7 @@ Raises:
 ### get\_export\_import\_audit
 
 ```
-get_export_import_audit(request: Request, store: Store) -> AtlasJSONResponse
+get_export_import_audit(request: Request, store: Store, authorized: Authorizer) -> AtlasJSONResponse
 ```
 
 `getExportImportAudit`: the audit entries of the values given, the server either end (REP-05).
@@ -2131,7 +2135,7 @@ Whether the server runs (ADM-03).
 ### get\_metrics
 
 ```
-get_metrics(request: Request, store: Store) -> dict[str, Any]
+get_metrics(request: Request, store: Store, settings: Settings, authorized: Authorizer) -> dict[str, Any]
 ```
 
 `getMetrics`: the counts of the types, entities and classifications the user may read, the server's stats and its system details; a store that is not healthy is `not-connected` (MET-01 to MET-04).
@@ -2139,7 +2143,9 @@ get_metrics(request: Request, store: Store) -> dict[str, Any]
 ### get\_metrics\_by\_collection\_time
 
 ```
-get_metrics_by_collection_time(request: Request, store: Store, collection_time: str) -> dict[str, Any]
+get_metrics_by_collection_time(
+    request: Request, store: Store, collection_time: str, settings: Settings, authorized: Authorizer
+) -> dict[str, Any]
 ```
 
 `getMetricsByCollectionTime`: the metric stored at that time (MHS-02).
@@ -2147,7 +2153,9 @@ get_metrics_by_collection_time(request: Request, store: Store, collection_time: 
 ### get\_metrics\_for\_chart\_by\_type\_names
 
 ```
-get_metrics_for_chart_by_type_names(request: Request, store: Store) -> dict[str, list[dict[str, Any]]]
+get_metrics_for_chart_by_type_names(
+    request: Request, store: Store, settings: Settings, authorized: Authorizer
+) -> dict[str, list[dict[str, Any]]]
 ```
 
 `getMetricsForChartByTypeNames`: per type name, its counts in the range by state (MHS-04).
@@ -2155,7 +2163,9 @@ get_metrics_for_chart_by_type_names(request: Request, store: Store) -> dict[str,
 ### get\_metrics\_in\_time\_range
 
 ```
-get_metrics_in_time_range(request: Request, store: Store) -> list[dict[str, Any]]
+get_metrics_in_time_range(
+    request: Request, store: Store, settings: Settings, authorized: Authorizer
+) -> list[dict[str, Any]]
 ```
 
 `getMetricsInTimeRange`: the metrics stored in the range, with the type data of the type names (MHS-03).
@@ -2163,7 +2173,7 @@ get_metrics_in_time_range(request: Request, store: Store) -> list[dict[str, Any]
 ### get\_patches
 
 ```
-get_patches(request: Request) -> dict[str, Any]
+get_patches(found: StoreSet) -> dict[str, Any]
 ```
 
 `getAtlasPatches`: the typedef patch records, sorted by id (ENS-10, DV-14).
@@ -2185,7 +2195,7 @@ Raises:
 ### get\_session
 
 ```
-get_session(request: Request) -> dict[str, Any]
+get_session(request: Request, settings: Settings) -> dict[str, Any]
 ```
 
 The user interface settings and the user of this session (ADM-05, AUT-09).
@@ -2203,7 +2213,7 @@ The service state, which is always `ACTIVE` while the server runs (ADM-02).
 ### get\_task\_status
 
 ```
-get_task_status(request: Request) -> AtlasJSONResponse
+get_task_status(request: Request, found: StoreSet) -> AtlasJSONResponse
 ```
 
 `getTaskStatus`: the tasks of the `guids` given that exist, in their order, else every task (TSK-06).
@@ -2211,7 +2221,7 @@ get_task_status(request: Request) -> AtlasJSONResponse
 ### get\_version
 
 ```
-get_version(request: Request) -> dict[str, Any]
+get_version(settings: Settings) -> dict[str, Any]
 ```
 
 The server's name, release and revision (ADM-01, DV-03).
@@ -2219,7 +2229,9 @@ The server's name, release and revision (ADM-01, DV-03).
 ### import\_data
 
 ```
-import_data(request: Request, store: Store) -> AtlasJSONResponse
+import_data(
+    request: Request, store: Store, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> AtlasJSONResponse
 ```
 
 `importData`: the form's `data`, an export ZIP, imported as its `request` asks (IMS-01 to IMS-05).
@@ -2235,7 +2247,9 @@ Raises:
 ### import\_file
 
 ```
-import_file(request: Request, store: Store, body: Body) -> AtlasJSONResponse
+import_file(
+    request: Request, store: Store, body: Body, found: StoreSet, settings: Settings, authorized: Authorizer
+) -> AtlasJSONResponse
 ```
 
 `importFile`: the export ZIP its `fileName` option names, from the server's import folder (IMS-06, DV-125).
@@ -2251,7 +2265,7 @@ Raises:
 ### purge\_by\_ids
 
 ```
-purge_by_ids(request: Request, store: Store, guids_body: PurgeBody) -> AtlasJSONResponse
+purge_by_ids(store: Store, guids_body: PurgeBody, entity_writer: Writer, authorized: Authorizer) -> AtlasJSONResponse
 ```
 
 `purgeByIds`: remove the `DELETED` entities of a JSON array of GUIDs (EDL-01 to EDL-03).
