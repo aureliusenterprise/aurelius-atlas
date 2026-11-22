@@ -189,16 +189,17 @@ files/<name>.json must exist or the realm ConfigMap's render fails
 The browser hosts the realm asset's redirect URIs / web origins substitute
 for (CHT-77). They mirror the umbrella's host rule (its
 aurelius-atlas.atlasHost/dashboardHost) so a standalone render derives the
-same hosts: an explicit host wins, else <name>.<domain>; the last-resort
-<release>.localhost exists only so the bare helm lint/template renders
-succeed — the realm ConfigMap itself fails render when no domain, issuer
-URL, or host is set anywhere and the asset needs one.
+same hosts: an explicit host wins, else the derived default (the apex
+<domain> for the product, <label>.<domain> for the others, ADR 069); the
+last-resort <release>.localhost exists only so the bare helm lint/template
+renders succeed — the realm ConfigMap itself fails render when no domain,
+issuer URL, or host is set anywhere and the asset needs one.
 */}}
 {{- define "atlas-keycloak.atlasHost" -}}
 {{- if .Values.global.hosts.app.host -}}
 {{- .Values.global.hosts.app.host -}}
 {{- else if .Values.global.domain -}}
-{{- printf "app.%s" .Values.global.domain -}}
+{{- .Values.global.domain -}}
 {{- else -}}
 {{- printf "%s.localhost" .Release.Name -}}
 {{- end -}}
@@ -221,7 +222,7 @@ render derives what the umbrella's aurelius-atlas.grafanaHost would. */}}
 {{- if .Values.global.hosts.o11y.host -}}
 {{- .Values.global.hosts.o11y.host -}}
 {{- else if .Values.global.domain -}}
-{{- printf "o11y.%s" .Values.global.domain -}}
+{{- printf "observability.%s" .Values.global.domain -}}
 {{- else -}}
 {{- printf "%s.localhost" .Release.Name -}}
 {{- end -}}

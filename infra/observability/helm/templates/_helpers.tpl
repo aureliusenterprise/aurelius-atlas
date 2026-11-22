@@ -154,7 +154,7 @@ only the public host. */}}
 {{- if .Values.global.hosts.o11y.host -}}
 {{- printf "https://%s" .Values.global.hosts.o11y.host -}}
 {{- else if .Values.global.domain -}}
-{{- printf "https://o11y.%s" .Values.global.domain -}}
+{{- printf "https://observability.%s" .Values.global.domain -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

@@ -929,23 +929,24 @@ def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
 def test__browser_origins_carry_the_deployed_hosts() -> None:
     """Host tokens substitute to real hosts; localhost never reaches a cluster.
 
-    CHT-77: values hosts win, else <name>.<domain>; the bare render falls
-    back to <release>.localhost so lint/template succeed. Credential
-    placeholders survive substitution verbatim (DD-256's rule).
+    CHT-77: values hosts win, else the derived default (the apex for the
+    product, <label>.<domain> otherwise, ADR 069); the bare render falls back
+    to <release>.localhost so lint/template succeed. Credential placeholders
+    survive substitution verbatim (DD-256's rule).
     """
     docs = helm_render(KC_CHART, sets=("global.domain=atlas.example",))
     asset = _rendered_asset(docs)
     (aur,) = [c for c in asset["clients"] if c["clientId"] == "aurelius"]
-    assert aur["redirectUris"] == ["https://app.atlas.example/*", "https://dashboard.atlas.example/*"]
-    assert aur["webOrigins"] == ["https://app.atlas.example", "https://dashboard.atlas.example"]
+    assert aur["redirectUris"] == ["https://atlas.example/*", "https://dashboard.atlas.example/*"]
+    assert aur["webOrigins"] == ["https://atlas.example", "https://dashboard.atlas.example"]
     post_logout = aur["attributes"]["post.logout.redirect.uris"].split(URI_SEPARATOR)
-    assert set(post_logout) == {"https://app.atlas.example/*", "https://dashboard.atlas.example/*"}
+    assert set(post_logout) == {"https://atlas.example/*", "https://dashboard.atlas.example/*"}
     # CHT-110 (10.12): the server client's AUT-05 return leg lands on its own
     # login.jsp — the browser hosts, per-host.
     (srv,) = [c for c in asset["clients"] if c["clientId"] == "aurelius-atlas-server"]
-    assert srv["redirectUris"] == ["https://app.atlas.example/login.jsp", "https://dashboard.atlas.example/login.jsp"]
+    assert srv["redirectUris"] == ["https://atlas.example/login.jsp", "https://dashboard.atlas.example/login.jsp"]
     srv_post_logout = set(srv["attributes"]["post.logout.redirect.uris"].split(URI_SEPARATOR))
-    assert srv_post_logout == {"https://app.atlas.example/*", "https://dashboard.atlas.example/*"}
+    assert srv_post_logout == {"https://atlas.example/*", "https://dashboard.atlas.example/*"}
 
     docs = helm_render(
         KC_CHART,
@@ -958,7 +959,7 @@ def test__browser_origins_carry_the_deployed_hosts() -> None:
     text = find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
     assert "https://docs.example/*" in text
     assert "https://dash.example" in text
-    assert "app.atlas.example" not in text
+    assert "https://atlas.example" not in text
 
     # No cluster render of the prod asset carries a localhost browser origin
     # or a + — the aurelius client's, checked per-client since the grafana
@@ -1006,10 +1007,10 @@ def test__grafana_client_is_a_prod_only_confidential_rp() -> None:
     assert g["secret"] == "${GRAFANA_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never a secret
     assert g["attributes"]["pkce.code.challenge.method"] == "S256"
     assert g["redirectUris"] == [
-        "https://o11y.atlas.example/login/generic_oauth",
+        "https://observability.atlas.example/login/generic_oauth",
         "http://localhost:3000/login/generic_oauth",
     ]
-    assert g["webOrigins"] == ["https://o11y.atlas.example"]
+    assert g["webOrigins"] == ["https://observability.atlas.example"]
 
     roles = {r["name"]: r for r in asset["roles"]["client"]["grafana"]}
     assert set(roles) == {"admin", "editor"}
@@ -1022,8 +1023,8 @@ def test__grafana_client_is_a_prod_only_confidential_rp() -> None:
 def test__grafana_host_token_follows_the_host_rule() -> None:
     """__O11Y_HOST__ substitutes like the browser hosts (CHT-82).
 
-    Values override wins, else grafana.<domain>; the bare render falls back
-    to <release>.localhost so lint/template succeed.
+    Values override wins, else observability.<domain>; the bare render falls
+    back to <release>.localhost so lint/template succeed.
     """
     docs = helm_render(
         KC_CHART,
@@ -1031,7 +1032,7 @@ def test__grafana_host_token_follows_the_host_rule() -> None:
     )
     text = find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
     assert "https://metrics.example/login/generic_oauth" in text
-    assert "o11y.atlas.example" not in text
+    assert "observability.atlas.example" not in text
 
     bare = helm_render(KC_CHART, release="foo")
     text = find(bare, "ConfigMap", "foo-atlas-keycloak-realm")["data"]["aurelius-atlas.json"]

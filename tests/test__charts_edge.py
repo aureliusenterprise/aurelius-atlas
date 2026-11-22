@@ -46,7 +46,7 @@ def test__gateway_listeners_per_enabled_host(umbrella_docs: list[dict[str, Any]]
         assert listener["protocol"] == "HTTPS"
         assert listener["allowedRoutes"]["namespaces"]["from"] == "Same"
         assert listener["tls"]["mode"] == "Terminate"
-    assert listeners["app"]["hostname"] == "app.atlas.example"
+    assert listeners["app"]["hostname"] == "atlas.example"
     assert listeners["app"]["tls"]["certificateRefs"] == [{"name": "atlas-edge-tls", "kind": "Secret"}]
     # Keycloak's listener reuses the cert its own chart issues (CHT-29).
     assert listeners["auth"]["hostname"] == "auth.atlas.example"
@@ -59,7 +59,7 @@ def test__gateway_listeners_per_enabled_host(umbrella_docs: list[dict[str, Any]]
 def test__edge_leaf_covers_the_browser_hosts(umbrella_docs: list[dict[str, Any]]) -> None:
     """The shared edge cert's SANs: app + o11y (default-on, CHT-132); auth is not (its chart owns it)."""
     cert = find(umbrella_docs, "Certificate", "atlas-edge-tls")
-    assert cert["spec"]["dnsNames"] == ["app.atlas.example", "o11y.atlas.example"]
+    assert cert["spec"]["dnsNames"] == ["atlas.example", "observability.atlas.example"]
     assert cert["spec"]["secretName"] == "atlas-edge-tls"
     assert cert["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned"
 
@@ -75,7 +75,7 @@ def test__all_hosts_widen_listeners_and_sans() -> None:
     gateway = find(docs, "Gateway", "atlas")
     assert {lst["name"] for lst in gateway["spec"]["listeners"]} == {"app", "auth", "dashboard", "o11y"}
     cert = find(docs, "Certificate", "atlas-edge-tls")
-    assert cert["spec"]["dnsNames"] == ["app.atlas.example", "dashboard.atlas.example", "o11y.atlas.example"]
+    assert cert["spec"]["dnsNames"] == ["atlas.example", "dashboard.atlas.example", "observability.atlas.example"]
     # The shared leaf serves the non-auth listeners; auth keeps its own.
     for listener in gateway["spec"]["listeners"]:
         expected = "atlas-keycloak-tls" if listener["name"] == "auth" else "atlas-edge-tls"
@@ -127,7 +127,7 @@ def test__one_route_per_listener_with_one_backend(umbrella_docs: list[dict[str, 
         (rule,) = route["spec"]["rules"]
         assert len(rule["backendRefs"]) == 1
     route = find(umbrella_docs, "HTTPRoute", "atlas-app")
-    assert route["spec"]["hostnames"] == ["app.atlas.example"]
+    assert route["spec"]["hostnames"] == ["atlas.example"]
     assert route["spec"]["rules"][0]["backendRefs"] == [{"name": "atlas-webapp", "port": 8080}]
 
 

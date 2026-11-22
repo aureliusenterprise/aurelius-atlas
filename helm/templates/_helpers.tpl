@@ -33,15 +33,16 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- trimSuffix "/" $url -}}
 {{- end -}}
 
-{{/* Browser hosts (CHT-03, CHT-135). A host set in values wins; the default
-derives from the domain. The entry keys and default labels read by product
-role (DD-658): app (webapp), auth (identity provider), o11y (Grafana); the
-dashboard host keeps its component name. The helper function names stay
-atlasHost/keycloakHost/grafanaHost (their fully-qualified names are
-cross-referenced by the component charts); the key each reads and the
-default label it derives are what the rename moved. */}}
+{{/* Browser hosts (CHT-03, CHT-135, ADR 069). A host set in values wins; the
+default derives from the domain. The product answers at the zone apex (the
+domain itself, no role prefix), and every other surface answers at its role
+label joined to the domain: auth (the sign-in door), dashboard (the Atlas
+dashboards), observability (Grafana). The values keys stay app/dashboard/o11y
+(their listener, route, and realm-token names ride the keys, not the labels).
+The helper function names stay atlasHost/keycloakHost/grafanaHost (their
+fully-qualified names are cross-referenced by the component charts). */}}
 {{- define "aurelius-atlas.atlasHost" -}}
-{{- default (printf "app.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.app.host -}}
+{{- default (include "aurelius-atlas.domain" .) .Values.global.hosts.app.host -}}
 {{- end -}}
 
 {{- define "aurelius-atlas.keycloakHost" -}}
@@ -53,7 +54,7 @@ default label it derives are what the rename moved. */}}
 {{- end -}}
 
 {{- define "aurelius-atlas.grafanaHost" -}}
-{{- default (printf "o11y.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.o11y.host -}}
+{{- default (printf "observability.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.o11y.host -}}
 {{- end -}}
 
 {{/*

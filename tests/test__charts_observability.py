@@ -467,7 +467,7 @@ def test__grafana_root_url_follows_the_host() -> None:
     """
     on = helm_render(OBS_CHART, value_files=TEST_VALUES, sets=("global.hosts.o11y.enabled=true",))
     envs = env_map(container(find(on, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
-    assert env_value(envs, "GF_SERVER_ROOT_URL") == "https://o11y.atlas.test"
+    assert env_value(envs, "GF_SERVER_ROOT_URL") == "https://observability.atlas.test"
     named = helm_render(
         OBS_CHART,
         value_files=TEST_VALUES,
