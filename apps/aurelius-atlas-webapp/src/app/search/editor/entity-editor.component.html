@@ -438,14 +438,26 @@
         }
     </div>
 
-    <!-- The History pane (HST-02..HST-05, DD-816): mounted beside the form
-         and hidden while the Entity pane shows. The loading line is the
-         persistent-region shape again (LR-002): the region stays mounted and
-         only its text comes and goes. The rows are the legacy's Bulma media
-         anatomy (HST-04): the change's label, then its user and its time. -->
+    <!-- The History pane (HST-02..HST-05, HST-08, DD-816, DD-820): mounted
+         beside the form and hidden while the Entity pane shows. The loading
+         line is the persistent-region shape again (LR-002): the region stays
+         mounted and only its text comes and goes — and it speaks only for the
+         first read, because a next page keeps the rows on screen under the
+         container's own spinner (HST-05 as amended by 7.36). The rows are the
+         legacy's Bulma media anatomy (HST-04): the change's label, then its
+         user and its time. The container is the results list's (UIC-21): its
+         sentinel asks for the older pages the trail still has (HST-08). -->
     <div id="editor-history-pane" role="tabpanel" aria-labelledby="editor-history-tab" [hidden]="tab() !== 'history'">
-        <output class="help aurelius-editor-loading">{{ auditsLoading() ? auditRetrieveLine : "" }}</output>
-        <div class="media-list aurelius-editor-audits">
+        <output class="help aurelius-editor-loading">
+            {{ auditsLoading() && audits().length === 0 ? auditRetrieveLine : "" }}
+        </output>
+        <aurelius-atlas-ui-infinite-scroll-container
+            class="media-list aurelius-editor-audits"
+            [loading]="auditsLoading()"
+            [allLoaded]="auditsAllLoaded()"
+            [loadLabel]="auditLoadLabel"
+            (nextPage)="loadAuditPage()"
+        >
             @for (event of audits(); track event.eventKey) {
                 <div class="media aurelius-editor-audit">
                     <div class="media-content">
@@ -464,7 +476,7 @@
                     </div>
                 </div>
             }
-        </div>
+        </aurelius-atlas-ui-infinite-scroll-container>
     </div>
 
     <!-- The governance banner lines (EDT-24 as amended by 12.7, DD-446/DD-498):
