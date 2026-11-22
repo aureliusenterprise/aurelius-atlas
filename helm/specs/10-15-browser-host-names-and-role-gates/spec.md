@@ -14,11 +14,12 @@ The deployment review asked for three things. None of them change what the
 platform does; all three change who can see it and under which name.
 
 1. **The browser hosts read by product role, not by pod name.** The edge
-   subdomains were named after the component behind them (`atlas`,
-   `keycloak`, `grafana`). They now read `app` (the catalogue webapp),
-   `auth` (the identity provider) and `o11y` (Grafana, the observability
-   surface). `dashboard` (the vendored Apache Atlas dashboards, off by
-   default) keeps its name. The rename carries no compatibility alias:
+   hosts were named after the component behind them (`atlas`, `keycloak`,
+   `grafana`). The values keys now read `app` (the catalogue webapp), `auth`
+   (the identity provider) and `o11y` (Grafana), and the derived hosts follow
+   ADR 069: the product answers at the apex (`<domain>`) and observability at
+   `observability.<domain>`, while `auth` and `dashboard` keep their labels.
+   The rename carries no compatibility alias:
    the chart set is young and atlas-dev is its only live deployment, so
    the entry keys, the derived defaults, and every consumer move in one
    step (DD-658).
@@ -42,11 +43,11 @@ host's name.
 
 ## Semantics
 
-| Rule    | Statement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CHT-135 | The umbrella's `global.hosts` entries are `app`, `auth`, `dashboard` and `o11y`. Each entry's default host is its entry key joined to `global.domain` (`app.<domain>`, `auth.<domain>`, `dashboard.<domain>`, `o11y.<domain>`); an explicit `hosts.<key>.host` wins, as before. One derivation serves every consumer: the gateway listeners and their names, the edge Certificate SANs, the health-check policy names and paths (`global.gateway.healthCheck.paths.<key>`), the realm asset's `__APP_HOST__`/`__DASHBOARD_HOST__`/`__O11Y_HOST__` placeholders, Grafana's root URL, and every component chart's issuer fallback (`auth.<domain>`). |
-| CHT-136 | Grafana's OAuth role mapping maps `grafana` client role `admin` to Admin and `editor` to Editor, and returns no role for anyone else; with `GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT=true` Grafana denies the sign-in of an authenticated user who holds neither. The mapping is a parseable JMESPath expression. The password admin (`GF_SECURITY_ADMIN_*`) and its recovery Secret are unchanged, so a locked-out operator keeps a way in.                                                                                                                                                                                                    |
-| CHT-137 | The prod realm asset defines a `roles` client scope whose single mapper mints the `resource_access.<client>.roles` claim (multivalued, on the ID and access tokens), so the clients that name the scope in their default scopes resolve it and their tokens carry the claim the Grafana gate and the server authorization read. An asset may only name scopes it defines (CHT-133's rule).                                                                                                                                                                                                                                                         |
+| Rule    | Statement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CHT-135 | The umbrella's `global.hosts` entries are `app`, `auth`, `dashboard` and `o11y`. The `app` entry's default host is `global.domain` itself (the zone apex, ADR 069); every other entry's default host is a role label joined to `global.domain` (`auth.<domain>`, `dashboard.<domain>`, `observability.<domain>`). The `app` and `o11y` entry keys stay — listener names, route names, and the realm asset's host placeholders ride the keys, not the labels; an explicit `hosts.<key>.host` wins, as before. One derivation serves every consumer: the gateway listeners and their names, the edge Certificate SANs, the health-check policy names and paths (`global.gateway.healthCheck.paths.<key>`), the realm asset's `__APP_HOST__`/`__DASHBOARD_HOST__`/`__O11Y_HOST__` placeholders, Grafana's root URL, and every component chart's issuer fallback (`auth.<domain>`). |
+| CHT-136 | Grafana's OAuth role mapping maps `grafana` client role `admin` to Admin and `editor` to Editor, and returns no role for anyone else; with `GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT=true` Grafana denies the sign-in of an authenticated user who holds neither. The mapping is a parseable JMESPath expression. The password admin (`GF_SECURITY_ADMIN_*`) and its recovery Secret are unchanged, so a locked-out operator keeps a way in.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| CHT-137 | The prod realm asset defines a `roles` client scope whose single mapper mints the `resource_access.<client>.roles` claim (multivalued, on the ID and access tokens), so the clients that name the scope in their default scopes resolve it and their tokens carry the claim the Grafana gate and the server authorization read. An asset may only name scopes it defines (CHT-133's rule).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## Ported from
 
@@ -60,9 +61,9 @@ chart set's naming.
   or `global.hosts.atlas.*` after this increment silently changes nothing
   (the key is unknown, the entry defaults still render under the new keys).
   Accepted: one deployment, documented in the runbook's rename step.
-- **`o11y` not `ollie`.** The numeronym is the established spelling for
-  observability (as `i18n` is for internationalization); the hostname
-  should explain itself to whoever lands on it.
+- **`o11y` key, `observability` host.** The entry key stays `o11y` (it names
+  the listener, route, and realm token), while the derived hostname spells
+  `observability` so it explains itself to whoever lands on it (ADR 069).
 - **The issuer moves with the rename.** Keycloak's issuer is
   `https://auth.<domain>` once the host does; every client derives it from
   the same rule, and atlas-dev re-imports the realm on the upgrade's pod
@@ -86,8 +87,8 @@ chart set's naming.
   (CHT-85/CHT-136): `GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT=true`
   and a `ROLE_ATTRIBUTE_PATH` with no Viewer fallback, written in the
   JMESPath the parser accepts (DD-661).
-- Live on atlas-dev: `https://app.<domain>` serves the webapp,
+- Live on atlas-dev: `https://<domain>` (the apex) serves the webapp,
   `https://auth.<domain>/realms/master` answers,
-  `https://o11y.<domain>/api/health` answers, a realm user without a
+  `https://observability.<domain>/api/health` answers, a realm user without a
   grafana role is denied at the callback, and an account holding
   `grafana:admin` lands as Admin.

@@ -20,15 +20,20 @@ browsers have no use for), Grafana on `grafana.<domain>` (a tool name).
 The operator review asked for hosts that read by role: the app, the
 sign-in door, the observability surface.
 
-**Decision.** The `global.hosts` entry keys and their derived defaults
-become `app`, `auth` and `o11y`; `dashboard` keeps its name. Every
-consumer follows the one rule: listener names, edge Certificate SANs,
-health-check policy names and `paths.<key>` lookups, the realm asset
-placeholders (`__APP_HOST__`, `__O11Y_HOST__`), Grafana's root URL, and
-the component charts' issuer fallback (`auth.<domain>` — Keycloak pins its
-issuer from the host, so the issuer moves with the rename). The internal
-Service names and the CHT-13 name rule are machine-facing and stay. No
-old-key alias ships (see the spec's deviations).
+**Decision.** The `global.hosts` entry keys become `app`, `auth` and
+`o11y`; `dashboard` keeps its name. The derived default hosts follow
+ADR 069: the product answers at the zone apex (`<domain>`), and every other
+surface answers at a role label joined to the domain (`auth.<domain>`,
+`dashboard.<domain>`, `observability.<domain>`). The `app` and `o11y` keys
+stay, so listener names, route names, and the realm asset placeholders
+(`__APP_HOST__`, `__O11Y_HOST__`) ride the keys while the addresses they
+resolve to follow ADR 069. Every consumer follows the one derivation:
+listener names, edge Certificate SANs, health-check policy names and
+`paths.<key>` lookups, Grafana's root URL, and the component charts' issuer
+fallback (`auth.<domain>` — Keycloak pins its issuer from the host, so the
+issuer moves with the rename). The internal Service names and the CHT-13
+name rule are machine-facing and stay. No old-key alias ships (see the
+spec's deviations).
 
 **Alternatives.** (a) Keep the keys, ship new defaults in
 `hosts.<key>.host` of an overlay: rejected — the keys leak into resource
@@ -45,10 +50,12 @@ identity-provider migration.
 keycloak chart's substitution lines and its chart tests move with the
 umbrella. Keycloak's issuer pin moves with the host, and every relying
 party derives it from the same rule, so no consumer drifts. On a live
-deployment the rename means: DNS for the three new names first, upgrade,
-then retire the old names; runbook §rename states it. The dev compose
-stacks and e2e fixtures keep `keycloak.localhost` — they run the master
-realm outside the chart's host rule, and renaming them buys nothing.
+deployment the rename means: DNS for the new names first, upgrade, then
+retire the old names; runbook §rename states it. The product's apex host
+takes an address record rather than a CNAME, and a wildcard certificate does
+not name the apex, so the apex carries its own name (ADR 069). The dev
+compose stacks and e2e fixtures keep `keycloak.localhost` — they run the
+master realm outside the chart's host rule, and renaming them buys nothing.
 
 ### DD-659. Grafana admits role-holders only
 

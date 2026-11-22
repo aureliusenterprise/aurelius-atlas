@@ -157,16 +157,19 @@ global:
         # here controls the Bundle — the same flags that owned the CA before
         # gate it.
 
-    # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-285, CHT-135).
-    # The entry keys read by product role (DD-658): app, auth, o11y; the
-    # dashboard host keeps its component name. Each host joins to one backend
+    # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-285, CHT-135,
+    # ADR 069). The product answers at the zone apex (the domain itself); every
+    # other surface answers at its role label joined to the domain (auth, the
+    # sign-in door; dashboard, the Atlas dashboards; observability, Grafana).
+    # The values keys stay app/auth/dashboard/o11y — listener, route, and realm
+    # token names ride the keys, not the labels. Each host joins to one backend
     # Service; `service`/`port` override the name-rule join and the
     # component's service port when a deployment diverges.
     hosts:
         app:
             enabled: true
-            # "" defaults to app.<domain> — the webapp: SPA, /config.json,
-            # and the /api and /otel proxies (the tested data path, DD-142).
+            # "" defaults to <domain> (the zone apex, ADR 069) — the webapp: SPA,
+            # /config.json, and the /api and /otel proxies (DD-142).
             host: ""
             # Backend: the webapp Service ("" = the CHT-13 name rule) and its
             # port (matches atlas-webapp.service.port).
@@ -201,7 +204,7 @@ global:
             # without this host cannot complete a login at all. Set false to
             # keep the port-forward access path (runbook).
             enabled: true
-            # "" defaults to o11y.<domain> (DD-658).
+            # "" defaults to observability.<domain> (ADR 069).
             host: ""
             # Backend: the observability chart's Grafana Service ("" = the
             # CHT-13 name rule + "-grafana") and its plaintext UI port. The
