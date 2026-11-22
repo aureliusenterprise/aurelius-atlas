@@ -49,22 +49,18 @@ class ClassificationTasks:
         if task.type not in {ADD, DELETE, RELATIONSHIP_UPDATE}:
             raise ValueError(UNKNOWN_TASK_TYPE.format(type=task.type))
         told = await retry_race(lambda: self._attempt(task, version), ATTEMPTS)
-        await self._tell(task, *told)
+        await self._tell(task, told)
 
-    async def _attempt(
-        self, task: StoredTask, version: DocumentVersion
-    ) -> tuple[TagPropagation, list[str], StoredClassification | None]:
-        """Run and write the task; answers its propagation, the entities it changed and the classification."""
+    async def _attempt(self, task: StoredTask, version: DocumentVersion) -> TagPropagation:
+        """Run and write the task; answers its propagation, whose ``added``/``removed`` say what it did."""
         parameters = task.parameters or {}
         propagation = TagPropagation(self._store)
         relationships: list[RelationshipChange] = []
         instances: list[ClassificationChange] = []
-        changed: list[str] = []
-        classification = None
         if task.type == ADD:
-            changed, classification = await self._add(propagation, parameters)
+            await self._add(propagation, parameters)
         elif task.type == DELETE:
-            instances, changed, classification = await self._delete(propagation, parameters)
+            instances, _, _ = await self._delete(propagation, parameters)
         else:
             relationships = await self._update(propagation, task, parameters)
         entity_guid = parameters.get("entityGuid")
@@ -73,24 +69,24 @@ class ClassificationTasks:
         await self._store.write(
             propagation.entity_changes([]), relationships, instances, [TaskChange(task, version, remove=True)]
         )
-        return propagation, changed, classification
+        return propagation
 
-    async def _tell(
-        self,
-        task: StoredTask,
-        propagation: TagPropagation,
-        changed: list[str],
-        classification: StoredClassification | None,
-    ) -> None:
-        """What the task did, told as Atlas's task tells it (CAU-06)."""
+    async def _tell(self, task: StoredTask, propagation: TagPropagation) -> None:
+        """What the task did, told as Atlas's task tells it (CAU-06).
+
+        Atlas's task ends in ``notifyPropagatedEntities``, which reads the request context's per-entity
+        propagations and skips the entities it deleted or can no longer read (DD-818); the same maps stand in
+        here, so an entity deleted while the task waited hears nothing (TSK-04).
+        """
         notifier = self._notifier
         if notifier is None:
             return
         if task.type == RELATIONSHIP_UPDATE:
             await notifier.notify_propagated_entities(propagation.added, propagation.removed, user=task.created_by)
-        elif changed and classification is not None:
-            tell = notifier.on_classifications_added if task.type == ADD else notifier.on_classifications_deleted
-            await tell(changed, [classification], user=task.created_by)
+        elif task.type == ADD:
+            await notifier.notify_propagated_entities(propagation.added, {}, user=task.created_by)
+        else:
+            await notifier.notify_propagated_entities({}, propagation.removed, user=task.created_by)
 
     async def _add(
         self, propagation: TagPropagation, parameters: Mapping[str, Any]
