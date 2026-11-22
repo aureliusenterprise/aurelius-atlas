@@ -50,6 +50,11 @@
     "aliases": []
   },
   {
+    "version": "feat-kafka-scanner-type-alias",
+    "title": "feat-kafka-scanner-type-alias",
+    "aliases": []
+  },
+  {
     "version": "feat-infra-root",
     "title": "feat-infra-root",
     "aliases": []
