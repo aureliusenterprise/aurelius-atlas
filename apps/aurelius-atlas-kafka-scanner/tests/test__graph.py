@@ -8,6 +8,8 @@ check the shape the one bulk request carries — temp guids and `relationshipAtt
 import pytest
 from aurelius_atlas_kafka_scanner.fields import FieldSpec
 from aurelius_atlas_kafka_scanner.graph import (
+    COLLECTION_ALIAS,
+    DATASET_ALIAS,
     DEFAULT_CLUSTER,
     TopicTree,
     build_graph,
@@ -84,6 +86,25 @@ def test_the_graph_hangs_system_collection_datasets_and_fields() -> None:
         "kafka-broker--abc123--orders--address",
         "kafka-broker--abc123--orders--address--city",
     ]
+
+
+@pytest.mark.covers("aurelius_atlas_kafka_scanner.graph.build_graph", rules=["KSA-01", "KSA-02"])
+def test_the_browsed_levels_carry_their_badge_alias_and_nothing_else_moves() -> None:
+    """KSA-01: the Collection and each Dataset carry the alias the badge shows (MMS-09, DD-826).
+
+    KSA-02 rides the same build: the aliases are attributes only, so every qualified name of
+    KSC-03 is exactly what the 13.1 test pins, and a re-scan resolves the same entities.
+    """
+    trees = [TopicTree("orders", (FieldSpec("id", "string"),)), TopicTree("payments")]
+    entities = build_graph(system_name="Kafka Broker", cluster_id="abc123", trees=trees)
+    attributes = {(e.type_name, (e.attributes or {})["qualifiedName"]): (e.attributes or {}) for e in entities}
+    assert attributes[("m4i_collection", "kafka-broker--abc123")]["typeAlias"] == COLLECTION_ALIAS == "Kafka Cluster"
+    for topic in ("orders", "payments"):
+        dataset = attributes[("m4i_dataset", f"kafka-broker--abc123--{topic}")]
+        assert dataset["typeAlias"] == DATASET_ALIAS == "Kafka Topic"
+    # KSA-01's other half: a System and a field badge their type, so they hold no alias at all.
+    assert "typeAlias" not in attributes[("m4i_system", "kafka-broker")]
+    assert "typeAlias" not in attributes[("m4i_field", "kafka-broker--abc123--orders--id")]
 
 
 @pytest.mark.covers("aurelius_atlas_kafka_scanner.graph.build_graph", rules=["KSC-07", "DCP-04"])

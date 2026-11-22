@@ -13,8 +13,10 @@ pattern, and fails loudly (
 One scan lists the broker's external topics, hangs them under a System and a
 Collection named for the cluster, reads each topic's schema from the Schema
 Registry — or infers one from the topic's own messages when no subject exists —
-and writes the whole tree in one bulk request. A re-scan updates the same
-entities in place; it never duplicates and never deletes a removed topic.
+and writes the whole tree in one bulk request. The Collection and each topic
+carry a `typeAlias` (`Kafka Cluster`, `Kafka Topic`), so the screens badge them
+by what they are (KSA-01, MMS-09). A re-scan updates the same entities in
+place; it never duplicates and never deletes a removed topic.
 
 The [spec](specs/13-1-kafka-cluster-scanner/spec.md) states the KSC-01..10
 rules. The standalone `atlas-kafka-scanner` Helm chart (`helm/`, 13.2) runs it

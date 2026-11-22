@@ -27,6 +27,12 @@ DATASET_TYPE = "m4i_dataset"
 FIELD_TYPE = "m4i_field"
 """The m4i types of the tree (1.5b's model, loaded by DD-362)."""
 
+COLLECTION_ALIAS = "Kafka Cluster"
+DATASET_ALIAS = "Kafka Topic"
+"""The ``typeAlias`` of the two browsed levels (KSA-01, DD-826): what a badge shows in place of
+the metamodel type (MMS-09). The System and the fields carry none, so their badges show the type
+name alone."""
+
 DELIMITER = "--"
 """The legacy qualified-name delimiter, joining the sanitized components (KSC-03)."""
 
@@ -121,7 +127,11 @@ def build_graph(*, system_name: str, cluster_id: str | None, trees: Sequence[Top
             AtlasEntity(
                 guid=dataset_guid,
                 type_name=DATASET_TYPE,
-                attributes={"name": tree.topic, "qualifiedName": dataset_qualified},
+                attributes={
+                    "name": tree.topic,
+                    "qualifiedName": dataset_qualified,
+                    "typeAlias": DATASET_ALIAS,
+                },
                 relationship_attributes={
                     # the dataset's one collection end is SINGLE (DCP-04, DD-762)
                     "collections": {"guid": collection_guid, "typeName": COLLECTION_TYPE},
@@ -133,7 +143,11 @@ def build_graph(*, system_name: str, cluster_id: str | None, trees: Sequence[Top
     collection = AtlasEntity(
         guid=collection_guid,
         type_name=COLLECTION_TYPE,
-        attributes={"name": cluster, "qualifiedName": collection_qualified},
+        attributes={
+            "name": cluster,
+            "qualifiedName": collection_qualified,
+            "typeAlias": COLLECTION_ALIAS,
+        },
         relationship_attributes={
             "systems": [{"guid": system_guid, "typeName": SYSTEM_TYPE}],
             "datasets": [{"guid": guid, "typeName": DATASET_TYPE} for guid in dataset_guids],

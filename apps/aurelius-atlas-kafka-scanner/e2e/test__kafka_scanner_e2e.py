@@ -168,7 +168,7 @@ def run_cluster_id(scanner_settings: ScannerSettings) -> str | None:
     "aurelius_atlas_kafka_scanner.cluster.KafkaCluster.cluster_id",
     "aurelius_atlas_kafka_scanner.graph.build_graph",
     "aurelius_atlas_kafka_scanner.__main__.build_client",
-    rules=["KSC-09", "KSC-02", "KSC-03", "KSC-10"],
+    rules=["KSC-09", "KSC-02", "KSC-03", "KSC-10", "KSA-03"],
 )
 async def test__the_scanners_own_token_writes_the_tree_and_the_audit_names_it(
     scanner: AtlasClient,
@@ -210,6 +210,13 @@ async def test__the_scanners_own_token_writes_the_tree_and_the_audit_names_it(
     collection = await _wait_for(writer, "m4i_collection", collection_qn)
     orders_entity = await _wait_for(writer, "m4i_dataset", orders_qn)
     await _wait_for(writer, "m4i_dataset", payments_qn)
+
+    # KSA-03: the stored entities answer the badge alias, so every screen reads Kafka where the
+    # metamodel says Collection and Dataset (MMS-09). The System holds none: the read answers it
+    # None among the declared attributes, so its badge stays System.
+    assert _attributes(collection)["typeAlias"] == "Kafka Cluster"
+    assert _attributes(orders_entity)["typeAlias"] == "Kafka Topic"
+    assert _attributes(system).get("typeAlias") is None
 
     city_qn = join_qualified(orders_qn, "address", "city")
     city = await _wait_for(writer, "m4i_field", city_qn)
