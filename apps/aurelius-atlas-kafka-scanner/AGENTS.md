@@ -40,7 +40,8 @@ The job is a CLI, not a service: one process per scan, no HTTP router, no port
 - `aurelius_atlas_kafka_scanner/graph.py` — the tree: qualified names under
   the legacy rule, the System/Collection/Dataset/Field entities, the
   request-local temp guids and `relationshipAttributes` (KSC-03, KSC-06,
-  KSC-07). Pure: no I/O, tested directly.
+  KSC-07), and the Collection/Dataset badge aliases (KSA-01). Pure: no I/O,
+  tested directly.
 - `aurelius_atlas_kafka_scanner/scan.py` — `run_scan`: list, read, build, one
   bulk write (KSC-01, KSC-07..09). The `ScanDoor` protocol is the seam the
   e2e suite wraps to record what a run wrote. Testable with fakes; no
@@ -52,6 +53,8 @@ The job is a CLI, not a service: one process per scan, no HTTP router, no port
   e2e suite drives in-process.
 - `specs/13-1-kafka-cluster-scanner/` — the semantics spec and this
   increment's `design.md` (DD-465..472)
+- `specs/13-1a-scanner-badge-alias/` — the KSA spec and its `design.md`
+  (DD-826): the Collection/Dataset `typeAlias` badges
 - `tests/` — unit tests on fake doors (a fake broker, a fake Registry
   transport, a recording client): the qualified-name rule, the parsers, the
   wire id, the notices, the dry-run, the temp-guid bulk shape.

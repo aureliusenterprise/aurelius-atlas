@@ -99,7 +99,7 @@ def _avro_subject() -> SubjectSchema:
     return SubjectSchema(schema_type="AVRO", schema_str=AVRO_ORDER)
 
 
-@pytest.mark.covers("aurelius_atlas_kafka_scanner.scan.run_scan", rules=["KSC-01", "KSC-04", "KSC-07"])
+@pytest.mark.covers("aurelius_atlas_kafka_scanner.scan.run_scan", rules=["KSC-01", "KSC-04", "KSC-07", "KSA-01"])
 async def test_a_scan_reads_the_subject_and_writes_the_tree_once(settings: Settings) -> None:
     """A registered subject is parsed and the whole tree leaves in one bulk request (KSC-04, KSC-07)."""
     cluster = FakeCluster(["orders"], cluster_id="abc123")
@@ -110,6 +110,10 @@ async def test_a_scan_reads_the_subject_and_writes_the_tree_once(settings: Setti
     written = catalogue.calls[0].entities
     assert written is not None
     assert [e.type_name for e in written] == ["m4i_system", "m4i_collection", "m4i_dataset", "m4i_field"]
+    # KSA-01: the door receives the badge aliases on the two browsed levels, in the same request.
+    aliases = {(e.type_name): (e.attributes or {}).get("typeAlias") for e in written}
+    assert aliases["m4i_collection"] == "Kafka Cluster"
+    assert aliases["m4i_dataset"] == "Kafka Topic"
     assert report.topics_found == 1
     assert report.topics_written == 1
     assert report.topics_fieldless == 0
