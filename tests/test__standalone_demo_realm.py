@@ -97,7 +97,7 @@ def test__the_realm_holds_service_identities_and_the_operator_alone(realm: dict[
 def test__the_realm_matches_the_helm_realms_service_identities(realm: dict[str, Any]) -> None:
     """The clients the two copies share are the same shape, and the operators organization carries groups of
     its own ids (DD-673): one Keycloak may hold both realms. The validator's client joins the stack's realm
-    alone — the Helm world carries it in the dev realm (CHT-113), and the stack has only this one.
+    and the Helm prod realm alike (CHT-113) — the app's rules leg mints as it, so both must carry it.
     """  # noqa: D205 - one sentence
     prod = json.loads(PROD_REALM.read_text())
     shared = [

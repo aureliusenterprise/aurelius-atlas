@@ -564,6 +564,45 @@
             "standardFlowEnabled": false,
             "surrogateAuthRequired": false,
             "webOrigins": []
+        },
+        {
+            "authorizationServicesEnabled": false,
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-validate-entity",
+            "consentRequired": false,
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
+            "description": "The validate-entity API's own service identity (12.7, DD-499): its client-credentials token, accepted by azp (AUT-02), names the app in every governance-rule read. Its service account holds atlas-read on aurelius-atlas-server.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "implicitFlowEnabled": false,
+            "name": "aurelius-atlas-validate-entity",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${VALIDATE_ENTITY_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
         }
     ],
     "defaultDefaultClientScopes": [
@@ -745,6 +784,14 @@
             "enabled": true,
             "serviceAccountClientId": "aurelius-atlas-admin",
             "username": "service-account-aurelius-atlas-admin"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read"]
+            },
+            "enabled": true,
+            "serviceAccountClientId": "aurelius-atlas-validate-entity",
+            "username": "service-account-aurelius-atlas-validate-entity"
         }
     ],
     "verifyEmail": false,

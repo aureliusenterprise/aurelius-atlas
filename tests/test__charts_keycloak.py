@@ -827,10 +827,11 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
             "grafana",
             "aurelius-atlas-provisioning",
             "aurelius-atlas-admin",
+            "aurelius-atlas-validate-entity",
         }
         | otel
     )  # grafana: CHT-81; server client: CHT-110, both realms; the provisioning client: TRM-11;
-    # the admin client: DD-666
+    # the admin client: DD-666; the validator client: CHT-113 (12.7, VEV-04)
     assert (
         not {
             "account",
@@ -843,10 +844,11 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         }
         & client_ids
     )
-    # No person: the provisioning (TRM-11) and admin (DD-666) clients' service accounts.
+    # No person: the provisioning (TRM-11), admin (DD-666) and validator (CHT-113) clients' service accounts.
     assert sorted(user["username"] for user in asset.get("users", [])) == [
         "service-account-aurelius-atlas-admin",
         "service-account-aurelius-atlas-provisioning",
+        "service-account-aurelius-atlas-validate-entity",
     ]
     assert "defaultRole" not in asset
     assert not asset.get("realmRoles")
@@ -1062,12 +1064,18 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
         "grafana",
         "aurelius-atlas-provisioning",
         "aurelius-atlas-admin",
+        "aurelius-atlas-validate-entity",
     }
     assert set(prod_by_id) - own == {c for c in dev_by_id if c.startswith("otel-")}
     # TRM-11: the provisioning client is the same in both realms.
     assert prod_by_id["aurelius-atlas-provisioning"] == dev_by_id["aurelius-atlas-provisioning"]
     # DD-666: so is the platform admin client.
     assert prod_by_id["aurelius-atlas-admin"] == dev_by_id["aurelius-atlas-admin"]
+    # CHT-113 (12.7, VEV-04): so is the validate-entity service client. It is a faithful copy, not
+    # a prod-own client — leaving it out let the prod realm ship without the identity the app's
+    # rules leg mints as, so every POST / answered 502 and the editor's governance banner went blank.
+    # The explicit access KeyErrors if the client ever vanishes (the otel set-equality alone would not).
+    assert prod_by_id["aurelius-atlas-validate-entity"] == dev_by_id["aurelius-atlas-validate-entity"]
     assert "grafana" not in dev_by_id  # CHT-81: the exception is prod-only
     for name in set(prod_by_id) - own:
         prod_client, dev_client = prod_by_id[name], dev_by_id[name]

@@ -132,12 +132,13 @@ def test__the_stack_realm_seeds_the_operator_and_no_tenant() -> None:
 @pytest.mark.covers(rules=["RLM-07"])
 def test__the_production_realm_still_seeds_no_person() -> None:
     """The operator organization has its groups and no member; the realm's only users are the service
-    accounts of the provisioning (TRM-11) and admin (DD-666) clients.
+    accounts of the provisioning (TRM-11), admin (DD-666) and validate-entity (CHT-113) clients.
     """  # noqa: D205 - one sentence
     loaded = realm(PROD_REALM)
     assert sorted(user["username"] for user in loaded["users"]) == [
         "service-account-aurelius-atlas-admin",
         "service-account-aurelius-atlas-provisioning",
+        "service-account-aurelius-atlas-validate-entity",
     ]
     assert all(not o.get("members") for o in loaded["organizations"])
 
