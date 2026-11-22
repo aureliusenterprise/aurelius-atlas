@@ -7726,6 +7726,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.36</td>
+<td>History tab infinite scroll</td>
+<td>The editor's History tab scrolls its trail instead of capping it at one page: the rows ride the results list's infinite-scroll container and each next page rides the audit endpoint's <code>startKey</code> cursor, deduped for its inclusive repeat, so a reader reaches every event of the entity (HST-08/HST-09, DD-820, DV-190 closed).</td>
+<td>– (Aurelius origin; the cursor is 3.5's AUD-08)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
