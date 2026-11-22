@@ -46,6 +46,14 @@ export const NUMERIC_TYPES = new Set(["int", "long", "float", "double", "byte", 
 /** The name that never renders and the header field that is never an attribute. */
 const DROPPED_ATTRIBUTES = new Set(["qualifiedName", "guid"]);
 
+/** Relationship ends the editor never offers a picker for (EDT-36, DD-828).
+ * `meanings` is the glossary model's term assignments — the `Referenceable`
+ * end every shipped type inherits. No Aurelius screen reads term assignments
+ * back: the details table drops the attribute under DET-11. Dropping the def
+ * here means no picker is built, so the save body carries no `meanings` key
+ * and the door leaves any stored assignments untouched (AVW-05). */
+const HIDDEN_RELATIONSHIPS = new Set(["meanings"]);
+
 /**
  * The field kinds for the shipped store's `typeName` values, so a reviewer can
  * see the coverage (EDT-03): string/`boolean`/`date`/enum → their inputs;
@@ -336,7 +344,8 @@ function unwrapArrayType(typeName: string): string {
 /**
  * The definition and its supertype chain, first-wins by relationship-attribute
  * name — the same walk and merge the plain attributes get (EDT-13, DD-338).
- * A dropped attribute and a name two definitions carry are left to the first.
+ * A dropped attribute, a hidden end (EDT-36), and a name two definitions carry
+ * are left to the first.
  * @param def the entity definition to walk
  * @param defsByName every entity definition by name (for the supertype links)
  * @returns the merged relationship-attribute definitions, by name
@@ -349,7 +358,12 @@ function collectRelationshipAttributeDefs(
 
     for (const current of walkDefChain(def, defsByName)) {
         for (const attribute of current.relationshipAttributeDefs ?? []) {
-            if (attribute.name && !merged.has(attribute.name) && !DROPPED_ATTRIBUTES.has(attribute.name)) {
+            if (
+                attribute.name &&
+                !merged.has(attribute.name) &&
+                !DROPPED_ATTRIBUTES.has(attribute.name) &&
+                !HIDDEN_RELATIONSHIPS.has(attribute.name)
+            ) {
                 merged.set(attribute.name, attribute);
             }
         }

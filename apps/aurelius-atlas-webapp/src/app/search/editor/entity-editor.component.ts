@@ -995,7 +995,7 @@ export class EntityEditor {
     /**
      * Save (EDT-06/07/16, VDE-05): invalid (a control, or a required picker
      * with no chip, EDT-17) bails marked-touched; valid posts one mutation-door
-     * body (DD-609) — attributes, tags, ends, and meanings in one request.
+     * body (DD-609) — attributes, tags, and ends in one request.
      * The quality branch (EDT-28, DD-477) answers first: the draft rides the
      * validate endpoint before the door POST, whose body is the minimal
      * quality body (EDT-27).

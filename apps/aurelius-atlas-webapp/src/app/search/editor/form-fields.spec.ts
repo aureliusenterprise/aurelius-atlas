@@ -382,7 +382,24 @@ describe("buildRelationshipFields (EDT-13, DD-338)", () => {
     it("walks the supertype chain for relationship attributes", () => {
         const names = buildRelationshipFields(DATASET, defs).map((f) => f.name);
 
-        expect(names).toEqual(["inputToProcesses", "meanings", "model", "terms"]);
+        expect(names).toEqual(["inputToProcesses", "model", "terms"]);
+    });
+
+    it("never builds a picker for the glossary model's meanings end (EDT-36, DD-828)", () => {
+        // The DATASET fixture carries the end the shipped store puts on every
+        // Referenceable; the editor must answer no field for it, so no picker
+        // renders and the save body carries no meanings key.
+        expect(buildRelationshipFields(DATASET, defs).some((f) => f.name === "meanings")).toBe(false);
+
+        const onlyMeanings = raDef("GlossaryCarrier", [
+            ra({
+                name: "meanings",
+                typeName: "array<AtlasGlossaryTerm>",
+                relationshipTypeName: "AtlasGlossarySemanticAssignment",
+            }),
+        ]);
+
+        expect(buildRelationshipFields(onlyMeanings, new Map([["GlossaryCarrier", onlyMeanings]]))).toEqual([]);
     });
 
     it("unwraps array<X> to X and reads SINGLE/SET cardinality", () => {

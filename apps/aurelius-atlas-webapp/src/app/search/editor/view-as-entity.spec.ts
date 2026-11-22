@@ -139,7 +139,7 @@ describe("bodyFromEdits (VDE-03..VDE-05, DD-592, DD-609, DD-612)", () => {
         expect(body.sections).toEqual([]);
     });
 
-    it("the meanings picker rides the door's own meanings key (DD-612)", () => {
+    it("the body never carries the door's meanings key (EDT-36, DD-828)", () => {
         const body = bodyFromEdits(
             options({
                 relationshipFields: [setPicker("meanings")],
@@ -149,9 +149,11 @@ describe("bodyFromEdits (VDE-03..VDE-05, DD-592, DD-609, DD-612)", () => {
             }),
         );
 
-        // Term assignments are 5.2c's bookkeeping, not a plain edge (VDE-04).
-        expect(body.meanings).toEqual(["t1"]);
-        expect(body.sections).toEqual([]);
+        // The editor builds no meanings picker (EDT-36), so the bridge has no
+        // reason to answer the door's term-assignment key (DD-612 stays the
+        // glossary callers' road). The stored assignments ride no key at all,
+        // which leaves them unchanged (AVW-05).
+        expect(body.meanings).toBeUndefined();
     });
 
     it("a create names no guid and carries the draft's qualified name (DD-592)", () => {
