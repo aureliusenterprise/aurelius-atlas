@@ -1412,11 +1412,6 @@ The technical data governance model consists of the following types of entities:
         <target>Heeft inhoud</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.hasContent</note>
       </trans-unit>
-      <trans-unit id="search.components.editor.attribute.hasPII" datatype="html">
-        <source>Has PII</source>
-        <target>Bevat PII</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.hasPII</note>
-      </trans-unit>
       <trans-unit id="search.components.editor.attribute.hashCode" datatype="html">
         <source>Hash Code</source>
         <target>Hashcode</target>
@@ -1441,11 +1436,6 @@ The technical data governance model consists of the following types of entities:
         <source>Is A</source>
         <target>Is een</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.isA</note>
-      </trans-unit>
-      <trans-unit id="search.components.editor.attribute.isKeyData" datatype="html">
-        <source>Is Key Data</source>
-        <target>Is sleutelgegevens</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.isKeyData</note>
       </trans-unit>
       <trans-unit id="search.components.editor.attribute.language" datatype="html">
         <source>Language</source>
@@ -1658,11 +1648,6 @@ The technical data governance model consists of the following types of entities:
         <source>Result Summary</source>
         <target>Resultaatsamenvatting</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.resultSummary</note>
-      </trans-unit>
-      <trans-unit id="search.components.editor.attribute.riskClassification" datatype="html">
-        <source>Risk Classification</source>
-        <target>Risicoklassificatie</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.riskClassification</note>
       </trans-unit>
       <trans-unit id="search.components.editor.attribute.rowsChecked" datatype="html">
         <source>Rows Checked</source>

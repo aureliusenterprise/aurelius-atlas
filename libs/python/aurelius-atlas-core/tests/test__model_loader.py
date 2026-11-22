@@ -314,6 +314,41 @@ async def test__a_model_that_narrows_a_stored_end_cardinality_is_refused_whole(
     assert served.end_def1.cardinality == Cardinality.SET
 
 
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["ACA-04"])
+async def test__a_model_that_drops_a_stored_attribute_gives_it_back(store: TypedefStore, tmp_path: Path) -> None:
+    """A model that removes an attribute a store holds loads cleanly, takes the new version, and keeps the
+    attribute, because an update is given back every attribute it lacks (ACA-04).
+
+    ``getTypesToUpdate`` appends what the stored definition has and the update lacks (Atlas's
+    ``updateTypeAttributes``), so a model file never removes an attribute and the deletion check of TDS-08 is
+    never reached. Only a catalogue that holds nothing answers the trimmed shape, which is why 18.6 rebuilds the
+    demo store rather than migrate it (DD-829).
+    """  # noqa: D205 - one sentence
+    old_names = ("name", "isKeyData", "riskClassification", "hasPII")
+    write_json(tmp_path / "1.json", model(entity("t", *[attr(name) for name in old_names], version="1.1")))
+    await ModelLoader(store).load(tmp_path)
+
+    write_json(tmp_path / "1.json", model(entity("t", attr("name"), version="1.2")))
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == []
+    served = stored(store, "t", AtlasEntityDef)
+    assert served.type_version == "1.2"
+    assert [attribute.name for attribute in served.attribute_defs] == [*old_names]
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["ACA-04"])
+async def test__a_new_catalogue_reaches_the_shape_the_model_declares(store: TypedefStore, tmp_path: Path) -> None:
+    """A store that holds nothing takes the trimmed type at ``1.2`` in one load (ACA-04)."""
+    write_json(tmp_path / "1.json", model(entity("t", attr("name"), version="1.2")))
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == []
+    served = stored(store, "t", AtlasEntityDef)
+    assert served.type_version == "1.2"
+    assert [attribute.name for attribute in served.attribute_defs] == ["name"]
+
+
 @pytest.mark.covers("aurelius_atlas_core.model_loader.TypedefPatch.record", rules=["MDL-05"])
 async def test__patches_run_once_unknown_actions_are_skipped(
     store: TypedefStore, document: MemoryTypedefDocument, tmp_path: Path
