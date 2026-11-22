@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/069-each-browser-facing-surface-answers-on-its-own-hostname/">
+        <link rel="prev" href="../adr/070-the-catalogue-ships-one-prose-attribute/">
       
       
         <link rel="next" href="./design-log/">
@@ -2206,6 +2206,8 @@
       
         
       
+        
+      
     
     
     
@@ -4140,6 +4142,33 @@
     
   
   069. Each browser-facing surface answers on its own hostname
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/070-the-catalogue-ships-one-prose-attribute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  070. The catalogue ships one prose attribute
 
     
   </span>
@@ -8578,6 +8607,13 @@ checks a PR must pass:</p>
 <td>The optional flag is a boolean and the content flag goes</td>
 <td>The <code>m4i_field</code> type changes <code>optionalField</code> from <code>string</code> to <code>boolean</code> and drops <code>hasContent</code>, and it goes to type version <code>1.2</code>. Every field record of the corpus stores the flag as null, which the boolean type accepts, so no record changes value (FFB-01, FFB-02). The editor answers the flag with a checkbox, because it builds a checkbox for a boolean field (FFB-05). The three bundles lose the <code>hasContent</code> key from all 265 field records, and <code>sample_data.zip</code> and <code>only_gov_quality.zip</code> lose the rule <code>m4i_field--hasContent</code> (FFB-03). An operator rebuilds a store at the old shape, because the type registry rejects an attribute whose type changed (FFB-04, DD-830).</td>
 <td>Migration of a store at the old shape (nothing removes a stored attribute, FFB-04). A content flag kept for later (no record of the corpus filled it). The string flag kept (it gives a text box).</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>18.8</td>
+<td>The catalogue ships one prose attribute</td>
+<td>The model drops the m4i <code>definition</code> prose attribute for Apache Atlas's <code>description</code>, which <code>Asset</code> gives every type. The eight types that declared it lose it and move a version, and the six no supertype gives <code>description</code> declare it (SPA-01, DD-832). The bundles move 181 prose texts to <code>description</code> and keep 65 rules, and the scanners write reflected prose there (SPA-02, SPA-04). Server readers name one key, and the document and card keep their <code>definition</code> field names, so <code>DERIVATION_VERSION</code> becomes 4 (SPA-05, DD-833). The webapp reads <code>description</code> alone, and the editor builds no field for <code>owner</code>, <code>displayName</code> or <code>userDescription</code> (SPA-06, SPA-07, EDT-37).</td>
+<td>Migration of a store at the old shape (nothing removes a stored attribute, SPA-03). Renaming the document's or card's <code>definition</code> field (DD-833).</td>
 <td>in review</td>
 </tr>
 <tr>

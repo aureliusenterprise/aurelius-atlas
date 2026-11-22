@@ -2206,6 +2206,8 @@
       
         
       
+        
+      
     
     
     
@@ -4140,6 +4142,33 @@
     
   
   069. Each browser-facing surface answers on its own hostname
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/070-the-catalogue-ships-one-prose-attribute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  070. The catalogue ships one prose attribute
 
     
   </span>
@@ -8250,6 +8279,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The type holds <code>optionalField</code> as a <code>boolean</code> and no <code>hasContent</code>, at type version <code>1.2</code> (FFB-01). The bundles lose the key from 264 field records of <code>sample_data.zip</code> and the one of <code>small.zip</code>, and both rule bundles lose the rule, which leaves 65 rules (FFB-02, FFB-03). The editor builds a checkbox for the flag (FFB-05).</td>
 <td>Neither flag said anything as a string, because every record stored null and the boolean type accepts null, so no stored value changes. The content flag named no fact the model states elsewhere, and its rule stood inactive since 12.7d (DV-173), so it judged nothing and read nothing. A warm store keeps the string until a rebuild, because the loader skips a file whose attribute type changed (FFB-04, DD-830).</td>
 <td>18.7</td>
+</tr>
+<tr>
+<td>DV-196</td>
+<td>Types</td>
+<td>Apache Atlas 2.4.0 has no data dictionary to change, so no Atlas rule breaks. The difference is in Aurelius's own model and its sample data: the m4i data dictionary declared a second prose attribute <code>definition</code> on eight types beside Apache Atlas's own <code>description</code>, the corpus split its prose 181 to 4 across the two keys, and <code>owner</code>, <code>displayName</code> and <code>userDescription</code> held one non-null value across 1,231 m4i entities.</td>
+<td>The dictionary declares no <code>definition</code> attribute, the eight types move a type version, and the six that no supertype gives <code>description</code> declare it (SPA-01, DD-832). The three bundles hold their prose under <code>description</code> alone and keep 65 rules (SPA-02). The vector, document, matcher, card, details box and editor name <code>description</code> only, and the editor builds no field for the three base attributes (SPA-05..07, EDT-37).</td>
+<td>Apache Atlas owns the key: <code>Asset</code> declares <code>description</code>, and the stock dashboards Aurelius serves read it, so the m4i key was the duplicate (ADR 070, ADR 058). The frozen 14.1 oracle moves its <code>definition</code> diff count from 87 to 91, because two datasets and two generic processes held prose under <code>description</code> alone (<code>test__legacy_app_search_fixtures.py</code>). The document and card keep the <code>definition</code> field name (DD-833). A warm catalogue keeps the attribute and still loads (SPA-03, ACA-04).</td>
+<td>18.8</td>
 </tr>
 </tbody>
 </table>

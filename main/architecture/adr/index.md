@@ -76,6 +76,7 @@ New here? This is the whole set in one table. Read the records that govern the a
 | [067](<https://aureliusenterprise.github.io/main/architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/index.md>) | The standalone stack ships as one generated release bundle, so a person outside the repository can run the whole system; the bundle is never committed and carries no secret. | Proposed |
 | [068](<https://aureliusenterprise.github.io/main/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/index.md>) | A new catalogue bootstraps only the metamodel it serves — the Atlas base model, the glossary, and m4i — and the vendored domain models and their icon and lineage traces leave the shipped system. | Proposed |
 | [069](<https://aureliusenterprise.github.io/main/architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/index.md>) | Each browser-facing surface answers on a hostname of its own under one domain, so an address says what it is; the sign-in address never shares an address with a product surface, and only the single-machine bundle uses one host with paths. | Proposed |
+| [070](<https://aureliusenterprise.github.io/main/architecture/adr/070-the-catalogue-ships-one-prose-attribute/index.md>) | Apache Atlas's `description` is the only prose attribute of the Aurelius data model — the m4i dictionary keeps no `definition`, every record's text moves to `description`, and a catalogue at the old shape is rebuilt. | Proposed |
 
 ## Why record decisions
 
