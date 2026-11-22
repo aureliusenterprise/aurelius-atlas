@@ -3228,3 +3228,218 @@ describe("EntityEditor history change details (HST-10)", () => {
         httpMock.verify();
     });
 });
+
+/** The matcher for one restore write (HST-11, EWR-15): the single-attribute
+ * PUT of the changed line's attribute, the body carrying its stored old value. */
+function restoreRequest(name: string) {
+    return (request: HttpRequest<unknown>) =>
+        request.method === "PUT" && request.url === `${ATLAS_ENTITY_URL}7a1b` && request.params.get("name") === name;
+}
+
+/** Open the newest row's change list and return its restore buttons (HST-11). */
+function openRestoreButtons(
+    compiled: HTMLElement,
+    fixture: ComponentFixture<EntityEditor>,
+    httpMock: HttpTestingController,
+    trail: EntityAuditEventV2[] = CHANGED_TRAIL,
+): HTMLButtonElement[] {
+    openHistoryTab(compiled, fixture);
+    httpMock.expectOne(AUDIT_URL).flush(trail);
+    fixture.detectChanges();
+    auditToggle(auditRows(compiled)[0]).click();
+    fixture.detectChanges();
+
+    return [
+        ...(auditChangePane(auditRows(compiled)[0])?.querySelectorAll<HTMLButtonElement>(".aurelius-editor-restore") ??
+            []),
+    ];
+}
+
+describe("EntityEditor history attribute restore (HST-11)", () => {
+    it("a changed line carries a restore button and a press writes one attribute back (HST-11)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const buttons = openRestoreButtons(compiled, fixture, httpMock);
+
+        expect(buttons).toHaveLength(1);
+        expect(normalize(buttons[0]?.textContent)).toBe("Restore");
+        expect(buttons[0]?.getAttribute("aria-label")).toBe("Restore name");
+
+        buttons[0]?.click();
+        fixture.detectChanges();
+        const write = httpMock.expectOne(restoreRequest("name"));
+        expect(write.request.body).toBe("first");
+        write.flush({});
+        fixture.detectChanges();
+        // The drawer's own read follows the write (VDR-07), so the form answers
+        // the stored entity (HST-11, DD-822).
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(savedView());
+        fixture.detectChanges();
+    });
+
+    it("a create line lists everything as added and carries no button (HST-11)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const buttons = openRestoreButtons(compiled, fixture, httpMock, [
+            stateAuditEvent("ENTITY_CREATE", "1700000010000:0", { name: "first" }),
+        ]);
+
+        expect(auditChangePane(auditRows(compiled)[0])?.textContent).toContain("Added");
+        expect(buttons).toHaveLength(0);
+    });
+
+    it("a removed line, a list value and a relationship end carry no button (HST-11)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const buttons = openRestoreButtons(compiled, fixture, httpMock, [
+            stateAuditEvent(
+                "ENTITY_UPDATE",
+                "1700000030000:0",
+                { list: [1, 3] },
+                { input: [{ guid: "b", displayText: "beta" }] },
+            ),
+            stateAuditEvent(
+                "ENTITY_UPDATE",
+                "1700000020000:0",
+                { name: "gone", list: [1, 2] },
+                { input: [{ guid: "a", displayText: "alpha" }] },
+            ),
+        ]);
+
+        // The list's own diff lines are all there (HST-10), and none of them
+        // asks for a write: a removed attribute, a list value, and ends.
+        const pane = auditChangePane(auditRows(compiled)[0])!;
+        const text = normalize(pane.textContent);
+        expect(text).toContain("Removed");
+        expect(text).toContain("list");
+        expect(text).toContain("Relationships");
+        expect(buttons).toHaveLength(0);
+    });
+
+    it("no line offers a restore when the person cannot write (HST-11, EDT-09)", () => {
+        const { fixture, compiled, httpMock } = setup({ atlasWrite: false });
+        arrive(fixture, httpMock);
+
+        expect(openRestoreButtons(compiled, fixture, httpMock)).toHaveLength(0);
+    });
+
+    it("create mode offers no History tab and so no restore (HST-11, HST-01)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
+        arriveTypeDefs(fixture, httpMock, "DataSet");
+
+        // No tab pair (HST-01), so the pane behind it is never opened and
+        // nothing in it asks for a write.
+        expect(compiled.querySelector("#editor-history-tab")).toBeNull();
+        expect(compiled.querySelector("#editor-history-pane")?.hasAttribute("hidden")).toBe(true);
+        expect(compiled.querySelector(".aurelius-editor-restore")).toBeNull();
+        httpMock.verify();
+    });
+
+    it("the button is disabled while the write is in flight and a second press sends nothing (HST-11)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const buttons = openRestoreButtons(compiled, fixture, httpMock);
+
+        buttons[0]?.click();
+        fixture.detectChanges();
+        const write = httpMock.expectOne(restoreRequest("name"));
+        const held = auditChangePane(auditRows(compiled)[0])!.querySelectorAll<HTMLButtonElement>(
+            ".aurelius-editor-restore",
+        );
+        expect(held).toHaveLength(1);
+        expect(held[0]?.disabled).toBe(true);
+        expect(held[0]?.getAttribute("aria-busy")).toBe("true");
+
+        // A second press on the busy line asks for nothing (one write at a time).
+        held[0]?.click();
+        fixture.detectChanges();
+        httpMock.expectNone(restoreRequest("name"));
+
+        write.flush({});
+        fixture.detectChanges();
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(savedView());
+        fixture.detectChanges();
+    });
+
+    it("a success re-reads and merges the stored entity into the form (HST-11, VDE-07)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+        const buttons = openRestoreButtons(compiled, fixture, httpMock);
+
+        // An edit in another control stays the person's (DD-822: only the one
+        // attribute travels).
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "typed by hand";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+
+        buttons[0]?.click();
+        fixture.detectChanges();
+        const write = httpMock.expectOne(restoreRequest("name"));
+        write.flush({});
+        fixture.detectChanges();
+        const reread = httpMock.expectOne((request) => request.url.startsWith(VIEW_URL));
+        reread.flush(
+            savedView({
+                name: "restored_name",
+                displayText: "restored_name",
+                attributes: { ...ANSWER.attributes, name: "restored_name", owner: "ops-9" },
+            }),
+        );
+        fixture.detectChanges();
+        fixture.detectChanges();
+
+        // The touched control keeps the person's value and the untouched one
+        // answers the stored entity (VDE-07, DD-610).
+        expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("typed by hand");
+        expect(compiled.querySelector<HTMLInputElement>("#editor-owner")?.value).toBe("ops-9");
+        // The line says what the write did (LR-005), and the drawer stays open
+        // with the change list the person was reading (DD-822).
+        expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent)).toBe("Entity restored");
+        expect(auditChangePane(auditRows(compiled)[0])).not.toBeNull();
+        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(navigate).not.toHaveBeenCalled();
+        expect(add).not.toHaveBeenCalled();
+    });
+
+    it("a refusal alerts once and keeps the drawer, the list and the edit (HST-11)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        const buttons = openRestoreButtons(compiled, fixture, httpMock);
+
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "typed by hand";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+
+        buttons[0]?.click();
+        fixture.detectChanges();
+        httpMock.expectOne(restoreRequest("name")).flush({}, { status: 403, statusText: "Forbidden" });
+        fixture.detectChanges();
+
+        expect(add).toHaveBeenCalledTimes(1);
+        expect(add).toHaveBeenCalledWith(
+            expect.objectContaining({ severity: "error", message: "Restoring the attribute", source: "search" }),
+        );
+        // Nothing re-reads, nothing navigates, and the edits and the open list
+        // stay as the person left them (HST-06's shape).
+        httpMock.expectNone(
+            (request) => request.url.startsWith(VIEW_URL) && request.method === "GET" && !request.url.includes("audit"),
+        );
+        expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("typed by hand");
+        expect(auditChangePane(auditRows(compiled)[0])).not.toBeNull();
+        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(navigate).not.toHaveBeenCalled();
+        const again = auditChangePane(auditRows(compiled)[0])!.querySelectorAll<HTMLButtonElement>(
+            ".aurelius-editor-restore",
+        );
+        expect(again).toHaveLength(1);
+        expect(again[0]?.disabled).toBe(false);
+    });
+});

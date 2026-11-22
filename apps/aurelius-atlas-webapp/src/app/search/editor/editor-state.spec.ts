@@ -2,8 +2,9 @@
  * The editor drawer's store on the view doors (VDE-01, VDE-05..VDE-10,
  * DD-608..DD-612): the read through `ViewEntityService`, the save as one door
  * POST (edit and create), the conflict re-edit, the name-taken line, a refusal
- * alert, and the success evict, tick, and navigation. The store is the door's
- * only caller, so the specs ride the real clients through
+ * alert, and the success evict, tick, and navigation. The restore of 7.38 rides
+ * the Atlas single-attribute write and the read door (HST-11, DD-822). The
+ * store is the door's only caller, so the specs ride the real clients through
  * HttpTestingController — the wire each rule names is the one under test.
  */
 import { provideHttpClient } from "@angular/common/http";
@@ -259,6 +260,97 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         expect(written.latest()?.guid).toBe("7a1b");
         expect(written.latest()?.outcome).toBe("deleted");
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "browse"], drawer: null } }]);
+    });
+
+    it("a restore writes one attribute and re-reads the stored view (HST-11, EWR-15, DD-822)", () => {
+        const { state, httpMock } = setup();
+        state.loadEntity("7a1b");
+        httpMock.expectOne(`${VIEW_URL}7a1b`).flush(view());
+        const written = TestBed.inject(EntityWritten);
+        const before = written.latest()?.seq ?? 0;
+
+        state.restore("7a1b", "description", "the old text");
+        expect(state.restoring()).toBe("description");
+
+        // The single-attribute door: PUT the bare value with the name (EWR-15).
+        const write = httpMock.expectOne((request) => request.url === ATLAS_DELETE_URL && request.method === "PUT");
+        expect(write.request.params.get("name")).toBe("description");
+        expect(write.request.body).toBe("the old text");
+        write.flush({});
+
+        // The cache entry goes with the write (VDR-07), so the drawer's own
+        // re-read is a real request and not the door's cache (the cache test
+        // above proves a second read would otherwise ask nothing).
+        const reread = httpMock.expectOne(`${VIEW_URL}7a1b`);
+        expect(state.restoring()).toBeNull();
+        reread.flush(
+            view({ attributes: { name: "genomic_variants", owner: "analyst-3", description: "the old text" } }),
+        );
+
+        expect(state.view()?.attributes?.["description"]).toBe("the old text");
+        // The merge pair the component re-seeds the form from (VDE-07, DD-610).
+        expect(state.reloaded()?.to.attributes?.["description"]).toBe("the old text");
+        expect(state.reloaded()?.from?.attributes?.["description"]).toBeUndefined();
+        // The outcome rides the same saved tick a save fires (WFE-01, DD-327).
+        expect(written.latest()?.seq).toBeGreaterThan(before);
+        expect(written.latest()?.outcome).toBe("saved");
+        httpMock.verify(); // no navigation, no further request (DD-822)
+    });
+
+    it("a restore refusal alerts once and re-reads nothing (HST-11)", () => {
+        const { state, httpMock } = setup();
+        state.view.set(view());
+        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+
+        state.restore("7a1b", "description", "the old text");
+        httpMock
+            .expectOne((request) => request.url === ATLAS_DELETE_URL && request.method === "PUT")
+            .flush({}, { status: 403, statusText: "Forbidden" });
+
+        expect(state.restoring()).toBeNull();
+        expect(add).toHaveBeenCalledWith({
+            severity: "error",
+            source: "search",
+            message: "Restoring the attribute",
+        });
+        expect(state.reloaded()).toBeNull();
+        httpMock.verify(); // nothing re-reads, nothing ticks
+    });
+
+    it("the saved tick rides the write, so a failed re-read still tells the details screen (HST-11, WFE-01)", () => {
+        const { state, httpMock } = setup();
+        state.view.set(view());
+        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+        const written = TestBed.inject(EntityWritten);
+        const before = written.latest()?.seq ?? 0;
+
+        state.restore("7a1b", "description", "the old text");
+        httpMock.expectOne((request) => request.url === ATLAS_DELETE_URL && request.method === "PUT").flush({});
+        httpMock.expectOne(`${VIEW_URL}7a1b`).flush({}, { status: 500, statusText: "Server Error" });
+
+        // The write landed, so the tick fired with it — the details screen
+        // underneath re-reads even though the drawer's read failed.
+        expect(written.latest()?.seq).toBeGreaterThan(before);
+        expect(written.latest()?.outcome).toBe("saved");
+        expect(state.reloaded()).toBeNull();
+        expect(add).toHaveBeenCalledWith({
+            severity: "error",
+            source: "search",
+            message: "Retrieving the entity details",
+        });
+    });
+
+    it("one write at a time: a second restore asks nothing (DD-822)", () => {
+        const { state, httpMock } = setup();
+        state.view.set(view());
+
+        state.restore("7a1b", "description", "first");
+        state.restore("7a1b", "owner", "other");
+        const write = httpMock.expectOne((request) => request.url === ATLAS_DELETE_URL && request.method === "PUT");
+        expect(write.request.params.get("name")).toBe("description");
+        httpMock.expectNone((request) => request.url === ATLAS_DELETE_URL && request.method === "PUT");
+        write.flush({});
+        httpMock.expectOne(`${VIEW_URL}7a1b`).flush(view());
     });
 
     it("a create seeds no temporary guid and clears the tag box (VDE-05, DD-592)", () => {

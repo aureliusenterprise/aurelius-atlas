@@ -39,7 +39,15 @@ import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { cardTypeAlias } from "../shared/type-alias";
-import { auditRowKey, type AuditChanges, auditTrailChanges, isStateAction } from "./audit-details";
+import {
+    type AuditAttributeChange,
+    auditRowKey,
+    type AuditChanges,
+    type AuditRestore,
+    auditTrailChanges,
+    isStateAction,
+    restoreOf,
+} from "./audit-details";
 import { auditActionDisplay } from "./audit-display";
 import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
@@ -639,6 +647,26 @@ export class EntityEditor {
             untracked(() => this.state.conflictHandled());
         });
 
+        // The restore's re-read (HST-11, DD-822): the store already moved the
+        // base to the stored view, and the merge here is the conflict's (VDE-07,
+        // DD-610) — the control the person never touched answers the restored
+        // value, and the one they touched keeps its value. The line says what
+        // the write did (LR-005), filled after the write tick's save line
+        // because the bus carries only saved or deleted (WFE-02). The pane,
+        // the open row and the drawer all stay as the person left them.
+        effect(() => {
+            const event = this.state.reloaded();
+            if (event === null) {
+                return;
+            }
+            this.values.set(valuesAfterConflict(event.from, event.to, this.fields(), this.values()));
+            this.relationshipValues.set(
+                picksAfterConflict(event.from, event.to, this.relationshipFields(), this.relationshipValues()),
+            );
+            this.outcomeLine.set(this.auditRestoredLine);
+            untracked(() => this.state.restoreHandled());
+        });
+
         // The multi lists repeat: the blank trailing row becomes real on
         // typing and a new blank row joins (EDT-03). The effect reads the
         // model, so it sees post-update values, unlike a DOM handler.
@@ -1166,6 +1194,10 @@ export class EntityEditor {
     protected readonly auditAddedLine = $localize`:@@search.components.editor.history.added:Added`;
     /** The change list's removed line (HST-10). */
     protected readonly auditRemovedLine = $localize`:@@search.components.editor.history.removed:Removed`;
+    /** The restore button's text (HST-11). */
+    protected readonly auditRestoreLine = $localize`:@@search.components.editor.history.restore:Restore`;
+    /** The status line a finished restore fills (HST-11, LR-005). */
+    protected readonly auditRestoredLine = $localize`:@@search.components.editor.history.restored:Entity restored`;
 
     /** Whether a row shows a change list toggle (HST-10): the four
      * entity-state actions carry a stored state to open, and only their rows
@@ -1194,6 +1226,56 @@ export class EntityEditor {
      * the pair — an event's `eventKey` would be, but it can be absent. */
     protected auditPaneId(index: number): string {
         return `aurelius-editor-audit-changes-${index}`;
+    }
+
+    /** What one change-list line restores (HST-11): a changed row with a
+     * single value the single-attribute door can take, and nothing else. */
+    protected auditRestoreOf(change: AuditAttributeChange): AuditRestore | null {
+        return restoreOf(change);
+    }
+
+    /** Whether a change-list line can offer a restore at all (HST-11, EDT-09):
+     * the edit-mode drawer of a person who holds the entity-write privilege.
+     * Anywhere else the line stays plain text and asks nothing. */
+    protected auditRestoreShown(): boolean {
+        return !this.isCreate && this.canWrite();
+    }
+
+    /** Whether a restore line asks nothing right now (HST-11): one write at a
+     * time, the rule the Save and Delete buttons already hold. The store
+     * refuses a second write as well (DD-822). */
+    protected auditRestoreDisabled(): boolean {
+        return this.state.saving() || this.state.deleting() || this.state.restoring() !== null;
+    }
+
+    /** Whether the restore of `change`'s attribute is the write in flight
+     * (HST-11): the pressed line goes busy while it travels. */
+    protected auditRestoreBusy(change: AuditAttributeChange): boolean {
+        return this.state.restoring() === change.name;
+    }
+
+    /** The restore's accessible name (HST-11): the button's text alone would
+     * read the same for every line of a change list. */
+    protected auditRestoreLabel(change: AuditAttributeChange): string {
+        return $localize`:@@search.components.editor.history.restoreAria:Restore ${change.name}:name:`;
+    }
+
+    /**
+     * Put one attribute back to the value an open change-list line shows
+     * (HST-11, DD-822): the store's single-attribute write carries the stored
+     * old value (EWR-15) and nothing else, so the person's unsaved edits in
+     * every other field stay. The drawer stays where it is — the person came
+     * from the change list they were reading — and the outcome line says the
+     * entity was restored (LR-005). A refusal alerts once (HST-06's shape)
+     * and changes nothing.
+     * @param change the changed line pressed
+     */
+    protected restoreAttribute(change: AuditAttributeChange): void {
+        const restore = restoreOf(change);
+        const guid = this.state.entity()?.guid ?? this.guid();
+        if (restore !== null && guid !== "") {
+            this.state.restore(guid, restore.name, restore.value);
+        }
     }
 
     /** Open or close one row's change list (HST-10). The other rows keep

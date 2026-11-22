@@ -2597,6 +2597,26 @@ The technical data governance model consists of the following types of entities:
         <target>Verwijderd</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.removed</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.history.restore" datatype="html">
+        <source>Restore</source>
+        <target>Herstel</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restore</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.restoreAria" datatype="html">
+        <source>Restore <x id="name" equiv-text="{{name}}"/></source>
+        <target>Herstel <x id="name" equiv-text="{{name}}"/></target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restoreAria</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.restoreFailed" datatype="html">
+        <source>Restoring the attribute</source>
+        <target>Het kenmerk herstellen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restoreFailed</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.restored" datatype="html">
+        <source>Entity restored</source>
+        <target>Entiteit hersteld</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restored</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.historyPlaceholder" datatype="html">
         <source>History</source>
         <target>Geschiedenis</target>

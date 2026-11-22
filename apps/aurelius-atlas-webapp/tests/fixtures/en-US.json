@@ -505,7 +505,11 @@
                     "notLoaded": "The earlier state is not loaded",
                     "notRecorded": "The details are not recorded",
                     "relationships": "Relationships",
-                    "removed": "Removed"
+                    "removed": "Removed",
+                    "restore": "Restore",
+                    "restoreAria": "Restore {{name}}",
+                    "restoreFailed": "Restoring the attribute",
+                    "restored": "Entity restored"
                 },
                 "historyPlaceholder": "History",
                 "person": {

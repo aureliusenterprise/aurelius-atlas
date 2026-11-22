@@ -126,6 +126,17 @@ export class EditorState {
     /** Whether a delete is in flight (the Delete button's busy state, EDT-19). */
     readonly deleting = signal(false);
 
+    /** The attribute a restore write is in flight for (HST-11, DD-822), or
+     * null. The name is what the pressed change-list line goes busy on, and
+     * the one-write-at-a-time rule of the save and delete paths holds here too. */
+    readonly restoring = signal<string | null>(null);
+
+    /** The pair a restore re-read (HST-11): the view held before the write and
+     * the stored one that answered it. The component merges them into the form
+     * the way the save conflict does (VDE-07, DD-610) and then clears the
+     * event. Null when nothing waits. */
+    readonly reloaded = signal<ConflictEvent | null>(null);
+
     /** The entity type the form renders (edit: the entity's, create: the pick). */
     readonly typeName = computed(() =>
         this.mode() === "create" ? this.selectedTypeName() : (this.entity()?.typeName ?? null),
@@ -372,6 +383,11 @@ export class EditorState {
         this.conflict.set(null);
     }
 
+    /** The component has merged the restore's re-read (HST-11): the event is spent. */
+    restoreHandled(): void {
+        this.reloaded.set(null);
+    }
+
     /** The name-taken line (VDE-08): one alert, drawer open, edits kept. */
     private nameTaken(): void {
         this.alerts.add({
@@ -423,6 +439,62 @@ export class EditorState {
                 this.alerts.add({
                     severity: "error",
                     message: $localize`:@@search.services.entityDelete.delete:Deleting the entity`,
+                    source: "search",
+                });
+            },
+        });
+    }
+
+    /**
+     * Restore one attribute (HST-11, DD-822): one single-attribute write of
+     * the stored old value (`updateEntityAttributeByGuid`, EWR-15) and nothing
+     * else, so the person's unsaved edits in every other field stay. The
+     * success drops the entity from the read cache and re-reads it (VDR-07),
+     * hands the stored view to the component for the conflict merge (VDE-07,
+     * DD-610), and fires the same write tick a save fires — the details screen
+     * underneath re-reads (DD-327), and the drawer's own outcome line reads it
+     * (WFE-01). No navigation: the person came from the History change list
+     * they were reading (DD-822). A refusal alerts once in the audit read's
+     * shape (HST-06), keeps the drawer and its edits, and re-reads nothing.
+     * @param guid the entity's guid (the edit-mode drawer's own)
+     * @param name the attribute to put back, as the type defines it
+     * @param value its stored old value (HST-11 offers only what EWR-15 takes)
+     */
+    restore(guid: string, name: string, value: string | number | boolean): void {
+        if (this.restoring() !== null || this.saving() || this.deleting()) {
+            return;
+        }
+        this.restoring.set(name);
+        const before = this.view();
+        this.entities.partialUpdateAttribute(guid, value, name).subscribe({
+            next: () => {
+                this.restoring.set(null);
+                // The write landed, so the tick fires with it (WFE-01): the
+                // details screen underneath re-reads even when the drawer's
+                // own re-read below fails. The cache goes first (VDR-07), the
+                // way the save path evicts before it ticks (VDE-10).
+                this.views.evict(guid);
+                this.entityWritten.notify(guid, "saved");
+                this.views.view(guid).subscribe({
+                    next: (view) => {
+                        this.view.set(view);
+                        this.chosen.set(view.classificationNames ?? []);
+                        this.reloaded.set({ from: before, to: view });
+                    },
+                    error: () => {
+                        this.alerts.add({
+                            severity: "error",
+                            message: $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`,
+                            source: "search",
+                        });
+                    },
+                });
+            },
+            error: () => {
+                this.restoring.set(null);
+                this.alerts.add({
+                    severity: "error",
+                    message: $localize`:@@search.components.editor.history.restoreFailed:Restoring the attribute`,
                     source: "search",
                 });
             },

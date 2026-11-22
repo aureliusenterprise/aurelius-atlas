@@ -1,13 +1,15 @@
 /**
- * The change list of an audit row (HST-10, DD-821): the parse of the stored
- * `details` body, the differ over two stored states, and the walk of a loaded
- * trail. The bodies are the text the ported listener writes
+ * The change list of an audit row (HST-10, DD-821) and what its lines restore
+ * (HST-11, DD-822): the parse of the stored `details` body, the differ over two
+ * stored states, the walk of a loaded trail, and the single-attribute restore
+ * gate. The bodies are the text the ported listener writes
  * (`entity_audit_listener.audit_detail`, AUD-03), including the two shapes its
  * size cap produces (AUD-04).
  */
 import type { EntityAuditEventV2 } from "aurelius-atlas-data-access";
 
 import {
+    type AuditAttributeChange,
     auditRowKey,
     auditTrailChanges,
     diffAuditStates,
@@ -15,6 +17,7 @@ import {
     isCreateAction,
     isStateAction,
     parseAuditState,
+    restoreOf,
 } from "./audit-details";
 
 /** An event whose `details` carry the JSON of a stored entity (AUD-03). */
@@ -165,7 +168,7 @@ describe("audit-details (HST-10, DD-821)", () => {
         );
 
         expect(attributes).toEqual([
-            { kind: "changed", name: "name", from: "old", to: "new" },
+            { kind: "changed", name: "name", from: "old", to: "new", storedFrom: "old" },
             { kind: "removed", name: "gone", from: "true" },
             { kind: "added", name: "fresh", to: "f" },
         ]);
@@ -178,8 +181,8 @@ describe("audit-details (HST-10, DD-821)", () => {
         );
 
         expect(attributes).toEqual([
-            { kind: "changed", name: "list", from: "[1,2]", to: "[1,3]" },
-            { kind: "changed", name: "nothing", from: "", to: "7" },
+            { kind: "changed", name: "list", from: "[1,2]", to: "[1,3]", storedFrom: [1, 2] },
+            { kind: "changed", name: "nothing", from: "", to: "7", storedFrom: null },
         ]);
     });
 
@@ -238,12 +241,12 @@ describe("audit-details (HST-10, DD-821)", () => {
 
         expect(changes.get("3")).toEqual({
             kind: "diff",
-            attributes: [{ kind: "changed", name: "name", from: "second", to: "third" }],
+            attributes: [{ kind: "changed", name: "name", from: "second", to: "third", storedFrom: "second" }],
             relationships: [],
         });
         expect(changes.get("2")).toEqual({
             kind: "diff",
-            attributes: [{ kind: "changed", name: "name", from: "first", to: "second" }],
+            attributes: [{ kind: "changed", name: "name", from: "first", to: "second", storedFrom: "first" }],
             relationships: [],
         });
         expect(changes.get("1")).toEqual({
@@ -287,7 +290,7 @@ describe("audit-details (HST-10, DD-821)", () => {
         const longer = [...firstPage, stateEvent("ENTITY_CREATE", { attributes: { name: "start" } }, "0")];
         expect(auditTrailChanges(longer).get("1")).toEqual({
             kind: "diff",
-            attributes: [{ kind: "changed", name: "name", from: "start", to: "a" }],
+            attributes: [{ kind: "changed", name: "name", from: "start", to: "a", storedFrom: "start" }],
             relationships: [],
         });
     });
@@ -307,7 +310,7 @@ describe("audit-details (HST-10, DD-821)", () => {
         // which is the oldest one on screen — the cut-down row is skipped.
         expect(changes.get("3")).toEqual({
             kind: "diff",
-            attributes: [{ kind: "changed", name: "name", from: "a", to: "c" }],
+            attributes: [{ kind: "changed", name: "name", from: "a", to: "c", storedFrom: "a" }],
             relationships: [],
         });
     });
@@ -321,7 +324,7 @@ describe("audit-details (HST-10, DD-821)", () => {
 
         expect(auditTrailChanges(trail).get("3")).toEqual({
             kind: "diff",
-            attributes: [{ kind: "changed", name: "name", from: "a", to: "c" }],
+            attributes: [{ kind: "changed", name: "name", from: "a", to: "c", storedFrom: "a" }],
             relationships: [],
         });
         expect(auditTrailChanges(trail).has("x")).toBe(false);
@@ -340,5 +343,52 @@ describe("audit-details (HST-10, DD-821)", () => {
         const changes = auditTrailChanges([{ action: "TERM_ADD", eventKey: "t", details: "Added term: {}" }]);
 
         expect(changes.size).toBe(0);
+    });
+});
+
+describe("audit-details restore gate (HST-11, DD-822)", () => {
+    /** One change-list line, as the differ would leave it. */
+    function line(change: AuditAttributeChange): AuditAttributeChange {
+        return change;
+    }
+
+    it("restores a changed line with the stored old value it shows (HST-11)", () => {
+        expect(
+            restoreOf(line({ kind: "changed", name: "description", from: "old", to: "new", storedFrom: "old" })),
+        ).toEqual({
+            name: "description",
+            value: "old",
+        });
+        expect(restoreOf(line({ kind: "changed", name: "size", from: "1", to: "2", storedFrom: 1 }))).toEqual({
+            name: "size",
+            value: 1,
+        });
+        expect(
+            restoreOf(line({ kind: "changed", name: "active", from: "true", to: "false", storedFrom: true })),
+        ).toEqual({
+            name: "active",
+            value: true,
+        });
+    });
+
+    it("restores nothing whose value the single-attribute door cannot take (HST-11, EWR-15)", () => {
+        for (const storedFrom of [null, [1, 2], { a: 1 }, undefined]) {
+            expect(restoreOf(line({ kind: "changed", name: "a", from: "x", to: "y", storedFrom }))).toBeNull();
+        }
+    });
+
+    it("restores nothing on a line that is not a change (HST-11)", () => {
+        expect(restoreOf(line({ kind: "added", name: "a", to: "y" }))).toBeNull();
+        expect(restoreOf(line({ kind: "removed", name: "a", from: "x", storedFrom: "x" }))).toBeNull();
+    });
+
+    it("names a restorable line through the differ's own output (HST-11)", () => {
+        const [name, list] = diffAuditStates(
+            { attributes: { name: "old", list: [1, 2] }, relationships: {} },
+            { attributes: { name: "new", list: [1, 3] }, relationships: {} },
+        ).attributes;
+
+        expect(restoreOf(name!)).toEqual({ name: "name", value: "old" });
+        expect(restoreOf(list!)).toBeNull();
     });
 });

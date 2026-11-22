@@ -505,7 +505,11 @@
                     "notLoaded": "De eerdere toestand is niet geladen",
                     "notRecorded": "De gegevens zijn niet vastgelegd",
                     "relationships": "Relaties",
-                    "removed": "Verwijderd"
+                    "removed": "Verwijderd",
+                    "restore": "Herstel",
+                    "restoreAria": "Herstel {{name}}",
+                    "restoreFailed": "Het kenmerk herstellen",
+                    "restored": "Entiteit hersteld"
                 },
                 "historyPlaceholder": "Geschiedenis",
                 "person": {
