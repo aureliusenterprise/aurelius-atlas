@@ -251,8 +251,9 @@ export class SortableTable<T extends Record<string, unknown>> {
     }
 
     /**
-     * Cycle a column's sort: unset → ascending → descending → ascending, the
-     * `matSort` cycle, over the Aurelius property compare.
+     * Cycle a column's sort: unset → ascending → descending → unset (DD-827),
+     * over the Aurelius property compare. A new column always starts
+     * ascending, and the third click hands the rows back in source order.
      * @param key The property to sort by.
      */
     protected onHeaderClicked(key: string | undefined): void {
@@ -262,8 +263,14 @@ export class SortableTable<T extends Record<string, unknown>> {
         if (this.sortBy() !== key) {
             this.sortBy.set(key);
             this.sortDirection.set("asc");
+        } else if (this.sortDirection() === "asc") {
+            this.sortDirection.set("desc");
         } else {
-            this.sortDirection.update((direction) => (direction === "asc" ? "desc" : "asc"));
+            // Unsorted: the direction goes back to its default so a caller
+            // binding the model never sees `desc` on a column that is not
+            // sorted.
+            this.sortBy.set(undefined);
+            this.sortDirection.set("asc");
         }
         // TABLE-005: say what the header click did.
         this.liveMessage.set(this.sortAnnouncement(key));
@@ -277,6 +284,9 @@ export class SortableTable<T extends Record<string, unknown>> {
      * @returns The localised announcement.
      */
     private sortAnnouncement(key: string): string {
+        if (!this.sortBy()) {
+            return $localize`:@@components.sortableTable.sortCleared:Sorting cleared`;
+        }
         const index = this.headerColumns().findIndex((column) => column.sortBy() === key);
         const cell = (this.element.nativeElement as HTMLElement).querySelectorAll("thead th")[index];
         const header = cell?.textContent?.trim() || key;
@@ -288,8 +298,8 @@ export class SortableTable<T extends Record<string, unknown>> {
     }
 
     /**
-     * The `aria-sort` value of a column's header cell, the ARIA form of the
-     * `matSort` state. TABLE-006: only the active column carries it — a
+     * The `aria-sort` value of a column's header cell. TABLE-006: only the
+     * active column carries it — a
      * `none` on every other header turns a screen-reader column sweep into
      * noise, and omitting the attribute is the ARIA-accurate "no sort".
      * @param key The column's `sortBy`.
@@ -303,8 +313,13 @@ export class SortableTable<T extends Record<string, unknown>> {
     }
 
     /**
-     * The icon of a header: neutral when the column is unsorted, the
-     * direction arrow when it is active — the caret `matSort` rendered.
+     * The icon of a header: neutral when the column is unsorted, and the
+     * direction arrow when it is active. The pairing follows the legacy table
+     * and the details screen's direction button (DET-21): ascending points
+     * down and descending points up, because both read the arrow as the way
+     * the values run, from first to last. The header takes the plain arrows
+     * rather than the details screen's alpha glyphs because a column can sort
+     * on numbers or references as easily as on words.
      * @param key The column's `sortBy`.
      * @returns The icon definition to render.
      */
@@ -312,7 +327,7 @@ export class SortableTable<T extends Record<string, unknown>> {
         if (!key || this.sortBy() !== key) {
             return this.faArrowsUpDown;
         }
-        return this.sortDirection() === "asc" ? this.faArrowUp : this.faArrowDown;
+        return this.sortDirection() === "asc" ? this.faArrowDown : this.faArrowUp;
     }
 
     /**

@@ -202,6 +202,10 @@
         <source>Press Enter to select this row</source>
         <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.selectRowHint</note>
       </trans-unit>
+      <trans-unit id="components.sortableTable.sortCleared" datatype="html">
+        <source>Sorting cleared</source>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.sortCleared</note>
+      </trans-unit>
       <trans-unit id="components.sortableTable.selectionCleared" datatype="html">
         <source>Selection cleared</source>
         <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.selectionCleared</note>

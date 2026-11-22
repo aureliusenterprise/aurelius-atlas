@@ -1,10 +1,21 @@
 import { Component, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { faArrowDown, faArrowUp, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
 import { SortableTable } from "./sortable-table.component";
 import { TableColumn, TableRow } from "./table-column";
 
 type Row = { name: string; size: number };
+
+/** The first header's rendered svg path, or null. */
+function headerGlyph(root: HTMLElement): string | null {
+    return root.querySelector("thead th svg path")?.getAttribute("d") ?? null;
+}
+
+/** The icon's own path data — the pin compares against the real glyph. */
+function iconPath(icon: IconDefinition): string {
+    return icon.icon[4] as string;
+}
 
 /**
  * Host wrapper declaring the table through content templates, as a caller
@@ -168,6 +179,9 @@ describe("SortableTable", () => {
 
         await clickHeader(0);
         expect(liveRegion()?.textContent?.trim()).toBe("Sorted by Name, descending");
+
+        await clickHeader(0);
+        expect(liveRegion()?.textContent?.trim()).toBe("Sorting cleared");
     });
 
     it("announces the empty state when the rows run out (TABLE-005)", async () => {
@@ -212,12 +226,31 @@ describe("SortableTable", () => {
         expect(headers()[1].hasAttribute("aria-sort")).toBe(false);
     });
 
-    it("cycles to descending on the second click, like matSort (UIC-05)", async () => {
+    it("cycles to descending on the second click (UIC-05)", async () => {
         await clickHeader(0);
         await clickHeader(0);
 
         expect(cellTexts(0)[0]).toBe("gamma");
         expect(headers()[0].getAttribute("aria-sort")).toBe("descending");
+    });
+
+    it("cycles back to the source order on the third click (UIC-05, DD-827)", async () => {
+        await clickHeader(0);
+        await clickHeader(0);
+        await clickHeader(0);
+
+        expect(cellTexts(0)[0]).toBe("beta");
+        expect(headers()[0].hasAttribute("aria-sort")).toBe(false);
+    });
+
+    it("starts a cleared column at ascending again (UIC-05, DD-827)", async () => {
+        await clickHeader(0);
+        await clickHeader(0);
+        await clickHeader(0);
+        await clickHeader(0);
+
+        expect(cellTexts(0)[0]).toBe("alpha");
+        expect(headers()[0].getAttribute("aria-sort")).toBe("ascending");
     });
 
     it("switches the sorted column, starting ascending (UIC-05)", async () => {
@@ -243,6 +276,25 @@ describe("SortableTable", () => {
 
     it("statics a column without sortBy: no button (UIC-05)", () => {
         expect(headers()[2].querySelector("button")).toBeNull();
+    });
+
+    it("pairs the header arrow with the direction, descending upward (UIC-05, DET-21)", async () => {
+        // The pairing the legacy table and the details screen's direction
+        // button carry (DET-21, measured on the live demo): ascending points
+        // down and descending points up, reading the arrow as the way the
+        // values run from first to last.
+        await clickHeader(0);
+        expect(headerGlyph(root())).toBe(iconPath(faArrowDown));
+
+        await clickHeader(0);
+        expect(headerGlyph(root())).toBe(iconPath(faArrowUp));
+    });
+
+    it("marks only an unsorted header's glyph idle (DD-827)", async () => {
+        expect(root().querySelectorAll("thead .aurelius-sort-idle")).toHaveLength(2);
+
+        await clickHeader(0);
+        expect(root().querySelectorAll("thead .aurelius-sort-idle")).toHaveLength(1);
     });
 
     it("emits rowClicked and selects on a row click (UIC-01)", async () => {
