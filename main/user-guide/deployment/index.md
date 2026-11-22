@@ -54,10 +54,10 @@ An environment is a values overlay, not a separate chart. The repository ships t
 
 | Overlay | Gateway class | Edge trust | Hosts | For |
 | --- | --- | --- | --- | --- |
-| `minikube.yaml` | `envoy-gateway` | chart self-signed | `*.atlas.test` | local/dev, in devcontainer |
+| `minikube.yaml` | `envoy-gateway` | chart self-signed | `atlas.test` + subdomains | local/dev, in devcontainer |
 | `gke.yaml` | `gke-l7-global-external-managed` | Let's Encrypt + private CA | your domain | GKE (the documented target) |
 
-On minikube, start `minikube tunnel` in a second terminal and point your hosts file (`app.atlas.test`, `auth.atlas.test`, and `o11y.atlas.test` if enabled) at `127.0.0.1`. On GKE, enable the managed Gateway TLS APIs first: the Certificate Manager API is required or the edge refuses TLS and health checks. The `gke.yaml` overlay already sets the health check and the ECDSA edge key that GKE needs.
+On minikube, start `minikube tunnel` in a second terminal and point your hosts file (`atlas.test` for the product, `auth.atlas.test`, and `observability.atlas.test` if enabled) at `127.0.0.1`. On GKE, enable the managed Gateway TLS APIs first: the Certificate Manager API is required or the edge refuses TLS and health checks. The `gke.yaml` overlay already sets the health check and the edge certificate key type GKE needs.
 
 ## Install
 
@@ -89,7 +89,7 @@ The pods come up, then the edge and the issuer answer.
 ```
 kubectl -n atlas get pods                          # all Running or Completed
 kubectl -n atlas get gateway,gatewayclass,httproute
-curl -k https://app.<domain>/api/atlas/admin/liveness
+curl -k https://<domain>/api/atlas/admin/liveness
 curl -k https://auth.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
 
@@ -138,7 +138,7 @@ A script that calls the Atlas API uses a service client and a client-credentials
 
 ## Sign in
 
-Open the dashboard at `https://app.<domain>` and sign in with the Keycloak button. Open the observability stack at `https://o11y.<domain>`. Its Grafana login also runs through Keycloak, and only the `admin` or `editor` role of the `grafana` client passes the door. The generated `atlas-grafana-admin` Secret is an account-recovery credential, for use only when the realm path is broken. The [runbook Grafana section](<https://aureliusenterprise.github.io/main/architecture/deployment/runbook/#grafana>) covers the full login path in detail.
+Open the product at `https://<domain>` and sign in with the Keycloak button. Open the observability stack at `https://observability.<domain>`. Its Grafana login also runs through Keycloak, and only the `admin` or `editor` role of the `grafana` client passes the door. The generated `atlas-grafana-admin` Secret is an account-recovery credential, for use only when the realm path is broken. The [runbook Grafana section](<https://aureliusenterprise.github.io/main/architecture/deployment/runbook/#grafana>) covers the full login path in detail.
 
 ## Turn on tenancy (optional)
 

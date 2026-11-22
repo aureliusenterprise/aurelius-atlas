@@ -4,7 +4,7 @@ Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the rea
 
 ## 0\. Prerequisites
 
-- **kubectl** + a cluster context. Minikube: start it and run `minikube tunnel` in a second terminal (the Gateway gets an external IP through it); add `app.atlas.test`, `auth.atlas.test` (and `dashboard.atlas.test`, `o11y.atlas.test` if enabled) to `/etc/hosts` pointing at `127.0.0.1` (CHT-135).
+- **kubectl** + a cluster context. Minikube: start it and run `minikube tunnel` in a second terminal (the Gateway gets an external IP through it); add `atlas.test` (the product), `auth.atlas.test` (and `dashboard.atlas.test`, `observability.atlas.test` if enabled) to `/etc/hosts` pointing at `127.0.0.1` (CHT-135, ADR 069).
 - **cert-manager** installed (CRDs + controller):
 
   ```
@@ -150,16 +150,16 @@ The umbrella generates the credentials (Elasticsearch password, Keycloak admin/D
 ```
 kubectl -n atlas get pods                          # all Running/Completed
 kubectl -n atlas get gateway,gatewayclass,httproute
-curl -k https://app.<domain>/api/atlas/admin/liveness
+curl -k https://<domain>/api/atlas/admin/liveness
 curl -k https://auth.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
 
 ### Grafana
 
-Grafana has no anonymous access: the login screen's **Keycloak** button goes to the `aurelius-atlas` realm (CHT-84, DD-275). The roles on the `grafana` client gate the door (CHT-85, CHT-136, DD-659). The `admin` role lands as Grafana **Admin**, and the `editor` role lands as **Editor**. A realm user who holds neither role is denied at the callback, because the mapping has no Viewer fallback any more. You assign the roles on the `grafana` client in the Keycloak console or through the admin API. The daily door is the browser host: `global.hosts.o11y.enabled` is true by default (DD-653), and Grafana builds its login redirect from `GF_SERVER_ROOT_URL`, which the chart pins to `https://o11y.<domain>` whenever the host is on (DD-654):
+Grafana has no anonymous access: the login screen's **Keycloak** button goes to the `aurelius-atlas` realm (CHT-84, DD-275). The roles on the `grafana` client gate the door (CHT-85, CHT-136, DD-659). The `admin` role lands as Grafana **Admin**, and the `editor` role lands as **Editor**. A realm user who holds neither role is denied at the callback, because the mapping has no Viewer fallback any more. You assign the roles on the `grafana` client in the Keycloak console or through the admin API. The daily door is the browser host: `global.hosts.o11y.enabled` is true by default (DD-653), and Grafana builds its login redirect from `GF_SERVER_ROOT_URL`, which the chart pins to `https://observability.<domain>` whenever the host is on (DD-654):
 
 ```
-https://o11y.<domain>   # log in with the Keycloak button
+https://observability.<domain>   # log in with the Keycloak button
 ```
 
 The port-forward path still works when you set `global.hosts.o11y.enabled=false`: the pin drops, the UI becomes request-derived again, and the client's registered `http://localhost:3000/login/generic_oauth` completes the login (DD-276). With the host on, a forwarded port redirects to the public host instead. The generated local admin (`<release>-grafana-admin`, keys `user`/`password` via `kubectl get secret`) is the account-recovery credential — use it only when the realm path is broken. Keycloak's 8443 NetworkPolicy admits Grafana for the token exchange (CHT-86); if the login redirects but never completes, check that hop first. The OIDC call needs the private CA in the pod's trust store, which the chart mounts (DD-654); the backend hop to Grafana is plaintext, and the edge's HTTP health check probes `/api/health` (DD-653).
@@ -177,22 +177,24 @@ helm upgrade atlas oci://ghcr.io/aureliusenterprise/charts/aurelius-atlas \
 
 ### Rename the browser hosts
 
-A release installed before 10.15 names its hosts `atlas`, `keycloak`, and `grafana`. The keys are `app`, `auth`, `dashboard`, and `o11y` now (CHT-135, DD-658), and the chart has no alias for the old keys, because a half-renamed install serves two hostnames for one app. Rename the records first, then upgrade, then retire the old names.
+The browser hosts have moved twice. A release before increment 10.15 named them after the component (`atlas`, `keycloak`, `grafana`); a release before ADR 069 named them `app.<domain>` and `o11y.<domain>`. The current shape puts the product at the zone apex (`<domain>`) and observability at `observability.<domain>` (ADR 069), while the values keys stay `app`, `auth`, `dashboard`, and `o11y` (CHT-135, DD-658). The chart has no alias for an old key or an old host, because a half-renamed install serves two hostnames for one app. Add the target records first, then upgrade, then retire the old names.
 
 > [!WARNING]
 
 **The issuer moves with the rename.** Keycloak advertises `https://auth.<domain>` after it, and every token embeds the `iss` it was minted with. Tokens, sessions, and Grafana logins issued before the upgrade stop validating. Do the rename as one change, in one maintenance window.
 
-1. Add the new public records next to the old ones. Let's Encrypt must see them before the upgrade, because ACME validates all SANs of the new edge leaf:
+1. Add the new public records next to the old ones. Let's Encrypt must see them before the upgrade, because ACME validates all SANs of the new edge leaf. The product sits at the apex, so its record is at `<domain>.` itself (a wildcard would not cover it), and the other hosts are subdomains:
 
    ```
-   for host in app auth o11y; do
+   gcloud dns record-sets create "<domain>." --zone=<public-zone> \
+       --type=A --rrdatas=<gateway-ip> --ttl=300          # the product (apex)
+   for host in auth observability; do
        gcloud dns record-sets create "$host.<domain>." --zone=<public-zone> \
            --type=A --rrdatas=<gateway-ip> --ttl=300
    done
    ```
-2. Update the private zone (DD-651): `auth.<domain>` must resolve to the Keycloak Service ClusterIP in-cluster, exactly as `keycloak.<domain>` did before. Keep the old records until the last step.
-3. Upgrade the release. With an environment overlay, change its `hosts:` keys the same way (a `hosts.grafana.enabled` entry becomes `hosts.o11y.enabled`). The Keycloak pod restarts and re-imports the realm with the new placeholder hosts; restart the collectors and every OIDC client afterwards so they re-read the issuer metadata.
+2. Update the private zone (DD-651): `auth.<domain>` must resolve to the Keycloak Service ClusterIP in-cluster, as the sign-in host did before. Keep the old records until the last step.
+3. Upgrade the release. A pre-10.15 overlay also renames its `hosts:` keys (a `hosts.grafana.enabled` entry becomes `hosts.o11y.enabled`). The Keycloak pod restarts and re-imports the realm with the new placeholder hosts; restart the collectors and every OIDC client afterwards so they re-read the issuer metadata.
 4. Verify the new hosts answer (section 2), then delete the old `atlas`, `keycloak`, and `grafana` records from both zones.
 
 ### Admin accounts
