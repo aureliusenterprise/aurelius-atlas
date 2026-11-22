@@ -12,7 +12,7 @@
  * and the commit foot (EDT-10 amended by EDT-19, DD-347 — Delete + Save in the
  * foot, the hold mechanic specced at the directive).
  */
-import { provideHttpClient } from "@angular/common/http";
+import { HttpRequest, provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
@@ -449,8 +449,34 @@ function savedView(overrides: Partial<EntityView> = {}): EntityView {
 }
 
 /** The Atlas v2 audit read (7.35, HST-03): `GET /api/atlas/v2/entity/{guid}/audit`
- * — no `/guid/` segment, unlike the entity reads. */
-const AUDIT_URL = "/api/atlas/v2/entity/7a1b/audit";
+ * — no `/guid/` segment, unlike the entity reads. Since 7.36 the read names
+ * its page size explicitly (HST-08), so the plain URL carries `count=100`. */
+const AUDIT_BASE = "/api/atlas/v2/entity/7a1b/audit";
+const AUDIT_URL = `${AUDIT_BASE}?count=100`;
+
+/** The matcher for the trail's next page (HST-08): the same read with the
+ * oldest listed `eventKey` as its inclusive cursor.
+ * @param startKey the cursor the pane should send
+ */
+function auditPageRequest(startKey: string) {
+    return (request: HttpRequest<unknown>) =>
+        request.url === AUDIT_BASE &&
+        request.params.get("startKey") === startKey &&
+        request.params.get("count") === "100";
+}
+
+/** A newest-first page of `count` audit events ending at `newest` (HST-08):
+ * a full page is the only one that keeps the scroll's sentinel shown, so the
+ * scroll tests read a hundred events the way the server's page size gives it. */
+function auditPage(newest: number, count: number): EntityAuditEventV2[] {
+    return Array.from({ length: count }, (_, index) => ({
+        entityId: "7a1b",
+        eventKey: `${newest - index}:0`,
+        timestamp: newest - index,
+        user: "analyst-3",
+        action: "ENTITY_UPDATE",
+    }));
+}
 
 /** The audit trail of the fixture entity, newest first as the server answers
  * it (AUD-08): the update, then the create. */
@@ -2471,7 +2497,7 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29, VDE-11)", () => {
     });
 });
 
-describe("EntityEditor history tab (HST-01..HST-07)", () => {
+describe("EntityEditor history tab (HST-01..HST-09)", () => {
     it("the edit drawer carries the Entity/History tab pair, create does not (HST-01)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
@@ -2553,18 +2579,19 @@ describe("EntityEditor history tab (HST-01..HST-07)", () => {
         );
     });
 
-    it("switching to History fires one unparameterised audit read and lists the rows newest first (HST-03, HST-04)", () => {
+    it("switching to History fires one audit read of the newest page and lists the rows newest first (HST-03, HST-04)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
         openHistoryTab(compiled, fixture);
 
-        // One GET with no query parameters (HST-03): the server's defaults
-        // answer its newest 100 events newest-first (AUD-08). An `offset` of
-        // 0 would move it onto its sorted, oldest-first path (AUD-07).
+        // One GET with the page size and no cursor (HST-03 as amended by
+        // 7.36): the endpoint answers its newest 100 events newest-first
+        // (AUD-08). An `offset` or `sortBy` would move it onto its sorted,
+        // oldest-first path (AUD-07), so neither travels.
         const request = httpMock.expectOne(AUDIT_URL);
         expect(request.request.method).toBe("GET");
-        expect(request.request.params.keys()).toEqual([]);
+        expect(request.request.params.keys()).toEqual(["count"]);
         request.flush(AUDIT_EVENTS);
         fixture.detectChanges();
 
@@ -2602,6 +2629,124 @@ describe("EntityEditor history tab (HST-01..HST-07)", () => {
         httpMock.expectOne(AUDIT_URL).flush(AUDIT_EVENTS);
         fixture.detectChanges();
         httpMock.verify();
+    });
+
+    it("the sentinel's ask reads the older page from the oldest key and appends it without the repeat (HST-08)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        // A full first page (the count the pane asks for): the trail may have
+        // more, so the container shows its sentinel (UIC-21).
+        const firstPage = auditPage(1_700_000_100_000, 100);
+        httpMock.expectOne(AUDIT_URL).flush(firstPage);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(100);
+
+        // jsdom has no IntersectionObserver, so the sentinel's load button is
+        // the trigger (UIC-22).
+        compiled
+            .querySelector<HTMLButtonElement>(
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+            )!
+            .click();
+        fixture.detectChanges();
+
+        // The cursor is the oldest listed eventKey, inclusive (AUD-08): the
+        // answer repeats it, and the pane drops the repeat (HST-08).
+        const oldest = firstPage.at(-1)!.eventKey!;
+        const page2 = httpMock.expectOne(auditPageRequest(oldest));
+        // A short page is the entity's oldest one (HST-08): the rows grow by
+        // the three new events only, the sentinel is gone, and nothing older
+        // is asked for.
+        page2.flush([firstPage.at(-1)!, ...auditPage(1_700_000_100_000 - 100, 3)]);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(103);
+        expect(
+            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button"),
+        ).toBeNull();
+        httpMock.verify();
+    });
+
+    it("a full last page keeps the sentinel shown and a scroll during a page asks nothing (HST-08)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(auditPage(1_700_000_100_000, 100));
+        fixture.detectChanges();
+
+        compiled
+            .querySelector<HTMLButtonElement>(
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+            )!
+            .click();
+        fixture.detectChanges();
+        const page2 = httpMock.expectOne(auditPageRequest("1700000099901:0"));
+
+        // One page in flight: the container suppresses its triggers and the
+        // component guards again, so a fast scroll stacks no reads (HST-08).
+        compiled
+            .querySelector<HTMLButtonElement>(
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+            )!
+            .click();
+        fixture.detectChanges();
+        httpMock.expectNone(auditPageRequest("1700000099901:0"));
+
+        // Exactly the count answers: the pane cannot know the trail ended, so
+        // the sentinel stays (DD-820's one dead ask).
+        page2.flush(auditPage(1_700_000_100_000 - 100, 100));
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(200);
+        expect(
+            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button"),
+        ).toBeTruthy();
+    });
+
+    it("a next page keeps the rows while it runs and a failed one leaves the rows and the sentinel (HST-05, HST-06)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(auditPage(1_700_000_100_000, 100));
+        fixture.detectChanges();
+
+        compiled
+            .querySelector<HTMLButtonElement>(
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+            )!
+            .click();
+        fixture.detectChanges();
+
+        // A next page does not clear the list (HST-05 as amended by 7.36):
+        // the rows stay and the container's spinner carries the flight — the
+        // pane's own line speaks for the first read only.
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(100);
+        expect(normalize(compiled.querySelector("#editor-history-pane .aurelius-editor-loading")?.textContent)).toBe(
+            "",
+        );
+
+        httpMock.expectOne(auditPageRequest("1700000099901:0")).flush({}, { status: 500, statusText: "Server Error" });
+        fixture.detectChanges();
+
+        const alerts = TestBed.inject(AlertsService);
+        expect(alerts.hasAlerts()).toBe(true);
+        // The rows stay and the sentinel stays, so the ask can be made again
+        // (HST-06 as amended by 7.36).
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(100);
+        expect(
+            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button"),
+        ).toBeTruthy();
+        compiled
+            .querySelector<HTMLButtonElement>(
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+            )!
+            .click();
+        fixture.detectChanges();
+        httpMock.expectOne(auditPageRequest("1700000099901:0")).flush([AUDIT_EVENTS[1]]);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(101);
     });
 
     it("the History pane shows the loading line while the read runs (HST-05)", () => {
@@ -2669,7 +2814,57 @@ describe("EntityEditor history tab (HST-01..HST-07)", () => {
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
     });
 
-    it("a failed audit read adds one alert, leaves the list empty and keeps the drawer (HST-06)", () => {
+    it("a failed first read leaves the sentinel, whose ask retries the newest page (HST-06, HST-08)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush({}, { status: 500, statusText: "Server Error" });
+        fixture.detectChanges();
+
+        // Nothing is listed, so there is no cursor: the trail is not ended and
+        // the sentinel stays (HST-06 as amended by 7.36).
+        const sentinel = compiled.querySelector<HTMLButtonElement>(
+            "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+        );
+        expect(sentinel).toBeTruthy();
+
+        // Its ask reads the newest page again — the same read the switch made,
+        // not a cursor page (HST-08).
+        sentinel!.click();
+        fixture.detectChanges();
+        const retry = httpMock.expectOne(AUDIT_URL);
+        expect(retry.request.params.get("startKey")).toBeNull();
+        retry.flush(AUDIT_EVENTS);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(2);
+    });
+
+    it("a page in flight stacks no read, a tab switch among them (HST-09)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(auditPage(1_700_000_100_000, 100));
+        fixture.detectChanges();
+
+        compiled
+            .querySelector<HTMLButtonElement>(
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+            )!
+            .click();
+        fixture.detectChanges();
+        httpMock.expectOne(auditPageRequest("1700000099901:0"));
+
+        // A switch to the form and back while that page runs asks nothing: the
+        // in-flight guard covers the scroll's read too (HST-09).
+        openEntityTab(compiled, fixture);
+        openHistoryTab(compiled, fixture);
+        fixture.detectChanges();
+        httpMock.expectNone(AUDIT_BASE);
+    });
+
+    it("a failed first read adds one alert, leaves the list empty and keeps the drawer (HST-06)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 

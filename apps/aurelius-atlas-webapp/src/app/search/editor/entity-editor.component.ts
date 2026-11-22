@@ -19,7 +19,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
-import { Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
+import { Drawer, Holdable, InfiniteScrollContainer, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
 import {
     AtlasEntitiesService,
     QualityRuleService,
@@ -65,6 +65,11 @@ type EnumRow = { value: string };
 /** The drawer's pane (HST-01, DD-816): the entity form or the audit list. */
 type EditorTab = "entity" | "history";
 
+/** The audit page size (HST-08, DD-820): what the endpoint itself reads an
+ * absent `count` as (AUD-08), asked explicitly so the short-page test for the
+ * trail's end is exact rather than a guess about the server's default. */
+const AUDIT_PAGE = 100;
+
 /** One model slot: the value a field of any kind holds (DD-354). */
 type EditorValue = string | number | boolean | string[] | null;
 
@@ -107,6 +112,9 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  * mode (HST-01, DD-816): the History pane lists the entity's newest audit
  * events, re-read from the Atlas v2 audit endpoint on every switch (HST-03,
  * DD-817), and the commit foot belongs to the Entity pane alone (HST-07).
+ * Since 7.36 the pane scrolls the trail instead of capping it: the rows ride
+ * the results list's infinite-scroll container and older pages ride the
+ * endpoint's key cursor (HST-08, DD-820).
  */
 @Component({
     imports: [
@@ -117,6 +125,7 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
         FontAwesomeModule,
         FormField,
         Holdable,
+        InfiniteScrollContainer,
         MarkdownEditor,
         NgTemplateOutlet,
         QualityFields,
@@ -186,6 +195,10 @@ export class EntityEditor {
 
     /** Whether the audit read is in flight (HST-05's loading line). */
     protected readonly auditsLoading = signal(false);
+
+    /** Whether the trail is ended: the last page came back short, so the
+     * container hides its sentinel and no older read fires (HST-08). */
+    protected readonly auditsAllLoaded = signal(false);
 
     /** The in-flight audit read (HST-03): a switch while one runs does not
      * repeat it, and the drawer's teardown drops the answer it no longer
@@ -414,6 +427,10 @@ export class EntityEditor {
     /** The History pane's loading line and its failure alert (HST-05, HST-06):
      * the vendored audit-retrieve string, one key for both states. */
     protected readonly auditRetrieveLine = $localize`:@@search.services.entityAudit.retrieve:Retrieving the audit log`;
+
+    /** The History pane's sentinel label (HST-08): the results list's key, so
+     * one translation carries both infinite-scroll lists. */
+    protected readonly auditLoadLabel = $localize`:@@search.components.infiniteScrollContainer.loadNextPage:Load next page...`;
 
     protected readonly savingLine = $localize`:@@search.services.entityUpdate.save:Saving the entity`;
 
@@ -1025,29 +1042,55 @@ export class EntityEditor {
     }
 
     /**
-     * The audit read (HST-03, DD-817): one `GET /v2/entity/{guid}/audit`
-     * with no query parameters, so the server's defaults answer its newest
-     * 100 events in newest-first key order (AUD-08) — an explicit `offset`
-     * would move the server onto its sorted, oldest-first path (AUD-07).
-     * Every switch re-reads (no caching rule applies), and a switch does not
-     * stack reads: an in-flight read is not repeated, and the drawer's
-     * teardown drops the answer it no longer needs (the read dies with it).
-     * A read starts from an empty list, so the panel never shows the previous
-     * answer under the loading line (HST-05); a failed read alerts once and
-     * leaves the list empty (HST-06).
+     * The audit read (HST-03 as amended by 7.36, DD-817, DD-820): one
+     * `GET /v2/entity/{guid}/audit` per page, asked with `count=100` and
+     * never an `offset` or `sortBy`, which would move the server onto its
+     * sorted, oldest-first path (AUD-07). The first read of a visit starts the
+     * list empty; a next page rides the server's inclusive key cursor
+     * (AUD-08) — `startKey` of the oldest event already listed — and appends
+     * what it answers, minus the one event that cursor repeats (HST-08). A
+     * page shorter than the ask ends the trail, so the container hides its
+     * sentinel. Every switch re-reads (no caching rule applies), and no read
+     * stacks: an in-flight read — the scroll's ask among them — is not
+     * repeated, and the drawer's teardown drops answers it no longer needs.
+     * A failed first read alerts once and leaves the list empty (HST-06); a
+     * failed next page alerts and keeps the rows and the sentinel, so the ask
+     * can be made again.
      */
-    private loadAudits(): void {
+    private loadAudits(nextPage = false): void {
         const guid = this.state.entity()?.guid ?? this.guid();
         if (!guid || this.auditsPending !== null) {
             return;
         }
-        this.audits.set([]);
+        if (!nextPage) {
+            this.audits.set([]);
+            this.auditsAllLoaded.set(false);
+        }
+        // The cursor is the oldest listed eventKey (AUD-08). With nothing
+        // listed there is no cursor to send, which is the fresh first-page ask
+        // the sentinel's retry of a failed first read needs (HST-06). An event
+        // listed without a key can carry no cursor, so the pane stops paging
+        // rather than re-asking for the page it already holds.
+        const listed = this.audits();
+        const oldestKey = listed.at(-1)?.eventKey ?? undefined;
+        if (listed.length > 0 && oldestKey === undefined) {
+            this.auditsAllLoaded.set(true);
+            return;
+        }
+        const query = oldestKey === undefined ? { count: AUDIT_PAGE } : { count: AUDIT_PAGE, startKey: oldestKey };
         this.auditsLoading.set(true);
-        this.auditsPending = this.entities.getAuditEvents(guid).subscribe({
+        this.auditsPending = this.entities.getAuditEvents(guid, query).subscribe({
             next: (events) => {
                 this.auditsPending = null;
                 this.auditsLoading.set(false);
-                this.audits.set(events);
+                const listed = new Set(this.audits().map((event) => event.eventKey));
+                const fresh = events.filter((event) => !listed.has(event.eventKey));
+                this.audits.update((current) => [...current, ...fresh]);
+                // The short page is the entity's oldest one (HST-08): the
+                // sentinel goes, and nothing older is asked for. A full page
+                // keeps the sentinel even when the trail ends there — a dead
+                // ask costs one read and no data (DD-820).
+                this.auditsAllLoaded.set(events.length < AUDIT_PAGE);
             },
             error: () => {
                 this.auditsPending = null;
@@ -1059,6 +1102,17 @@ export class EntityEditor {
                 });
             },
         });
+    }
+
+    /**
+     * The container's ask (HST-08): one more page of the trail. The container
+     * suppresses its own triggers while a page is in flight, and
+     * {@link loadAudits} guards again, so one scroll asks for one page.
+     */
+    protected loadAuditPage(): void {
+        if (!this.auditsAllLoaded()) {
+            this.loadAudits(true);
+        }
     }
 
     /** The audit row's change label (HST-04): the display map over the
