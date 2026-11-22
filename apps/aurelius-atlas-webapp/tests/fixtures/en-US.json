@@ -517,7 +517,8 @@
                     "restore": "Restore",
                     "restoreAria": "Restore {{name}}",
                     "restoreFailed": "Restoring the attribute",
-                    "restored": "Entity restored"
+                    "restored": "Entity restored",
+                    "wordsLeftOut": "{{count}} words left out"
                 },
                 "historyPlaceholder": "History",
                 "person": {

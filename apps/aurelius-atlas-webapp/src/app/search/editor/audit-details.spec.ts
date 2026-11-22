@@ -245,17 +245,41 @@ describe("audit-details (HST-10, DD-821)", () => {
         expect(attributes).toEqual([{ kind: "removed", name: "name", from: "n" }]);
     });
 
-    it("reads clearing a field the entity held as a change (HST-13)", () => {
+    it("reads clearing a description as a prose change, not a table line (HST-13, HST-15)", () => {
         // Both states hold the attribute, so the write did something: it took
-        // the value away. The line shows the blank it now holds.
-        const { attributes } = diffAuditStates(
+        // the text away. It belongs to the descriptions section, not the table.
+        const { attributes, descriptions } = diffAuditStates(
             { attributes: { definition: "a long definition" }, relationships: {} },
             { attributes: { definition: "" }, relationships: {} },
         );
 
-        expect(attributes).toEqual([
-            { kind: "changed", name: "definition", from: "a long definition", to: "", storedFrom: "a long definition" },
-        ]);
+        expect(attributes).toEqual([]);
+        expect(descriptions).toEqual([{ name: "definition", from: "a long definition", to: "" }]);
+    });
+
+    it("words a reworded description once, in the descriptions section (HST-15)", () => {
+        const { attributes, descriptions } = diffAuditStates(
+            { attributes: { definition: "old text" }, relationships: {} },
+            { attributes: { definition: "new text" }, relationships: {} },
+        );
+
+        expect(attributes.map((change) => change.name)).toEqual([]);
+        expect(descriptions).toEqual([{ name: "definition", from: "old text", to: "new text" }]);
+    });
+
+    it("keeps the two descriptions out of the attributes table (HST-15)", () => {
+        const { attributes } = diffAuditStates(
+            {
+                attributes: { name: "n", definition: "a", description: "b" },
+                relationships: {},
+            },
+            {
+                attributes: { name: "m", definition: "c", description: "d" },
+                relationships: {},
+            },
+        );
+
+        expect(attributes.map((change) => change.name)).toEqual(["name"]);
     });
 
     it("keeps values that only look blank (HST-13)", () => {
@@ -365,7 +389,12 @@ describe("audit-details (HST-10, DD-821)", () => {
     it("answers two identical states with nothing changed (HST-10)", () => {
         const state = { attributes: { name: "n" }, relationships: { input: [{ guid: "a", display: "A" }] } };
 
-        expect(diffAuditStates(state, state)).toEqual({ kind: "diff", attributes: [], relationships: [] });
+        expect(diffAuditStates(state, state)).toEqual({
+            kind: "diff",
+            attributes: [],
+            relationships: [],
+            descriptions: [],
+        });
     });
 
     it("answers a create against the empty state: everything it holds is added (HST-10)", () => {
@@ -375,6 +404,7 @@ describe("audit-details (HST-10, DD-821)", () => {
             kind: "diff",
             attributes: [{ kind: "added", name: "name", to: "n" }],
             relationships: [{ kind: "added", attribute: "input", entity: "A", guid: "a" }],
+            descriptions: [],
         });
     });
 
@@ -391,16 +421,19 @@ describe("audit-details (HST-10, DD-821)", () => {
             kind: "diff",
             attributes: [{ kind: "changed", name: "name", from: "second", to: "third", storedFrom: "second" }],
             relationships: [],
+            descriptions: [],
         });
         expect(changes.get("2")).toEqual({
             kind: "diff",
             attributes: [{ kind: "changed", name: "name", from: "first", to: "second", storedFrom: "first" }],
             relationships: [],
+            descriptions: [],
         });
         expect(changes.get("1")).toEqual({
             kind: "diff",
             attributes: [{ kind: "added", name: "name", to: "first" }],
             relationships: [],
+            descriptions: [],
         });
     });
 
@@ -416,6 +449,7 @@ describe("audit-details (HST-10, DD-821)", () => {
             kind: "diff",
             attributes: [{ kind: "added", name: "name", to: "n" }],
             relationships: [],
+            descriptions: [],
         });
     });
 
@@ -440,6 +474,7 @@ describe("audit-details (HST-10, DD-821)", () => {
             kind: "diff",
             attributes: [{ kind: "changed", name: "name", from: "start", to: "a", storedFrom: "start" }],
             relationships: [],
+            descriptions: [],
         });
     });
 
@@ -460,6 +495,7 @@ describe("audit-details (HST-10, DD-821)", () => {
             kind: "diff",
             attributes: [{ kind: "changed", name: "name", from: "a", to: "c", storedFrom: "a" }],
             relationships: [],
+            descriptions: [],
         });
     });
 
@@ -474,6 +510,7 @@ describe("audit-details (HST-10, DD-821)", () => {
             kind: "diff",
             attributes: [{ kind: "changed", name: "name", from: "a", to: "c", storedFrom: "a" }],
             relationships: [],
+            descriptions: [],
         });
         expect(auditTrailChanges(trail).has("x")).toBe(false);
     });
@@ -484,7 +521,12 @@ describe("audit-details (HST-10, DD-821)", () => {
             stateEvent("ENTITY_UPDATE", { attributes: { name: "a" } }, "1"),
         ];
 
-        expect(auditTrailChanges(trail).get("2")).toEqual({ kind: "diff", attributes: [], relationships: [] });
+        expect(auditTrailChanges(trail).get("2")).toEqual({
+            kind: "diff",
+            attributes: [],
+            relationships: [],
+            descriptions: [],
+        });
     });
 
     it("ignores a trail with no state rows at all (HST-10)", () => {

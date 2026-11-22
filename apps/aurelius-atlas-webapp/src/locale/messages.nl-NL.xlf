@@ -2657,6 +2657,11 @@ The technical data governance model consists of the following types of entities:
         <target>Entiteit hersteld</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restored</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.history.wordsLeftOut" datatype="html">
+        <source><x id="count" equiv-text="{{count}}"/> words left out</source>
+        <target><x id="count" equiv-text="{{count}}"/> woorden weggelaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.wordsLeftOut</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.historyPlaceholder" datatype="html">
         <source>History</source>
         <target>Geschiedenis</target>

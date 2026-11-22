@@ -22,6 +22,11 @@
 
 import type { EntityAuditEventV2 } from "aurelius-atlas-data-access";
 
+import { DESCRIPTION_KEYS } from "./form-fields";
+
+/** The attribute keys whose text the change list words (HST-15). */
+const PROSE_KEYS: readonly string[] = DESCRIPTION_KEYS;
+
 /** The actions whose event carries the entity's stored state (AUD-03). */
 const STATE_ACTIONS: ReadonlySet<string> = new Set([
     "ENTITY_CREATE",
@@ -70,6 +75,19 @@ export type AuditStateDiff = {
     kind: "diff";
     attributes: readonly AuditAttributeChange[];
     relationships: readonly AuditRelationshipChange[];
+    /** The entity descriptions this write worded differently (HST-15), which
+     * are not in {@link AuditStateDiff.attributes}. */
+    descriptions: readonly AuditProseChange[];
+};
+
+/** One entity description a change list reworded (HST-15). */
+export type AuditProseChange = {
+    /** The attribute's name: `definition` or `description` (EDT-20). */
+    name: string;
+    /** The text before, empty when the write filled an empty description. */
+    from: string;
+    /** The text after, empty when the write cleared it. */
+    to: string;
 };
 
 /** One attribute of a change list (HST-10). */
@@ -196,30 +214,51 @@ export function diffAuditStates(from: AuditState, to: AuditState): AuditStateDif
     );
 
     const attributes: AuditAttributeChange[] = [];
+    const descriptions: AuditProseChange[] = [];
     for (const name of attributeNames) {
         if (referenceNames.has(name)) {
             continue;
         }
         const before = from.attributes[name];
         const after = to.attributes[name];
+        // The two descriptions leave the tables for their own section (HST-15).
+        const prose = PROSE_KEYS.includes(name);
         if (!(name in from.attributes)) {
             // The attribute appeared, so the write set it — unless what it
             // holds is nothing at all, which sets nothing (HST-13).
-            if (!isNothingValue(after)) {
+            if (isNothingValue(after)) {
+                continue;
+            }
+            if (prose) {
+                descriptions.push({ name, from: "", to: formatValue(after) ?? "" });
+            } else {
                 attributes.push({ kind: "added", name, to: formatValue(after) });
             }
         } else if (!(name in to.attributes)) {
-            if (!isNothingValue(before)) {
+            if (isNothingValue(before)) {
+                continue;
+            }
+            if (prose) {
+                descriptions.push({ name, from: formatValue(before) ?? "", to: "" });
+            } else {
                 attributes.push({ kind: "removed", name, from: formatValue(before) });
             }
         } else if (!sameValue(before, after)) {
-            attributes.push({
-                kind: "changed",
-                name,
-                from: formatValue(before),
-                to: formatValue(after),
-                storedFrom: before,
-            });
+            if (prose) {
+                descriptions.push({
+                    name,
+                    from: formatValue(before) ?? "",
+                    to: formatValue(after) ?? "",
+                });
+            } else {
+                attributes.push({
+                    kind: "changed",
+                    name,
+                    from: formatValue(before),
+                    to: formatValue(after),
+                    storedFrom: before,
+                });
+            }
         }
     }
 
@@ -247,7 +286,7 @@ export function diffAuditStates(from: AuditState, to: AuditState): AuditStateDif
         }
     }
 
-    return { kind: "diff", attributes, relationships };
+    return { kind: "diff", attributes, relationships, descriptions };
 }
 
 /**
