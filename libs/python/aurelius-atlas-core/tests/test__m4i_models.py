@@ -506,3 +506,85 @@ def test__every_bundle_ships_only_governance_rules_the_model_can_answer() -> Non
                 rule_type = qualified_name.split("--", maxsplit=1)[0]
                 missing = missing_rule_names(registry, rule_type, str(attributes.get("expression") or ""))
                 assert not missing, (sample.name, qualified_name, missing)
+
+
+# The three attributes the data attribute type no longer declares: each states a fact a classification of the
+# same model already states (ACA-01, DD-829).
+CLASSIFICATION_BACKED = frozenset({"hasPII", "isKeyData", "riskClassification"})
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["ACA-01"])
+def test__the_data_attribute_type_states_its_tags_only_as_classifications() -> None:
+    """The data attribute type declares none of the three attributes, holds version ``1.2``, and the five
+    classifications still apply to it (ACA-01).
+    """  # noqa: D205 - one sentence
+    model = json.loads(MODEL.read_text(encoding="utf-8"))
+    entities = {definition["name"]: definition for definition in model["entityDefs"]}
+    definition = entities["m4i_data_attribute"]
+
+    assert not CLASSIFICATION_BACKED & {a["name"] for a in definition["attributeDefs"]}
+    assert definition["typeVersion"] == "1.2"
+    assert CLASSIFICATION_BACKED.isdisjoint(answerable_names(m4i_registry(), "m4i_data_attribute"))
+
+    applicable = {c["name"]: set(c["entityTypes"]) for c in model["classificationDefs"]}
+    assert applicable.keys() == CLASSIFICATIONS
+    for name in CLASSIFICATIONS:
+        assert "m4i_data_attribute" in applicable[name], name
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["ACA-02"])
+def test__every_bundle_declares_and_holds_the_type_without_the_three_attributes() -> None:
+    """Each bundle's typedef file declares the data attribute type at ``1.2`` without the three attributes, and
+    no entity of that type names one in either frame (ACA-02).
+    """  # noqa: D205 - one sentence
+    model = m4i_of(json.loads(MODEL.read_text(encoding="utf-8")))
+
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        with zipfile.ZipFile(sample) as archive:
+            types = m4i_of(_typesdef(sample))
+            definition = types["m4i_data_attribute"]
+
+            assert definition["typeVersion"] == "1.2", sample.name
+            assert not CLASSIFICATION_BACKED & {a["name"] for a in definition["attributeDefs"]}, sample.name
+            if sample.name == "only_gov_quality.zip":
+                # The older export states fewer fields per attribute, as in MDD-02.
+                assert _attributes(definition) == _attributes(model["m4i_data_attribute"]), sample.name
+            else:
+                assert definition == model["m4i_data_attribute"], sample.name
+
+            for entry in archive.namelist():
+                if not entry.endswith(".json") or entry.startswith("atlas-"):
+                    continue
+                entity = json.loads(archive.read(entry)).get("entity")
+                if not entity or entity["typeName"] != "m4i_data_attribute":
+                    continue
+                held = set(entity.get("attributes") or {}) | set(entity.get("relationshipAttributes") or {})
+                assert CLASSIFICATION_BACKED.isdisjoint(held), (sample.name, entry, held)
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["ACA-03"])
+def test__every_bundle_tags_its_data_attributes_with_classifications_the_model_declares() -> None:
+    """Every classification a bundle attaches to a data attribute is one the model declares and applies to the
+    type, so the tags carry the meaning the three attributes used to spell (ACA-03, DV-194).
+    """  # noqa: D205 - one sentence
+    model = json.loads(MODEL.read_text(encoding="utf-8"))
+    applicable = {c["name"]: set(c["entityTypes"]) for c in model["classificationDefs"]}
+    tagged = 0
+
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        with zipfile.ZipFile(sample) as archive:
+            for entry in archive.namelist():
+                if not entry.endswith(".json") or entry.startswith("atlas-"):
+                    continue
+                entity = json.loads(archive.read(entry)).get("entity")
+                if not entity or entity["typeName"] != "m4i_data_attribute":
+                    continue
+                own = [c for c in entity.get("classifications") or [] if c["entityGuid"] == entity["guid"]]
+                names = {str(c["typeName"]) for c in own}
+
+                assert names <= CLASSIFICATIONS, (sample.name, entry, names - CLASSIFICATIONS)
+                for name in names:
+                    assert "m4i_data_attribute" in applicable[name], (sample.name, entry, name)
+                tagged += bool(names)
+
+    assert tagged, "no bundle tags a data attribute, so the corpus says nothing about risk or key data"

@@ -172,22 +172,6 @@
                     "valuesMinCount": 0
                 },
                 {
-                    "cardinality": "SINGLE",
-                    "description": "If this attribute represents any key",
-                    "displayName": "isKeyData",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "isKeyData",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "string",
-                    "valuesMaxCount": 1,
-                    "valuesMinCount": 0
-                },
-                {
                     "cardinality": "SET",
                     "description": "The business data steward of the data attribute",
                     "displayName": "Business Data Steward",
@@ -220,38 +204,6 @@
                     "valuesMinCount": 0
                 },
                 {
-                    "cardinality": "SINGLE",
-                    "description": "The risk classification of the data attribute determined by the data steward and data owner",
-                    "displayName": "Risk Classification",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "riskClassification",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "string",
-                    "valuesMaxCount": 1,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SINGLE",
-                    "description": "The classification if this attribute holds information about a person",
-                    "displayName": "hasPII",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "hasPII",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "string",
-                    "valuesMaxCount": 1,
-                    "valuesMinCount": 0
-                },
-                {
                     "cardinality": "SET",
                     "description": "The functional names of the data fields that belong to the data attribute",
                     "displayName": "Data Fields",
@@ -272,7 +224,7 @@
             "name": "m4i_data_attribute",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [

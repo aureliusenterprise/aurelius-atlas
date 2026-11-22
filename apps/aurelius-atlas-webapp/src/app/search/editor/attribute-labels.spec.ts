@@ -43,10 +43,17 @@ describe("editor attribute labels (EDT-33, 7-33)", () => {
         expect(labels["processOwner"]).toBe("Process Owner");
         expect(labels["source"]).toBe("Source");
         expect(labels["system"]).toBe("System");
-        expect(labels["hasPII"]).toBe("Has PII");
-        expect(labels["isKeyData"]).toBe("Is Key Data");
         expect(labels["hasContent"]).toBe("Has Content");
         expect(labels["optionalField"]).toBe("Optional Field");
+    });
+
+    it("carries no label for a tag the type states only as a classification (ACA-05)", () => {
+        // The m4i data attribute type retired these three attributes (18.6, DD-829), so the editor builds no
+        // field for one and the map and catalogue hold no entry. The bare legacy dictionary keys stay.
+        for (const name of ["hasPII", "isKeyData", "riskClassification"]) {
+            expect(labels[name]).toBeUndefined();
+            expect(name in CATALOGUE).toBe(false);
+        }
     });
 
     it("labels the base-model attributes the vendored Area0 never names (EDT-33)", () => {
