@@ -1,3 +1,65 @@
+## 0.1.0-rc.10 (2026-11-22)
+
+### 🚀 Features
+
+- a hierarchy child holds one parent, chosen from two (18.2, 18.3) ([#418](https://github.com/aureliusenterprise/aurelius-atlas/pull/418))
+- **12.7f:** the verdicts per tenant: a tenant's rules read with the caller's token (VET-01..05, DD-820) ([#436](https://github.com/aureliusenterprise/aurelius-atlas/pull/436))
+- **15.10:** the tenant's dashboards in the webapp's account menu, for stewards, administrators and trusted operators (TDL-01..11) ([#425](https://github.com/aureliusenterprise/aurelius-atlas/pull/425))
+- **15.7:** add a tenant with its people by command (TAD-01..13, DD-701, DD-702) ([#399](https://github.com/aureliusenterprise/aurelius-atlas/pull/399))
+- **15.9:** Grafana per tenant, kept by the tenant command (TGF-01..14) ([#415](https://github.com/aureliusenterprise/aurelius-atlas/pull/415))
+- **app-search:** the breadcrumb is there when the page reloads after a save (ASU-07, ASU-08) ([#392](https://github.com/aureliusenterprise/aurelius-atlas/pull/392))
+- **core,data,webapp,docs:** a parent-side save refuses a held child, or moves it with the flag (18.4, RPS-01..08) ([#420](https://github.com/aureliusenterprise/aurelius-atlas/pull/420))
+- **core,data,webapp,docs:** a dataset picks a collection or a parent dataset (18.5, DCP-01..09) ([#422](https://github.com/aureliusenterprise/aurelius-atlas/pull/422))
+- **core,server:** one owner for the shared classification and parent rules (19.3, RUL-01..06) ([#429](https://github.com/aureliusenterprise/aurelius-atlas/pull/429))
+- **core,server,tests:** a store the write path can be tested against (19.2, WRS-01..09) ([#428](https://github.com/aureliusenterprise/aurelius-atlas/pull/428))
+- **core,store-es,tests,docs:** one query semantics for the store and its fakes (19.1, QRY-01..06) ([#427](https://github.com/aureliusenterprise/aurelius-atlas/pull/427))
+- **core,tests:** the document modules split by job and the engine splits into three (19.4, EDS-01..05) ([#430](https://github.com/aureliusenterprise/aurelius-atlas/pull/430))
+- **docker:** one browser host and shipped certificates (17.2) ([#393](https://github.com/aureliusenterprise/aurelius-atlas/pull/393))
+- **docker:** ship the standalone release bundle (17.3) ([#396](https://github.com/aureliusenterprise/aurelius-atlas/pull/396))
+- **docker:** simplify the standalone stack to Docker Compose (17.4) ([#397](https://github.com/aureliusenterprise/aurelius-atlas/pull/397))
+- **helm:** ship an aurelius-atlas-admin service client for API admin calls ([1d40b06092](https://github.com/aureliusenterprise/aurelius-atlas/commit/1d40b06092))
+- **helm,docs:** each browser surface answers on its own hostname (ADR 069) ([#447](https://github.com/aureliusenterprise/aurelius-atlas/pull/447))
+- **infra:** move the slices to infra/ and finish the stack's root pieces ([#387](https://github.com/aureliusenterprise/aurelius-atlas/pull/387))
+- **observability:** scrape Keycloak's metrics so its dashboard panels fill ([3e8166a7c2](https://github.com/aureliusenterprise/aurelius-atlas/commit/3e8166a7c2))
+- **server-client,server:** the e2e suites ride the typed client (20.1, CLV-01..04, CLW-13, ECL-01..02) ([#434](https://github.com/aureliusenterprise/aurelius-atlas/pull/434))
+- **standalone:** the realm seeds the operator; each tenant's users come with their tenant (DD-700) ([#398](https://github.com/aureliusenterprise/aurelius-atlas/pull/398))
+- **webapp:** Keycloak's account page speaks the webapp's language (SHC-10, SWA-05, DD-665) ([#386](https://github.com/aureliusenterprise/aurelius-atlas/pull/386))
+- **webapp:** the footer's year and version leave the config (7.34, DD-725/DD-726) ([#411](https://github.com/aureliusenterprise/aurelius-atlas/pull/411))
+- **webapp:** the editor reports its own outcome (19.6, WFE-01..06) ([#432](https://github.com/aureliusenterprise/aurelius-atlas/pull/432))
+- **webapp:** the editor drawer shows its edit history (7.35, HST-01..07) ([#437](https://github.com/aureliusenterprise/aurelius-atlas/pull/437))
+- **webapp:** the History tab scrolls to the entity's older events (7.36) ([#441](https://github.com/aureliusenterprise/aurelius-atlas/pull/441))
+- **webapp:** an audit row opens to the changes it made (7.37, HST-10, DD-821) ([#442](https://github.com/aureliusenterprise/aurelius-atlas/pull/442))
+- **webapp:** a change list puts an attribute back (7.38, HST-11, DD-822) ([#443](https://github.com/aureliusenterprise/aurelius-atlas/pull/443))
+- **webapp:** a change list reads as a table (7.39, HST-12, DD-823) ([#444](https://github.com/aureliusenterprise/aurelius-atlas/pull/444))
+- **webapp:** a change list words a prose change (7.40, HST-15, HST-16, DD-825) ([#445](https://github.com/aureliusenterprise/aurelius-atlas/pull/445))
+- ⚠️  **webapp,core:** the card badge and every editor label are localized (18.1, 7.33) ([#410](https://github.com/aureliusenterprise/aurelius-atlas/pull/410))
+- **webapp,ui:** a relationship row prints the card's fields (7.31, 7.32, DD-711..714) ([#409](https://github.com/aureliusenterprise/aurelius-atlas/pull/409))
+
+### 🩹 Fixes
+
+- resolve the SonarQube findings across server, core and webapp ([#435](https://github.com/aureliusenterprise/aurelius-atlas/pull/435))
+- **15.9:** pin Grafana to 13.3; a tenant removal survives a refused organization delete (TGF-15, DD-765) ([#423](https://github.com/aureliusenterprise/aurelius-atlas/pull/423))
+- **core:** sort the audit listing in Elasticsearch, on folded keys (3.5, AUD-07, DD-710) ([#407](https://github.com/aureliusenterprise/aurelius-atlas/pull/407))
+- **core:** a search page reads its headers over one shared reading (4.1, DD-709) ([#405](https://github.com/aureliusenterprise/aurelius-atlas/pull/405))
+- **core:** a propagation tell records nothing on a deleted entity (3.5, CAU-05, CAU-06, DD-818) ([#439](https://github.com/aureliusenterprise/aurelius-atlas/pull/439))
+- **realm:** the webapp's tokens carry the operator realm role (RLM-10, DD-770) ([#426](https://github.com/aureliusenterprise/aurelius-atlas/pull/426))
+- **realm:** the prod realm carries the validate-entity client (CHT-113) ([#446](https://github.com/aureliusenterprise/aurelius-atlas/pull/446))
+- **search:** a deep page answers 400 and a refused verdict write fails its round (DD-704, DD-705) ([#401](https://github.com/aureliusenterprise/aurelius-atlas/pull/401))
+- **server:** an upload past a limit answers a clean 413 (9.2, DD-708) ([#404](https://github.com/aureliusenterprise/aurelius-atlas/pull/404))
+- **standalone:** Account security opens the user's account page, in the Aurelius look ([#384](https://github.com/aureliusenterprise/aurelius-atlas/pull/384))
+- **trace:** report the gaps the checker was meant to find (0.3, DD-701..703) ([#400](https://github.com/aureliusenterprise/aurelius-atlas/pull/400))
+- **webapp:** the editor seeds a non-text attribute as empty text (EDT-02) ([#391](https://github.com/aureliusenterprise/aurelius-atlas/pull/391))
+- **webapp:** the Properties table shows the entity's own relationship attributes (16.5b, DET-11, DD-732) ([#413](https://github.com/aureliusenterprise/aurelius-atlas/pull/413))
+- **webapp:** sign the user in again when a session expires mid-page (7.15, DD-706) ([#402](https://github.com/aureliusenterprise/aurelius-atlas/pull/402))
+- **webapp:** default the nginx trust root to the chart's own Certificate (10.3, DD-707) ([#403](https://github.com/aureliusenterprise/aurelius-atlas/pull/403))
+- **webapp:** the image build checks its two nginx stages agree; CI pulls its bases (DD-766) ([#424](https://github.com/aureliusenterprise/aurelius-atlas/pull/424))
+- **webapp:** the History tab clears its rows before a re-read (7.35, HST-05, HST-06, DD-819) ([#440](https://github.com/aureliusenterprise/aurelius-atlas/pull/440))
+- **webapp,ui,styles:** the dark navbar takes the page's near-black (7.11, 7.12, DD-734/DD-735) ([#416](https://github.com/aureliusenterprise/aurelius-atlas/pull/416))
+
+### ⚠️  Breaking Changes
+
+- **webapp,core:** the card badge and every editor label are localized (18.1, 7.33)  ([#410](https://github.com/aureliusenterprise/aurelius-atlas/pull/410))
+
 ## 0.1.0-rc.9 (2026-11-16)
 
 ### 🩹 Fixes

@@ -1,27 +1,27 @@
 dependencies:
 - name: atlas-server
   repository: file://../apps/aurelius-atlas-server/helm
-  version: 0.1.0-rc.9
+  version: 0.1.0-rc.10
 - name: atlas-webapp
   repository: file://../apps/aurelius-atlas-webapp/helm
-  version: 0.1.0-rc.9
+  version: 0.1.0-rc.10
 - name: atlas-data2model
   repository: file://../apps/aurelius-atlas-data2model/helm
-  version: 0.1.0-rc.9
+  version: 0.1.0-rc.10
 - name: atlas-lineage-model
   repository: file://../apps/aurelius-atlas-lineage-model/helm
-  version: 0.1.0-rc.9
+  version: 0.1.0-rc.10
 - name: atlas-validate-entity
   repository: file://../apps/aurelius-atlas-validate-entity/helm
-  version: 0.1.0-rc.9
+  version: 0.1.0-rc.10
 - name: atlas-elasticsearch
   repository: file://../infra/elasticsearch/helm
-  version: 0.1.0-rc.9
+  version: 0.1.0-rc.10
 - name: atlas-keycloak
   repository: file://../infra/keycloak/helm
-  version: 0.1.0-rc.9
+  version: 0.1.0-rc.10
 - name: atlas-observability
   repository: file://../infra/observability/helm
-  version: 0.1.0-rc.9
-digest: sha256:7e3bf8ca1c50184f218fbb4539e68ef868966c5923b1f786f1432d06ca21b971
-generated: "2026-11-17T11:10:22.289380117Z"
+  version: 0.1.0-rc.10
+digest: sha256:42f46d4aa80ae080c2c57c7bdecfbdd81caf7448f231a8970eda2a7c40a2c493
+generated: "2026-11-22T11:35:11.094457512Z"
