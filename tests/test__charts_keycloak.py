@@ -828,14 +828,17 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
             "aurelius-atlas-provisioning",
             "aurelius-atlas-admin",
             "aurelius-atlas-validate-entity",
+            "account",
+            "account-console",
         }
         | otel
     )  # grafana: CHT-81; server client: CHT-110, both realms; the provisioning client: TRM-11;
-    # the admin client: DD-666; the validator client: CHT-113 (12.7, VEV-04)
+    # the admin client: DD-666; the validator client: CHT-113 (12.7, VEV-04);
+    # the account pair: IRT-06 (the live 403: Keycloak makes its built-ins before
+    # importing a file's client scopes, so an unnamed console gets none, its token
+    # carries no roles, and the account page answers 403 — the asset names them)
     assert (
         not {
-            "account",
-            "account-console",
             "admin-cli",
             "broker",
             "security-admin-console",
@@ -844,13 +847,33 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         }
         & client_ids
     )
+    # The named account pair carries what Keycloak would have made, plus the
+    # browser webOrigins the webapp's cross-origin account call needs (SHC-10).
+    (account,) = [c for c in asset["clients"] if c["clientId"] == "account"]
+    (console,) = [c for c in asset["clients"] if c["clientId"] == "account-console"]
+    (aur,) = [c for c in asset["clients"] if c["clientId"] == "aurelius"]
+    for built_in in (account, console):
+        assert {"roles", "profile", "email", "basic"} <= set(built_in["defaultClientScopes"])
+        assert built_in["redirectUris"] == ["/realms/aurelius-atlas/account/*"]
+    assert account["webOrigins"] == aur["webOrigins"]  # the same browser hosts (SHC-10)
+    assert console["webOrigins"] == []  # the console calls its own origin
+    # The default role grants everyone the account page's two roles, and the
+    # scope mappings hand them to both the console's token and the webapp's.
+    default = next(role for role in asset["roles"]["realm"] if role["name"] == "default-roles-aurelius-atlas")
+    assert sorted(default["composites"]["client"]["account"]) == ["manage-account", "view-profile"]
+    assert {"client": "account-console", "roles": ["manage-account", "view-groups"]} in asset["clientScopeMappings"][
+        "account"
+    ]
     # No person: the provisioning (TRM-11), admin (DD-666) and validator (CHT-113) clients' service accounts.
     assert sorted(user["username"] for user in asset.get("users", [])) == [
         "service-account-aurelius-atlas-admin",
         "service-account-aurelius-atlas-provisioning",
         "service-account-aurelius-atlas-validate-entity",
     ]
-    assert "defaultRole" not in asset
+    # IRT-06: the default role is the asset's own now — it is what grants every
+    # person the account page's two roles, which Keycloak would have wired itself
+    # only for a built-in it created on its own.
+    assert asset["defaultRole"]["name"] == "default-roles-aurelius-atlas"
     assert not asset.get("realmRoles")
     # email/profile/roles (CHT-133, DD-656, DD-659): the clients name them
     # in their default scopes, and Keycloak drops unresolvable references at
@@ -866,7 +889,19 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
     assert {r["name"] for r in roles["grafana"]} == {"admin", "editor"}  # CHT-81
     atlas = {"atlas-read", "atlas-write", "atlas-types", "atlas-admin"}
     assert {r["name"] for r in roles["aurelius-atlas-server"]} == atlas  # 6.2c, DD-300
-    assert set(roles) == {"aurelius", "aurelius-atlas-server", "grafana"}
+    # IRT-06: Keycloak's built-in account roles, so the default role's composites
+    # and the console's scope mapping resolve at import.
+    assert {r["name"] for r in roles["account"]} == {
+        "delete-account",
+        "manage-account",
+        "manage-account-links",
+        "manage-consent",
+        "view-applications",
+        "view-consent",
+        "view-groups",
+        "view-profile",
+    }
+    assert set(roles) == {"account", "aurelius", "aurelius-atlas-server", "grafana"}
 
 
 @pytest.mark.covers(rules=["CHT-76", "CHT-110"])
@@ -973,7 +1008,15 @@ def test__browser_origins_carry_the_deployed_hosts() -> None:
         uris = a["redirectUris"] + a["webOrigins"] + a["attributes"]["post.logout.redirect.uris"].split(URI_SEPARATOR)
         assert not [u for u in uris if "localhost" in u or "127.0.0.1" in u or u == "+"], uris
         assert "127.0.0.1" not in text
-        assert '"+"' not in text
+        # The stock "+" is the account pair's own logout answer only (IRT-06): it
+        # resolves to the console's same auth origin, and the chart has no auth-host
+        # token to spell it. No other client carries it.
+        plus = [
+            c["clientId"]
+            for c in json.loads(text)["clients"]
+            if c.get("attributes", {}).get("post.logout.redirect.uris") == "+"
+        ]
+        assert set(plus) == {"account", "account-console"}, plus
     # CHT-87: every per-client placeholder survives substitution verbatim.
     for client in OTEL_CLIENT_IDS:
         env = client.upper().replace("-", "_")
@@ -1066,6 +1109,8 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
         "aurelius-atlas-provisioning",
         "aurelius-atlas-admin",
         "aurelius-atlas-validate-entity",
+        "account",  # IRT-06: the account pair, checked in its own test below
+        "account-console",
     }
     assert set(prod_by_id) - own == {c for c in dev_by_id if c.startswith("otel-")}
     # TRM-11: the provisioning client is the same in both realms.
@@ -1140,7 +1185,46 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     # 6.2c (DD-300): the server client's four atlas roles, and their mapping into
     # the aurelius client's scope, are dev's exactly; no user holds them in prod.
     assert prod["roles"]["client"]["aurelius-atlas-server"] == dev["roles"]["client"]["aurelius-atlas-server"]
-    assert prod["clientScopeMappings"] == {"aurelius-atlas-server": dev["clientScopeMappings"]["aurelius-atlas-server"]}
+    assert prod["clientScopeMappings"]["aurelius-atlas-server"] == dev["clientScopeMappings"]["aurelius-atlas-server"]
+
+
+@pytest.mark.covers(rules=["IRT-06", "CHT-79"])
+def test__prod_asset_names_the_account_pair_like_dev() -> None:
+    """The account pair keeps dev's shape (IRT-06), so a fresh import serves the account page.
+
+    Keycloak creates its built-ins before a file's client scopes exist, so an
+    unnamed console gets none and the account page 403s — the live denial that
+    made the asset name the pair. The account client gains the browser
+    webOrigins (the webapp's cross-origin language save, SHC-10); the console
+    stays same-origin; the paths carry the realm's own name; and both the
+    console's and the webapp's scope mappings carry the account roles.
+    """
+    prod = json.loads((KC_CHART / "files/aurelius-atlas.json").read_text())
+    dev = _dev_asset()
+    prod_by_id = {c["clientId"]: c for c in prod["clients"]}
+    dev_by_id = {c["clientId"]: c for c in dev["clients"]}
+
+    def strip_ids(obj: dict[str, Any]) -> dict[str, Any]:
+        out = {k: v for k, v in obj.items() if k != "id"}
+        if "protocolMappers" in out:
+            out["protocolMappers"] = [{k: v for k, v in pm.items() if k != "id"} for pm in out["protocolMappers"]]
+        return out
+
+    hardened = {"id", "directAccessGrantsEnabled", "attributes", "redirectUris", "webOrigins"}
+    for built_in, allowed in (("account", hardened), ("account-console", hardened - {"webOrigins"})):
+        dev_bi, prod_bi = strip_ids(dev_by_id[built_in]), strip_ids(prod_by_id[built_in])
+        prod_bi.pop("description")  # the prod-only reason, like grafana's
+        assert set(dev_bi) <= set(prod_bi)
+        changed = {k for k in dev_bi if dev_bi[k] != prod_bi[k]}
+        assert changed <= allowed | {"baseUrl", "redirectUris"}, (built_in, changed)
+        assert prod_bi["redirectUris"] == ["/realms/aurelius-atlas/account/*"]
+        assert {"roles", "basic", "profile", "email"} <= set(prod_bi["defaultClientScopes"])
+    for entry in dev["clientScopeMappings"]["account"]:
+        assert entry in prod["clientScopeMappings"]["account"]
+    assert {"client": "aurelius", "roles": ["manage-account", "view-profile"]} in prod["clientScopeMappings"]["account"]
+    for asset in (prod, dev):
+        default = next(r for r in asset["roles"]["realm"] if r["name"].startswith("default-roles"))
+        assert sorted(default["composites"]["client"]["account"]) == ["manage-account", "view-profile"]
 
 
 @pytest.mark.covers(rules=["CHT-80", "CHT-87"])
