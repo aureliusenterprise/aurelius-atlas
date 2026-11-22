@@ -252,6 +252,11 @@
         <target>Druk op Enter om deze rij te selecteren</target>
         <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.selectRowHint</note>
       </trans-unit>
+      <trans-unit id="components.sortableTable.sortCleared" datatype="html">
+        <source>Sorting cleared</source>
+        <target>Sorteren gewist</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.sortCleared</note>
+      </trans-unit>
       <trans-unit id="components.sortableTable.selectionCleared" datatype="html">
         <source>Selection cleared</source>
         <target>Selectie gewist</target>

@@ -36,6 +36,7 @@
         "sortableTable": {
             "rowsLoaded": "{{count}} rijen geladen",
             "selectionCleared": "Selectie gewist",
+            "sortCleared": "Sorteren gewist",
             "rowSelected": "Rij geselecteerd",
             "sortedBy": "Gesorteerd op {{header}}, {{direction}}",
             "ascending": "oplopend",

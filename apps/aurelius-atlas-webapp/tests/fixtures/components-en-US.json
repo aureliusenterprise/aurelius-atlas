@@ -36,6 +36,7 @@
         "sortableTable": {
             "rowsLoaded": "{{count}} rows loaded",
             "selectionCleared": "Selection cleared",
+            "sortCleared": "Sorting cleared",
             "rowSelected": "Row selected",
             "sortedBy": "Sorted by {{header}}, {{direction}}",
             "ascending": "ascending",

@@ -1,7 +1,9 @@
 import { Directive, inject, input, TemplateRef } from "@angular/core";
 
 /**
- * Sort directions the table cycles through, as `matSort` did.
+ * The two sort directions a column can hold. A header cycles asc, desc, and
+ * back to no sort at all (DD-827), so "unsorted" is the absence of a
+ * `sortBy` rather than a third value here.
  */
 export type SortDirection = "asc" | "desc";
 

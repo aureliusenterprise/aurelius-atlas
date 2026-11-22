@@ -1,4 +1,4 @@
-/* The header's sort control is the whole cell — matSort's affordance — so
+/* The header's sort control is the whole cell, so
    the button inherits the header's typography and shows no chrome. */
 .table-sort-header {
     align-items: center;
@@ -10,4 +10,16 @@
     font: inherit;
     gap: 0.25rem;
     padding: 0;
+
+    // The idle sort glyph is a hint that a header is clickable, not content, so
+    // it only shows when the header is pointed at or tabbed to (DD-827). It is
+    // hidden rather than removed so the header text never shifts.
+    .aurelius-sort-idle {
+        visibility: hidden;
+    }
+
+    &:hover .aurelius-sort-idle,
+    &:focus-visible .aurelius-sort-idle {
+        visibility: visible;
+    }
 }

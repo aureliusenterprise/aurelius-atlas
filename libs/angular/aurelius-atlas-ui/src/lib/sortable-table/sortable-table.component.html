@@ -78,7 +78,7 @@
                                     (click)="onHeaderClicked(column.sortBy())"
                                 >
                                     <ng-container *ngTemplateOutlet="column.headerTemplate"></ng-container>
-                                    <span class="icon is-small">
+                                    <span class="icon is-small" [class.aurelius-sort-idle]="!ariaSort(column.sortBy())">
                                         <fa-icon
                                             [icon]="sortIcon(column.sortBy())"
                                             [fixedWidth]="true"

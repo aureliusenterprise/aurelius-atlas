@@ -162,3 +162,33 @@ polyfill by hand, so it drifts from the real one.
 baseline and the `play()` queries assert on. A story that needs the Dutch text is out
 of scope — translation is a per-app build-time concern; the completeness spec (SHL-08,
 UIC-04) is what proves the catalogues carry both locales.
+
+### DD-827. The table header sorts ascending, descending, and back to unsorted
+
+- **Status:** Proposed
+- **Increment:** 7.2
+- **Date:** 2026-11-22
+
+**Decision.** `SortableTable` cycles one column through ascending, descending, and no
+sort at all. The third click clears `sortBy` and resets `sortDirection`, and the rows
+come back in the order the caller passed them. A new column always starts ascending.
+The header arrow follows the direction pairing the legacy table and the details screen
+use (DET-21): ascending points down and descending points up. The neutral glyph of an
+unsorted column stays hidden until the header is hovered or focused.
+
+**Reason.** The table had two states, so a reader who wanted the original order back
+had no way to ask for it. The source order carries meaning, because the caller sorts
+the rows before it passes them: relevance on a search, definition order in the entity
+editor's history. The old arrow also went the other way. Ascending pointed up, which
+reads as "higher values first", while every other sorted surface in the app points the
+other way, as the live legacy demo measured (DET-21, DV-169).
+
+**Alternatives.** Four states, with a separate unsorted glyph: more clicks for no new
+outcome. Two states plus a reset control elsewhere: a second control for what one
+header already owns. Swapping the data order instead of the arrow: the data order was
+already correct, and only the glyph disagreed with the rest of the app.
+
+**Consequences.** A header click can now remove a sort, so the live region needs a new
+string for it (`components.sortableTable.sortCleared`, SHL-08). The neutral glyph hides
+with `visibility` and not by removal, so the header text never shifts as the pointer
+moves across it. TABLE-006 is unchanged: an unsorted column still omits `aria-sort`.
