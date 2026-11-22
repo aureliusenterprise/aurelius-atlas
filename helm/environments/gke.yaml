@@ -23,8 +23,10 @@ global:
                 kind: ClusterIssuer
             certificate:
                 privateKey:
-                    # Let's Encrypt throttles RSA issuance per registered
-                    # domain ("too many certificates"); ECDSA clears it.
+                    # ECDSA gives a smaller and faster leaf that every
+                    # current browser trusts. It does not move the Let's
+                    # Encrypt limit, which counts names rather than key
+                    # types.
                     algorithm: ECDSA
                     size: 256
         # The managed Gateway probes backends with plain HTTP unless told

@@ -140,9 +140,11 @@ The browser trust split (CHT-126, DD-643): `global.gateway.edge.issuerRef`
 (default `""`) names a public issuer for the browser leaves **only** — the
 edge Certificate and the companion keycloak browser leaf move there, every
 internal Service leaf stays on `global.trust.issuerRef` (a public CA cannot
-mint `.svc.cluster.local`). `edge.certificate.privateKey.algorithm` is the
-ACME rate-limit knob (LE throttles RSA per registered domain; `ECDSA`
-clears it, `""` keeps RSA and the stock render). Backend health checks
+mint `.svc.cluster.local`). `edge.certificate.privateKey.algorithm` picks
+the key type of the browser leaves. Let's Encrypt counts new certificates
+by name rather than by key type, so the value does not move that limit.
+`ECDSA` gives a smaller and faster leaf that every current browser trusts,
+and `""` keeps RSA 2048 and the stock render. Backend health checks
 (CHT-128, DD-645): `global.gateway.healthCheck.enabled` (default off,
 because `HealthCheckPolicy` is the GKE implementation's CRD) renders one
 per TLS-backend listener with `config.type: HTTPS` and the values' path —

@@ -33,11 +33,14 @@ listener's `certificateRefs` follow through the
 issuing its own SAN-covering internal leaf untouched. The internal
 Certificates — server, webapp, keycloak service leaf, postgres, everything
 under `global.trust` — stay on the private CA. `edge.certificate.privateKey`
-(optionally) pins the leaf key algorithm: Let's Encrypt rate-limits RSA
-issuance per registered domain ("too many certificates already issued"),
-and the deployment hit it; `ECDSA`/256 clears the limit and every current
-browser trusts it (the gke overlay sets it). The stock default (`""`) keeps
-cert-manager's RSA 2048 and the exact rc.3 render.
+(optionally) pins the leaf key algorithm. Let's Encrypt counts new
+certificates by name, and its error reads "too many certificates already
+issued". The cap is 50 certificates per registered domain and 5 per exact
+set of identifiers, each every 7 days. The deployment hit it. No key
+algorithm raises that cap, because it counts names rather than key types.
+`ECDSA`/256 was chosen for the smaller and faster leaf it gives, which
+every current browser trusts (the gke overlay sets it). The stock default
+(`""`) keeps cert-manager's RSA 2048 and the exact rc.3 render.
 
 **Alternatives.** (a) Ship the CA to browsers (an operator task outside the
 chart; it also pins every client's trust store to a private root for a
