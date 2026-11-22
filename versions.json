@@ -45,6 +45,11 @@
     "aliases": []
   },
   {
+    "version": "feat-18-7-field-flag-boolean",
+    "title": "feat-18-7-field-flag-boolean",
+    "aliases": []
+  },
+  {
     "version": "feat-18-6-classification-backed-attributes",
     "title": "feat-18-6-classification-backed-attributes",
     "aliases": []
