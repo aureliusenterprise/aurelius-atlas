@@ -32,6 +32,16 @@
     "bruteForceStrategy": "MULTIPLE",
     "clientAuthenticationFlow": "clients",
     "clientScopeMappings": {
+        "account": [
+            {
+                "client": "account-console",
+                "roles": ["manage-account", "view-groups"]
+            },
+            {
+                "client": "aurelius",
+                "roles": ["manage-account", "view-profile"]
+            }
+        ],
         "aurelius-atlas-server": [
             {
                 "client": "aurelius",
@@ -165,6 +175,30 @@
             "name": "roles",
             "protocol": "openid-connect",
             "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "audience resolve",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-audience-resolve-mapper"
+                },
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "realm_access.roles",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "String",
+                        "multivalued": "true",
+                        "user.attribute": "foo"
+                    },
+                    "consentRequired": false,
+                    "name": "realm roles",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-realm-role-mapper"
+                },
                 {
                     "config": {
                         "access.token.claim": "true",
@@ -603,6 +637,82 @@
             "standardFlowEnabled": false,
             "surrogateAuthRequired": false,
             "webOrigins": []
+        },
+        {
+            "alwaysDisplayInConsole": false,
+            "attributes": {
+                "post.logout.redirect.uris": "+",
+                "realm_client": "false"
+            },
+            "authenticationFlowBindingOverrides": {},
+            "baseUrl": "/realms/aurelius-atlas/account/",
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "account",
+            "consentRequired": false,
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "description": "Keycloak's built-in account client, named in the asset so the account REST API's CORS origins and the roles scope survive import (IRT-06). Its webOrigins are the browser hosts: the webapp calls the account API cross-origin to save the language (SHC-10).",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": false,
+            "fullScopeAllowed": false,
+            "id": "73444bf3-a978-4d4e-a163-5746fdd1e419",
+            "implicitFlowEnabled": false,
+            "name": "${client_account}",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
+            "protocol": "openid-connect",
+            "publicClient": true,
+            "redirectUris": ["/realms/aurelius-atlas/account/*"],
+            "rootUrl": "${authBaseUrl}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "surrogateAuthRequired": false,
+            "webOrigins": ["https://__APP_HOST__", "https://__DASHBOARD_HOST__"]
+        },
+        {
+            "alwaysDisplayInConsole": false,
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "+",
+                "realm_client": "false"
+            },
+            "authenticationFlowBindingOverrides": {},
+            "baseUrl": "/realms/aurelius-atlas/account/",
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "account-console",
+            "consentRequired": false,
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "description": "Keycloak's built-in account console, named in the asset (IRT-06): created before the realm's scopes exist, it would get none and its token no account roles — the account page 403s.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": false,
+            "fullScopeAllowed": false,
+            "id": "766ecb43-6ee6-4ef5-926e-50915a705ec8",
+            "implicitFlowEnabled": false,
+            "name": "${client_account-console}",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {},
+                    "consentRequired": false,
+                    "name": "audience resolve",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-audience-resolve-mapper"
+                }
+            ],
+            "publicClient": true,
+            "redirectUris": ["/realms/aurelius-atlas/account/*"],
+            "rootUrl": "${authBaseUrl}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
         }
     ],
     "defaultDefaultClientScopes": [
@@ -616,6 +726,12 @@
         "basic"
     ],
     "defaultOptionalClientScopes": ["offline_access", "address", "phone", "microprofile-jwt", "organization"],
+    "defaultRole": {
+        "clientRole": false,
+        "composite": true,
+        "description": "${role_default-roles}",
+        "name": "default-roles-aurelius-atlas"
+    },
     "defaultSignatureAlgorithm": "RS256",
     "directGrantFlow": "direct grant",
     "displayName": "Aurelius Atlas",
@@ -678,6 +794,74 @@
     "revokeRefreshToken": false,
     "roles": {
         "client": {
+            "account": [
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_delete-account}",
+                    "name": "delete-account"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": true,
+                    "composites": {
+                        "client": {
+                            "account": ["manage-account-links"]
+                        }
+                    },
+                    "description": "${role_manage-account}",
+                    "name": "manage-account"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": true,
+                    "composites": {
+                        "client": {
+                            "account": ["view-consent"]
+                        }
+                    },
+                    "description": "${role_manage-consent}",
+                    "name": "manage-consent"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_view-applications}",
+                    "name": "view-applications"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_manage-account-links}",
+                    "name": "manage-account-links"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_view-groups}",
+                    "name": "view-groups"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_view-consent}",
+                    "name": "view-consent"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_view-profile}",
+                    "name": "view-profile"
+                }
+            ],
             "aurelius": [
                 {
                     "attributes": {},
@@ -746,6 +930,33 @@
                 "composite": false,
                 "description": "Runs the platform: holds at most atlas-read outside the operator organization (TEN-06, ADR 063)",
                 "name": "atlas-operator"
+            },
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": true,
+                "composites": {
+                    "client": {
+                        "account": ["manage-account", "view-profile"]
+                    },
+                    "realm": ["offline_access", "uma_authorization"]
+                },
+                "description": "${role_default-roles}",
+                "name": "default-roles-aurelius-atlas"
+            },
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "description": "${role_offline-access}",
+                "name": "offline_access"
+            },
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "description": "${role_uma_authorization}",
+                "name": "uma_authorization"
             }
         ]
     },
