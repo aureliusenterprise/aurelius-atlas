@@ -212,10 +212,11 @@ async def test__the_scanners_own_token_writes_the_tree_and_the_audit_names_it(
     await _wait_for(writer, "m4i_dataset", payments_qn)
 
     # KSA-03: the stored entities answer the badge alias, so every screen reads Kafka where the
-    # metamodel says Collection and Dataset (MMS-09). The System holds none: its badge stays System.
+    # metamodel says Collection and Dataset (MMS-09). The System holds none: the read answers it
+    # None among the declared attributes, so its badge stays System.
     assert _attributes(collection)["typeAlias"] == "Kafka Cluster"
     assert _attributes(orders_entity)["typeAlias"] == "Kafka Topic"
-    assert "typeAlias" not in _attributes(system)
+    assert _attributes(system).get("typeAlias") is None
 
     city_qn = join_qualified(orders_qn, "address", "city")
     city = await _wait_for(writer, "m4i_field", city_qn)
