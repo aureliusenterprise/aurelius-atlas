@@ -588,3 +588,85 @@ def test__every_bundle_tags_its_data_attributes_with_classifications_the_model_d
                 tagged += bool(names)
 
     assert tagged, "no bundle tags a data attribute, so the corpus says nothing about risk or key data"
+
+
+# The rule over the field flag the type no longer declares, and the two bundles that ship governance rules
+# (FFB-01, FFB-03).
+FIELD_FLAG_RULE = "e5d37d4f-b93f-4a9e-afa6-f7a1fef9656c"
+RULE_BUNDLES = ("sample_data.zip", "only_gov_quality.zip")
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["FFB-01"])
+def test__the_field_type_holds_its_flag_as_a_boolean_and_no_content_flag() -> None:
+    """The field type declares no ``hasContent``, declares ``optionalField`` as a single boolean, and holds
+    version ``1.2`` (FFB-01).
+    """  # noqa: D205 - one sentence
+    model = json.loads(MODEL.read_text(encoding="utf-8"))
+    entities = {definition["name"]: definition for definition in model["entityDefs"]}
+    definition = entities["m4i_field"]
+
+    attributes = {attribute["name"]: attribute for attribute in definition["attributeDefs"]}
+    assert "hasContent" not in attributes, sorted(attributes)
+    assert definition["typeVersion"] == "1.2"
+
+    flag = attributes["optionalField"]
+    assert (flag["typeName"], flag["cardinality"]) == ("boolean", "SINGLE")
+    assert flag["isOptional"] is True, "the flag stays optional, so an unchecked field saves"
+
+    owned = answerable_names(m4i_registry(), "m4i_field")
+    assert "optionalField" in owned
+    assert "hasContent" not in owned, "the registry must not answer the dropped attribute"
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["FFB-02"])
+def test__every_bundle_declares_the_boolean_flag_and_holds_no_content_key() -> None:
+    """Each bundle's typedef file declares the field type at ``1.2`` with the boolean flag and no content flag,
+    and no field entity names the dropped key or holds a value for the flag (FFB-02).
+    """  # noqa: D205 - one sentence
+    model = m4i_of(json.loads(MODEL.read_text(encoding="utf-8")))
+
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        with zipfile.ZipFile(sample) as archive:
+            types = m4i_of(_typesdef(sample))
+            definition = types["m4i_field"]
+
+            assert definition["typeVersion"] == "1.2", sample.name
+            attributes = {attribute["name"]: attribute for attribute in definition["attributeDefs"]}
+            assert "hasContent" not in attributes, (sample.name, sorted(attributes))
+            assert attributes["optionalField"]["typeName"] == "boolean", sample.name
+            if sample.name == "only_gov_quality.zip":
+                # The older export states fewer fields per attribute, as in MDD-02.
+                assert _attributes(definition) == _attributes(model["m4i_field"]), sample.name
+            else:
+                assert definition == model["m4i_field"], sample.name
+
+            for entry in archive.namelist():
+                if not entry.endswith(".json") or entry.startswith("atlas-"):
+                    continue
+                entity = json.loads(archive.read(entry)).get("entity")
+                if not entity or entity["typeName"] != "m4i_field":
+                    continue
+                held = set(entity.get("attributes") or {}) | set(entity.get("relationshipAttributes") or {})
+                assert "hasContent" not in held, (sample.name, entry, held)
+                assert entity.get("attributes", {}).get("optionalField") is None, (sample.name, entry)
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["FFB-03"])
+def test__no_bundle_ships_a_rule_over_the_dropped_content_flag() -> None:
+    """Each rule bundle ships 65 rules and no rule expression names the dropped attribute, and neither export
+    order names the dropped rule (FFB-03, PME-13, DV-195).
+    """  # noqa: D205 - one sentence
+    for name in RULE_BUNDLES:
+        with zipfile.ZipFile(SAMPLES / name) as archive:
+            rules = [
+                json.loads(archive.read(entry))["entity"]
+                for entry in archive.namelist()
+                if entry.endswith(".json")
+                and not entry.startswith("atlas-")
+                and json.loads(archive.read(entry))["entity"]["typeName"] == "m4i_gov_data_quality"
+            ]
+
+            assert len(rules) == 65, name
+            assert FIELD_FLAG_RULE not in json.loads(archive.read("atlas-export-order.json")), name
+            expressions = " ".join(str(rule["attributes"].get("expression") or "") for rule in rules)
+            assert "hasContent" not in expressions, name

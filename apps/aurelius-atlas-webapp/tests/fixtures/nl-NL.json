@@ -246,7 +246,6 @@
                     "fields": "Datavelden",
                     "filterRequired": "Filter verplicht",
                     "fullName": "Volledige naam",
-                    "hasContent": "Heeft inhoud",
 
                     "hashCode": "Hashcode",
                     "id": "ID",

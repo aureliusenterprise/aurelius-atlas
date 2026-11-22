@@ -349,6 +349,47 @@ async def test__a_new_catalogue_reaches_the_shape_the_model_declares(store: Type
     assert [attribute.name for attribute in served.attribute_defs] == ["name"]
 
 
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["FFB-04"])
+async def test__a_model_that_retypes_a_stored_attribute_fails_whole(store: TypedefStore, tmp_path: Path) -> None:
+    """A model that gives a stored attribute another type fails its whole file and keeps every attribute and
+    version, because the update check refuses a retype (FFB-04).
+
+    ``_check_updated_attribute`` answers ``BAD_REQUEST`` for an attribute of another type (TDS-08), and the
+    loader's ``_load_file`` skips the whole file on any error (MDL-02). A warm catalogue therefore keeps the
+    string it holds, and every other type of the file keeps its shape too, which is why 18.7 rebuilds the demo
+    store rather than migrate it (DD-830).
+    """  # noqa: D205 - one sentence
+    path = tmp_path / "1.json"
+    write_json(path, model(entity("t", attr("name"), attr("optionalField"), version="1.1")))
+    await ModelLoader(store).load(tmp_path)
+
+    write_json(path, model(entity("t", attr("name"), attr("optionalField", "boolean"), version="1.2")))
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == [path]
+    served = stored(store, "t", AtlasEntityDef)
+    assert served.type_version == "1.1"
+    assert [(attribute.name, attribute.type_name) for attribute in served.attribute_defs] == [
+        ("name", "string"),
+        ("optionalField", "string"),
+    ]
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["FFB-04"])
+async def test__a_new_catalogue_takes_the_boolean_flag(store: TypedefStore, tmp_path: Path) -> None:
+    """A store that holds nothing takes ``optionalField`` as a boolean at ``1.2`` in one load (FFB-04)."""
+    write_json(tmp_path / "1.json", model(entity("t", attr("name"), attr("optionalField", "boolean"), version="1.2")))
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == []
+    served = stored(store, "t", AtlasEntityDef)
+    assert served.type_version == "1.2"
+    assert [(attribute.name, attribute.type_name) for attribute in served.attribute_defs] == [
+        ("name", "string"),
+        ("optionalField", "boolean"),
+    ]
+
+
 @pytest.mark.covers("aurelius_atlas_core.model_loader.TypedefPatch.record", rules=["MDL-05"])
 async def test__patches_run_once_unknown_actions_are_skipped(
     store: TypedefStore, document: MemoryTypedefDocument, tmp_path: Path

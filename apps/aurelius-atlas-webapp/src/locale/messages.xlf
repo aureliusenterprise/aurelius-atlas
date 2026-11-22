@@ -1125,10 +1125,6 @@ The technical data governance model consists of the following types of entities:
         <source>Full Name</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.fullName</note>
       </trans-unit>
-      <trans-unit id="search.components.editor.attribute.hasContent" datatype="html">
-        <source>Has Content</source>
-        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.hasContent</note>
-      </trans-unit>
       <trans-unit id="search.components.editor.attribute.hashCode" datatype="html">
         <source>Hash Code</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.hashCode</note>

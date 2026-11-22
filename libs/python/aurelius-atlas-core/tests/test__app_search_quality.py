@@ -405,8 +405,8 @@ INACTIVE_RULE = "5e4bce72-89e5-47f9-b498-cf1d53036522"
 
 @pytest.mark.covers(f"{Q}.run_once", rules=["LAS-12", "ASQ-04", "ASQ-05", "DD-532"])
 def test__the_sample_s_scores_roll_up_as_atlas_dev_s_but_the_inactive_rule_s() -> None:
-    """All 23 score fields and the rule GUIDs of all 655 documents (DV-185) as the legacy ones, where the
-    inactive rule's result is not counted: on each document it reached, its score taken away as often as it
+    """All 23 score fields and the rule GUIDs of all 654 documents (DV-185, DV-195) as the legacy ones, where
+    the inactive rule's result is not counted: on each document it reached, its score taken away as often as it
     arrived there.
     """  # noqa: D205 - one sentence
     (inactive,) = [result for result in legacy_results() if result["qualityguid"] == INACTIVE_RULE]
@@ -432,7 +432,7 @@ def test__the_sample_s_scores_roll_up_as_atlas_dev_s_but_the_inactive_rule_s() -
             else:
                 assert value == pytest.approx(expected[name]), (document["guid"], name)
 
-    assert len(totals) == 655
+    assert len(totals) == 654
     assert (len(reached), reached.total()) == (10, 12)
 
 

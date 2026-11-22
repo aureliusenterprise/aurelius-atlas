@@ -666,23 +666,7 @@
                 },
                 {
                     "cardinality": "SINGLE",
-                    "description": "Content Structure for a Field",
-                    "displayName": "hasContent",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "hasContent",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "string",
-                    "valuesMaxCount": 1,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SINGLE",
-                    "description": "Optional field for additional value",
+                    "description": "Whether the data field is optional",
                     "displayName": "optionalField",
                     "includeInNotification": true,
                     "indexType": "DEFAULT",
@@ -692,7 +676,7 @@
                     "name": "optionalField",
                     "options": {},
                     "searchWeight": 1,
-                    "typeName": "string",
+                    "typeName": "boolean",
                     "valuesMaxCount": 1,
                     "valuesMinCount": 0
                 },
@@ -749,7 +733,7 @@
             "name": "m4i_field",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [

@@ -153,11 +153,11 @@ def differing(field: str) -> dict[str, str]:
 
 @pytest.mark.covers("aurelius_atlas_core.app_search_indexer.AppSearchIndexer.run_once", rules=["LAS-01", "ASD-04"])
 def test__every_entity_of_atlas_dev_gets_its_document_and_no_other() -> None:
-    """The 655 documents of ``atlas-dev`` (DV-185), written in one round; the three sources have none."""
+    """The 654 documents of ``atlas-dev`` (DV-185, DV-195), written in one round; the three sources have none."""
     found = indexed()
 
     assert set(found.derived()) == set(legacy())
-    assert found.written == 655
+    assert found.written == 654
     assert {entity.type_name for guid, entity in found.entities().items() if guid not in legacy()} == {"m4i_source"}
 
 

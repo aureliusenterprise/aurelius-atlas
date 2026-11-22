@@ -61,7 +61,6 @@ export function attributeLabels(): Record<string, string> {
         fields: $localize`:@@search.components.editor.attribute.fields:Fields`,
         filterRequired: $localize`:@@search.components.editor.attribute.filterRequired:Filter Required`,
         fullName: $localize`:@@search.components.editor.attribute.fullName:Full Name`,
-        hasContent: $localize`:@@search.components.editor.attribute.hasContent:Has Content`,
         hashCode: $localize`:@@search.components.editor.attribute.hashCode:Hash Code`,
         id: $localize`:@@search.components.editor.attribute.id:ID`,
         inputToProcesses: $localize`:@@search.components.editor.attribute.inputToProcesses:Input to Processes`,

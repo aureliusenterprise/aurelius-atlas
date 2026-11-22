@@ -445,7 +445,7 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
     f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04", "HCA-09", "QRY-06", "RUL-06", "EDS-05"]
 )
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
-    """28 of 66 rules read; 1,785 verdicts; 1,585 of the 1,612 legacy verdicts of a rule that reads as it
+    """28 of 65 rules read; 1,785 verdicts; 1,585 of the 1,612 legacy verdicts of a rule that reads as it
     were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).
 
     DV-171 and DV-172: the sample corpus's four hierarchy rules are OR pairs — the two dataset pairs
@@ -466,15 +466,19 @@ def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> 
     corpus carries a subsystem, so no legacy verdict moves — the two systems without a collection still
     fail, and the pair changes the rule's text only.
 
-    DV-185: the corpus ships 66 rules, not 95. Increment 18.3 (PME-13) deletes the 29 whose expression
+    DV-185: the legacy corpus ships 95 rules. Increment 18.3 (PME-13) deletes the 29 whose expression
     names a type, attribute or relationship the m4i model does not define; 15 of them read, and their
     245 always-noncompliant verdicts leave the read set. None of the deleted rules has a legacy verdict
     (DV-185), so the kept, moved and lost counts hold.
+
+    DV-195: increment 18.7 (FFB-03) deletes one more rule, the one over the field content flag the model no
+    longer declares. It has been inactive since 12.7d (DV-173), so it judged nothing and read nothing: the
+    read count, the verdict balance and the kept legacy verdicts all hold, and only the corpus total moves.
     """  # noqa: D205 - one sentence
     read, rules, verdicts = sample_verdicts()
     legacy = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-gov-quality.json").read_text())
 
-    assert (read, rules) == (28, 66)
+    assert (read, rules) == (28, 65)
     assert (len(verdicts), Counter(verdict["compliant"] for verdict in verdicts.values())) == (
         1785,
         Counter({"1": 1765, "0": 20}),
