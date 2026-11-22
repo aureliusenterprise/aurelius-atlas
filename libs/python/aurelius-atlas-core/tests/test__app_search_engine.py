@@ -83,15 +83,16 @@ DROPPED_RULES = frozenset(
         "c211f4bd-9aaf-4979-a68a-64493a06fc54",
         "c7e40cce-507c-4d30-86cb-7fa97b5ec3f5",
         "d1b03810-ca83-44bd-a887-ac639dda69b3",
+        "e5d37d4f-b93f-4a9e-afa6-f7a1fef9656c",
         "ea4cb0a1-b98c-4eee-8bf8-410b024ff0d9",
         "ff5b8927-b38b-4516-9c20-b2d68a28b14f",
     }
 )
-"""The 29 governance rules the corpus no longer ships (DV-185). Increment 18.3 (PME-13) deletes every
-``m4i_gov_data_quality`` record whose expression names a type, attribute or relationship the m4i model does
-not define, because such a rule fails on every entity of its type forever. The frozen ``atlas-dev``
-recording still holds a document for each, so every sample-to-oracle comparison drops these GUIDs from the
-oracle side."""
+"""The 30 governance rules the corpus no longer ships (DV-185, DV-195). Increment 18.3 (PME-13) deletes 29
+``m4i_gov_data_quality`` records whose expression names a type, attribute or relationship the m4i model does
+not define, because such a rule fails on every entity of its type forever. Increment 18.7 (FFB-03) adds the
+rule over the field content flag the model no longer declares. The frozen ``atlas-dev`` recording still holds a
+document for each, so every sample-to-oracle comparison drops these GUIDs from the oracle side."""
 
 ENTITY_SEARCH_FIELDS = {
     name: {"raw": {}}
@@ -529,7 +530,7 @@ def sample() -> AppSearchEngine:
 
 @cache
 def legacy() -> list[dict[str, Any]]:
-    """``atlas-dev``'s documents, minus the 29 a deleted rule still has (DV-185)."""
+    """``atlas-dev``'s documents, minus the 30 a deleted rule still has (DV-185, DV-195)."""
     documents = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev.json").read_text())
     return [document for document in documents if document["guid"] not in DROPPED_RULES]
 
@@ -545,7 +546,7 @@ def legacy_counts(field: str) -> dict[str, int]:
 
 @pytest.mark.covers(X, rules=["ASE-03", "ASE-07", "ASE-09"])
 def test__the_search_page_s_first_request_answers_the_sample_as_atlas_dev_did() -> None:
-    """All 655 documents (DV-185); the type and source type facets count what ``atlas-dev`` counted."""
+    """All 654 documents (DV-185, DV-195); the type and source type facets count what ``atlas-dev`` counted."""
     answer = asyncio.run(
         sample().search(
             {
@@ -557,7 +558,7 @@ def test__the_search_page_s_first_request_answers_the_sample_as_atlas_dev_did() 
         )
     )
 
-    assert answer["meta"]["page"] == {"current": 1, "total_pages": 131, "total_results": 655, "size": 5}
+    assert answer["meta"]["page"] == {"current": 1, "total_pages": 131, "total_results": 654, "size": 5}
     assert len(answer["results"]) == 5
     for field in ("supertypenames", "sourcetype"):
         (facet,) = answer["facets"][field]

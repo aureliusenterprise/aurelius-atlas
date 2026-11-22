@@ -43,7 +43,6 @@ describe("editor attribute labels (EDT-33, 7-33)", () => {
         expect(labels["processOwner"]).toBe("Process Owner");
         expect(labels["source"]).toBe("Source");
         expect(labels["system"]).toBe("System");
-        expect(labels["hasContent"]).toBe("Has Content");
         expect(labels["optionalField"]).toBe("Optional Field");
     });
 
@@ -54,6 +53,17 @@ describe("editor attribute labels (EDT-33, 7-33)", () => {
             expect(labels[name]).toBeUndefined();
             expect(name in CATALOGUE).toBe(false);
         }
+    });
+
+    it("carries no label for the field content flag the type no longer declares (FFB-05)", () => {
+        // The m4i field type dropped `hasContent` (18.7, DD-830), so no field is built for it. Its bare
+        // legacy dictionary key stays: the vendored Aurelius dictionary supplies it, and SHL-08 compares the
+        // catalogues with each other, not with the model.
+        expect(labels["hasContent"]).toBeUndefined();
+        expect("hasContent" in CATALOGUE).toBe(false);
+        // The flag that stays answers its own key, so the checkbox the boolean type brings is labelled (EDT-03).
+        expect(labels["optionalField"]).toBe("Optional Field");
+        expect(CATALOGUE["optionalField"]).toBe("Optional Field");
     });
 
     it("labels the base-model attributes the vendored Area0 never names (EDT-33)", () => {
