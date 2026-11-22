@@ -25,6 +25,11 @@
     "aliases": []
   },
   {
+    "version": "fix-sortable-table-sort-cycle",
+    "title": "fix-sortable-table-sort-cycle",
+    "aliases": []
+  },
+  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
