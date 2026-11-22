@@ -8228,6 +8228,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>13.1a</td>
 </tr>
 <tr>
+<td>DV-193</td>
+<td>Webapp</td>
+<td>The stock dashboards' create and edit forms build a control for every relationship attribute definition of the type (<code>CreateEntityLayoutView.js</code> in <code>dashboardv2</code> and <code>dashboardv3</code>), so they list a <code>meanings</code> control beside the lineage ends. The stock detail page prints the entity's assigned glossary terms from <code>relationshipAttributes.meanings</code> (its associated-terms card, <code>DetailPageLayoutView.js</code>).</td>
+<td>The webapp editor builds no picker for <code>meanings</code> and a save body carries no <code>meanings</code> key, so a save leaves the entity's stored term assignments unchanged (EDT-36, AVW-05). The details properties table already drops the attribute under the legacy blacklist (DET-11). The stock dashboards the server serves still print the assigned terms, vendored unchanged (DD-017).</td>
+<td>No Aurelius screen shows an entity's assigned terms, so the picker wrote data no screen read back, and an edit could drop a term link a person could not see. The mutation door keeps the <code>meanings</code> key and its 5.2c bookkeeping (DD-612), so a future glossary screen re-enables the picker by dropping one name from the editor's field build.</td>
+<td>7.41</td>
+</tr>
+<tr>
 <td>DV-194</td>
 <td>Types</td>
 <td>Apache Atlas 2.4.0 has no data attribute type to change, so no Atlas rule breaks. The difference is in Aurelius's own model and its sample data: the m4i data attribute type stated three of its facts twice, as the attributes <code>hasPII</code>, <code>isKeyData</code> and <code>riskClassification</code> and as the five classifications <code>PII</code>, <code>key_data</code> and the three risk levels. All three are <code>isIndexable: false</code>, and no governance rule expression of the corpus names one of them.</td>
