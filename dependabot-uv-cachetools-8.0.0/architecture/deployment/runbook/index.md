@@ -1,12 +1,10 @@
 # Deployment runbook
 
-> \[!WARNING\] **Skeleton (increment 10.1).** The charts in this tree render and lint in CI, and their workloads land in increments 10.2–10.3; the install steps below are the shape the runbook will take, and the publish + validated install arrive in 10.4–10.5. Do not follow this against production.
-
-Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the reasoning behind it are in the [deployment reference](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/deployment/index.md>); this page is the sequence to run.
+Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the reasoning behind it are in the [deployment reference](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/deployment/index.md>); this page is the sequence to run, including every DNS, certificate, and rename edge. For the shorter guided path, see [Deploy to Kubernetes](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/user-guide/deployment/index.md>) in the user guide.
 
 ## 0\. Prerequisites
 
-- **kubectl** + a cluster context. Minikube: start it and run `minikube tunnel` in a second terminal (the Gateway gets an external IP through it); add `app.atlas.test`, `auth.atlas.test` (and `dashboard.atlas.test`, `o11y.atlas.test` if enabled) to `/etc/hosts` pointing at `127.0.0.1` (CHT-135).
+- **kubectl** + a cluster context. Minikube: start it and run `minikube tunnel` in a second terminal (the Gateway gets an external IP through it); add `atlas.test` (the product), `auth.atlas.test` (and `dashboard.atlas.test`, `observability.atlas.test` if enabled) to `/etc/hosts` pointing at `127.0.0.1` (CHT-135, ADR 069).
 - **cert-manager** installed (CRDs + controller):
 
   ```
@@ -131,7 +129,7 @@ helm install atlas oci://ghcr.io/aureliusenterprise/charts/aurelius-atlas \
     --namespace atlas
 ```
 
-(10.4 replaces the registry URL with the published chart; until then, `helm install atlas helm -f …` from a checkout, after `helm dep update helm`.)
+From a repository checkout instead of the registry, resolve the component charts first, then install the local chart: `helm dep update helm`, followed by `helm install atlas helm -f …`.
 
 Before installing a version, verify the chart artifact carries this project's publish-workflow signature (CHT-95 — the same keyless identity the release's images carry):
 
@@ -152,18 +150,16 @@ The umbrella generates the credentials (Elasticsearch password, Keycloak admin/D
 ```
 kubectl -n atlas get pods                          # all Running/Completed
 kubectl -n atlas get gateway,gatewayclass,httproute
-curl -k https://app.<domain>/api/atlas/admin/liveness
+curl -k https://<domain>/api/atlas/admin/liveness
 curl -k https://auth.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
 
-(The full smoke suite — login, entity write/read, lineage, telemetry — lands with increment 10.5.)
-
 ### Grafana
 
-Grafana has no anonymous access: the login screen's **Keycloak** button goes to the `aurelius-atlas` realm (CHT-84, DD-275). The roles on the `grafana` client gate the door (CHT-85, CHT-136, DD-659). The `admin` role lands as Grafana **Admin**, and the `editor` role lands as **Editor**. A realm user who holds neither role is denied at the callback, because the mapping has no Viewer fallback any more. You assign the roles on the `grafana` client in the Keycloak console or through the admin API. The daily door is the browser host: `global.hosts.o11y.enabled` is true by default (DD-653), and Grafana builds its login redirect from `GF_SERVER_ROOT_URL`, which the chart pins to `https://o11y.<domain>` whenever the host is on (DD-654):
+Grafana has no anonymous access: the login screen's **Keycloak** button goes to the `aurelius-atlas` realm (CHT-84, DD-275). The roles on the `grafana` client gate the door (CHT-85, CHT-136, DD-659). The `admin` role lands as Grafana **Admin**, and the `editor` role lands as **Editor**. A realm user who holds neither role is denied at the callback, because the mapping has no Viewer fallback any more. You assign the roles on the `grafana` client in the Keycloak console or through the admin API. The daily door is the browser host: `global.hosts.o11y.enabled` is true by default (DD-653), and Grafana builds its login redirect from `GF_SERVER_ROOT_URL`, which the chart pins to `https://observability.<domain>` whenever the host is on (DD-654):
 
 ```
-https://o11y.<domain>   # log in with the Keycloak button
+https://observability.<domain>   # log in with the Keycloak button
 ```
 
 The port-forward path still works when you set `global.hosts.o11y.enabled=false`: the pin drops, the UI becomes request-derived again, and the client's registered `http://localhost:3000/login/generic_oauth` completes the login (DD-276). With the host on, a forwarded port redirects to the public host instead. The generated local admin (`<release>-grafana-admin`, keys `user`/`password` via `kubectl get secret`) is the account-recovery credential — use it only when the realm path is broken. Keycloak's 8443 NetworkPolicy admits Grafana for the token exchange (CHT-86); if the login redirects but never completes, check that hop first. The OIDC call needs the private CA in the pod's trust store, which the chart mounts (DD-654); the backend hop to Grafana is plaintext, and the edge's HTTP health check probes `/api/health` (DD-653).
@@ -181,27 +177,29 @@ helm upgrade atlas oci://ghcr.io/aureliusenterprise/charts/aurelius-atlas \
 
 ### Rename the browser hosts
 
-A release installed before 10.15 names its hosts `atlas`, `keycloak`, and `grafana`. The keys are `app`, `auth`, `dashboard`, and `o11y` now (CHT-135, DD-658), and the chart has no alias for the old keys, because a half-renamed install serves two hostnames for one app. Rename the records first, then upgrade, then retire the old names.
+The browser hosts have moved twice. A release before increment 10.15 named them after the component (`atlas`, `keycloak`, `grafana`); a release before ADR 069 named them `app.<domain>` and `o11y.<domain>`. The current shape puts the product at the zone apex (`<domain>`) and observability at `observability.<domain>` (ADR 069), while the values keys stay `app`, `auth`, `dashboard`, and `o11y` (CHT-135, DD-658). The chart has no alias for an old key or an old host, because a half-renamed install serves two hostnames for one app. Add the target records first, then upgrade, then retire the old names.
 
 > [!WARNING]
 
 **The issuer moves with the rename.** Keycloak advertises `https://auth.<domain>` after it, and every token embeds the `iss` it was minted with. Tokens, sessions, and Grafana logins issued before the upgrade stop validating. Do the rename as one change, in one maintenance window.
 
-1. Add the new public records next to the old ones. Let's Encrypt must see them before the upgrade, because ACME validates all SANs of the new edge leaf:
+1. Add the new public records next to the old ones. Let's Encrypt must see them before the upgrade, because ACME validates all SANs of the new edge leaf. The product sits at the apex, so its record is at `<domain>.` itself (a wildcard would not cover it), and the other hosts are subdomains:
 
    ```
-   for host in app auth o11y; do
+   gcloud dns record-sets create "<domain>." --zone=<public-zone> \
+       --type=A --rrdatas=<gateway-ip> --ttl=300          # the product (apex)
+   for host in auth observability; do
        gcloud dns record-sets create "$host.<domain>." --zone=<public-zone> \
            --type=A --rrdatas=<gateway-ip> --ttl=300
    done
    ```
-2. Update the private zone (DD-651): `auth.<domain>` must resolve to the Keycloak Service ClusterIP in-cluster, exactly as `keycloak.<domain>` did before. Keep the old records until the last step.
-3. Upgrade the release. With an environment overlay, change its `hosts:` keys the same way (a `hosts.grafana.enabled` entry becomes `hosts.o11y.enabled`). The Keycloak pod restarts and re-imports the realm with the new placeholder hosts; restart the collectors and every OIDC client afterwards so they re-read the issuer metadata.
+2. Update the private zone (DD-651): `auth.<domain>` must resolve to the Keycloak Service ClusterIP in-cluster, as the sign-in host did before. Keep the old records until the last step.
+3. Upgrade the release. A pre-10.15 overlay also renames its `hosts:` keys (a `hosts.grafana.enabled` entry becomes `hosts.o11y.enabled`). The Keycloak pod restarts and re-imports the realm with the new placeholder hosts; restart the collectors and every OIDC client afterwards so they re-read the issuer metadata.
 4. Verify the new hosts answer (section 2), then delete the old `atlas`, `keycloak`, and `grafana` records from both zones.
 
 ### Admin accounts
 
-The realm asset carries no users (CHT-80), so you create the first humans through the admin API. Three doors read three separate parts of the token: the `admin` role of the `grafana` client opens Grafana (CHT-136), the `realm-admin` role of the `realm-management` client opens the Keycloak console, and the four `atlas-*` client roles of the `aurelius-atlas-server` client open the Atlas API (AUZ-02). An admin grant opens only its own door, so the sequence below gives each account all of them, plus a temporary password with a forced change at first login, plus membership in the `aurelius` organization's read group. Server tenancy stays off until 15.x, so the organization membership stages the data and changes no access yet.
+The realm asset carries no users (CHT-80), so you create the first humans through the admin API. Three doors read three separate parts of the token: the `admin` role of the `grafana` client opens Grafana (CHT-136), the `realm-admin` role of the `realm-management` client opens the Keycloak console, and the four `atlas-*` client roles of the `aurelius-atlas-server` client open the Atlas API (AUZ-02). An admin grant opens only its own door, so the sequence below gives each account all of them, plus a temporary password with a forced change at first login, plus membership in the `aurelius` organization's read group. Server tenancy is off by default, so the organization membership stages the data and changes no access yet. Switching it on ([ADR 063](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/adr/063-each-tenant-is-an-organization-with-its-own-store/index.md>)) makes every read and write consult what these groups and roles already hold.
 
 ```
 KC=https://localhost:8444   # after: kubectl port-forward svc/atlas-keycloak 8444:8443
@@ -219,12 +217,12 @@ TOKEN=$(curl -sk -X POST "$KC/realms/master/protocol/openid-connect/token" \
 For each account, create the user with the roles and required action (save the password to a file you delete after the handover, never to a log):
 
 ```
-USER=<username>                 # e.g. thijs.franck
+USER=<username>                 # e.g. jane.doe
 PASS=$(openssl rand -base64 15)
 curl -sk -X POST "$KC/admin/realms/aurelius-atlas/users" -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' -d "{
   \"username\": \"$USER\", \"enabled\": true,
-  \"email\": \"$USER@aureliusenterprise.com\", \"emailVerified\": true,
+  \"email\": \"$USER@<your-domain>\", \"emailVerified\": true,
   \"requiredActions\": [\"UPDATE_PASSWORD\"],
     \"credentials\": [{\"type\": \"password\", \"value\": \"$PASS\", \"temporary\": true}],
   \"clientRoles\": {\"grafana\": [\"admin\"],
@@ -233,9 +231,9 @@ curl -sk -X POST "$KC/admin/realms/aurelius-atlas/users" -H "Authorization: Bear
 echo "$USER $PASS" >>/tmp/admin-accounts.txt
 ```
 
-The console door needs one more call, because `realm-admin` is a client role of the internal `realm-management` client: fetch that client's id and `POST` the role object to `/users/<id>/role-mappings/clients/<rm-id>`. A user of that role signs in once with the temporary password, sets a real one, and reaches Grafana as Admin, the Keycloak console as administrator, and the Atlas API with its full four-role set. The `atlas-*` roles are client roles of `aurelius-atlas-server` today, and the organization's four groups carry the same names for the tenancy-on posture (TEN-02), so the 15.x switch re-reads what each account already holds. A realm user that holds no `grafana` client role shows the denial case: the strict mapping refuses it at the callback (CHT-136).
+The console door needs one more call, because `realm-admin` is a client role of the internal `realm-management` client: fetch that client's id and `POST` the role object to `/users/<id>/role-mappings/clients/<rm-id>`. A user of that role signs in once with the temporary password, sets a real one, and reaches Grafana as Admin, the Keycloak console as administrator, and the Atlas API with its full four-role set. The `atlas-*` roles are client roles of `aurelius-atlas-server` today, and the organization's four groups carry the same names for the tenancy-on posture (TEN-02), so a tenancy switch re-reads what each account already holds. A realm user that holds no `grafana` client role shows the denial case: the strict mapping refuses it at the callback (CHT-136).
 
-Finish with the organization, once per realm. The calls mirror what the server's provisioning module does when tenancy is on (`realm_tenants.py`, ADR 063), so 15.x finds the tenant already staged:
+Finish with the organization, once per realm. The calls mirror what the server's provisioning module does when tenancy is on (`realm_tenants.py`, ADR 063), so enabling tenancy finds the tenant already staged:
 
 ```
 ORG_ID=$(curl -sk -X POST "$KC/admin/realms/aurelius-atlas/organizations" \
@@ -249,7 +247,7 @@ for GROUP in atlas-read atlas-write atlas-types atlas-admin; do
 done
 READ_ID=$(curl -sk "$KC/admin/realms/aurelius-atlas/organizations/$ORG_ID/groups" \
     | uv run python -c 'import json,sys; print([g["id"] for g in json.load(sys.stdin) if g["name"]=="atlas-read"][0])')
-for USER in thijs.franck andreas.wombacher; do
+for USER in jane.doe john.smith; do
     UID_=$(curl -sk "$KC/admin/realms/aurelius-atlas/users?username=$USER&exact=true" \
         -H "Authorization: Bearer $TOKEN" \
         | uv run python -c 'import json,sys; print(json.load(sys.stdin)[0]["id"])')

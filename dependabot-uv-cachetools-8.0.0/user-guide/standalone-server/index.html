@@ -231,6 +231,8 @@
       
         
       
+        
+      
     
     
     
@@ -444,6 +446,8 @@
       
         
           
+        
+      
         
       
         
@@ -691,6 +695,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -2176,6 +2207,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -4203,6 +4238,60 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  069. Each browser-facing surface answers on its own hostname
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -5716,6 +5805,8 @@
       
         
       
+        
+      
     
     
     
@@ -5892,6 +5983,33 @@
     
   
   CI Test Tiers Plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/platform/separation-and-seams-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Separation and Seams Plan
 
     
   </span>
@@ -6888,6 +7006,8 @@
       
         
       
+        
+      
     
     
     
@@ -7233,11 +7353,22 @@ umbrella; the fragments are not a target of their own.</p>
 <li><code>docker/observability/compose.yaml</code>: the stack's telemetry (DD-675) — <code>infra/observability</code>'s
   collector, Prometheus, Loki, Tempo and Grafana, extended with the stack's volumes. The collector
   checks tokens against the stack's issuer, read once from Keycloak into a shared file, and the
-  server, the aux services, Keycloak and the webapp all push to it. Grafana answers on
-  <a href="http://localhost:3000">http://localhost:3000</a> and Prometheus on <a href="http://localhost:9090">http://localhost:9090</a>, both pinned to this machine.
-  The dev observability slice publishes the same ports, so stop it
+  server, the aux services, Keycloak and the webapp all push to it. Grafana answers behind the proxy
+  on <a href="https://localhost:9000/grafana/">https://localhost:9000/grafana/</a> and signs people in through Keycloak alone (15.9); Prometheus
+  answers on <a href="http://localhost:9090">http://localhost:9090</a>, pinned to this machine. The dev observability slice publishes
+  the same Prometheus port, so stop it
   (<code>docker compose -f infra/observability/docker-compose.yaml --env-file infra/observability/.env down</code>)
-  before starting the stack, and bring it back (<code>npx nx up aurelius-atlas-infra-observability</code>) after.</li>
+  before starting the stack, and bring it back (<code>npx nx up aurelius-atlas-infra-observability</code>) after.
+  Each tenant is a Grafana organization of its own, kept by the tenant command (<code>docker/bin/tenant.sh</code>):
+  two data sources that read the tenant's indices alone, as the store user <code>grafana_&lt;tenant&gt;_reader</code>,
+  and two dashboards: <em>catalogue</em>, the entities by type, state, data domain and owner as created over
+  time, and <em>activity</em>, the audit events by action and user. The tenant's people are its Viewers and
+  land in it; operators are Viewers of the main organization, which holds the stack's telemetry, and
+  of every tenant that trusts them. Grafana's local administrator signs in to no one's browser: its
+  password, <code>GRAFANA_ADMIN_PASSWORD</code> of <code>infra/keycloak/.env</code>, is what the command calls the API with.
+  After people are changed in the Keycloak console, <code>docker/bin/tenant.sh grafana sync</code> brings Grafana
+  in step and deletes the Grafana users the realm gives no tenant. The governance-quality results, the
+  relationships and the classifications have no time field, so they are not charted yet.</li>
 <li><code>embedder</code>: the embedding model of search by meaning (ADR 059), <code>https://embedder:21004</code> on the stack's network
   with its own certificate. It checks no tokens, so it has no published port (DD-432), and nothing waits for it.
   The server embeds every entity through it in the background (11.3): new and changed ones within its poll

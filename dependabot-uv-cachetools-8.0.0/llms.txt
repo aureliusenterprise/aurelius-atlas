@@ -2,6 +2,7 @@
 
 ## User Guide
 
+- [Deploy to Kubernetes](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/user-guide/deployment/index.md>)
 - [User Guide](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/user-guide/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/user-guide/standalone-server/index.md>)
 - [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/user-guide/standalone-tenants/index.md>)
@@ -117,6 +118,8 @@
 - [065\. Compose stacks that deploy the whole system live at the root](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/index.md>)
 - [066\. Infrastructure components live at the repository root](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/adr/066-infrastructure-components-live-at-the-repository-root/index.md>)
 - [067\. The standalone stack ships as one generated release bundle](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/index.md>)
+- [068\. A catalogue bootstraps only the metamodel it serves](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/index.md>)
+- [069\. Each browser-facing surface answers on its own hostname](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/conversion/design-log/index.md>)
@@ -176,6 +179,7 @@
 - [Identity Management](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/platform/security/identity-management/index.md>)
 - [Security](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/platform/security/index.md>)
 - [Secrets Management](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/platform/security/secrets-management/index.md>)
+- [Separation and Seams Plan](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/platform/separation-and-seams-plan/index.md>)
 - [Vector Search and Chat](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/platform/vector-search-and-chat/index.md>)
 - [Self-hosted CI Decision](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/self-hosted-ci-decision/index.md>)
 - [Self-hosted CI](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/architecture/self-hosted-ci/index.md>)

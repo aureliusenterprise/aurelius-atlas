@@ -78,6 +78,15 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.21c | Details sections: producers, consumers, the process page | `apps/aurelius-atlas-webapp` | DET |
 | 7.23 | Webapp Sonar findings | `apps/aurelius-atlas-webapp` | – (no new ids, except CHT-112; DD-428) |
 | 7.30 | Overlay, scheme and accessibility platform fixes | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SPL-15/16, UIC-40/41, a11y sweep (DD-542..547) |
+| 7.31 | Editor drawer room and richer relationship rows | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | UIC-43, EDT-33 (EDT-14 amended, DD-711/712) |
+| 7.32 | A dumb relationship picker in the ui library | `libs/angular/aurelius-atlas-ui` + `apps/aurelius-atlas-webapp` | UIC-44 (DD-713/714; EDT-14/33 unchanged) |
+| 7.34 | Version and copyright leave the config | `apps/aurelius-atlas-webapp` | VER (DD-725/726, DV-182) |
+| 7.35 | Entity editor history tab | `apps/aurelius-atlas-webapp` | HST (DD-816/817, DV-190) |
+| 7.36 | History tab infinite scroll | `apps/aurelius-atlas-webapp` | HST (DD-820, DV-190) |
+| 7.37 | History change details | `apps/aurelius-atlas-webapp` | HST (DD-821) |
+| 7.38 | History attribute restore | `apps/aurelius-atlas-webapp` | HST (DD-822) |
+| 7.39 | History change tables | `apps/aurelius-atlas-webapp` | HST (DD-823) |
+| 7.40 | History definition diff | `apps/aurelius-atlas-webapp` | HST (DD-825) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
@@ -108,3 +117,13 @@ This table is the reference for a move: it fixes the home before files are touch
 | 17.2 | Standalone host and certificates | `specs/17-2-standalone-host-and-certs/` + `docker/` | SPS |
 | 17.3 | The standalone bundle | `specs/17-3-standalone-bundle/` + `docker/` + `tools/` | SBD |
 | 17.4 | The standalone stack simplified | `specs/17-4-standalone-simplification/` + `docker/` | SPC |
+| 18.1 | Bootstrap only the metamodel the system serves | `specs/18-1-metamodel-scope/` + `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` + `apps/aurelius-atlas-webapp` + `apps/aurelius-atlas-lineage-model` | MMS |
+| 18.2 | The metamodel gives every hierarchy child one parent | `specs/18-2-hierarchy-cardinality/` + `libs/python/aurelius-atlas-core` + `libs/python/aurelius-atlas-typesystem` + `apps/aurelius-atlas-server` + `apps/aurelius-atlas-webapp` + `data/atlas-sample` | HCA |
+| 18.3 | A child that can sit under two parents picks one | `specs/18-3-parent-mutual-exclusion/` + `libs/python/aurelius-atlas-model` + `libs/python/aurelius-atlas-typesystem` + `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` + `data/atlas-sample` | PME |
+| 19.1 | One query semantics for the store and its fakes | `specs/19-1-query-semantics/` + `libs/python/aurelius-atlas-store-es` + `libs/python/aurelius-atlas-core` | QRY |
+| 19.2 | A store the write path can be tested against | `specs/19-2-write-path-seams/` + `libs/python/aurelius-atlas-core` | WRS |
+| 19.3 | One owner for the shared classification and parent rules | `specs/19-3-shared-rule-owners/` + `libs/python/aurelius-atlas-core` | RUL |
+| 19.4 | One document module set and one narrow engine seam | `specs/19-4-documents-engine-split/` + `libs/python/aurelius-atlas-core` | EDS |
+| 19.5 | A server whose routes state their dependencies | `specs/19-5-server-routes/` + `apps/aurelius-atlas-server` | SVC |
+| 19.6 | An editor that reports its own outcome | `specs/19-6-webapp-editor/` + `apps/aurelius-atlas-webapp` | WFE |
+| 19.7 | Small deletions | `specs/19-7-small-deletions/` + `libs/python/aurelius-atlas-core` | PAR |

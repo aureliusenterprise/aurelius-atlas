@@ -229,6 +229,8 @@
       
         
       
+        
+      
     
     
     
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -2033,6 +2064,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -4063,6 +4098,60 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/069-each-browser-facing-surface-answers-on-its-own-hostname/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  069. Each browser-facing surface answers on its own hostname
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -5608,6 +5697,8 @@
       
         
       
+        
+      
     
     
     
@@ -5784,6 +5875,33 @@
     
   
   CI Test Tiers Plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../platform/separation-and-seams-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Separation and Seams Plan
 
     
   </span>
@@ -7294,6 +7412,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>9.3</td>
 </tr>
 <tr>
+<td>DV-177</td>
+<td>Server</td>
+<td>An upload's size is measured by no Atlas code. Jetty's servlet container refused a body past its own limit and answered its plain HTML page.</td>
+<td>The three endpoints that read an upload (<code>admin/import</code>, <code>v2/businessmetadata/import</code>, <code>v2/glossary/import</code>) refuse a file past <code>upload_max_bytes</code> (default 256 MiB) with <code>AURELIUS-413-00-001</code> and Atlas's JSON error body, naming the field and the limit. The webapp's nginx edge lets 1 GiB through so the server's refusal is what a caller sees.</td>
+<td>Atlas never answered an oversized upload, so it has no code for one. The refusal belongs in the endpoint, where it can answer Atlas's error body, and it caps the memory a whole in-memory ZIP read needed (SRV-12, DD-708).</td>
+<td>9.2</td>
+</tr>
+<tr>
 <td>DV-88</td>
 <td>Search</td>
 <td>A <code>limit</code> or <code>offset</code> Java's <code>Integer.parseInt</code> cannot read (<code>limit 1e3</code>) escapes as an internal error</td>
@@ -7913,8 +8039,8 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>DV-167</td>
 <td>Webapp</td>
 <td>The demo card body leads with a breadcrumb trail and names each person in the body with their role (Data Owner(s), Domain Lead(s)); its badge can show a type alias. The demo resolves the roles through an entity read per card (amended by 16.5f, DD-626)</td>
-<td>The shared card shows the trail (the card's stored breadcrumb, VCF-01) and names each person with their role in labelled rows (ASD-06, AVS-10, VCF-15), the roles riding the stored document the indexer fills rather than a per-card read; a document still awaiting its re-derive round shows the flat row meanwhile (VCF-16). Its badge never shows an alias: the card shape carries no <code>typeAlias</code> (DD-626)</td>
-<td>The card stays one door round (ADR 064 R1), so a new role edge shows on a card only after the indexer's next round; the opened entity's People box keeps its labelled rows from the view's sections (VDR-03); the alias would need a card-shape field nobody asked for</td>
+<td>The shared card shows the trail (the card's stored breadcrumb, VCF-01) and names each person with their role in labelled rows (ASD-06, AVS-10, VCF-15), the roles riding the stored document the indexer fills rather than a per-card read; a document still awaiting its re-derive round shows the flat row meanwhile (VCF-16). Its badge shows the card's <code>typeAlias</code> when present, else the type name alone (18.1, MMS-09, DD-721)</td>
+<td>The card stays one door round (ADR 064 R1), so a new role edge shows on a card only after the indexer's next round; the opened entity's People box keeps its labelled rows from the view's sections (VDR-03); the alias needed a card-shape field, which 18.1 added with the user asking for the badge (MMS-09, DD-721)</td>
 <td>16.5d</td>
 </tr>
 <tr>
@@ -7940,6 +8066,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The funnel asks the three role groups - Domain Lead(s), Data Owner(s), Data Steward(s) - counting and filtering the cards' role relations (VCF-18, AVS-10).</td>
 <td>Aurelius fills and answers the roles (ASD-06), so the popover names each person's responsibility: the demo's labelled card rows carried into the filter (DD-629).</td>
 <td>16.5f</td>
+</tr>
+<tr>
+<td>DV-177</td>
+<td>Webapp</td>
+<td>The stock dashboard's picker searches <code>GET /api/atlas/v2/search/attribute</code> (<code>typeName</code>, <code>attrName</code> <code>name</code>, <code>attrValuePrefix</code>) and shows each found header's <code>displayText</code> on its row.</td>
+<td>The picker asks the view door (<code>POST /api/aurelius/v1/search</code>) for the target type and its sub types, and each row shows the card's name, its type badge and its stored trail (EDT-14 amended, EDT-33, DD-711). The name-prefix rule moves client-side: the door matches whole tokens, so the text carries a trailing <code>*</code> and the panel keeps the cards whose display text starts with it. The Atlas endpoint stays for every other client (ADR 046).</td>
+<td>A breadcrumb is App Search derived data (LAS-04) and the Atlas search and header answers carry nothing trail-like, so the trail is unreachable on DD-339's endpoint; the view door answers the cards the catalogue shows (AVR-08). A qualified name is no substitute: sanitised tokens, and equal to the name for a created entity.</td>
+<td>7.31</td>
 </tr>
 <tr>
 <td>DV-171</td>
@@ -7972,6 +8106,118 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The rule is an OR pair too - <code>length('collections', 1) \| length('childSystem', 1)</code> - so a system that groups its content through subsystems answers as data (12.7e, DD-639). The oracle falsifies for exactly the edited rule: 13 verdict documents carry the old description and the record carries a new name; no verdict moves, as no sample system holds a subsystem.</td>
 <td>The metamodel carries both ends of the system edge (<code>m4i_system_parent_assignment</code>) and the webapp shows <code>childSystem</code> as the subsystems a system owns, so the one-sided warning is wrong on a system the subsystem edge places - the same contention class as DV-171 and DV-172, on the user's product call (DD-637's audit had tested only the parent end). The three 14.6 gates re-baseline with the damage named per document (the user's decision, DD-639). Every other oracle verdict still answers as it was.</td>
 <td>12.7e</td>
+</tr>
+<tr>
+<td>DV-178</td>
+<td>Types</td>
+<td>A new catalogue bootstraps every model of <code>addons/models</code>: the Hadoop, Hive, Kafka, Sqoop, Falcon, Avro, Storm, Impala, Spark, FS, RDBMS, S3, ADLS, Ozone, GCP, ML and Couchbase types included (DV-139 restated for the domain models).</td>
+<td>It bootstraps the base model, the glossary model and the m4i types only (ADR 068, MMS-01, MMS-02). The shipped models directory holds <code>0000-Area0</code> alone; <code>AURELIUS_ATLAS_SERVER_MODELS_DIR</code> still restores the full set (MMS-03).</td>
+<td>170 of the 207 vendored definitions name systems no Aurelius product reads or writes; they clutter every tenant store's type listings and facets.</td>
+<td>18.1</td>
+</tr>
+<tr>
+<td>DV-179</td>
+<td>Import/export</td>
+<td><code>AuditsWriter.ReplKeyGuidFinder</code> keys a replication audit's server details on the GUID of a Hive tables or columns <code>hive_db</code>, found through its qualified name.</td>
+<td>It keys on the entity GUID for every type (MMS-04). The Hive database lookup is deleted with the Hive types.</td>
+<td>Aurelius holds no Hive entity for the lookup to match, so it always fell through to the GUID at the cost of an entity read per export (DV-128 removed the rest of the Hive replication machinery for the same reason).</td>
+<td>18.1</td>
+</tr>
+<tr>
+<td>DV-180</td>
+<td>Webapp</td>
+<td>The editor's type select lists every non-internal entity typedef, so an author picks <code>DataSet</code>, <code>Process</code>, or <code>Referenceable</code> directly and sees the whole type list (EDT-04's verbatim port).</td>
+<td>The create picker lists the types the icon map names: the twelve metamodel types (MMS-07, DD-719). Edit mode keeps its static type text, so a stored entity outside the list still opens.</td>
+<td>Twenty-one of the shipped 33 entity definitions are scaffolding no author creates: the base supertypes the m4i types inherit and the scaffold m4i types. The sample corpus creates entities of exactly the twelve mapped types, and the picker is an authoring surface, not a browser (ADR 068).</td>
+<td>18.1</td>
+</tr>
+<tr>
+<td>DV-181</td>
+<td>Webapp</td>
+<td>The legacy dashboard resolves every editor field label through its own catalogue (<code>search.components.editor.attribute.*</code> in its <code>en-US.json</code>/<code>nl-NL.json</code>), before the typedef <code>displayName</code></td>
+<td>Every editor field label is the Aurelius catalogue string <code>search.components.editor.attribute.&lt;name&gt;</code>, in both locales, else the typedef <code>displayName</code>, else the raw name (EDT-33/EDT-34). The map covers the shipped metamodel; an installed type's name keeps today's raw fallback. The m4i dictionary's two typo displayNames are corrected at the source</td>
+<td>Area0 is vendored and names no attribute; the m4i dictionary leaves names raw or missing. The legacy chose the catalogue, which Aurelius already bridges (SHL-08) and the completeness spec proves. The dictionary is Aurelius-owned, so its typos go at the source</td>
+<td>7.33</td>
+</tr>
+<tr>
+<td>DV-182</td>
+<td>Interface</td>
+<td>(Aurelius origin, no Atlas behaviour.) The webapp footer printed a copyright year and a version baked into <code>/config.json</code>.</td>
+<td>The footer prints the browser's current year and the version the server answers at <code>admin/version</code> (ADM-01); the two keys left <code>config.json</code> (7.34, DD-725/DD-726).</td>
+<td>The release stamps one version everywhere (DD-288), so the config copy could only go stale; a fixed year reads as neglect.</td>
+<td>7.34</td>
+</tr>
+<tr>
+<td>DV-183</td>
+<td>Interface</td>
+<td>(Aurelius origin, no Atlas behaviour.) A relationship end definition carries no constraints, and no validation compares two relationships of one instance. Atlas stores both parents of a child that can sit under two parents.</td>
+<td>A <code>mutuallyExclusive</code> constraint names the parent group on a child relationship end. The type system rejects it on a container end, the registry copies it onto the built child attribute, and the instance API refuses an entity that fills two members of one group (PME-01 to PME-09, DD-746 to DD-750).</td>
+<td>Apache Atlas 2.4.0 has no such constraint and no such check (ADR 051). Some types can sit under two different parents, and the lineage page drew two parents for one object. The choice belongs in the type definition, so any client or import and not only the webapp is held to one parent (DV-183).</td>
+<td>18.3</td>
+</tr>
+<tr>
+<td>DV-184</td>
+<td>App Search</td>
+<td>The frozen <code>atlas-dev</code> oracle recorded the sample corpus's data-entity parent rule as asking for at least one data domain or data entity, in its name, description and two messages.</td>
+<td>The corpus rule asks for one data domain or parent entity in its name, its description and both messages (PME-11, DD-752). Its qualified name, its expression and every verdict stay as they were.</td>
+<td>18.2 made both parent ends <code>SINGLE</code>, so "at least one" describes a set the type no longer holds. The oracle falsifies for the edited rule alone: 16 verdict documents carry the old description, and no verdict moves, because no sample entity holds both parents (DV-183's probe). The 14.6 gates count one more renamed rule record.</td>
+<td>18.3</td>
+</tr>
+<tr>
+<td>DV-185</td>
+<td>App Search</td>
+<td>The <code>atlas-dev</code> recording of the sample ships 95 governance rules and one document for each. 29 of those rules name a type, attribute or relationship the m4i data dictionary does not define, such as <code>m4i_elastic_field</code>, the attribute <code>kibanaSpace</code>, or the relationship <code>m4i_system_assignment</code>.</td>
+<td>The corpus ships 66 governance rules. Aurelius deletes the 29 dead rule records from <code>sample_data.zip</code> and from <code>only_gov_quality.zip</code>, and drops their GUIDs from each bundle's <code>atlas-export-order.json</code> (PME-13, DD-754). A rule over a name the model lacks fails on every entity of its type, so a bundle that holds one fails <code>test__m4i_models.py</code>.</td>
+<td>The legacy corpus carried the rules from a metamodel that held those names, and the dictionary dropped them. A dead rule stamps a noncompliant verdict on every entity of its type forever. 15 of the 29 read, so 245 always-fail verdicts leave the read set, and the gates count 1,785 over 66 rules instead of 2,030 over 95. The oracle keeps its 29 documents and 1,612 verdicts, as its 27 verdict rules are not the 29. The 14.6 gates drop the GUIDs, named once in <code>test__app_search_engine.py</code> (DV-173).</td>
+<td>18.3</td>
+</tr>
+<tr>
+<td>DV-186</td>
+<td>Interface</td>
+<td>(View door origin, no Atlas behaviour.) The view door's <code>sections</code> step created a parent edge on a candidate that already held one and cleared nothing, not even an edge of the same relationship, so a child moved by the wire door on the same attribute stayed in two places through the view door.</td>
+<td>The door refuses the save without <code>unsafeReparent</code> (RPS-01) and clears the child's other parent edge of the group with it, so a moved child reads back with exactly one parent (RPS-05, DD-757). The view door is Aurelius's own surface, so this is a fix of Aurelius behaviour, recorded for the change it makes.</td>
+<td>A two-parent child breaks the single-parent read, the governance rule over it, and the lineage page. The wire door never cleared an edge of another relationship either (DV-187), so on Aurelius both doors had to change together.</td>
+<td>18.4</td>
+</tr>
+<tr>
+<td>DV-187</td>
+<td>Interface</td>
+<td>Apache Atlas 2.4.0 moves a child only within the attribute it writes: <code>EntityGraphMapper.addInverseReference</code> replaces the candidate's existing edge of that one relationship when the opposite end is <code>SINGLE</code>, and never looks at a different relationship. Adding a field through <code>datasets</code> when the field already hangs under a <code>parentField</code> keeps both edges, and nothing refuses it; the engine enforces the <code>SINGLE</code> child end nowhere on a parent-side write.</td>
+<td>Aurelius refuses that write with <code>INSTANCE_CRUD_INVALID_PARAMS</code> naming each held candidate and the parent it holds (RPS-01, RPS-03), unless the request carries the query parameter <code>unsafeReparent</code> (RPS-04). With it, both doors clear the family edge first and the child reads back with exactly one parent (RPS-05). An import is exempt, so an export replays unchanged (RPS-08).</td>
+<td>A write that leaves a child under two parents breaks 18.2's <code>SINGLE</code> cardinality silently. The opt-in keeps the Atlas engine (ADR 051) while making the author ask for the move; a client that re-parents through the Atlas wire API now sends the parameter.</td>
+<td>18.4</td>
+</tr>
+<tr>
+<td>DV-188</td>
+<td>App Search</td>
+<td>Apache Atlas 2.4.0 has no one-parent rule to break (DV-183). The difference is in Aurelius data: the sample corpus of <code>data/atlas-sample/</code> held two datasets that two parents each claimed. The dataset named one parent in its single-valued <code>parentDataset</code>, and a sibling dataset listed the same child in its <code>childDataset</code>, and an import writes both sides of an edge (RPS-08), so the store held the child under both parents.</td>
+<td>Every dataset of every bundle answers one parent once both sides are read together: the child's own single-valued end wins and the parent-side listing is emptied to match (DCP-07, DD-766). <code>kib1-hourly-table</code> and <code>kib1-hr-bar-graph</code> no longer list a child, and no dataset holds two parent edges.</td>
+<td>The oracle is frozen output of the old corpus and walked both sides of the edge, so it falsifies for the cleared listings. <code>test__app_search_indexer.py</code> names the two pairs it no longer derives, and <code>test__app_search_governance.py</code> counts 27 moved verdicts instead of 29, because the two siblings' field-or-child verdicts now answer the value the oracle recorded. The change moves Aurelius closer to the oracle, as DV-173 did.</td>
+<td>18.5</td>
+</tr>
+<tr>
+<td>DV-189</td>
+<td>Interface</td>
+<td>(View door origin, no Atlas behaviour.) Apache Atlas 2.4.0 has no one-parent rule to break (DV-183), so it has no same-request parent release either: it never refuses adding a parent-side edge to a held candidate, on the wire or on a door, and never asks whether the request also drops the child elsewhere.</td>
+<td>The wire path treats one request that drops a child from one parent and adds it to another as a deliberate move and lets it through (RPS-02), because it reads the whole request together. The view door applies one entity per request, so it cannot carry the sibling parent's drop in the same call, and it refuses a held candidate without <code>unsafeReparent</code> even where the move is deliberate (RUL-04). The door is Aurelius's own surface, so both sides of this row are Aurelius behaviour.</td>
+<td>The door body is one entity's view, so the parent the child leaves is a separate save; closing the gap would make the door read a save it was not given. No shipped client reaches it: the webapp's parent-side picker filters its search to candidates with no parent (DCP-06).</td>
+<td>19.3</td>
+</tr>
+<tr>
+<td>DV-190</td>
+<td>Webapp</td>
+<td>The legacy dashboard's editor history tab page-fetches the entity's whole audit trail. Its service walks the audit endpoint 100 events at a time until a page comes back short, and lists every event it collected.</td>
+<td>The editor's History tab scrolls the trail on demand: it lists a page of 100 events, and the container's sentinel asks for the older pages one at a time, so a reader reaches every event the legacy walk reached (HST-03, HST-08). The legacy's cap-free list arrives page by page instead of all at once.</td>
+<td>The scroll rides the ported Atlas v2 audit endpoint's <code>startKey</code> cursor, which keeps the newest-first order (AUD-08). The legacy's <code>offset</code> walk answers oldest first on that endpoint (AUD-07), so the cursor replaces it. 7.35 shipped the newest-100 cap and 7.36 closed it with the scroll (DD-820): the row stays as the record of why the walk's mechanics changed, not as an open gap.</td>
+<td>7.35, 7.36</td>
+</tr>
+<tr>
+<td>DV-191</td>
+<td>Audit</td>
+<td>A propagation tell reaches an entity it can read. <code>AtlasGraphUtilsV2.findByGuid</code> filters on the GUID alone, so a soft-deleted entity still reads back and its <code>notifyPropagatedEntities</code> records a propagated add or delete on it. A deferred task's request context holds nothing the request deleted, so a task that runs after the entity was deleted records the event, and a restart that replays the task records it again.</td>
+<td>A propagation tell skips every entity not <code>ACTIVE</code>, whether it comes from a request or a task, so a deleted entity's history closes at its <code>ENTITY_DELETE</code> event (CAU-05, CAU-06, DD-818).</td>
+<td>Aurelius keeps soft-deleted entities readable with their classifications listed (EDL-06), so a tell that asks only "does it exist?" audits a tombstone. The task's write is still Java's — the propagation is removed — only the event differs, and no client reads an event on an entity it can no longer see.</td>
+<td>3.5</td>
 </tr>
 </tbody>
 </table>

@@ -229,6 +229,8 @@
       
         
       
+        
+      
     
     
     
@@ -448,6 +450,8 @@
       
         
       
+        
+      
     
     
     
@@ -543,6 +547,33 @@
     
   
   Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Deploy to Kubernetes
 
     
   </span>
@@ -2035,6 +2066,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -4065,6 +4100,60 @@
 
                 
               
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./068-a-catalogue-bootstraps-only-the-metamodel-it-serves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  068. A catalogue bootstraps only the metamodel it serves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./069-each-browser-facing-surface-answers-on-its-own-hostname/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  069. Each browser-facing surface answers on its own hostname
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
             </ul>
           </nav>
         
@@ -5596,6 +5685,8 @@
       
         
       
+        
+      
     
     
     
@@ -5772,6 +5863,33 @@
     
   
   CI Test Tiers Plan
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../platform/separation-and-seams-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Separation and Seams Plan
 
     
   </span>
@@ -6936,6 +7054,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -7307,6 +7429,21 @@ area you are about to work in; the rest can wait.</p>
 <tr>
 <td><a href="./066-infrastructure-components-live-at-the-repository-root/">066</a></td>
 <td>Infrastructure components, whose charts the umbrella installs, live at <code>infra/</code> at the root beside the umbrella; each states its run once and a stack extends it, superseding the placement of DD-006 and the dev-slice DDs.</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="./067-the-standalone-stack-ships-as-one-generated-release-bundle/">067</a></td>
+<td>The standalone stack ships as one generated release bundle, so a person outside the repository can run the whole system; the bundle is never committed and carries no secret.</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="./068-a-catalogue-bootstraps-only-the-metamodel-it-serves/">068</a></td>
+<td>A new catalogue bootstraps only the metamodel it serves — the Atlas base model, the glossary, and m4i — and the vendored domain models and their icon and lineage traces leave the shipped system.</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="./069-each-browser-facing-surface-answers-on-its-own-hostname/">069</a></td>
+<td>Each browser-facing surface answers on a hostname of its own under one domain, so an address says what it is; the sign-in address never shares an address with a product surface, and only the single-machine bundle uses one host with paths.</td>
 <td>Proposed</td>
 </tr>
 </tbody>
