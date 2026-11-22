@@ -2204,6 +2204,8 @@
       
         
       
+        
+      
     
     
     
@@ -4111,6 +4113,33 @@
     
   
   068. A catalogue bootstraps only the metamodel it serves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/069-each-browser-facing-surface-answers-on-its-own-hostname/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  069. Each browser-facing surface answers on its own hostname
 
     
   </span>
@@ -7095,9 +7124,9 @@ the shorter guided path, see
 <ul>
 <li><strong>kubectl</strong> + a cluster context. Minikube: start it and run
   <code>minikube tunnel</code> in a second terminal (the Gateway gets an external IP
-  through it); add <code>app.atlas.test</code>, <code>auth.atlas.test</code> (and
-  <code>dashboard.atlas.test</code>, <code>o11y.atlas.test</code> if enabled) to <code>/etc/hosts</code>
-  pointing at <code>127.0.0.1</code> (CHT-135).</li>
+  through it); add <code>atlas.test</code> (the product), <code>auth.atlas.test</code> (and
+  <code>dashboard.atlas.test</code>, <code>observability.atlas.test</code> if enabled) to <code>/etc/hosts</code>
+  pointing at <code>127.0.0.1</code> (CHT-135, ADR 069).</li>
 <li>
 <p><strong>cert-manager</strong> installed (CRDs + controller):</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
@@ -7313,7 +7342,7 @@ uninstall and reinstall — do not wait the release out.</p>
 <h2 id="2-validate">2. Validate<a class="headerlink" href="#2-validate" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>atlas<span class="w"> </span>get<span class="w"> </span>pods<span class="w">                          </span><span class="c1"># all Running/Completed</span>
 kubectl<span class="w"> </span>-n<span class="w"> </span>atlas<span class="w"> </span>get<span class="w"> </span>gateway,gatewayclass,httproute
-curl<span class="w"> </span>-k<span class="w"> </span>https://app.&lt;domain&gt;/api/atlas/admin/liveness
+curl<span class="w"> </span>-k<span class="w"> </span>https://&lt;domain&gt;/api/atlas/admin/liveness
 curl<span class="w"> </span>-k<span class="w"> </span>https://auth.&lt;domain&gt;/realms/aurelius-atlas<span class="w">    </span><span class="c1"># issuer reachable</span>
 </code></pre></div>
 <h3 id="grafana">Grafana<a class="headerlink" href="#grafana" title="Permanent link">&para;</a></h3>
@@ -7326,8 +7355,8 @@ Viewer fallback any more. You assign the roles on the <code>grafana</code> clien
 the Keycloak console or through the admin API. The daily door is the browser
 host: <code>global.hosts.o11y.enabled</code> is true by default (DD-653), and Grafana
 builds its login redirect from <code>GF_SERVER_ROOT_URL</code>, which the chart pins to
-<code>https://o11y.&lt;domain&gt;</code> whenever the host is on (DD-654):</p>
-<div class="highlight"><pre><span></span><code>https://o11y.&lt;domain&gt;   # log in with the Keycloak button
+<code>https://observability.&lt;domain&gt;</code> whenever the host is on (DD-654):</p>
+<div class="highlight"><pre><span></span><code>https://observability.&lt;domain&gt;   # log in with the Keycloak button
 </code></pre></div>
 <p>The port-forward path still works when you set
 <code>global.hosts.o11y.enabled=false</code>: the pin drops, the UI becomes
@@ -7354,11 +7383,15 @@ setup.</p>
 <span class="w">    </span>--namespace<span class="w"> </span>atlas
 </code></pre></div>
 <h3 id="rename-the-browser-hosts">Rename the browser hosts<a class="headerlink" href="#rename-the-browser-hosts" title="Permanent link">&para;</a></h3>
-<p>A release installed before 10.15 names its hosts <code>atlas</code>, <code>keycloak</code>, and
-<code>grafana</code>. The keys are <code>app</code>, <code>auth</code>, <code>dashboard</code>, and <code>o11y</code> now
-(CHT-135, DD-658), and the chart has no alias for the old keys, because a
-half-renamed install serves two hostnames for one app. Rename the records
-first, then upgrade, then retire the old names.</p>
+<p>The browser hosts have moved twice. A release before increment 10.15 named
+them after the component (<code>atlas</code>, <code>keycloak</code>, <code>grafana</code>); a release before
+ADR 069 named them <code>app.&lt;domain&gt;</code> and <code>o11y.&lt;domain&gt;</code>. The current shape puts
+the product at the zone apex (<code>&lt;domain&gt;</code>) and observability at
+<code>observability.&lt;domain&gt;</code> (ADR 069), while the values keys stay <code>app</code>, <code>auth</code>,
+<code>dashboard</code>, and <code>o11y</code> (CHT-135, DD-658). The chart has no alias for an old
+key or an old host, because a half-renamed install serves two hostnames for
+one app. Add the target records first, then upgrade, then retire the old
+names.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 </div>
@@ -7371,8 +7404,12 @@ maintenance window.</p>
 <li>
 <p>Add the new public records next to the old ones. Let's Encrypt must see
    them before the upgrade, because ACME validates all SANs of the new
-   edge leaf:</p>
-<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span>app<span class="w"> </span>auth<span class="w"> </span>o11y<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+   edge leaf. The product sits at the apex, so its record is at <code>&lt;domain&gt;.</code>
+   itself (a wildcard would not cover it), and the other hosts are
+   subdomains:</p>
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>dns<span class="w"> </span>record-sets<span class="w"> </span>create<span class="w"> </span><span class="s2">"&lt;domain&gt;."</span><span class="w"> </span>--zone<span class="o">=</span>&lt;public-zone&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--type<span class="o">=</span>A<span class="w"> </span>--rrdatas<span class="o">=</span>&lt;gateway-ip&gt;<span class="w"> </span>--ttl<span class="o">=</span><span class="m">300</span><span class="w">          </span><span class="c1"># the product (apex)</span>
+<span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span>auth<span class="w"> </span>observability<span class="p">;</span><span class="w"> </span><span class="k">do</span>
 <span class="w">    </span>gcloud<span class="w"> </span>dns<span class="w"> </span>record-sets<span class="w"> </span>create<span class="w"> </span><span class="s2">"</span><span class="nv">$host</span><span class="s2">.&lt;domain&gt;."</span><span class="w"> </span>--zone<span class="o">=</span>&lt;public-zone&gt;<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--type<span class="o">=</span>A<span class="w"> </span>--rrdatas<span class="o">=</span>&lt;gateway-ip&gt;<span class="w"> </span>--ttl<span class="o">=</span><span class="m">300</span>
 <span class="k">done</span>
@@ -7380,14 +7417,14 @@ maintenance window.</p>
 </li>
 <li>
 <p>Update the private zone (DD-651): <code>auth.&lt;domain&gt;</code> must resolve to the
-   Keycloak Service ClusterIP in-cluster, exactly as <code>keycloak.&lt;domain&gt;</code>
-   did before. Keep the old records until the last step.</p>
+   Keycloak Service ClusterIP in-cluster, as the sign-in host did before.
+   Keep the old records until the last step.</p>
 </li>
-<li>Upgrade the release. With an environment overlay, change its <code>hosts:</code>
-   keys the same way (a <code>hosts.grafana.enabled</code> entry becomes
-   <code>hosts.o11y.enabled</code>). The Keycloak pod restarts and re-imports the
-   realm with the new placeholder hosts; restart the collectors and every
-   OIDC client afterwards so they re-read the issuer metadata.</li>
+<li>Upgrade the release. A pre-10.15 overlay also renames its <code>hosts:</code> keys
+   (a <code>hosts.grafana.enabled</code> entry becomes <code>hosts.o11y.enabled</code>). The
+   Keycloak pod restarts and re-imports the realm with the new placeholder
+   hosts; restart the collectors and every OIDC client afterwards so they
+   re-read the issuer metadata.</li>
 <li>Verify the new hosts answer (section 2), then delete the old <code>atlas</code>,
    <code>keycloak</code>, and <code>grafana</code> records from both zones.</li>
 </ol>

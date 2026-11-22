@@ -179,6 +179,18 @@ The body of `GET /api/atlas/admin/session`.
       "title": "Timezones",
       "type": "array"
     },
+    "atlas.entity.create.allowed": {
+      "default": false,
+      "description": "Whether the session's user may create entities (ADM-05, AUZ-06).",
+      "title": "Atlas.Entity.Create.Allowed",
+      "type": "boolean"
+    },
+    "atlas.entity.update.allowed": {
+      "default": false,
+      "description": "Whether the session's user may update entities (ADM-05, AUZ-06).",
+      "title": "Atlas.Entity.Update.Allowed",
+      "type": "boolean"
+    },
     "_csrfToken": {
       "anyOf": [
         {
@@ -203,6 +215,8 @@ Fields:
 - `user_name` (`str | None`)
 - `groups` (`list[str]`)
 - `timezones` (`list[str]`)
+- `entity_create_allowed` (`bool`)
+- `entity_update_allowed` (`bool`)
 - `csrf_token` (`str | None`)
 
 #### csrf\_token
@@ -212,6 +226,22 @@ csrf_token: str | None = None
 ```
 
 The CSRF token mutating requests must carry.
+
+#### entity\_create\_allowed
+
+```
+entity_create_allowed: bool = False
+```
+
+Whether the session's user may create entities (ADM-05, AUZ-06).
+
+#### entity\_update\_allowed
+
+```
+entity_update_allowed: bool = False
+```
+
+Whether the session's user may update entities (ADM-05, AUZ-06).
 
 #### groups
 
@@ -809,7 +839,7 @@ The async client for the Atlas metadata API (CL-01..CL-05, CL-11; DD-203, DD-204
 
 One client per server: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01) — the app builds the httpx client from its own settings (TLS, timeout) and passes it in. The request paths are relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Because the client arrives from outside, tests hand over one built on a `MockTransport` and no socket opens (CL-02, the DD-200 seam made async). Every request carries `authorization: Bearer <token>` from the token source (CL-03); a non-2xx answer raises :class:`AtlasClientError` with the status and the server's `{errorCode, errorMessage}` when the body parses (CL-04); an unreachable upstream propagates as `httpx`'s own error — mapping it to an HTTP status is the app's job (LM-07's DV-80), not the client's (CL-05).
 
-The paths mirror the server's routes verbatim: `routes/admin.py` under `/api/atlas/admin` (the 8.4 reads plus the 8.11 writes, CLW-01..CLW-07), `routes/types.py` under `/api/atlas/v2/types`, the entity routes of `routes/entity.py` under `/api/atlas/v2/entity` (CLE-01..CLE-12, 8.9), the glossary routes of `routes/glossary.py` under `/api/atlas/v2/glossary` (CLG-01..CLG-09, 8.10), the relationship routes of `routes/relationship.py` under `/api/atlas/v2/relationship` (CLR-01..CLR-04, 8.11), the discovery routes of `routes/discovery.py` under `/api/atlas/v2/search` (the seven 8.4 searches, CL-13, plus the DSL search and the saved searches, CSD-01..CSD-06, 8.12), the lineage feed of `routes/lineage.py` under `/api/atlas/v2/lineage` (CL-60..CL-63, 8.8), the Aurelius-native routes of `routes/quality.py` and `routes/search_by_meaning.py` under `/api/aurelius/v1` (CAV-01..CAV-04, 8.24), and the ten admin routes of 6.3 and 6.4 that joined `routes/admin.py` after 8.11 (CLW-08..CLW-12, 8.24).
+The paths mirror the server's routes verbatim: `routes/admin.py` under `/api/atlas/admin` (the 8.4 reads plus the 8.11 writes, CLW-01..CLW-07), `routes/types.py` under `/api/atlas/v2/types`, the entity routes of `routes/entity.py` under `/api/atlas/v2/entity` (CLE-01..CLE-12, 8.9), the glossary routes of `routes/glossary.py` under `/api/atlas/v2/glossary` (CLG-01..CLG-09, 8.10), the relationship routes of `routes/relationship.py` under `/api/atlas/v2/relationship` (CLR-01..CLR-04, 8.11), the discovery routes of `routes/discovery.py` under `/api/atlas/v2/search` (the seven 8.4 searches, CL-13, plus the DSL search and the saved searches, CSD-01..CSD-06, 8.12), the lineage feed of `routes/lineage.py` under `/api/atlas/v2/lineage` (CL-60..CL-63, 8.8), the Aurelius-native routes of `routes/quality.py` and `routes/search_by_meaning.py` under `/api/aurelius/v1` (CAV-01..CAV-04, 8.24), the view doors of `routes/view_search.py` and `routes/view_entity.py` under `/api/aurelius/v1` (CLV-01..CLV-04, 20.1), and the ten admin routes of 6.3 and 6.4 that joined `routes/admin.py` after 8.11 (CLW-08..CLW-12, 8.24).
 
 Type Aliases:
 
@@ -852,6 +882,12 @@ Classes:
 - **`TypesApi`** –
 
   The typedef resource of an :class:`AtlasClient` (CL-11): `client.types`.
+- **`ViewApi`** –
+
+  The view family's doors of an :class:`AtlasClient` (CLV-01..CLV-04): `client.view`.
+- **`ViewVersionConflictError`** –
+
+  The mutation door's stale save: the conflict beside the stored view (CLV-03, AVW-04, DD-591).
 
 Attributes:
 
@@ -862,6 +898,9 @@ Attributes:
 - **`CLIENT_ERROR`** –
 
   The status where an answer becomes an error: the client-error boundary (CL-04).
+- **`CONFLICT`** –
+
+  The status of the mutation door's stale save (AVW-04, CLV-03).
 - **`DEFAULT_TIMEOUT_SECONDS`** –
 
   The suggested request timeout, seconds — for the httpx client an app builds for this one (CL-01).
@@ -901,6 +940,14 @@ CLIENT_ERROR = 400
 ```
 
 The status where an answer becomes an error: the client-error boundary (CL-04).
+
+### CONFLICT
+
+```
+CONFLICT = 409
+```
+
+The status of the mutation door's stale save (AVW-04, CLV-03).
 
 ### DEFAULT\_TIMEOUT\_SECONDS
 
@@ -1319,6 +1366,7 @@ Attributes:
 - **`relationship`** –
 - **`search`** –
 - **`types`** –
+- **`view`** –
 
 #### admin
 
@@ -1366,6 +1414,12 @@ search = SearchApi(api)
 
 ```
 types = TypesApi(api)
+```
+
+#### view
+
+```
+view = ViewApi(api)
 ```
 
 #### get\_lineage
@@ -2937,3 +2991,109 @@ update_typedefs(types_def: AtlasTypesDef) -> AtlasTypesDef
 ```
 
 `PUT /typedefs`: update the definitions, all or none (TYR-09).
+
+### ViewApi
+
+```
+ViewApi(api: _Api)
+```
+
+The view family's doors of an :class:`AtlasClient` (CLV-01..CLV-04): `client.view`.
+
+The paths mirror `routes/view_search.py` and `routes/view_entity.py`, the Aurelius-native doors of 16.2 and 16.3 beside the Atlas routes. The view and card shapes are `aurelius-atlas-model`'s (`EntityView`, `EntityCard`), reused whole (DD-309); the door's own search shapes are this library's `aurelius.py` (DD-562), the `lineage.py` precedent (CL-12).
+
+Methods:
+
+- **`read`** –
+
+  `GET /entity/guid/{guid}`: the entity's live view, derived fresh (AVR-10, CLV-01).
+- **`save`** –
+
+  `POST /entity`: the view as desired state, the new live view out (AVW-07, CLV-02).
+- **`search`** –
+
+  `POST /search`: the door's cards, facet counts and total (AVR-08, CLV-04).
+
+#### read
+
+```
+read(guid: str) -> EntityView
+```
+
+`GET /entity/guid/{guid}`: the entity's live view, derived fresh (AVR-10, CLV-01).
+
+A GUID with no entity raises `AtlasClientError` with the Atlas 404 body (AVR-10), and a reader without `ENTITY_READ` the door's refusal (AVR-01).
+
+#### save
+
+```
+save(view: Mapping[str, Any], *, unsafe_reparent: bool = False) -> EntityView
+```
+
+`POST /entity`: the view as desired state, the new live view out (AVW-07, CLV-02).
+
+The body is the view dict the caller read through :meth:`read` and edited: the door reads the raw body (AVW-02) and acts on the fields it knows, so the client sends what it was given and validates no view (CL-12) — the same way :meth:`AureliusApi.validate_quality_rule` sends its body. `unsafe_reparent` moves a child that holds another parent (RPS-05), and travels as `unsafeReparent=true` only when set, as the route reads an absent flag as false.
+
+Raises:
+
+- `ViewVersionConflictError` –
+
+  The save lost the update race — the door's 409 beside the stored view (AVW-04, CLV-03).
+
+#### search
+
+```
+search(request: ViewSearchRequest | None = None) -> ViewSearchAnswer
+```
+
+`POST /search`: the door's cards, facet counts and total (AVR-08, CLV-04).
+
+No request is the empty one the door reads as "everything" (ASE-04). The client checks no filter, facet or mode (CL-12): the door itself refuses an unreadable body (AVR-13) and answers `VIEW_FORBIDDEN` without the read privilege (AVR-01).
+
+### ViewVersionConflictError
+
+```
+ViewVersionConflictError(status_code: int, view: EntityView)
+```
+
+Bases: `AtlasClientError`
+
+The mutation door's stale save: the conflict beside the stored view (CLV-03, AVW-04, DD-591).
+
+An :class:`AtlasClientError` like every other refusal (CL-04), with the door's one extra: the body carries the live view the editor merges from, parsed. The server raises its own twin of this name (`view_mutation`) for exactly this answer, and the door answers it with no `errorMessage` — so `info` stays None and the code lives in the type itself.
+
+Attributes:
+
+- **`info`** –
+
+  The server's `{errorCode, errorMessage}`, when the body parsed as one.
+- **`status_code`** –
+
+  The HTTP status the server answered with.
+- **`view`** –
+
+  The stored view the door answered the conflict with.
+
+#### info
+
+```
+info = info
+```
+
+The server's `{errorCode, errorMessage}`, when the body parsed as one.
+
+#### status\_code
+
+```
+status_code = status_code
+```
+
+The HTTP status the server answered with.
+
+#### view
+
+```
+view = view
+```
+
+The stored view the door answered the conflict with.

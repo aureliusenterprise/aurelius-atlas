@@ -2204,6 +2204,8 @@
       
         
       
+        
+      
     
     
     
@@ -4111,6 +4113,33 @@
     
   
   068. A catalogue bootstraps only the metamodel it serves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/069-each-browser-facing-surface-answers-on-its-own-hostname/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  069. Each browser-facing surface answers on its own hostname
 
     
   </span>
@@ -8173,6 +8202,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The wire path treats one request that drops a child from one parent and adds it to another as a deliberate move and lets it through (RPS-02), because it reads the whole request together. The view door applies one entity per request, so it cannot carry the sibling parent's drop in the same call, and it refuses a held candidate without <code>unsafeReparent</code> even where the move is deliberate (RUL-04). The door is Aurelius's own surface, so both sides of this row are Aurelius behaviour.</td>
 <td>The door body is one entity's view, so the parent the child leaves is a separate save; closing the gap would make the door read a save it was not given. No shipped client reaches it: the webapp's parent-side picker filters its search to candidates with no parent (DCP-06).</td>
 <td>19.3</td>
+</tr>
+<tr>
+<td>DV-190</td>
+<td>Webapp</td>
+<td>The legacy dashboard's editor history tab page-fetches the entity's whole audit trail. Its service walks the audit endpoint 100 events at a time until a page comes back short, and lists every event it collected.</td>
+<td>The editor's History tab scrolls the trail on demand: it lists a page of 100 events, and the container's sentinel asks for the older pages one at a time, so a reader reaches every event the legacy walk reached (HST-03, HST-08). The legacy's cap-free list arrives page by page instead of all at once.</td>
+<td>The scroll rides the ported Atlas v2 audit endpoint's <code>startKey</code> cursor, which keeps the newest-first order (AUD-08). The legacy's <code>offset</code> walk answers oldest first on that endpoint (AUD-07), so the cursor replaces it. 7.35 shipped the newest-100 cap and 7.36 closed it with the scroll (DD-820): the row stays as the record of why the walk's mechanics changed, not as an open gap.</td>
+<td>7.35, 7.36</td>
+</tr>
+<tr>
+<td>DV-191</td>
+<td>Audit</td>
+<td>A propagation tell reaches an entity it can read. <code>AtlasGraphUtilsV2.findByGuid</code> filters on the GUID alone, so a soft-deleted entity still reads back and its <code>notifyPropagatedEntities</code> records a propagated add or delete on it. A deferred task's request context holds nothing the request deleted, so a task that runs after the entity was deleted records the event, and a restart that replays the task records it again.</td>
+<td>A propagation tell skips every entity not <code>ACTIVE</code>, whether it comes from a request or a task, so a deleted entity's history closes at its <code>ENTITY_DELETE</code> event (CAU-05, CAU-06, DD-818).</td>
+<td>Aurelius keeps soft-deleted entities readable with their classifications listed (EDL-06), so a tell that asks only "does it exist?" audits a tombstone. The task's write is still Java's — the propagation is removed — only the event differs, and no client reads an event on an entity it can no longer see.</td>
+<td>3.5</td>
 </tr>
 </tbody>
 </table>

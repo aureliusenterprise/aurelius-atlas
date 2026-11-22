@@ -2374,6 +2374,8 @@
       
         
       
+        
+      
     
     
     
@@ -4278,6 +4280,33 @@
     
   
   068. A catalogue bootstraps only the metamodel it serves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  069. Each browser-facing surface answers on its own hostname
 
     
   </span>
@@ -7146,7 +7175,7 @@ two tested overlays. Copy one, then set <code>global.domain</code> to your real 
 <td><code>minikube.yaml</code></td>
 <td><code>envoy-gateway</code></td>
 <td>chart self-signed</td>
-<td><code>*.atlas.test</code></td>
+<td><code>atlas.test</code> + subdomains</td>
 <td>local/dev, in devcontainer</td>
 </tr>
 <tr>
@@ -7159,10 +7188,11 @@ two tested overlays. Copy one, then set <code>global.domain</code> to your real 
 </tbody>
 </table>
 <p>On minikube, start <code>minikube tunnel</code> in a second terminal and point your hosts
-file (<code>app.atlas.test</code>, <code>auth.atlas.test</code>, and <code>o11y.atlas.test</code> if enabled) at
-<code>127.0.0.1</code>. On GKE, enable the managed Gateway TLS APIs first: the Certificate
-Manager API is required or the edge refuses TLS and health checks. The <code>gke.yaml</code>
-overlay already sets the health check and the ECDSA edge key that GKE needs.</p>
+file (<code>atlas.test</code> for the product, <code>auth.atlas.test</code>, and
+<code>observability.atlas.test</code> if enabled) at <code>127.0.0.1</code>. On GKE, enable the
+managed Gateway TLS APIs first: the Certificate Manager API is required or the
+edge refuses TLS and health checks. The <code>gke.yaml</code> overlay already sets the
+health check and the edge certificate key type GKE needs.</p>
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
 <p>Install the published umbrella with your overlay. The published chart carries
 its component charts, so no extra step is needed.</p>
@@ -7189,7 +7219,7 @@ generate-and-preserve rule.</p>
 <p>The pods come up, then the edge and the issuer answer.</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>atlas<span class="w"> </span>get<span class="w"> </span>pods<span class="w">                          </span><span class="c1"># all Running or Completed</span>
 kubectl<span class="w"> </span>-n<span class="w"> </span>atlas<span class="w"> </span>get<span class="w"> </span>gateway,gatewayclass,httproute
-curl<span class="w"> </span>-k<span class="w"> </span>https://app.&lt;domain&gt;/api/atlas/admin/liveness
+curl<span class="w"> </span>-k<span class="w"> </span>https://&lt;domain&gt;/api/atlas/admin/liveness
 curl<span class="w"> </span>-k<span class="w"> </span>https://auth.&lt;domain&gt;/realms/aurelius-atlas<span class="w">    </span><span class="c1"># issuer reachable</span>
 </code></pre></div>
 <div class="admonition tip">
@@ -7255,8 +7285,8 @@ client-credentials token, not a person's password. The scanners and the
 provisioning command already work this way, and the server accepts their tokens
 by default.</p>
 <h2 id="sign-in">Sign in<a class="headerlink" href="#sign-in" title="Permanent link">&para;</a></h2>
-<p>Open the dashboard at <code>https://app.&lt;domain&gt;</code> and sign in with the Keycloak
-button. Open the observability stack at <code>https://o11y.&lt;domain&gt;</code>. Its Grafana
+<p>Open the product at <code>https://&lt;domain&gt;</code> and sign in with the Keycloak
+button. Open the observability stack at <code>https://observability.&lt;domain&gt;</code>. Its Grafana
 login also runs through Keycloak, and only the <code>admin</code> or <code>editor</code> role of the
 <code>grafana</code> client passes the door. The generated <code>atlas-grafana-admin</code> Secret is
 an account-recovery credential, for use only when the realm path is broken. The

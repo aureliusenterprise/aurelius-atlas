@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/">
+        <link rel="prev" href="../adr/069-each-browser-facing-surface-answers-on-its-own-hostname/">
       
       
         <link rel="next" href="./design-log/">
@@ -2204,6 +2204,8 @@
       
         
       
+        
+      
     
     
     
@@ -4111,6 +4113,33 @@
     
   
   068. A catalogue bootstraps only the metamodel it serves
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/069-each-browser-facing-surface-answers-on-its-own-hostname/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  069. Each browser-facing surface answers on its own hostname
 
     
   </span>
@@ -7719,6 +7748,48 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.35</td>
+<td>Entity editor history tab</td>
+<td>The legacy editor's History tab returns in the drawer: an Entity/History pair in edit mode's subhead, the audit trail re-read from <code>GET /v2/entity/{guid}/audit</code> on every switch and listed newest first, the commit foot on the form tab alone (HST-01..07, DD-816/DD-817, DV-190).</td>
+<td>– (Aurelius origin; the read is 3.5's AUD-06..09)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.36</td>
+<td>History tab infinite scroll</td>
+<td>The editor's History tab scrolls its trail instead of capping it at one page: the rows ride the results list's infinite-scroll container and each next page rides the audit endpoint's <code>startKey</code> cursor, deduped for its inclusive repeat, so a reader reaches every event of the entity (HST-08/HST-09, DD-820, DV-190 closed).</td>
+<td>– (Aurelius origin; the cursor is 3.5's AUD-08)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.37</td>
+<td>History change details</td>
+<td>An audit row of an entity-state action opens to the changes it made: the client reads the entity the row stored and compares it with the state the row before it stored, listing each attribute changed with its old and new value and each relationship end added or removed, with no new endpoint (HST-10, DD-821).</td>
+<td>– (Aurelius origin; the stored bodies are 3.5's AUD-03/AUD-04)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.38</td>
+<td>History attribute restore</td>
+<td>A changed line of an open change list carries a restore button that writes that one attribute's stored old value back through the single-attribute write, re-reads the entity and merges it into the form the save conflict uses, keeping the person's other edits and the open list (HST-11, DD-822). Relationships and multi-valued attributes stay out of scope.</td>
+<td>– (Aurelius origin; the write is 3.5's EWR-15)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.39</td>
+<td>History change tables</td>
+<td>An open change list prints its answers as two sortable tables (UIC-05): the attributes one carries an Action/Key/Value header row with the restore button kept in the Value cell, and the relationships one an Action/Relationship/Entity row whose Entity cell is the end's own breadcrumb crumb that opens that entity's details screen; an end the audit body stores among the attributes reads as a relationship, not as JSON (HST-12, DD-823).</td>
+<td>– (Aurelius origin)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.40</td>
+<td>History definition diff</td>
+<td>An open change list prints its two prose attributes, <code>definition</code> and <code>description</code>, in their own section under the tables of 7.39, each block naming its own attribute: one text per attribute with the words the write added marked in and the words it took away marked out, a long run of kept words folded to one marker, and no request sent (HST-15/HST-16, DD-825).</td>
+<td>- (Aurelius origin)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
@@ -8214,6 +8285,13 @@ checks a PR must pass:</p>
 <td>The sample corpus's system rule becomes an OR pair (<code>length('collections', 1) \| length('childSystem', 1)</code>), so a system that groups its content through subsystems answers as data (DD-639) - the user's product call, extending the pair idiom of 12.7b/12.7c to the system edge (<code>m4i_system_parent_assignment</code>, which DD-637's audit had tested only from the parent end). No rule is retired and no code changes; no sample system holds a subsystem, so no verdict moves and the two systems without a collection keep failing. Reuses the 12.7b machinery (<code>anyOf</code>, VEV-09); the three 14.6 gates re-baseline under DV-174</td>
 <td>none (the metamodel carries both ends of the system edge; the webapp already shows <code>childSystem</code> as Subsystems; DV-174 carves the oracle damage for the edited rule)</td>
 <td>in review</td>
+</tr>
+<tr>
+<td>12.7f</td>
+<td>The verdicts per tenant</td>
+<td>With tenancy on, <code>aurelius-atlas-validate-entity</code> reads a tenant's governance rules with the caller's token and caches them per tenant, so the editor's verdicts appear again (VET-01..05, DD-820)</td>
+<td>none</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>13.1</td>
