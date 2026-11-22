@@ -2068,6 +2068,22 @@ The technical data governance model consists of the following types of entities:
         <source>Removed</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.removed</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.history.restore" datatype="html">
+        <source>Restore</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restore</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.restoreAria" datatype="html">
+        <source>Restore <x id="name" equiv-text="{{name}}"/></source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restoreAria</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.restoreFailed" datatype="html">
+        <source>Restoring the attribute</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restoreFailed</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.restored" datatype="html">
+        <source>Entity restored</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.restored</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.historyPlaceholder" datatype="html">
         <source>History</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.historyPlaceholder</note>

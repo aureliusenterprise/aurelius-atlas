@@ -114,6 +114,16 @@
         </div>
     }
 
+    <!-- The commit outcome (LR-005): the same persistent-region shape —
+         the save/delete success paths fill this line just before the
+         navigation takes the drawer away, so the outcome is said and not
+         only acted on. The native <output> carries the status role and
+         the polite live region implicitly (DD-549). Since 7.38 it sits above
+         both panes rather than inside the Entity pane: a restore fills it
+         from the History pane (HST-11), and a line inside a hidden pane is
+         hidden from the reader that needs it. -->
+    <output class="is-sr-only aurelius-editor-outcome">{{ outcomeLine() }}</output>
+
     <!-- The Entity pane (HST-02): mounted for the drawer's whole life and
          hidden while History shows, so the form keeps its DOM state — the
          markdown field's pane rule (DD-352). -->
@@ -123,13 +133,6 @@
          line lands in — an <output> created and filled in one frame can be
          missed. Empty text, empty announcement. -->
         <output class="help aurelius-editor-loading">{{ loadingText() }}</output>
-
-        <!-- The commit outcome (LR-005): the same persistent-region shape —
-         the save/delete success paths fill this line just before the
-         navigation takes the drawer away, so the outcome is said and not
-         only acted on. The native <output> carries the status role and
-         the polite live region implicitly (DD-549). -->
-        <output class="is-sr-only aurelius-editor-outcome">{{ outcomeLine() }}</output>
 
         <!-- Create mode: the type field over the shipped entity typedefs
          (EDT-04, DD-330). It stays above the form after the pick — the
@@ -527,6 +530,28 @@
                                                         <del>{{ change.from }}</del>
                                                         <span>&rarr;</span>
                                                         <ins>{{ change.to }}</ins>
+                                                        @if (auditRestoreOf(change)) {
+                                                            @if (auditRestoreShown()) {
+                                                                <!-- The restore writes one attribute back (HST-11,
+                                                                     DD-822): the stored old value the del shows, and
+                                                                     nothing else. Its accessible name names the
+                                                                     attribute, because every line of the list would
+                                                                     otherwise read "Restore". -->
+                                                                <button
+                                                                    type="button"
+                                                                    class="button is-small aurelius-editor-restore ml-2"
+                                                                    [disabled]="auditRestoreDisabled()"
+                                                                    [class.is-loading]="auditRestoreBusy(change)"
+                                                                    [attr.aria-busy]="
+                                                                        auditRestoreBusy(change) ? 'true' : null
+                                                                    "
+                                                                    [attr.aria-label]="auditRestoreLabel(change)"
+                                                                    (click)="restoreAttribute(change)"
+                                                                >
+                                                                    <span>{{ auditRestoreLine }}</span>
+                                                                </button>
+                                                            }
+                                                        }
                                                     }
                                                     @if (change.kind === "added") {
                                                         <span>{{ auditAddedLine }}:</span>

@@ -77,6 +77,10 @@ export type AuditAttributeChange = {
     from?: string;
     /** The value after, absent for a removed attribute. */
     to?: string;
+    /** The stored value before the write, on the changed rows only (HST-11):
+     * what a restore sends back, where {@link AuditAttributeChange.from} is
+     * the text shown for it. */
+    storedFrom?: unknown;
 };
 
 /** One relationship end a change list added or removed (HST-10). */
@@ -174,7 +178,13 @@ export function diffAuditStates(from: AuditState, to: AuditState): AuditStateDif
         } else if (!(name in to.attributes)) {
             attributes.push({ kind: "removed", name, from: formatValue(before) });
         } else if (!sameValue(before, after)) {
-            attributes.push({ kind: "changed", name, from: formatValue(before), to: formatValue(after) });
+            attributes.push({
+                kind: "changed",
+                name,
+                from: formatValue(before),
+                to: formatValue(after),
+                storedFrom: before,
+            });
         }
     }
 
@@ -233,6 +243,32 @@ export function auditTrailChanges(events: readonly EntityAuditEventV2[]): Readon
     }
 
     return changes;
+}
+
+/**
+ * Whether a changed row's stored old value can be written back (HST-11, EWR-15):
+ * the single-attribute door takes a primitive or a reference, and a change
+ * list's own value shape holds no reference, so only text, number and boolean
+ * values answer yes. A list, an object and a missing value answer no.
+ * @param value the stored value a changed row carries
+ */
+export function isRestorableValue(value: unknown): value is string | number | boolean {
+    return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+}
+
+/** What one change-list row restores (HST-11): the attribute and the value. */
+export type AuditRestore = { name: string; value: string | number | boolean };
+
+/**
+ * The attribute a row restores, or null when the row restores nothing (HST-11):
+ * only a changed row whose stored old value the single-attribute door can take
+ * names one, so an added, removed or multi-valued row carries no restore.
+ * @param change one attribute line of a change list
+ */
+export function restoreOf(change: AuditAttributeChange): AuditRestore | null {
+    return change.kind === "changed" && isRestorableValue(change.storedFrom)
+        ? { name: change.name, value: change.storedFrom }
+        : null;
 }
 
 /** The stored attribute map, or nothing when the body held none. */
