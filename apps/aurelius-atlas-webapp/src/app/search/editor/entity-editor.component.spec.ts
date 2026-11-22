@@ -3012,8 +3012,10 @@ describe("EntityEditor history change details (HST-10)", () => {
 
         const pane = auditChangePane(auditRows(compiled)[0])!;
         expect(normalize(pane.textContent)).toContain("Attributes");
-        const line = normalize(pane.querySelector("li")?.textContent);
-        expect(line).toContain("name");
+        const line = normalize(pane.querySelector("tbody tr")?.textContent);
+        // The row words the attribute as the form words it (HST-14), and it is
+        // still the attribute the trail changed.
+        expect(line).toContain("Name");
         expect(pane.querySelector("del")?.textContent).toBe("first");
         expect(pane.querySelector("ins")?.textContent).toBe("second");
     });
@@ -3031,7 +3033,7 @@ describe("EntityEditor history change details (HST-10)", () => {
 
         const pane = auditChangePane(auditRows(compiled)[1])!;
         expect(normalize(pane.textContent)).toContain("Added");
-        expect(normalize(pane.querySelector("li")?.textContent)).toContain("name");
+        expect(normalize(pane.querySelector("tbody tr")?.textContent)).toContain("Name");
         expect(pane.querySelector("ins")).toBeNull();
     });
 
@@ -3229,6 +3231,201 @@ describe("EntityEditor history change details (HST-10)", () => {
     });
 });
 
+/** The two change tables of an open change list, attributes first (HST-12).
+ * Each is the shared sortable table component (UIC-05, DD-823), so the helper
+ * finds its host elements rather than a table the drawer would own. */
+function auditTables(pane: HTMLElement): HTMLElement[] {
+    return [...pane.querySelectorAll<HTMLElement>("aurelius-atlas-ui-sortable-table")];
+}
+
+/** The header words of a table, in order (HST-12). */
+function auditHeaders(table: HTMLElement): string[] {
+    return [...table.querySelectorAll("thead th")].map((cell) => normalize(cell.textContent)!);
+}
+
+/** The trail of the table tests: one attribute change and two ends, one added
+ * and one removed (HST-12). The added end carries a type, so its crumb can
+ * show an icon (DET-26). */
+const TABLE_TRAIL: EntityAuditEventV2[] = [
+    stateAuditEvent(
+        "ENTITY_UPDATE",
+        "1700000020000:0",
+        { name: "second" },
+        { input: [{ guid: "b", typeName: "m4i_system", displayText: "beta" }] },
+    ),
+    stateAuditEvent(
+        "ENTITY_UPDATE",
+        "1700000010000:0",
+        { name: "first" },
+        { input: [{ guid: "a", typeName: "m4i_dataset", displayText: "alpha" }] },
+    ),
+];
+
+/** Open the newest row's change list over a trail (HST-12). */
+function openChangePane(
+    compiled: HTMLElement,
+    fixture: ComponentFixture<EntityEditor>,
+    httpMock: HttpTestingController,
+    trail: EntityAuditEventV2[] = TABLE_TRAIL,
+): HTMLElement {
+    openHistoryTab(compiled, fixture);
+    httpMock.expectOne(AUDIT_URL).flush(trail);
+    fixture.detectChanges();
+    auditToggle(auditRows(compiled)[0]).click();
+    fixture.detectChanges();
+
+    return auditChangePane(auditRows(compiled)[0])!;
+}
+
+describe("EntityEditor history change tables (HST-12)", () => {
+    it("an open change list is two tables, each with its own header row (HST-12)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock);
+        const tables = auditTables(pane);
+
+        expect(tables).toHaveLength(2);
+        expect(auditHeaders(tables[0])).toEqual(["Action", "Name", "Value"]);
+        expect(auditHeaders(tables[1])).toEqual(["Action", "Relationship", "Entity"]);
+    });
+
+    it("a section with no changes shows no table and no caption (HST-12)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        // The attributes of both states are equal, so only the relationship
+        // table is there (HST-10's rule, now about tables).
+        const pane = openChangePane(compiled, fixture, httpMock, [
+            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { name: "same" }, { input: [{ guid: "b" }] }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { name: "same" }, { input: [] }),
+        ]);
+
+        expect(auditTables(pane)).toHaveLength(1);
+        expect(auditHeaders(auditTables(pane)[0])).toEqual(["Action", "Relationship", "Entity"]);
+        expect(normalize(pane.textContent)).not.toContain("Attributes");
+    });
+
+    it("the attributes table names the action of each of its rows (HST-12)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock);
+        const rows = [...auditTables(pane)[0].querySelectorAll("tbody tr")];
+
+        expect(rows).toHaveLength(1);
+        const cells = [...rows[0].querySelectorAll("td")];
+        expect(normalize(cells[0]?.textContent)).toBe("Changed");
+        // The attribute's own localized field label, not its wire name (HST-14).
+        expect(normalize(cells[1]?.textContent)).toBe("Name");
+        // The value cell keeps 7.37's marks (HST-12 moves them, it does not
+        // change them), and the restore button of 7.38 sits in the same cell.
+        expect(cells[2]?.querySelector("del")?.textContent).toBe("first");
+        expect(cells[2]?.querySelector("ins")?.textContent).toBe("second");
+        expect(cells[2]?.querySelector(".aurelius-editor-restore")).toBeTruthy();
+    });
+
+    it("the relationships table names each end's action, attribute and entity (HST-12)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock);
+        const rows = [...auditTables(pane)[1].querySelectorAll("tbody tr")];
+
+        expect(rows).toHaveLength(2);
+        expect(normalize(rows[0].querySelector("td")?.textContent)).toBe("Added");
+        expect(normalize(rows[0].querySelectorAll("td")[1]?.textContent)).toBe("input");
+        expect(normalize(rows[0].querySelector("aurelius-atlas-ui-breadcrumbs")?.textContent)).toBe("beta");
+        expect(normalize(rows[1].querySelector("td")?.textContent)).toBe("Removed");
+        expect(normalize(rows[1].querySelector("aurelius-atlas-ui-breadcrumbs")?.textContent)).toBe("alpha");
+    });
+
+    it("a relationship crumb carries its end's type icon (HST-12, DET-26)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock);
+        const crumbs = [...pane.querySelectorAll("aurelius-atlas-ui-breadcrumbs")];
+
+        expect(crumbs).toHaveLength(2);
+        expect(crumbs[0]?.querySelector("fa-icon svg")).toBeTruthy();
+    });
+
+    it("pressing a relationship crumb opens that entity's details and closes the drawer (HST-12)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        const pane = openChangePane(compiled, fixture, httpMock);
+        const link = pane.querySelector<HTMLAnchorElement>("aurelius-atlas-ui-breadcrumbs a")!;
+        expect(link.getAttribute("href")).toBe("#");
+
+        link.click();
+        fixture.detectChanges();
+
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "b"], drawer: null } }]);
+        // Pressing a crumb reads nothing: the audit wire stays read-only and no
+        // read goes out for the end the crumb names (AUD-06, DD-823).
+        httpMock.verify();
+    });
+
+    it("the edited entity's own end prints as plain text and presses nothing (HST-12, UIC-11)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        const pane = openChangePane(compiled, fixture, httpMock, [
+            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { name: "n" }, { input: [{ guid: "7a1b" }] }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { name: "n" }, { input: [] }),
+        ]);
+
+        // The end carries no display text, so the crumb names it by its guid
+        // (HST-12), and it is the entity the drawer edits — text, not a link.
+        const crumb = pane.querySelector<HTMLElement>("aurelius-atlas-ui-breadcrumbs")!;
+        expect(normalize(crumb.textContent)).toBe("7a1b");
+        expect(crumb.querySelector("a")).toBeNull();
+
+        crumb.click();
+        fixture.detectChanges();
+        expect(navigate).not.toHaveBeenCalled();
+    });
+});
+
+describe("EntityEditor history change-table words (HST-14)", () => {
+    it("a name cell words a field as the form words it (HST-14)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        // `qualifiedName` and `systems` both have a dictionary label; `input`
+        // has none. The trail shows all three shapes at once (EDT-33, EDT-03).
+        const pane = openChangePane(compiled, fixture, httpMock, [
+            stateAuditEvent(
+                "ENTITY_UPDATE",
+                "1700000020000:0",
+                { qualifiedName: "q-new" },
+                {
+                    systems: [{ guid: "b", typeName: "m4i_system", displayText: "beta" }],
+                    input: [{ guid: "c", displayText: "gamma" }],
+                },
+            ),
+            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { qualifiedName: "q-old" }, { systems: [], input: [] }),
+        ]);
+        const tables = auditTables(pane);
+
+        const attributeName = [...tables[0].querySelectorAll("tbody tr")].map((row) =>
+            normalize(row.querySelectorAll("td")[1]?.textContent)!,
+        );
+        expect(attributeName).toEqual(["Qualified Name"]);
+
+        const relationshipName = [...tables[1].querySelectorAll("tbody tr")].map((row) =>
+            normalize(row.querySelectorAll("td")[1]?.textContent)!,
+        );
+        // One catalogued, one uncatalogued: the second keeps the word Atlas
+        // stores it under, exactly as its own form field would (EDT-03).
+        expect(relationshipName.sort()).toEqual(["Systems", "input"]);
+    });
+});
+
 /** The matcher for one restore write (HST-11, EWR-15): the single-attribute
  * PUT of the changed line's attribute, the body carrying its stored old value. */
 function restoreRequest(name: string) {
@@ -3263,7 +3460,7 @@ describe("EntityEditor history attribute restore (HST-11)", () => {
 
         expect(buttons).toHaveLength(1);
         expect(normalize(buttons[0]?.textContent)).toBe("Restore");
-        expect(buttons[0]?.getAttribute("aria-label")).toBe("Restore name");
+        expect(buttons[0]?.getAttribute("aria-label")).toBe("Restore Name");
 
         buttons[0]?.click();
         fixture.detectChanges();

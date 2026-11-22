@@ -38,11 +38,17 @@ function prefixOf(action: EntityAuditEventV2["action"]): string {
 }
 
 /** The end of a stored `relationshipAttributes` list, as the writer leaves it. */
-function end(guid: string, displayText?: string, relationshipStatus?: "ACTIVE" | "DELETED"): unknown {
+function end(
+    guid: string,
+    displayText?: string,
+    relationshipStatus?: "ACTIVE" | "DELETED",
+    typeName?: string,
+): unknown {
     return {
         guid,
         ...(displayText === undefined ? {} : { displayText }),
         ...(relationshipStatus === undefined ? {} : { relationshipStatus }),
+        ...(typeName === undefined ? {} : { typeName }),
     };
 }
 
@@ -150,6 +156,20 @@ describe("audit-details (HST-10, DD-821)", () => {
         }
     });
 
+    it("keeps an end's type, which gives the change list's crumb its icon (HST-12)", () => {
+        const parsed = parseAuditState(
+            stateEvent("ENTITY_UPDATE", {
+                attributes: {},
+                relationshipAttributes: { input: [end("a", "A", undefined, "m4i_system")] },
+            }),
+        );
+
+        expect(parsed).toEqual({
+            status: "full",
+            state: { attributes: {}, relationships: { input: [{ guid: "a", display: "A", typeName: "m4i_system" }] } },
+        });
+    });
+
     it("falls back to an end's GUID when it carries no display text (HST-10)", () => {
         const parsed = parseAuditState(
             stateEvent("ENTITY_UPDATE", { attributes: {}, relationshipAttributes: { input: [end("a")] } }),
@@ -195,6 +215,63 @@ describe("audit-details (HST-10, DD-821)", () => {
         expect(attributes).toEqual([]);
     });
 
+    it("keeps a blank attribute off the change list (HST-13, DD-824)", () => {
+        // The store writes every attribute the type defines, so a create
+        // arrives with the fields the entity left unset still on the body.
+        // None of them is a change.
+        const { attributes } = diffAuditStates(
+            { attributes: {}, relationships: {} },
+            {
+                attributes: {
+                    name: "n",
+                    definition: "",
+                    collections: [],
+                    uiParameters: {},
+                    omitted: undefined,
+                },
+                relationships: {},
+            },
+        );
+
+        expect(attributes).toEqual([{ kind: "added", name: "name", to: "n" }]);
+    });
+
+    it("keeps a blank attribute off a removed line too (HST-13)", () => {
+        const { attributes } = diffAuditStates(
+            { attributes: { name: "n", collections: [] }, relationships: {} },
+            { attributes: {}, relationships: {} },
+        );
+
+        expect(attributes).toEqual([{ kind: "removed", name: "name", from: "n" }]);
+    });
+
+    it("reads clearing a field the entity held as a change (HST-13)", () => {
+        // Both states hold the attribute, so the write did something: it took
+        // the value away. The line shows the blank it now holds.
+        const { attributes } = diffAuditStates(
+            { attributes: { definition: "a long definition" }, relationships: {} },
+            { attributes: { definition: "" }, relationships: {} },
+        );
+
+        expect(attributes).toEqual([
+            { kind: "changed", name: "definition", from: "a long definition", to: "", storedFrom: "a long definition" },
+        ]);
+    });
+
+    it("keeps values that only look blank (HST-13)", () => {
+        // Zero, false and a space are answers the person gave, not nothing.
+        const { attributes } = diffAuditStates(
+            { attributes: {}, relationships: {} },
+            { attributes: { count: 0, passed: false, alias: " " }, relationships: {} },
+        );
+
+        expect(attributes).toEqual([
+            { kind: "added", name: "count", to: "0" },
+            { kind: "added", name: "passed", to: "false" },
+            { kind: "added", name: "alias", to: " " },
+        ]);
+    });
+
     it("diffs relationship ends by GUID, so a renamed end is no change (HST-10)", () => {
         const from = { attributes: {}, relationships: { input: [{ guid: "a", display: "Old name" }] } };
         const to = { attributes: {}, relationships: { input: [{ guid: "a", display: "New name" }] } };
@@ -209,9 +286,80 @@ describe("audit-details (HST-10, DD-821)", () => {
         );
 
         expect(relationships).toEqual([
-            { kind: "added", attribute: "input", entity: "B" },
-            { kind: "removed", attribute: "input", entity: "A" },
+            { kind: "added", attribute: "input", entity: "B", guid: "b" },
+            { kind: "removed", attribute: "input", entity: "A", guid: "a" },
         ]);
+    });
+
+    it("carries the end's own type onto its line (HST-12)", () => {
+        const { relationships } = diffAuditStates(
+            { attributes: {}, relationships: { input: [] } },
+            { attributes: {}, relationships: { input: [{ guid: "b", display: "B", typeName: "m4i_system" }] } },
+        );
+
+        expect(relationships).toEqual([
+            { kind: "added", attribute: "input", entity: "B", guid: "b", typeName: "m4i_system" },
+        ]);
+    });
+
+    it("reads a reference stored among the attributes as a relationship line (HST-12, DD-823)", () => {
+        // The listener writes its body from an entity read without
+        // relationships, and Atlas keeps a reference in `attributes`, so this
+        // is what the wire actually holds for a collection's systems (AUD-03).
+        const { attributes, relationships } = diffAuditStates(
+            { attributes: { systems: [], name: "c" }, relationships: {} },
+            {
+                attributes: {
+                    systems: [
+                        { guid: "a", typeName: "m4i_system", uniqueAttributes: { qualifiedName: "beta" } },
+                        { guid: "b", typeName: "m4i_system", displayText: "gamma" },
+                    ],
+                    name: "c",
+                },
+                relationships: {},
+            },
+        );
+
+        expect(attributes).toEqual([]);
+        expect(relationships).toEqual([
+            { kind: "added", attribute: "systems", entity: "beta", guid: "a", typeName: "m4i_system" },
+            { kind: "added", attribute: "systems", entity: "gamma", guid: "b", typeName: "m4i_system" },
+        ]);
+    });
+
+    it("reads a dropped reference as a removed end, not a changed value (HST-12)", () => {
+        const { attributes, relationships } = diffAuditStates(
+            {
+                attributes: { db: { guid: "a", typeName: "m4i_database", displayText: "warehouse" } },
+                relationships: {},
+            },
+            { attributes: {}, relationships: {} },
+        );
+
+        expect(attributes).toEqual([]);
+        expect(relationships).toEqual([
+            { kind: "removed", attribute: "db", entity: "warehouse", guid: "a", typeName: "m4i_database" },
+        ]);
+    });
+
+    it("keeps a list of plain objects a value of its own (HST-12)", () => {
+        // A struct list names no entity — no GUID and type to point at — so it
+        // stays in the attributes table as text rather than becoming an end.
+        const { attributes, relationships } = diffAuditStates(
+            { attributes: { tags: [{ key: "a", value: 1 }] }, relationships: {} },
+            { attributes: { tags: [{ key: "a", value: 2 }] }, relationships: {} },
+        );
+
+        expect(attributes).toEqual([
+            {
+                kind: "changed",
+                name: "tags",
+                from: '[{"key":"a","value":1}]',
+                to: '[{"key":"a","value":2}]',
+                storedFrom: [{ key: "a", value: 1 }],
+            },
+        ]);
+        expect(relationships).toEqual([]);
     });
 
     it("answers two identical states with nothing changed (HST-10)", () => {
@@ -226,7 +374,7 @@ describe("audit-details (HST-10, DD-821)", () => {
         expect(diffAuditStates(emptyAuditState(), created)).toEqual({
             kind: "diff",
             attributes: [{ kind: "added", name: "name", to: "n" }],
-            relationships: [{ kind: "added", attribute: "input", entity: "A" }],
+            relationships: [{ kind: "added", attribute: "input", entity: "A", guid: "a" }],
         });
     });
 

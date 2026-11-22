@@ -25,7 +25,19 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
-import { Drawer, Holdable, InfiniteScrollContainer, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
+import {
+    Breadcrumbs,
+    type Breadcrumb,
+    Drawer,
+    Holdable,
+    InfiniteScrollContainer,
+    MarkdownEditor,
+    Select,
+    SortableTable,
+    TableColumn,
+    TableRow,
+    TypeName,
+} from "aurelius-atlas-ui";
 import {
     AtlasEntitiesService,
     QualityRuleService,
@@ -43,6 +55,7 @@ import {
     type AuditAttributeChange,
     auditRowKey,
     type AuditChanges,
+    type AuditRelationshipChange,
     type AuditRestore,
     auditTrailChanges,
     isStateAction,
@@ -63,6 +76,7 @@ import {
     blockedRelationshipNames,
     buildFields,
     buildRelationshipFields,
+    fieldLabel,
     mergeOntoEntity,
     mergeRelationshipsOntoEntity,
     seedRelationshipValues,
@@ -135,6 +149,7 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  */
 @Component({
     imports: [
+        Breadcrumbs,
         ClassificationCombobox,
         DatePipe,
         Drawer,
@@ -147,6 +162,9 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
         NgTemplateOutlet,
         QualityFields,
         Select,
+        SortableTable,
+        TableColumn,
+        TableRow,
         TypeName,
     ],
     providers: [EditorState],
@@ -1180,6 +1198,10 @@ export class EntityEditor {
 
     /** The change list's heading (HST-10). */
     protected readonly auditChangeLine = $localize`:@@search.components.editor.history.changes:Changes`;
+    /** The change-list tables' page size (HST-12): one change list per audit
+     * row is small, and the page is generous enough that the sortable table's
+     * pagination bar never appears here — the rows are all shown. */
+    protected readonly auditTablePage = 100;
     /** The row's own state, compared with the state before it (HST-10). */
     protected readonly auditNoChangesLine = $localize`:@@search.components.editor.history.noChanges:Nothing changed`;
     /** The row with no older state on screen (HST-10). */
@@ -1194,10 +1216,37 @@ export class EntityEditor {
     protected readonly auditAddedLine = $localize`:@@search.components.editor.history.added:Added`;
     /** The change list's removed line (HST-10). */
     protected readonly auditRemovedLine = $localize`:@@search.components.editor.history.removed:Removed`;
+    /** The change list's changed line (HST-12): the third action of the
+     * attribute table, the one the changed row's `del`/`ins` pair shows. */
+    protected readonly auditChangedLine = $localize`:@@search.components.editor.history.changed:Changed`;
+    /** The attribute table's action header (HST-12). */
+    protected readonly auditActionHeader = $localize`:@@search.components.editor.history.action:Action`;
+    /** The attribute table's name header (HST-12): the table lists attributes,
+     * so its first column names them — the plain word, without the required
+     * star the editor's own field label for `name` carries (DD-356). */
+    protected readonly auditNameHeader = $localize`:@@search.components.editor.history.name:Name`;
+    /** The attribute table's value header (HST-12): the detail screen's own
+     * Properties word for a stored value (DET-11). */
+    protected readonly auditValueHeader = $localize`:@@search.details.components.properties.value:Value`;
+    /** The relationship table's relationship header (HST-12): which relation-
+     * ship attribute an end belongs to. */
+    protected readonly auditRelationshipHeader = $localize`:@@search.components.editor.history.relationship:Relationship`;
+    /** The relationship table's entity header (HST-12). */
+    protected readonly auditEntityHeader = $localize`:@@search.components.editor.history.entity:Entity`;
     /** The restore button's text (HST-11). */
     protected readonly auditRestoreLine = $localize`:@@search.components.editor.history.restore:Restore`;
     /** The status line a finished restore fills (HST-11, LR-005). */
     protected readonly auditRestoredLine = $localize`:@@search.components.editor.history.restored:Entity restored`;
+
+    /** The change lists' name for an attribute or relationship attribute
+     * (HST-12): the same localized field label the form shows for it (EDT-33),
+     * so a table line and the field it describes carry one word. The stored
+     * wire name stays underneath — `openAuditEnd` and the restore send it.
+     * @param name the attribute's wire name
+     * @returns the label to show */
+    protected auditName(name: string): string {
+        return fieldLabel(name, this.labels);
+    }
 
     /** Whether a row shows a change list toggle (HST-10): the four
      * entity-state actions carry a stored state to open, and only their rows
@@ -1234,6 +1283,45 @@ export class EntityEditor {
         return restoreOf(change);
     }
 
+    /**
+     * The relationship line's entity as one breadcrumb crumb (HST-12):
+     * the end's display text and its type icon, the anatomy every other
+     * entity mention in the product uses (VDR-06, DET-26). The audit body
+     * stores only the end's guid, type and display text, so the crumb is the
+     * end alone and never its parent trail (DD-823).
+     * @param change one relationship line of a change list
+     */
+    protected auditEndCrumb(change: AuditRelationshipChange): Breadcrumb[] {
+        const found = typeIcon(change.typeName ?? "");
+        return [
+            {
+                guid: change.guid,
+                name: change.entity,
+                typeName: change.typeName ?? "",
+                ...(found !== undefined ? { icon: found.icon, iconClass: found.classIcon } : {}),
+            },
+        ];
+    }
+
+    /** The entity the change list's crumbs are read against (HST-12): the
+     * edited entity's guid, so the crumb of that entity prints as plain text
+     * and never as a link back to the screen behind the drawer (UIC-11). */
+    protected auditEndActiveGuid(): string {
+        return this.state.entity()?.guid ?? this.guid();
+    }
+
+    /**
+     * A relationship line's crumb was pressed (HST-12): open that entity's
+     * details screen and close the drawer, the way a finished save leaves the
+     * screen. Nothing is written and nothing is read for it — the audit wire
+     * stays read-only (AUD-06).
+     * @param guid the clicked end entity's guid
+     */
+    protected openAuditEnd(guid: string): void {
+        this.active.set(false);
+        void this.router.navigate([{ outlets: { primary: ["search", "details", guid], drawer: null } }]);
+    }
+
     /** Whether a change-list line can offer a restore at all (HST-11, EDT-09):
      * the edit-mode drawer of a person who holds the entity-write privilege.
      * Anywhere else the line stays plain text and asks nothing. */
@@ -1255,9 +1343,11 @@ export class EntityEditor {
     }
 
     /** The restore's accessible name (HST-11): the button's text alone would
-     * read the same for every line of a change list. */
+     * read the same for every line of a change list. The attribute rides the
+     * table's own localized name, so the line the button sits on and the name
+     * a screen reader speaks agree. */
     protected auditRestoreLabel(change: AuditAttributeChange): string {
-        return $localize`:@@search.components.editor.history.restoreAria:Restore ${change.name}:name:`;
+        return $localize`:@@search.components.editor.history.restoreAria:Restore ${this.auditName(change.name)}:name:`;
     }
 
     /**

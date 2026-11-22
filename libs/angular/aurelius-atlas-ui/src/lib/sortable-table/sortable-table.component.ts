@@ -46,9 +46,10 @@ import { SortDirection, TableColumn, TableRow } from "./table-column";
 export class SortableTable<T extends Record<string, unknown>> {
     /**
      * The rows. The Aurelius shell's `data` input, sorted and paged by the
-     * table itself.
+     * table itself. Readonly: the table never changes the caller's array, it
+     * sorts and pages copies of it.
      */
-    readonly rows = input<T[]>([]);
+    readonly rows = input<readonly T[]>([]);
 
     /**
      * Property the rows are sorted by, `undefined` for the source order.
