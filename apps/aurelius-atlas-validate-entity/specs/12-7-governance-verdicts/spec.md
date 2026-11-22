@@ -65,7 +65,9 @@ every deployed environment; only a cluster without the realm join leaves the sec
 VEV-06 answers `502` rather than a start-up failure: the app stays live without its governance
 leg. CL-40 is amended: the client twin models the verdicts, not the cards. EDT-21/23/24 are
 amended: the trigger and the quiet swallow stand; the banner parses the verdict array (grouping
-keeps the legacy `definition` → Description alias, GOV_CARD_KEYS).
+keeps the legacy `definition` → Description alias, GOV_CARD_KEYS). **Amended (18.8, SPA-06,
+DD-832):** the alias falls away. 18.8 retired the m4i dictionary's `definition` (SPA-01), no
+shipped rule names it (PME-13), and a `description` verdict names the `description` control.
 
 ## Aurelius origin
 

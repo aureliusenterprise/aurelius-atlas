@@ -515,7 +515,7 @@ CLASSIFICATION_BACKED = frozenset({"hasPII", "isKeyData", "riskClassification"})
 
 @pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["ACA-01"])
 def test__the_data_attribute_type_states_its_tags_only_as_classifications() -> None:
-    """The data attribute type declares none of the three attributes, holds version ``1.2``, and the five
+    """The data attribute type declares none of the three attributes, holds version ``1.3``, and the five
     classifications still apply to it (ACA-01).
     """  # noqa: D205 - one sentence
     model = json.loads(MODEL.read_text(encoding="utf-8"))
@@ -523,7 +523,7 @@ def test__the_data_attribute_type_states_its_tags_only_as_classifications() -> N
     definition = entities["m4i_data_attribute"]
 
     assert not CLASSIFICATION_BACKED & {a["name"] for a in definition["attributeDefs"]}
-    assert definition["typeVersion"] == "1.2"
+    assert definition["typeVersion"] == "1.3"
     assert CLASSIFICATION_BACKED.isdisjoint(answerable_names(m4i_registry(), "m4i_data_attribute"))
 
     applicable = {c["name"]: set(c["entityTypes"]) for c in model["classificationDefs"]}
@@ -534,7 +534,7 @@ def test__the_data_attribute_type_states_its_tags_only_as_classifications() -> N
 
 @pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["ACA-02"])
 def test__every_bundle_declares_and_holds_the_type_without_the_three_attributes() -> None:
-    """Each bundle's typedef file declares the data attribute type at ``1.2`` without the three attributes, and
+    """Each bundle's typedef file declares the data attribute type at ``1.3`` without the three attributes, and
     no entity of that type names one in either frame (ACA-02).
     """  # noqa: D205 - one sentence
     model = m4i_of(json.loads(MODEL.read_text(encoding="utf-8")))
@@ -544,7 +544,7 @@ def test__every_bundle_declares_and_holds_the_type_without_the_three_attributes(
             types = m4i_of(_typesdef(sample))
             definition = types["m4i_data_attribute"]
 
-            assert definition["typeVersion"] == "1.2", sample.name
+            assert definition["typeVersion"] == "1.3", sample.name
             assert not CLASSIFICATION_BACKED & {a["name"] for a in definition["attributeDefs"]}, sample.name
             if sample.name == "only_gov_quality.zip":
                 # The older export states fewer fields per attribute, as in MDD-02.
@@ -599,7 +599,7 @@ RULE_BUNDLES = ("sample_data.zip", "only_gov_quality.zip")
 @pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["FFB-01"])
 def test__the_field_type_holds_its_flag_as_a_boolean_and_no_content_flag() -> None:
     """The field type declares no ``hasContent``, declares ``optionalField`` as a single boolean, and holds
-    version ``1.2`` (FFB-01).
+    version ``1.3`` (FFB-01).
     """  # noqa: D205 - one sentence
     model = json.loads(MODEL.read_text(encoding="utf-8"))
     entities = {definition["name"]: definition for definition in model["entityDefs"]}
@@ -607,7 +607,7 @@ def test__the_field_type_holds_its_flag_as_a_boolean_and_no_content_flag() -> No
 
     attributes = {attribute["name"]: attribute for attribute in definition["attributeDefs"]}
     assert "hasContent" not in attributes, sorted(attributes)
-    assert definition["typeVersion"] == "1.2"
+    assert definition["typeVersion"] == "1.3"
 
     flag = attributes["optionalField"]
     assert (flag["typeName"], flag["cardinality"]) == ("boolean", "SINGLE")
@@ -620,7 +620,7 @@ def test__the_field_type_holds_its_flag_as_a_boolean_and_no_content_flag() -> No
 
 @pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["FFB-02"])
 def test__every_bundle_declares_the_boolean_flag_and_holds_no_content_key() -> None:
-    """Each bundle's typedef file declares the field type at ``1.2`` with the boolean flag and no content flag,
+    """Each bundle's typedef file declares the field type at ``1.3`` with the boolean flag and no content flag,
     and no field entity names the dropped key or holds a value for the flag (FFB-02).
     """  # noqa: D205 - one sentence
     model = m4i_of(json.loads(MODEL.read_text(encoding="utf-8")))
@@ -630,7 +630,7 @@ def test__every_bundle_declares_the_boolean_flag_and_holds_no_content_key() -> N
             types = m4i_of(_typesdef(sample))
             definition = types["m4i_field"]
 
-            assert definition["typeVersion"] == "1.2", sample.name
+            assert definition["typeVersion"] == "1.3", sample.name
             attributes = {attribute["name"]: attribute for attribute in definition["attributeDefs"]}
             assert "hasContent" not in attributes, (sample.name, sorted(attributes))
             assert attributes["optionalField"]["typeName"] == "boolean", sample.name

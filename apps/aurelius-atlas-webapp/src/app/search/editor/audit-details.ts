@@ -82,7 +82,7 @@ export type AuditStateDiff = {
 
 /** One entity description a change list reworded (HST-15). */
 export type AuditProseChange = {
-    /** The attribute's name: `definition` or `description` (EDT-20). */
+    /** The attribute's name: `description` (EDT-20 as amended by 18.8). */
     name: string;
     /** The text before, empty when the write filled an empty description. */
     from: string;
@@ -221,7 +221,7 @@ export function diffAuditStates(from: AuditState, to: AuditState): AuditStateDif
         }
         const before = from.attributes[name];
         const after = to.attributes[name];
-        // The two descriptions leave the tables for their own section (HST-15).
+        // The prose attribute leaves the tables for its own section (HST-15).
         const prose = PROSE_KEYS.includes(name);
         if (!(name in from.attributes)) {
             // The attribute appeared, so the write set it — unless what it

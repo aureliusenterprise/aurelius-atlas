@@ -182,7 +182,9 @@ def build_graph(
                 "fieldType": column.field_type,
             }
             if column.definition is not None:
-                attributes["definition"] = column.definition
+                # DBS-06 as amended by 18.8/SPA-04: the comment or primary-key mark rides the one prose
+                # attribute the shipped model declares.
+                attributes["description"] = column.definition
             fields.append(
                 AtlasEntity(
                     guid=field_guid,
@@ -193,7 +195,8 @@ def build_graph(
             )
         attributes = {"name": table.name, "qualifiedName": qualified}
         if table.definition is not None:
-            attributes["definition"] = table.definition
+            # DBS-07 as amended by 18.8/SPA-04: the table comment rides the one prose attribute (DD-832).
+            attributes["description"] = table.definition
         datasets.append(
             AtlasEntity(
                 guid=guid,

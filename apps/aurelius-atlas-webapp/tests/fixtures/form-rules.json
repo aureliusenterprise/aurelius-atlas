@@ -11,7 +11,6 @@
     "constraintType": "mutuallyExclusive",
     "dateType": "date",
     "descriptionKeys": [
-        "definition",
         "description"
     ],
     "numericTypes": [

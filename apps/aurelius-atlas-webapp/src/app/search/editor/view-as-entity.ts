@@ -15,6 +15,7 @@
 import type { AtlasEntity, EntityView, ViewSaveRequest, ViewSectionInput } from "aurelius-atlas-data-access";
 
 import {
+    HIDDEN_BASE_ATTRIBUTES,
     type EditorField,
     type RelationshipField,
     type RelationshipPick,
@@ -69,7 +70,10 @@ export function entityFromView(view: EntityView): AtlasEntity {
  * (DD-592).
  * A field the person cleared rides `null`, so the door's merge (EWR-10)
  * drops the stored value instead of keeping it. A set no rendered picker
- * owns is left out, and the door leaves it unchanged (AVW-05).
+ * owns is left out, and the door leaves it unchanged (AVW-05). The three
+ * hidden base attributes ride no key either (EDT-37): the read carries them,
+ * the editor builds no control for them, and the body builder drops the keys
+ * so the door leaves the stored values exactly as stored.
  * @param options the base (edit: the view being edited; create: null) and
  *   the draft it merges onto, the rendered fields and pickers, the form's
  *   values and picks, the tag names, and (quality mode, EDT-27) a full
@@ -91,6 +95,18 @@ export function bodyFromEdits(options: {
         options.attributes !== undefined
             ? { ...options.attributes }
             : cleared(mergeOntoEntity(options.entity, options.fields, options.values).attributes ?? {}, options.fields);
+    // The editor builds no control for the three (EDT-37), so the body names
+    // none of them: the door's merge leaves an attribute it does not name as
+    // stored (AVW-05), which is what keeps a stored owner intact. Only the
+    // unrendered keys drop — a control the form does render keeps its write.
+    if (options.attributes === undefined) {
+        const rendered = new Set(options.fields.map((field) => field.name));
+        for (const hidden of HIDDEN_BASE_ATTRIBUTES) {
+            if (!rendered.has(hidden)) {
+                delete attributes[hidden];
+            }
+        }
+    }
 
     const sections: ViewSectionInput[] = [];
     for (const field of options.relationshipFields) {

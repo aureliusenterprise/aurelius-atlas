@@ -66,7 +66,7 @@ for a given catalogue they hold what 14.2's do.
 - `libs/python/aurelius-atlas-core/tests/test__app_search_upkeep.py`, small catalogues in the in-memory store,
   each change followed by one round, and each document compared with the one 14.2 derives from scratch:
     - a rename shows in the breadcrumbs below and in the relations at the other ends (LAS-08), and a changed
-      definition only on the entity's own document;
+      prose text only on the entity's own document (18.8: `description`, SPA-05);
     - a deleted entity's document goes, and it leaves the relations and breadcrumbs that named it; the entities
       below get the breadcrumb of their next parent (LAS-09);
     - a relationship deleted on its own, and one an update of a relationship attribute deletes, leave their

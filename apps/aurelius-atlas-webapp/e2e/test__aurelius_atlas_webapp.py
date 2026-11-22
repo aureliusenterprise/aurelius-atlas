@@ -1027,7 +1027,7 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
                 "attributes": {
                     "qualifiedName": names["alpha"],
                     "name": names["alpha"],
-                    "definition": "The alpha definition.",
+                    "description": "The alpha definition.",
                 },
             },
             {
@@ -1036,7 +1036,7 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
                 "attributes": {
                     "qualifiedName": names["beta"],
                     "name": names["beta"],
-                    "definition": "The beta definition.",
+                    "description": "The beta definition.",
                 },
             },
             entity(
@@ -1258,7 +1258,7 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
     the shared rich card on the domain's Child Entities box shows the same
     roles labelled on it (VCF-15, 16.5f), the Data Attributes section seeds
     from ``relationshipAttributes`` and resolves its cards with their
-    definition text (DET-17, DET-19), the
+    description text (DET-17, DET-19), the
     keyword filter narrows the cards and the reset count line restores them
     (DET-20), and Child Entities renders at its zero count (the empty box,
     no cards). Opening the seeded attribute shows its Fields section — the
@@ -1317,7 +1317,7 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
 
         # DET-17/DET-19: the Data Attributes section at its seeded count,
-        # two cards whose bodies carry the seeded definition text.
+        # two cards whose bodies carry the seeded description text.
         section = authenticated.locator("#related-attributes")
         cards = section.locator("aurelius-atlas-ui-entity-card")
         expect(cards).to_have_count(2)

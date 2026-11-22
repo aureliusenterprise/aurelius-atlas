@@ -53,7 +53,7 @@ async def test__a_results_request_answers_cards_facets_and_a_total(
 ) -> None:
     """The dev store's door: words of a run's name, typed out, faceted and sorted; a reader reads; an anonymous 401."""
     run = uuid.uuid4().hex
-    domain = await make(api, "m4i_data_domain", run, name=f"view door {run}", definition="orders of the door")
+    domain = await make(api, "m4i_data_domain", run, name=f"view door {run}", description="orders of the door")
     table = await make(api, "Asset", run, name=f"view asset {run}")
 
     answer = await api.view.search(
@@ -104,7 +104,7 @@ async def test__the_details_read_of_a_card_agrees_with_the_search_door(
         "m4i_data_entity",
         run,
         name=f"view read {run}",
-        definition="read through one door",
+        description="read through one door",
         typeAlias="Viewed entity",  # the alias rides both doors (MMS-09, DD-721)
     )
 
@@ -114,7 +114,7 @@ async def test__the_details_read_of_a_card_agrees_with_the_search_door(
 
     view = await api.view.read(guid)
     assert {field: getattr(card, field) for field in SHARED} == {field: getattr(view, field) for field in SHARED}
-    assert view.attributes["definition"] == "read through one door"
+    assert view.attributes["description"] == "read through one door"
 
     reader = api.with_token(reader_token)
     assert (await reader.view.read(guid)).guid == guid

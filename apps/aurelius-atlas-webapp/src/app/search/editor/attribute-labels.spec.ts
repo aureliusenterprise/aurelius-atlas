@@ -66,6 +66,19 @@ describe("editor attribute labels (EDT-33, 7-33)", () => {
         expect(CATALOGUE["optionalField"]).toBe("Optional Field");
     });
 
+    it("carries no label for the prose attribute the catalogue retired (SPA-07)", () => {
+        // 18.8 (ADR 070) dropped `definition` from the m4i model, so no field
+        // is built for it and its editor label is gone. Its bare legacy
+        // dictionary siblings stay (the Placeholder/Warning pair comes from
+        // the vendored Aurelius dictionary, DV-181), and SHL-08 compares the
+        // catalogues with each other, not with the model. The one prose
+        // attribute answers its own key, so the markdown field stays labelled.
+        expect(labels["definition"]).toBeUndefined();
+        expect("definition" in CATALOGUE).toBe(false);
+        expect(labels["description"]).toBe("Description");
+        expect(CATALOGUE["description"]).toBe("Description");
+    });
+
     it("labels the base-model attributes the vendored Area0 never names (EDT-33)", () => {
         // Area0 is vendored and byte-pinned: its attributes carry no
         // displayName at all, so the catalogue is the only readable label.

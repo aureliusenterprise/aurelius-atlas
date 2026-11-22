@@ -1320,11 +1320,6 @@ The technical data governance model consists of the following types of entities:
         <target>Data Stewards</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.datastewards</note>
       </trans-unit>
-      <trans-unit id="search.components.editor.attribute.definition" datatype="html">
-        <source>Definition</source>
-        <target>Definitie</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.definition</note>
-      </trans-unit>
       <trans-unit id="search.components.editor.attribute.definitionPlaceholder" datatype="html">
         <source>Definition</source>
         <target>Definitie</target>

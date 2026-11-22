@@ -87,10 +87,10 @@ class FakeEmbedder:
 @pytest.mark.covers(f"{E}.text_values", rules=["VEC-01"])
 @pytest.mark.covers(f"{E}.embedding_text", rules=["VEC-01"])
 def test__the_text_is_the_type_the_text_attributes_by_short_name_and_the_classifications() -> None:
-    """Type first, then name, qualifiedName, description and definition by their name after the defining type."""
+    """Type first, then name, qualifiedName and description by their name after the defining type."""
     stored = entity(
         **{
-            "m4i_data_entity.definition": "Who our clients are",
+            "m4i_data_entity.description": "Who our clients are",
             "Referenceable.qualifiedName": "crm--customer",
             "Asset.description": "Customers of the shop",
             "m4i_data_entity.name": "Customer",

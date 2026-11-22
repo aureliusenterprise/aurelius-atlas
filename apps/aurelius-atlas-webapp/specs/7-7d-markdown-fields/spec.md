@@ -2,7 +2,8 @@
 
 - **Status:** proposed
 - **Pull request:** —
-- **Records:** DD-352, DD-353; extends 7.7a (EDT-03, amended in place); relies
+- **Records:** DD-352, DD-353; extends 7.7a (EDT-03, amended in place); EDT-20
+  amended in place by 18.8 (SPA-06, DD-832: one prose key); relies
   on DD-321 (the `Markdown` block and its sanitizer, UIC-04/DD-136 (the ui
   library's string and colour rules), DD-128/DD-351 (the bridge and the
   vendored-key pattern), UIC-26 (this increment's ui-library rule)
@@ -15,15 +16,16 @@ this slice inherits. This page is the `aurelius-atlas-webapp` part of increment
 
 ## Scope
 
-The editor's description fields learn markdown. The shipped types carry their
-text in `description` (and the legacy read `definition`, DET-10/DD-320), and
-both keys already open as plain textareas (EDT-03) — while the details screen
-renders the same value as markdown (DET-10). What you write is therefore not
+The editor's description field learns markdown. The shipped types carry their
+text in `description` (and the legacy read its own `definition`, DET-10/DD-320,
+which 18.8 retired, SPA-01), and the key already opened as a plain textarea
+(EDT-03) — while the details screen renders the same value as markdown
+(DET-10). What you write is therefore not
 what you read: links show as brackets, and headings show as `#`.
 
 Delivered here:
 
-- the field: the `definition`/`description` textarea becomes Aurelius's
+- the field: the `description` textarea becomes Aurelius's
   markdown editor — a Write/Preview tab pair over the same control (EDT-20,
   UIC-26). The legacy ships this component (`models4insight-markdown-editor`);
   its own app never wired it, so this restores the component rather than
@@ -54,7 +56,7 @@ part; the trace tool reads the two files as one source.
 | Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | UIC-26 | `markdown-editor` is the ui library's markdown-writing field: a Bulma `tabs` pair (labels from the caller, DD-136) over one `textarea` and one preview pane. The component is a Signal Forms control (a `FormValueControl` over a string field, DD-354): the model is the markdown source, the textarea edits it, and the preview pane renders that same value through the `Markdown` block (DD-321) live as the user types. The preview is the block's own rendering, so it needs no second parser and no second sanitizer (its `[innerHTML]` guard is the one DET-10 rides, DD-352). Both panes stay mounted and the inactive one hides (`hidden`), so a tab switch costs no re-parse and keeps the textarea's caret and undo history. The tab strip carries `role="tablist"`, one `role="tab"` link per pane with `aria-selected` on the active one and `aria-controls` naming the pane. `textareaId()` seats a caller's id on the textarea so a `<label for>` reaches the field. The textarea carries Bulma's `is-danger` when the bound field is invalid and marked (mirrored through the contract's `invalid` and `touched` inputs, the same state the caller's form sees). `placeholder()` is caller-supplied (DD-136). The component carries no string of its own and no colour (UIC-04, UIC-03). |
-| EDT-20 | The editor's description keys (`definition` and `description`, EDT-03's textarea pair) render as the ui library's `markdown-editor` instead of a bare textarea (DD-352). The control keeps the markdown source exactly as the textarea did, so the saved body (EDT-06) carries the same string a textarea save would have sent — the read seeds it, the save sends it, and no transform sits between. The field keeps EDT-03's plumbing unchanged: the bridge label, the `for="editor-<name>"` seat (EDT-11) through the component's `textareaId`, the required marker, and the refused invalid save (EDT-07). The tab starts on Write. The preview rides the same `Markdown` block the details box uses (DET-10, DD-321), so the drawer previews what details will show. The field's three strings (`Write`, `Preview`, the placeholder) ride the vendored keys `components.markdownEditor.writeLabel`/`.previewLabel`/`.placeholder` in both catalogues (DD-353, the DD-351 pattern): the English placeholder restores the legacy component's hardcoded text, and the tab words and the Dutch lines are this project's.                                                                                                                                                                                 |
+| EDT-20 | The editor's description key (`description` — EDT-03's textarea; **amended (18.8, SPA-06, DD-832):** 18.8 retired the m4i dictionary's `definition`, so the pair is one key) renders as the ui library's `markdown-editor` instead of a bare textarea (DD-352). The control keeps the markdown source exactly as the textarea did, so the saved body (EDT-06) carries the same string a textarea save would have sent — the read seeds it, the save sends it, and no transform sits between. The field keeps EDT-03's plumbing unchanged: the bridge label, the `for="editor-<name>"` seat (EDT-11) through the component's `textareaId`, the required marker, and the refused invalid save (EDT-07). The tab starts on Write. The preview rides the same `Markdown` block the details box uses (DET-10, DD-321), so the drawer previews what details will show. The field's three strings (`Write`, `Preview`, the placeholder) ride the vendored keys `components.markdownEditor.writeLabel`/`.previewLabel`/`.placeholder` in both catalogues (DD-353, the DD-351 pattern): the English placeholder restores the legacy component's hardcoded text, and the tab words and the Dutch lines are this project's.                                                                                          |
 
 ## Aurelius origin
 
@@ -97,9 +99,11 @@ No `DV-` row.
       heading (UIC-10's pattern), across chromium/firefox/webkit in the
       storybook runner.
 - Vitest (unit, `apps/aurelius-atlas-webapp`):
-    - `src/app/search/editor/form-fields.spec.ts` — the kind of
-      `definition`/`description` flips from `textarea` to `markdown` (the
-      pinned test, moved on purpose; EDT-20 names the rule in its title).
+    - `src/app/search/editor/form-fields.spec.ts` — the kind of the
+      prose key (`description`; `definition`/`description` when 7.7d shipped,
+      18.8 retired the former, SPA-06) flips from `textarea` to `markdown`
+      (the pinned test, moved on purpose; EDT-20 names the rule in its
+      title).
     - `src/app/search/editor/entity-editor.component.spec.ts` — the render
       test keeps finding `textarea#editor-description` (now inside the
       component) with the seeded value; a new test names EDT-20: the field

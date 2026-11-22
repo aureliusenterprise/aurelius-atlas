@@ -75,9 +75,13 @@ def test__active_m4i_entities_have_a_document_but_sources_and_scores() -> None:
 @pytest.mark.covers(f"{A}.attribute_value")
 @pytest.mark.covers(f"{A}.own_document", rules=["LAS-02"])
 def test__the_own_fields_fall_back_to_the_qualified_name_the_guid_and_empty() -> None:
-    """Name, else qualified name; qualified name, else the GUID; definition, else ``""``; a person's email only."""
+    """The own fields fall back in order, and the definition reads ``description`` (SPA-05, DD-833).
+
+    Name, else qualified name; qualified name, else the GUID; the definition is
+    ``""`` without prose; a person carries only its email.
+    """
     named = own_document(
-        entity(**{"Referenceable.qualifiedName": "q", "m4i_data_entity.name": "N", "m4i_data_entity.definition": "D"})
+        entity(**{"Referenceable.qualifiedName": "q", "m4i_data_entity.name": "N", "m4i_data_entity.description": "D"})
     )
     unnamed = own_document(entity(**{"Referenceable.qualifiedName": "q", "m4i_data_entity.email": "e@x"}))
     bare = own_document(entity(type_name="m4i_generic_process"))
@@ -217,7 +221,7 @@ def test__an_own_document_carries_the_derivation_version_it_was_made_under() -> 
     """The round writes documents of its current version; one made without the mark is of version 1 (ASD-07)."""
     document = own_document(entity(**{"m4i_data_entity.name": "N"}))
 
-    assert document.derivation_version == DERIVATION_VERSION == 3
+    assert document.derivation_version == DERIVATION_VERSION == 4
     assert StoredAppSearch(source_hash="h", referenceablequalifiedname="q").derivation_version == 1
 
 

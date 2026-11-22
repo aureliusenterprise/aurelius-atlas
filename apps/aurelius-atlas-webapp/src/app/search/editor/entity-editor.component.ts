@@ -104,16 +104,6 @@ const AUDIT_PAGE = 100;
 /** One model slot: the value a field of any kind holds (DD-354). */
 type EditorValue = string | number | boolean | string[] | null;
 
-/** The description pair (DET-10, DD-320): the product treats the two keys as
- * one description, and the legacy's types carry `definition` where this
- * catalogue's carry `description`. The alias runs one way, as the legacy's
- * `gov-quality-display` card did (EDT-24 as amended by 12.7a, DD-633): a
- * `definition` verdict names the `description` control; a `description`
- * verdict names only its own (the map keeps its 7.24 name). */
-const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
-    description: ["description", "definition"],
-};
-
 /**
  * The entity editor drawer (EDT-01..EDT-08, DD-322): the routed panel in the
  * `drawer` aux outlet beside the settings and alerts panels (the AlertsPanel
@@ -776,32 +766,21 @@ export class EntityEditor {
     }
 
     /** The verdicts that measure a rendered control (EDT-24 as amended by
-     * 12.7/12.7a/12.7b, DD-498/DD-633/DD-636): the answer's flat array
-     * grouped by the names a rule measures. A verdict rides its `attribute`
-     * and every `anyOf` alternative (VEV-09), so it paints under each control
-     * the rule names — once each, since the filter keeps one copy. The
-     * description control borrows the `definition` verdict only while the form
-     * has no `definition` control of its own — the legacy's one-way alias, and
-     * each verdict sits once on a type that carries both. A control no rule
-     * measures renders nothing; `unreadRules` renders no line (VEV-03). */
+     * 12.7/12.7a/12.7b and 18.8, DD-498/DD-633/DD-636): the answer's flat
+     * array grouped by the names a rule measures. A verdict rides its
+     * `attribute` and every `anyOf` alternative (VEV-09), so it paints under
+     * each control the rule names — once each, since the set keeps one copy.
+     * Each verdict names its own control: 18.8 retired the `definition`
+     * attribute, so the description control's one-way borrow of the
+     * `definition` verdict (DD-633) fell away with it (SPA-06). A control no
+     * rule measures renders nothing; `unreadRules` renders no line (VEV-03). */
     protected validationItems(name: string): readonly GovernanceVerdict[] {
         const answer = this.validation();
         if (!answer) {
             return [];
         }
-        // While the form has no `definition` control, the description control
-        // borrows the `definition` verdict (the legacy's alias). With both
-        // controls rendered, each verdict names its own (DD-633).
-        const hasDefinitionControl = this.fields().some((field) => field.name === "definition");
-        const keys = new Set(
-            (GOV_CARD_KEYS[name] ?? [name]).filter(
-                (key) => !(name === "description" && hasDefinitionControl && key === "definition"),
-            ),
-        );
 
-        return answer.verdicts.filter((verdict) =>
-            [verdict.attribute, ...(verdict.anyOf ?? [])].some((measured) => keys.has(measured)),
-        );
+        return answer.verdicts.filter((verdict) => [verdict.attribute, ...(verdict.anyOf ?? [])].includes(name));
     }
 
     /** A fresh signal form over {@link values}, with the current field set's

@@ -130,7 +130,7 @@ async def test__the_scanners_own_token_writes_the_tree_and_the_audit_names_it(
     foreign key, a composite one across the schemas, a self key, and a zero-column table. The
     scan admits them through the ``zz<run>*`` pattern (the other suites' and the dialect's own
     schemas are never registered — DBS-04 on a live dialect), writes the tree with one bulk
-    request, and the store holds each piece with the names, definitions, and process ends the
+    request, and the store holds each piece with the names, descriptions, and process ends the
     rules promise. The dataset's create event names the scanner's service account.
     """
     schema_a, schema_b = seeded_database["schema_a"], seeded_database["schema_b"]
@@ -147,13 +147,13 @@ async def test__the_scanners_own_token_writes_the_tree_and_the_audit_names_it(
     await _wait_for(writer, "m4i_collection", join_qualified(_system_qn(run_token), qualified_component(schema_a)))
     orders_qn = _dataset_qn(run_token, schema_a, "orders")
     orders = await _wait_for(writer, "m4i_dataset", orders_qn)
-    assert _attributes(orders)["definition"] == "One row per customer order"
+    assert _attributes(orders)["description"] == "One row per customer order"
 
     shop_name = await _wait_for(writer, "m4i_field", join_qualified(orders_qn, "shop_name"))
     assert _attributes(shop_name)["fieldType"] == "TEXT"
-    assert _attributes(shop_name)["definition"] == "Where the order was placed"
+    assert _attributes(shop_name)["description"] == "Where the order was placed"
     id_field = await _wait_for(writer, "m4i_field", join_qualified(orders_qn, "id"))
-    assert _attributes(id_field)["definition"] == "Primary key"
+    assert _attributes(id_field)["description"] == "Primary key"
 
     line_qn = _dataset_qn(run_token, schema_a, "line")
     process = await _wait_for(writer, "m4i_generic_process", join_qualified(line_qn, "order_id"))

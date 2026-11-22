@@ -128,8 +128,8 @@ def test_a_schema_whose_tables_the_patterns_dropped_keeps_an_empty_collection() 
 
 
 @pytest.mark.covers("aurelius_atlas_db_scanner.graph.build_graph", rules=["DBS-07"])
-def test_the_table_comment_becomes_the_dataset_definition_and_a_bare_table_still_lands() -> None:
-    """DBS-07: the comment rides as the dataset's definition; a zero-column table is still a dataset."""
+def test_the_table_comment_becomes_the_dataset_description_and_a_bare_table_still_lands() -> None:
+    """DBS-07: the comment rides as the dataset's description; a zero-column table is still a dataset."""
     graph = build_graph(
         system_name=SYSTEM,
         schema_name=DEFAULTS,
@@ -142,8 +142,8 @@ def test_the_table_comment_becomes_the_dataset_definition_and_a_bare_table_still
     datasets = {
         _attributes(dataset)["name"]: _attributes(dataset) for dataset in _by_type(graph.entities, DATASET_TYPE)
     }
-    assert datasets["orders"]["definition"] == "One row per customer order"
-    assert "definition" not in datasets["empty"]
+    assert datasets["orders"]["description"] == "One row per customer order"
+    assert "description" not in datasets["empty"]
     assert len(_by_type(graph.entities, DATASET_TYPE)) == 2
 
 

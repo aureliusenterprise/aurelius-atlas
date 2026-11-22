@@ -62,11 +62,13 @@ ROLE_NAME_FIELDS = tuple(ROLE_FIELDS.values())
 ROLE_GUID_FIELDS = tuple(f"{field}guid" for field in ROLE_FIELDS.values())
 """The document's role GUID lists, mapped as keywords like the other relation GUIDs (ASD-06)."""
 
-DERIVATION_VERSION = 3
-"""The derivation rules an index round writes documents under: 16.5f's, with the role fields and ``hasparent``.
+DERIVATION_VERSION = 4
+"""The derivation rules an index round writes documents under: 18.8's, which reads the entity's ``description``
+into the document's ``definition`` field (SPA-05, DD-833).
 
 Version 1 is 14.2's hash, which carries no version and no role fields; version 2 is 16.5f's, before the
-parent flag (RPS-06, DD-758); a document of another version than this one is what the round derives again.
+parent flag (RPS-06, DD-758); version 3 is 16.5f's, with the role fields and ``hasparent``; a document of
+another version than this one is what the round derives again.
 """
 
 DERIVATION_VERSION_FIELD = f"{APP_SEARCH_FIELD}.derivationVersion"
@@ -194,8 +196,10 @@ VERDICT_FIELDS = tuple(StoredVerdict.model_fields)
 TECHNICAL = frozenset({"m4i_system", "m4i_collection", "m4i_dataset", "m4i_field"})
 BUSINESS = frozenset({"m4i_data_domain", "m4i_data_entity", "m4i_data_attribute"})
 
-OWN_ATTRIBUTES = ("name", "qualifiedName", "definition", "email")
-"""The attributes a document's own fields come from, by their name after the defining type (DD-437)."""
+OWN_ATTRIBUTES = ("name", "qualifiedName", "description", "email")
+"""The attributes a document's own fields come from, by their name after the defining type (DD-437, ASD-02 as
+amended by 18.8/SPA-05: the document's ``definition`` field now reads the entity's ``description``, and keeps
+its own name because the vendored engine maps it (DD-833))."""
 
 
 def has_document(entity: StoredEntity) -> bool:
@@ -277,7 +281,7 @@ def own_document(entity: StoredEntity) -> StoredAppSearch:
         derivation_version=DERIVATION_VERSION,
         name=document_name(entity),
         referenceablequalifiedname=attribute_value(entity, "qualifiedName") or entity.guid,
-        definition=attribute_value(entity, "definition") or "",
+        definition=attribute_value(entity, "description") or "",
         email=attribute_value(entity, "email") if entity.type_name == "m4i_person" else None,
         sourcetype=source_type(entity.type_name),
     )

@@ -3,8 +3,8 @@
 The inspector answers dictionaries — columns with rendered types, the primary key, foreign
 keys, a table comment — and this module turns one table's answers into the frozen models the
 graph builds from: rendered column types as ``fieldType`` (DBS-06), the column comment or the
-primary-key mark as ``definition`` (DBS-06), the table comment as the dataset's future
-``definition`` (DBS-07), and every constrained column of every foreign key as an ordered pair
+primary-key mark as the field's ``description`` (DBS-06), the table comment as the dataset's future
+``description`` (DBS-07), and every constrained column of every foreign key as an ordered pair
 with the referred column resolved by position against the referred table's actual primary key
 (DBS-08 — the starting script's ``ref_column or "id"`` guess, fixed).
 
@@ -54,7 +54,8 @@ class ColumnInfo:
 
     definition: str | None = None
     """The column comment when one exists, else the primary-key mark for a key column, else
-    ``None`` (DBS-06): a comment keeps its text; the mark never overwrites one."""
+    ``None`` (DBS-06): a comment keeps its text; the mark never overwrites one. The graph writes it
+    to the field's ``description`` (SPA-04)."""
 
 
 @dataclass(frozen=True)
@@ -87,7 +88,7 @@ class TableInfo:
     """The table's own name — the dataset's ``name`` (DBS-07)."""
 
     definition: str | None = None
-    """The table comment as the dataset's ``definition``, when one exists (DBS-07)."""
+    """The table comment as the dataset's ``description``, when one exists (DBS-07, SPA-04)."""
 
     primary_key: tuple[str, ...] = ()
     """The key's constrained columns, in order (DBS-06's mark, DBS-08's resolution source)."""

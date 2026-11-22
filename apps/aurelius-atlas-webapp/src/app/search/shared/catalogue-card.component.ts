@@ -16,8 +16,9 @@ const PERSON_ATTRIBUTE = "m4i_person";
  * `breadcrumb` plus the card's own crumb, `trailOf`'s rule shared with
  * the details header; the crumb of the entity being viewed is the
  * active one, DD-625), the classification chips (`classificationNames`,
- * DD-379's names), the description text (the card's `definition`, DD-614's
- * fallback included) as markdown, and the people rows: one labelled row
+ * DD-379's names), the description text (the card's `definition`, which the
+ * server derives from the entity's `description` since 18.8) as markdown, and
+ * the people rows: one labelled row
  * per role — Domain Lead(s), Data Owner(s), Data Steward(s) — from the
  * door's role relations (VCF-15, AVS-10, ASD-06), the flat "People" row
  * of 16.5d kept as the fallback for a document still awaiting its
@@ -144,7 +145,8 @@ export class CatalogueCard {
             .map((name) => nameDisplay(name)),
     );
 
-    /** The description text (VCF-03): the card's `definition`, DD-614's fallback already applied. */
+    /** The description text (VCF-03 as amended by SPA-05): the card's
+     * `definition`, which the server derives from the entity's `description`. */
     protected readonly description = computed(() => {
         const definition = this.card().definition;
         return typeof definition === "string" ? definition : "";

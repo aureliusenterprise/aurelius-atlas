@@ -61,8 +61,9 @@ class EntityCard(AtlasModel):
     entity's stored App Search document; an entity without one has them empty and ``governed`` absent (AVS-02).
     ``displayText`` is the name, or the qualified name when there is no name (AVS-03, DD-582). ``typeAlias``
     is the entity's ``typeAlias`` attribute as a non-empty string, or none (AVS-01, MMS-09): the type name a
-    badge shows in place of ``typeName``. ``definition`` is the description text: the ``definition``
-    attribute, else the ``description`` one (DD-614). ``stale`` is the stored document's mark and
+    badge shows in place of ``typeName``. ``definition`` is the description text: the entity's ``description``
+    attribute (DD-614, narrowed by 18.8/SPA-05 when the m4i dictionary retired its own ``definition``).
+    ``stale`` is the stored document's mark and
     ``updateTime`` the entity's: the shape's whole freshness claim (AVS-06, DD-583).
     """
 

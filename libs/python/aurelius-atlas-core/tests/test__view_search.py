@@ -94,12 +94,12 @@ async def refused(door: ViewSearchEngine, body: object) -> list[str]:
 async def test__query_words_match_the_analysed_names_and_the_other_fields_whole(m4i: TypeRegistry) -> None:
     """A query matches the names as words and the other fields whole.
 
-    Words go over the name, qualified name and definition, however many types store them; elsewhere a word
-    matches a whole stored value; an empty query matches every document (AVR-04, DD-525).
+    Words go over the name, qualified name and description, however many types store them; elsewhere a word
+    matches a whole stored value; an empty query matches every document (AVR-04, DD-525, SPA-05).
     """
     door = await opened(
         hold(m4i, "a-1", "Asset", name="Legacy Orders"),
-        hold(m4i, "d-1", definition="Finance orders of records"),
+        hold(m4i, "d-1", description="Finance orders of records"),
         m4i=m4i,
     )
 
@@ -211,7 +211,7 @@ async def test__the_answer_holds_cards_facets_and_a_total(m4i: TypeRegistry) -> 
     A card is 16.1's: its own fields, the derived ones, the roll-up per dimension (AVR-08, AVS-01).
     """
     door = await opened(
-        hold(m4i, "d-1", definition="Finance orders of records", labels=["important"], quality_totals=SCORED),
+        hold(m4i, "d-1", description="Finance orders of records", labels=["important"], quality_totals=SCORED),
         m4i=m4i,
     )
 
@@ -365,7 +365,7 @@ def test__one_type_narrows_what_every_type_holds_under_its_own_name(m4i: TypeReg
     assert "search.keyword.Asset.name" in (untyped["name"].paths or ())
     assert typed["name"].path == "search.keyword.m4i_data_domain.name"
     assert typed["name"].text == "search.keyword.m4i_data_domain.name.text"
-    assert typed["definition"].path is None
+    assert typed["description"].path is None
     fields = query_fields(m4i)
     assert fields["typeName"] == 1.0
     assert fields["classificationNames"] == 1.0
