@@ -497,6 +497,16 @@
                         "VALIDITY": "Geldigheid"
                     }
                 },
+                "history": {
+                    "added": "Toegevoegd",
+                    "attributes": "Attributen",
+                    "changes": "Wijzigingen",
+                    "noChanges": "Niets gewijzigd",
+                    "notLoaded": "De eerdere toestand is niet geladen",
+                    "notRecorded": "De gegevens zijn niet vastgelegd",
+                    "relationships": "Relaties",
+                    "removed": "Verwijderd"
+                },
                 "historyPlaceholder": "Geschiedenis",
                 "person": {
                     "dataOwnerAttributes": "Data Eigenaar Attributen",

@@ -2647,7 +2647,7 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
         // the trigger (UIC-22).
         compiled
             .querySelector<HTMLButtonElement>(
-                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button",
             )!
             .click();
         fixture.detectChanges();
@@ -2663,7 +2663,7 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
         fixture.detectChanges();
         expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(103);
         expect(
-            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button"),
+            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button"),
         ).toBeNull();
         httpMock.verify();
     });
@@ -2678,7 +2678,7 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
 
         compiled
             .querySelector<HTMLButtonElement>(
-                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button",
             )!
             .click();
         fixture.detectChanges();
@@ -2688,7 +2688,7 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
         // component guards again, so a fast scroll stacks no reads (HST-08).
         compiled
             .querySelector<HTMLButtonElement>(
-                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button",
             )!
             .click();
         fixture.detectChanges();
@@ -2700,7 +2700,7 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
         fixture.detectChanges();
         expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(200);
         expect(
-            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button"),
+            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button"),
         ).toBeTruthy();
     });
 
@@ -2714,7 +2714,7 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
 
         compiled
             .querySelector<HTMLButtonElement>(
-                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button",
             )!
             .click();
         fixture.detectChanges();
@@ -2736,11 +2736,11 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
         // (HST-06 as amended by 7.36).
         expect(compiled.querySelectorAll(".aurelius-editor-audit").length).toBe(100);
         expect(
-            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button"),
+            compiled.querySelector("#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button"),
         ).toBeTruthy();
         compiled
             .querySelector<HTMLButtonElement>(
-                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button",
             )!
             .click();
         fixture.detectChanges();
@@ -2825,7 +2825,7 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
         // Nothing is listed, so there is no cursor: the trail is not ended and
         // the sentinel stays (HST-06 as amended by 7.36).
         const sentinel = compiled.querySelector<HTMLButtonElement>(
-            "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+            "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button",
         );
         expect(sentinel).toBeTruthy();
 
@@ -2850,7 +2850,7 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
 
         compiled
             .querySelector<HTMLButtonElement>(
-                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container button",
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button",
             )!
             .click();
         fixture.detectChanges();
@@ -2901,5 +2901,330 @@ describe("EntityEditor history tab (HST-01..HST-09)", () => {
 
         openEntityTab(compiled, fixture);
         expect(compiled.querySelector(".aurelius-editor-foot")).toBeTruthy();
+    });
+});
+
+/** The listener's own `details` prefix of each stored-state action (AUD-03):
+ * the change list reads the body behind it (HST-10). */
+const AUDIT_PREFIX: Record<string, string> = {
+    ENTITY_CREATE: "Created: ",
+    ENTITY_UPDATE: "Updated: ",
+    ENTITY_IMPORT_CREATE: "Created by import: ",
+    ENTITY_IMPORT_UPDATE: "Updated by import: ",
+};
+
+/**
+ * An audit row whose `details` carry a stored entity, as the ported listener
+ * writes them (AUD-03): the prefix and the entity's JSON.
+ * @param action the stored-state action
+ * @param key the row's eventKey, whose leading number is its timestamp
+ * @param attributes the stored attribute map
+ * @param relationshipAttributes the stored ends, keyed by attribute name
+ */
+function stateAuditEvent(
+    action: EntityAuditEventV2["action"],
+    key: string,
+    attributes: Record<string, unknown>,
+    relationshipAttributes: Record<string, unknown> = {},
+): EntityAuditEventV2 {
+    return {
+        entityId: "7a1b",
+        eventKey: key,
+        timestamp: Number(key.slice(0, key.indexOf(":"))),
+        user: "analyst-3",
+        action,
+        details: `${AUDIT_PREFIX[String(action)]}${JSON.stringify({
+            typeName: "table",
+            guid: "7a1b",
+            attributes,
+            relationshipAttributes,
+        })}`,
+    };
+}
+
+/** The trail of the change-detail tests: the update of the name, over the
+ * create that first set it (newest first, HST-03). */
+const CHANGED_TRAIL: EntityAuditEventV2[] = [
+    stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { name: "second" }),
+    stateAuditEvent("ENTITY_CREATE", "1700000010000:0", { name: "first" }),
+];
+
+/** The History rows of the pane, newest first as listed (HST-03). */
+function auditRows(compiled: HTMLElement): HTMLElement[] {
+    return [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-audit")];
+}
+
+/** The change toggle of a row (HST-10). */
+function auditToggle(row: HTMLElement): HTMLButtonElement {
+    return row.querySelector<HTMLButtonElement>("button.aurelius-editor-audit-toggle")!;
+}
+
+/** The open change list of a row (HST-10). */
+function auditChangePane(row: HTMLElement): HTMLElement | null {
+    return row.querySelector<HTMLElement>(".aurelius-editor-audit-changes");
+}
+
+describe("EntityEditor history change details (HST-10)", () => {
+    it("a state row opens and closes its change list and its toggle names the state (HST-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(CHANGED_TRAIL);
+        fixture.detectChanges();
+
+        const row = auditRows(compiled)[0];
+        const toggle = auditToggle(row);
+        expect(normalize(toggle.textContent)).toBe("Changes");
+        expect(toggle.getAttribute("aria-expanded")).toBe("false");
+        expect(auditChangePane(row)).toBeNull();
+
+        toggle.click();
+        fixture.detectChanges();
+        expect(toggle.getAttribute("aria-expanded")).toBe("true");
+        // The open toggle names the list it controls and the list carries that
+        // id — the accordion's pairing (FORM-CUSTOM-001).
+        const paneId = toggle.getAttribute("aria-controls");
+        expect(paneId).toBeTruthy();
+        expect(auditChangePane(row)?.id).toBe(paneId);
+
+        auditToggle(auditRows(compiled)[0]).click();
+        fixture.detectChanges();
+        expect(
+            auditRows(compiled)[0].querySelector("button.aurelius-editor-audit-toggle")?.getAttribute("aria-expanded"),
+        ).toBe("false");
+        // A closed toggle names nothing (FORM-CUSTOM-001): the id would dangle.
+        expect(
+            auditRows(compiled)[0].querySelector("button.aurelius-editor-audit-toggle")?.getAttribute("aria-controls"),
+        ).toBeNull();
+        expect(auditChangePane(auditRows(compiled)[0])).toBeNull();
+    });
+
+    it("the open list shows the changed attribute with its old and new value (HST-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(CHANGED_TRAIL);
+        fixture.detectChanges();
+        auditToggle(auditRows(compiled)[0]).click();
+        fixture.detectChanges();
+
+        const pane = auditChangePane(auditRows(compiled)[0])!;
+        expect(normalize(pane.textContent)).toContain("Attributes");
+        const line = normalize(pane.querySelector("li")?.textContent);
+        expect(line).toContain("name");
+        expect(pane.querySelector("del")?.textContent).toBe("first");
+        expect(pane.querySelector("ins")?.textContent).toBe("second");
+    });
+
+    it("a create row lists everything it holds as added (HST-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(CHANGED_TRAIL);
+        fixture.detectChanges();
+        const create = auditRows(compiled)[1];
+        auditToggle(create).click();
+        fixture.detectChanges();
+
+        const pane = auditChangePane(auditRows(compiled)[1])!;
+        expect(normalize(pane.textContent)).toContain("Added");
+        expect(normalize(pane.querySelector("li")?.textContent)).toContain("name");
+        expect(pane.querySelector("ins")).toBeNull();
+    });
+
+    it("a row whose write changed nothing says nothing changed (HST-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock
+            .expectOne(AUDIT_URL)
+            .flush([
+                stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { name: "same" }),
+                stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { name: "same" }),
+            ]);
+        fixture.detectChanges();
+        auditToggle(auditRows(compiled)[0]).click();
+        fixture.detectChanges();
+
+        expect(normalize(auditChangePane(auditRows(compiled)[0])?.textContent)).toBe("Nothing changed");
+    });
+
+    it("a relationship added and one removed are listed by their end entity (HST-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock
+            .expectOne(AUDIT_URL)
+            .flush([
+                stateAuditEvent(
+                    "ENTITY_UPDATE",
+                    "1700000020000:0",
+                    {},
+                    { input: [{ guid: "b", displayText: "beta" }] },
+                ),
+                stateAuditEvent(
+                    "ENTITY_UPDATE",
+                    "1700000010000:0",
+                    {},
+                    { input: [{ guid: "a", displayText: "alpha" }] },
+                ),
+            ]);
+        fixture.detectChanges();
+        auditToggle(auditRows(compiled)[0]).click();
+        fixture.detectChanges();
+
+        const pane = auditChangePane(auditRows(compiled)[0])!;
+        const text = normalize(pane.textContent);
+        expect(text).toContain("Relationships");
+        expect(text).toContain("input");
+        expect(text).toContain("beta");
+        expect(text).toContain("alpha");
+        expect(text).toContain("Added");
+        expect(text).toContain("Removed");
+    });
+
+    it("only a state row carries a change toggle (HST-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush([
+            {
+                entityId: "7a1b",
+                eventKey: "1700000030000:0",
+                timestamp: 1_700_000_030_000,
+                user: "analyst-3",
+                action: "CLASSIFICATION_ADD",
+                details: "Added classification: {}",
+            },
+            ...CHANGED_TRAIL,
+            {
+                entityId: "7a1b",
+                eventKey: "1700000000000:0",
+                timestamp: 1_700_000_000_000,
+                user: "analyst-3",
+                action: "ENTITY_DELETE",
+                details: "Deleted entity",
+            },
+        ]);
+        fixture.detectChanges();
+
+        const rows = auditRows(compiled);
+        expect(rows).toHaveLength(4);
+        expect(rows[0].querySelector("button.aurelius-editor-audit-toggle")).toBeNull();
+        expect(rows[3].querySelector("button.aurelius-editor-audit-toggle")).toBeNull();
+        expect(rows[1].querySelector("button.aurelius-editor-audit-toggle")).toBeTruthy();
+        expect(rows[2].querySelector("button.aurelius-editor-audit-toggle")).toBeTruthy();
+    });
+
+    it("a row whose body the server cut down says the details are not recorded (HST-10, AUD-04)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush([
+            {
+                entityId: "7a1b",
+                eventKey: "1700000020000:0",
+                timestamp: 1_700_000_020_000,
+                user: "analyst-3",
+                action: "ENTITY_UPDATE",
+                details: 'Updated: {"typeName":"table","guid":"7a1b"}',
+            },
+        ]);
+        fixture.detectChanges();
+        auditToggle(auditRows(compiled)[0]).click();
+        fixture.detectChanges();
+
+        expect(normalize(auditChangePane(auditRows(compiled)[0])?.textContent)).toBe("The details are not recorded");
+    });
+
+    it("the newest row says the earlier state is not loaded, and a next page answers it (HST-10, HST-08)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        // A full first page whose only state row is the newest one: nothing
+        // older on screen holds a state, so that row claims nothing (HST-10).
+        const filler = Array.from({ length: 99 }, (_, index) => ({
+            entityId: "7a1b",
+            eventKey: `16999999${String(index).padStart(4, "0")}:0`,
+            timestamp: 1_699_999_990_000 - index,
+            user: "analyst-3",
+            action: "CLASSIFICATION_ADD",
+            details: "Added classification: {}",
+        })) as EntityAuditEventV2[];
+        const firstPage = [stateAuditEvent("ENTITY_UPDATE", "1700000100000:0", { name: "b" }), ...filler];
+        httpMock.expectOne(AUDIT_URL).flush(firstPage);
+        fixture.detectChanges();
+
+        // The rows without a stored state keep the plain row of 7.35 (HST-04).
+        expect(auditRows(compiled)).toHaveLength(100);
+        expect(auditRows(compiled)[99].querySelector("button.aurelius-editor-audit-toggle")).toBeNull();
+
+        const newest = auditRows(compiled)[0];
+        auditToggle(newest).click();
+        fixture.detectChanges();
+        expect(normalize(auditChangePane(auditRows(compiled)[0])?.textContent)).toBe("The earlier state is not loaded");
+
+        // Scrolling brings the page that holds the state this write replaced.
+        compiled
+            .querySelector<HTMLButtonElement>(
+                "#editor-history-pane aurelius-atlas-ui-infinite-scroll-container > p button",
+            )!
+            .click();
+        fixture.detectChanges();
+        httpMock
+            .expectOne(auditPageRequest(firstPage.at(-1)!.eventKey!))
+            .flush([stateAuditEvent("ENTITY_CREATE", "1699999900000:0", { name: "a" })]);
+        fixture.detectChanges();
+
+        // The row is still open and answers itself now (HST-08's next page).
+        expect(normalize(auditChangePane(auditRows(compiled)[0])?.textContent)).toContain("Attributes");
+        expect(auditRows(compiled)[0].querySelector("del")?.textContent).toBe("a");
+        expect(auditRows(compiled)[0].querySelector("ins")?.textContent).toBe("b");
+    });
+
+    it("two rows can be open at the same time (HST-10)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(CHANGED_TRAIL);
+        fixture.detectChanges();
+        auditToggle(auditRows(compiled)[0]).click();
+        fixture.detectChanges();
+        auditToggle(auditRows(compiled)[1]).click();
+        fixture.detectChanges();
+
+        expect(auditRows(compiled).filter((row) => auditChangePane(row) !== null)).toHaveLength(2);
+        expect(
+            auditRows(compiled)[0].querySelector("button.aurelius-editor-audit-toggle")?.getAttribute("aria-expanded"),
+        ).toBe("true");
+        expect(
+            auditRows(compiled)[1].querySelector("button.aurelius-editor-audit-toggle")?.getAttribute("aria-expanded"),
+        ).toBe("true");
+    });
+
+    it("opening a change list asks for nothing (HST-10, AUD-06)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        openHistoryTab(compiled, fixture);
+        httpMock.expectOne(AUDIT_URL).flush(CHANGED_TRAIL);
+        fixture.detectChanges();
+
+        auditToggle(auditRows(compiled)[0]).click();
+        fixture.detectChanges();
+        auditToggle(auditRows(compiled)[1]).click();
+        fixture.detectChanges();
+
+        httpMock.expectNone(AUDIT_URL);
+        httpMock.verify();
     });
 });

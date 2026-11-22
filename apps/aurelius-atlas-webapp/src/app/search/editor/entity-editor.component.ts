@@ -16,7 +16,13 @@ import { DatePipe, NgTemplateOutlet } from "@angular/common";
 import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
 import { ActivatedRoute, Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCheckCircle,
+    faChevronDown,
+    faChevronUp,
+    faExclamationTriangle,
+    faXmark,
+} from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
 import { Drawer, Holdable, InfiniteScrollContainer, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
@@ -33,6 +39,7 @@ import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { cardTypeAlias } from "../shared/type-alias";
+import { auditRowKey, type AuditChanges, auditTrailChanges, isStateAction } from "./audit-details";
 import { auditActionDisplay } from "./audit-display";
 import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
@@ -114,7 +121,9 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  * DD-817), and the commit foot belongs to the Entity pane alone (HST-07).
  * Since 7.36 the pane scrolls the trail instead of capping it: the rows ride
  * the results list's infinite-scroll container and older pages ride the
- * endpoint's key cursor (HST-08, DD-820).
+ * endpoint's key cursor (HST-08, DD-820). Since 7.37 a state row opens to the
+ * changes it made, diffed in the client from the two stored bodies the trail
+ * already holds (HST-10, DD-821).
  */
 @Component({
     imports: [
@@ -199,6 +208,26 @@ export class EntityEditor {
     /** Whether the trail is ended: the last page came back short, so the
      * container hides its sentinel and no older read fires (HST-08). */
     protected readonly auditsAllLoaded = signal(false);
+
+    /** The audit rows whose change list is open (HST-10): keyed by the row's
+     * `eventKey`, so more than one row can be open at once and a next page
+     * leaves the rows already open alone. */
+    protected readonly auditsOpen = signal<ReadonlySet<string>>(new Set());
+
+    /** The chevron of an audit row's toggle (HST-10): the accordion's chevron,
+     * shown by the state of the row it belongs to. */
+    protected readonly faChevronDown = faChevronDown;
+
+    /** The open chevron of an audit row's toggle (HST-10). */
+    protected readonly faChevronUp = faChevronUp;
+
+    /** The change list of every state row (HST-10, DD-821): derived from the
+     * trail already loaded, keyed by the row's `eventKey`, so the template
+     * reads a row's answer by the key it already tracks on. No request — the
+     * stored bodies of the rows on screen are the only input (AUD-06). */
+    protected readonly auditChanges = computed<ReadonlyMap<string, AuditChanges>>(() =>
+        auditTrailChanges(this.audits()),
+    );
 
     /** The in-flight audit read (HST-03): a switch while one runs does not
      * repeat it, and the drawer's teardown drops the answer it no longer
@@ -1119,6 +1148,68 @@ export class EntityEditor {
      * event's raw action name, the legacy's `| translate` lookup. */
     protected auditActionLabel(event: EntityAuditEventV2): string {
         return auditActionDisplay(event.action) ?? "";
+    }
+
+    /** The change list's heading (HST-10). */
+    protected readonly auditChangeLine = $localize`:@@search.components.editor.history.changes:Changes`;
+    /** The row's own state, compared with the state before it (HST-10). */
+    protected readonly auditNoChangesLine = $localize`:@@search.components.editor.history.noChanges:Nothing changed`;
+    /** The row with no older state on screen (HST-10). */
+    protected readonly auditNotLoadedLine = $localize`:@@search.components.editor.history.notLoaded:The earlier state is not loaded`;
+    /** The row whose body the server cut down (HST-10, AUD-04). */
+    protected readonly auditNotRecordedLine = $localize`:@@search.components.editor.history.notRecorded:The details are not recorded`;
+    /** The change list's attribute section (HST-10). */
+    protected readonly auditAttributesLine = $localize`:@@search.components.editor.history.attributes:Attributes`;
+    /** The change list's relationship section (HST-10). */
+    protected readonly auditRelationshipsLine = $localize`:@@search.components.editor.history.relationships:Relationships`;
+    /** The change list's added line (HST-10). */
+    protected readonly auditAddedLine = $localize`:@@search.components.editor.history.added:Added`;
+    /** The change list's removed line (HST-10). */
+    protected readonly auditRemovedLine = $localize`:@@search.components.editor.history.removed:Removed`;
+
+    /** Whether a row shows a change list toggle (HST-10): the four
+     * entity-state actions carry a stored state to open, and only their rows
+     * offer it. Any other row keeps the label, the user and the time of 7.35
+     * (HST-04). */
+    protected auditChangeShown(event: EntityAuditEventV2): boolean {
+        return isStateAction(event.action);
+    }
+
+    /** What an open row says (HST-10): the trail's answer for it, or the
+     * not-recorded line for a state row whose stored body cannot be read —
+     * a row that offers a toggle never opens onto nothing. */
+    protected auditChangeOf(event: EntityAuditEventV2): AuditChanges {
+        return this.auditChanges().get(auditRowKey(event)) ?? { kind: "partial" };
+    }
+
+    /** Whether a row's change list is open (HST-10). */
+    protected auditChangeOpen(event: EntityAuditEventV2): boolean {
+        return this.auditsOpen().has(auditRowKey(event));
+    }
+
+    /** The id of the row at `index`'s change list (HST-10), paired with its
+     * toggle's `aria-controls` the way the accordion pairs them
+     * (FORM-CUSTOM-001). The pane's index in the list is unique among the rows
+     * and does not move when a next page appends, so it is the stable half of
+     * the pair — an event's `eventKey` would be, but it can be absent. */
+    protected auditPaneId(index: number): string {
+        return `aurelius-editor-audit-changes-${index}`;
+    }
+
+    /** Open or close one row's change list (HST-10). The other rows keep
+     * whatever state they are in — a trail can hold several open rows. */
+    protected toggleAuditChanges(event: EntityAuditEventV2): void {
+        const key = auditRowKey(event);
+        this.auditsOpen.update((open) => {
+            const next = new Set(open);
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+
+            return next;
+        });
     }
 
     /**

@@ -2036,6 +2036,38 @@ The technical data governance model consists of the following types of entities:
         <source>Rule type</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.ruleTypePlaceholder</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.history.added" datatype="html">
+        <source>Added</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.added</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.attributes" datatype="html">
+        <source>Attributes</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.attributes</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.changes" datatype="html">
+        <source>Changes</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.changes</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.noChanges" datatype="html">
+        <source>Nothing changed</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.noChanges</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.notLoaded" datatype="html">
+        <source>The earlier state is not loaded</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.notLoaded</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.notRecorded" datatype="html">
+        <source>The details are not recorded</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.notRecorded</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.relationships" datatype="html">
+        <source>Relationships</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.relationships</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.removed" datatype="html">
+        <source>Removed</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.removed</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.historyPlaceholder" datatype="html">
         <source>History</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.historyPlaceholder</note>

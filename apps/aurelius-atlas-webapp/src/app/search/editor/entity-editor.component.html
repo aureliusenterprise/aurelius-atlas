@@ -446,7 +446,13 @@
          container's own spinner (HST-05 as amended by 7.36). The rows are the
          legacy's Bulma media anatomy (HST-04): the change's label, then its
          user and its time. The container is the results list's (UIC-21): its
-         sentinel asks for the older pages the trail still has (HST-08). -->
+         sentinel asks for the older pages the trail still has (HST-08). Since
+         7.37 a state row carries a toggle that opens the changes it made
+         (HST-10, DD-821): the plain button with `aria-expanded` the
+         classification combobox uses, the chevron and the `aria-controls`
+         pairing of the ui-lib accordion (FORM-CUSTOM-001). The list it opens
+         is built from the two stored bodies the trail already holds — no
+         request. -->
     <div id="editor-history-pane" role="tabpanel" aria-labelledby="editor-history-tab" [hidden]="tab() !== 'history'">
         <output class="help aurelius-editor-loading">
             {{ auditsLoading() && audits().length === 0 ? auditRetrieveLine : "" }}
@@ -459,10 +465,29 @@
             (nextPage)="loadAuditPage()"
         >
             @for (event of audits(); track event.eventKey) {
+                @let changes = auditChangeOf(event);
                 <div class="media aurelius-editor-audit">
                     <div class="media-content">
                         <div class="content">
-                            <h6 class="title is-6">{{ auditActionLabel(event) }}</h6>
+                            <div class="level is-mobile aurelius-editor-audit-head">
+                                <h6 class="title is-6 level-left">{{ auditActionLabel(event) }}</h6>
+                                @if (auditChangeShown(event)) {
+                                    <button
+                                        type="button"
+                                        class="button is-small is-ghost aurelius-editor-audit-toggle"
+                                        [attr.aria-expanded]="auditChangeOpen(event)"
+                                        [attr.aria-controls]="auditChangeOpen(event) ? auditPaneId($index) : null"
+                                        (click)="toggleAuditChanges(event)"
+                                    >
+                                        <span>{{ auditChangeLine }}</span>
+                                        <span class="icon" aria-hidden="true">
+                                            <fa-icon
+                                                [icon]="auditChangeOpen(event) ? faChevronUp : faChevronDown"
+                                            ></fa-icon>
+                                        </span>
+                                    </button>
+                                }
+                            </div>
                             <p>
                                 <small>
                                     <span>{{ event.user }}</span>
@@ -472,6 +497,76 @@
                                     </time>
                                 </small>
                             </p>
+                            @if (auditChangeOpen(event)) {
+                                <!-- The list exists only while open, so the
+                                     toggle names it only while open too
+                                     (FORM-CUSTOM-001, the accordion's rule). -->
+                                <div class="aurelius-editor-audit-changes" [id]="auditPaneId($index)">
+                                    @if (changes.kind === "partial") {
+                                        <p class="is-size-7">{{ auditNotRecordedLine }}</p>
+                                    }
+                                    @if (changes.kind === "unloaded") {
+                                        <p class="is-size-7">{{ auditNotLoadedLine }}</p>
+                                    }
+                                    @if (
+                                        changes.kind === "diff" &&
+                                        changes.attributes.length === 0 &&
+                                        changes.relationships.length === 0
+                                    ) {
+                                        <p class="is-size-7">{{ auditNoChangesLine }}</p>
+                                    }
+                                    @if (changes.kind === "diff" && changes.attributes.length > 0) {
+                                        <p class="is-size-7 aurelius-editor-audit-section">
+                                            {{ auditAttributesLine }}
+                                        </p>
+                                        <ul class="aurelius-editor-audit-list">
+                                            @for (change of changes.attributes; track change.name) {
+                                                <li>
+                                                    @if (change.kind === "changed") {
+                                                        <span>{{ change.name }}:</span>
+                                                        <del>{{ change.from }}</del>
+                                                        <span>&rarr;</span>
+                                                        <ins>{{ change.to }}</ins>
+                                                    }
+                                                    @if (change.kind === "added") {
+                                                        <span>{{ auditAddedLine }}:</span>
+                                                        <span>{{ change.name }}</span>
+                                                        <span>{{ change.to }}</span>
+                                                    }
+                                                    @if (change.kind === "removed") {
+                                                        <span>{{ auditRemovedLine }}:</span>
+                                                        <span>{{ change.name }}</span>
+                                                        <del>{{ change.from }}</del>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                    @if (changes.kind === "diff" && changes.relationships.length > 0) {
+                                        <p class="is-size-7 aurelius-editor-audit-section">
+                                            {{ auditRelationshipsLine }}
+                                        </p>
+                                        <ul class="aurelius-editor-audit-list">
+                                            @for (
+                                                change of changes.relationships;
+                                                track change.attribute + change.entity + change.kind
+                                            ) {
+                                                <li>
+                                                    <span>{{ change.attribute }}</span>
+                                                    @if (change.kind === "added") {
+                                                        <span>{{ auditAddedLine }}:</span>
+                                                        <span>{{ change.entity }}</span>
+                                                    }
+                                                    @if (change.kind === "removed") {
+                                                        <span>{{ auditRemovedLine }}:</span>
+                                                        <span>{{ change.entity }}</span>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
