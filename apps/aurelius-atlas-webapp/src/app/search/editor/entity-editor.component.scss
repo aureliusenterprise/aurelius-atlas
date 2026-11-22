@@ -227,15 +227,27 @@ center in their halves. The pin is the lineage pair's (DD-416): the panel
     margin-top: 0.5rem;
 }
 
-.aurelius-editor-audit-list {
-    list-style: none;
-    margin-left: 0;
+/* The two change lists (HST-12, DD-823) are the shared sortable table
+ * component, which owns its own header, borders and striping. The pane only
+ * compacts it: the small size the row's user line already uses (HST-04's
+ * `<small>`), and a tightened block margin between the two tables. These
+ * rules touch the component's host element only — its internals stay its own
+ * — and both settings inherit down into it. */
+.aurelius-editor-audit-changes aurelius-atlas-ui-sortable-table {
+    --bulma-block-spacing: 0.5rem;
+    font-size: 0.75rem;
+}
 
-    li {
-        align-items: baseline;
-        display: flex;
-        flex-wrap: wrap;
-        font-size: 0.75rem;
-        gap: 0.375rem;
+.aurelius-editor-audit-value {
+    overflow-wrap: anywhere;
+}
+
+.aurelius-editor-audit-entity {
+    padding-bottom: 0.125rem;
+    padding-top: 0.125rem;
+
+    aurelius-atlas-ui-breadcrumbs {
+        display: block;
+        overflow: hidden;
     }
 }

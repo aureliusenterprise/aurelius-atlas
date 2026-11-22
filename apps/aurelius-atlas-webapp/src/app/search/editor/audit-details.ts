@@ -30,8 +30,12 @@ const STATE_ACTIONS: ReadonlySet<string> = new Set([
     "ENTITY_IMPORT_UPDATE",
 ]);
 
-/** One relationship end a stored state holds, as far as it names it. */
-type AuditEnd = { guid: string; display: string };
+/**
+ * One relationship end a stored state holds, as far as it names it. The guid
+ * is what matches two states (HST-10), and the type is what names the end's
+ * icon on the change list's crumb (HST-12, DET-26).
+ */
+type AuditEnd = { guid: string; display: string; typeName?: string };
 
 /** The part of a stored entity a change list reads. */
 export type AuditState = {
@@ -90,6 +94,11 @@ export type AuditRelationshipChange = {
     attribute: string;
     /** The end's display text, or its GUID when it carries none. */
     entity: string;
+    /** The end entity's GUID (HST-12): what the change list's crumb links to. */
+    guid: string;
+    /** The end entity's type, when the stored end names it (HST-12): what
+     * gives the crumb its icon (DET-26). */
+    typeName?: string;
 };
 
 /** Whether a row offers a change list at all (HST-10). */
@@ -165,18 +174,44 @@ export function parseAuditState(event: EntityAuditEventV2): AuditStateParse {
  * with both values, each attribute only the newer state holds is added, each
  * one only the older holds is removed, and each relationship end is added or
  * removed by its GUID. Names come in the order the states list them.
+ *
+ * An attribute whose value is an entity reference — one `AtlasObjectId` or a
+ * list of them, the shape the metamodel's entity-typed attributes hold (a
+ * collection's `systems`, a process's `inputs`) — is a relationship, not a
+ * value: it joins the relationship section under its own name, so the
+ * attribute table never prints a reference as JSON (HST-12, DD-823). An
+ * attribute that holds nothing on the side that gained it claims no line, so a
+ * create stays silent about the optional fields the store keeps blank (HST-13,
+ * DD-824).
  * @param from the state before the write
  * @param to the state the write stored
  */
 export function diffAuditStates(from: AuditState, to: AuditState): AuditStateDiff {
+    // The key's kind is decided on both states together: an attribute the
+    // older state holds empty and the newer one fills with a reference is one
+    // relationship that gained an end, not a value that changed.
+    const attributeNames = [...new Set([...Object.keys(from.attributes), ...Object.keys(to.attributes)])];
+    const referenceNames = new Set(
+        attributeNames.filter((name) => isEntityValue(from.attributes[name]) || isEntityValue(to.attributes[name])),
+    );
+
     const attributes: AuditAttributeChange[] = [];
-    for (const name of [...new Set([...Object.keys(from.attributes), ...Object.keys(to.attributes)])]) {
+    for (const name of attributeNames) {
+        if (referenceNames.has(name)) {
+            continue;
+        }
         const before = from.attributes[name];
         const after = to.attributes[name];
         if (!(name in from.attributes)) {
-            attributes.push({ kind: "added", name, to: formatValue(after) });
+            // The attribute appeared, so the write set it — unless what it
+            // holds is nothing at all, which sets nothing (HST-13).
+            if (!isNothingValue(after)) {
+                attributes.push({ kind: "added", name, to: formatValue(after) });
+            }
         } else if (!(name in to.attributes)) {
-            attributes.push({ kind: "removed", name, from: formatValue(before) });
+            if (!isNothingValue(before)) {
+                attributes.push({ kind: "removed", name, from: formatValue(before) });
+            }
         } else if (!sameValue(before, after)) {
             attributes.push({
                 kind: "changed",
@@ -189,17 +224,25 @@ export function diffAuditStates(from: AuditState, to: AuditState): AuditStateDif
     }
 
     const relationships: AuditRelationshipChange[] = [];
-    for (const attribute of [...new Set([...Object.keys(from.relationships), ...Object.keys(to.relationships)])]) {
-        const before = new Map((from.relationships[attribute] ?? []).map((end) => [end.guid, end]));
-        const after = new Map((to.relationships[attribute] ?? []).map((end) => [end.guid, end]));
+    const heldNames = [
+        ...new Set([...Object.keys(from.relationships), ...Object.keys(to.relationships)]),
+        ...referenceNames,
+    ];
+    for (const attribute of heldNames) {
+        const before = new Map(
+            (from.relationships[attribute] ?? endsOf(from.attributes[attribute])).map((end) => [end.guid, end]),
+        );
+        const after = new Map(
+            (to.relationships[attribute] ?? endsOf(to.attributes[attribute])).map((end) => [end.guid, end]),
+        );
         for (const [guid, end] of after) {
             if (!before.has(guid)) {
-                relationships.push({ kind: "added", attribute, entity: end.display });
+                relationships.push({ kind: "added", attribute, entity: end.display, guid, typeName: end.typeName });
             }
         }
         for (const [guid, end] of before) {
             if (!after.has(guid)) {
-                relationships.push({ kind: "removed", attribute, entity: end.display });
+                relationships.push({ kind: "removed", attribute, entity: end.display, guid, typeName: end.typeName });
             }
         }
     }
@@ -301,7 +344,7 @@ function asRelationships(value: unknown): Record<string, readonly AuditEnd[]> {
             ) {
                 continue;
             }
-            ends.push({ guid, display: textOf(end["displayText"]) ?? guid });
+            ends.push({ guid, display: textOf(end["displayText"]) ?? guid, typeName: textOf(end["typeName"]) });
         }
         if (ends.length > 0) {
             held[attribute] = ends;
@@ -309,6 +352,78 @@ function asRelationships(value: unknown): Record<string, readonly AuditEnd[]> {
     }
 
     return held;
+}
+
+/**
+ * Whether a stored attribute value names an entity: one `AtlasObjectId` (the
+ * listener writes the type and the GUID of the entity it points at) or a list
+ * of them. An empty list carries no evidence and stays a plain value — the
+ * differ decides on both states together, so filling it reads as adding an
+ * end.
+ */
+function isEntityValue(value: unknown): boolean {
+    if (Array.isArray(value)) {
+        return value.length > 0 && value.every((row) => isEndObject(row));
+    }
+
+    return isEndObject(value);
+}
+
+/**
+ * Whether a stored attribute value holds nothing at all (HST-13, DD-824): the
+ * blank shape the store keeps for an attribute the entity leaves unset — no
+ * value, empty text, an empty list or an empty struct. A number, `false`, a
+ * blank-looking space and a list with one entry are values, not nothing.
+ * @param value the stored value of one attribute
+ */
+function isNothingValue(value: unknown): boolean {
+    if (value === null || value === undefined || value === "") {
+        return true;
+    }
+    if (Array.isArray(value)) {
+        return value.length === 0;
+    }
+    if (typeof value === "object") {
+        return Object.keys(value).length === 0;
+    }
+
+    return false;
+}
+
+/** Whether a value is the wire shape of a reference to one entity. */
+function isEndObject(value: unknown): boolean {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+        return false;
+    }
+    const fields = value as Record<string, unknown>;
+
+    return typeof fields["guid"] === "string" && typeof fields["typeName"] === "string";
+}
+
+/**
+ * The ends a stored attribute value names (HST-12): its references, each read
+ * as one end. Anything that is not a reference names no end, so a plain value
+ * answers the empty list.
+ */
+function endsOf(value: unknown): readonly AuditEnd[] {
+    if (!isEntityValue(value)) {
+        return [];
+    }
+
+    return (Array.isArray(value) ? value : [value]).map((row) => {
+        const end = row as Record<string, unknown>;
+        const guid = end["guid"] as string;
+        const unique = end["uniqueAttributes"];
+        const qualifiedName =
+            unique !== null && typeof unique === "object"
+                ? (unique as Record<string, unknown>)["qualifiedName"]
+                : undefined;
+        return {
+            guid,
+            display: textOf(end["displayText"]) ?? textOf(qualifiedName) ?? guid,
+            typeName: textOf(end["typeName"]),
+        };
+    });
 }
 
 /** The value's display text: a string as it is, anything else its JSON. */

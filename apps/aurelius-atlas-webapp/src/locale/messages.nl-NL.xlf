@@ -1609,6 +1609,11 @@ The technical data governance model consists of the following types of entities:
         <target>Querytekst</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.queryText</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.attribute.qualifiedName" datatype="html">
+        <source>Qualified Name</source>
+        <target>Gekwalificeerde Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.qualifiedName</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.attribute.replacedBy" datatype="html">
         <source>Replaced By</source>
         <target>Vervangen door</target>
@@ -1618,6 +1623,16 @@ The technical data governance model consists of the following types of entities:
         <source>Replacement Terms</source>
         <target>Vervangende termen</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.replacementTerms</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.replicatedFrom" datatype="html">
+        <source>Replicated from</source>
+        <target>Gerepliceerd van</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.replicatedFrom</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.attribute.replicatedTo" datatype="html">
+        <source>Replicated to</source>
+        <target>Gerepliceerd naar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.replicatedTo</note>
       </trans-unit>
       <trans-unit id="search.components.editor.attribute.requiredMark" datatype="html">
         <source>(required)</source>
@@ -2557,6 +2572,11 @@ The technical data governance model consists of the following types of entities:
         <target>Regeltype</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.govQuality.ruleTypePlaceholder</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.history.action" datatype="html">
+        <source>Action</source>
+        <target>Actie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.action</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.history.added" datatype="html">
         <source>Added</source>
         <target>Toegevoegd</target>
@@ -2567,10 +2587,25 @@ The technical data governance model consists of the following types of entities:
         <target>Attributen</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.attributes</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.history.changed" datatype="html">
+        <source>Changed</source>
+        <target>Gewijzigd</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.changed</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.history.changes" datatype="html">
         <source>Changes</source>
         <target>Wijzigingen</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.changes</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.entity" datatype="html">
+        <source>Entity</source>
+        <target>Entiteit</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.entity</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.name" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.name</note>
       </trans-unit>
       <trans-unit id="search.components.editor.history.noChanges" datatype="html">
         <source>Nothing changed</source>
@@ -2586,6 +2621,11 @@ The technical data governance model consists of the following types of entities:
         <source>The details are not recorded</source>
         <target>De gegevens zijn niet vastgelegd</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.notRecorded</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.history.relationship" datatype="html">
+        <source>Relationship</source>
+        <target>Relatie</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.history.relationship</note>
       </trans-unit>
       <trans-unit id="search.components.editor.history.relationships" datatype="html">
         <source>Relationships</source>

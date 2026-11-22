@@ -141,13 +141,19 @@ function collectAttributeDefs(
 }
 
 /**
- * The catalogue string, else `displayName`, else the attribute name (EDT-03).
- * A trailing `*` is dropped: the legacy catalogue bakes the required star
- * into the label (`Name*`/`Naam*`) while the editor template paints its own
- * red one, which would print the star twice (DD-356).
+ * The localized label for an attribute or relationship-attribute name
+ * (EDT-03, EDT-33, EDT-34): the catalogue string, else `displayName`, else the
+ * raw name. A trailing `*` is dropped: the legacy catalogue bakes the required
+ * star into the label (`Name*`/`Naam*`) while the editor template paints its
+ * own red one, which would print the star twice (DD-356). The change list
+ * shares this lookup so its tables name a field as the form does (HST-12).
+ * @param name the attribute's wire name
+ * @param labels the localized strings for the catalogue-named attributes
+ * @param displayName the definition's own display name, when it carries one
+ * @returns the label to show
  */
-function labelOf(def: AtlasAttributeDef, labels: EditorLabels): string {
-    const label = labels[def.name as keyof EditorLabels] ?? def.displayName ?? def.name ?? "";
+export function fieldLabel(name: string, labels: EditorLabels, displayName?: string | null | null): string {
+    const label = labels[name] ?? displayName ?? name;
 
     // One backward scan drops the star run, then the space before it — no
     // regex, so a whitespace/star-heavy label cannot backtrack (S5852).
@@ -158,6 +164,16 @@ function labelOf(def: AtlasAttributeDef, labels: EditorLabels): string {
     }
 
     return trimmed.slice(0, end).trimEnd();
+}
+
+/**
+ * The field's label (EDT-03): its name through {@link fieldLabel}.
+ * @param def the attribute definition
+ * @param labels the localized strings for the catalogue-named attributes
+ * @returns the label to show
+ */
+function labelOf(def: AtlasAttributeDef, labels: EditorLabels): string {
+    return fieldLabel(def.name ?? "", labels, def.displayName);
 }
 
 /**
