@@ -7740,6 +7740,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.38</td>
+<td>History attribute restore</td>
+<td>A changed line of an open change list carries a restore button that writes that one attribute's stored old value back through the single-attribute write, re-reads the entity and merges it into the form the save conflict uses, keeping the person's other edits and the open list (HST-11, DD-822). Relationships and multi-valued attributes stay out of scope.</td>
+<td>– (Aurelius origin; the write is 3.5's EWR-15)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
