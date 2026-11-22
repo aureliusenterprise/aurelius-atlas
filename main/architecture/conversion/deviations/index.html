@@ -8219,6 +8219,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Aurelius keeps soft-deleted entities readable with their classifications listed (EDL-06), so a tell that asks only "does it exist?" audits a tombstone. The task's write is still Java's — the propagation is removed — only the event differs, and no client reads an event on an entity it can no longer see.</td>
 <td>3.5</td>
 </tr>
+<tr>
+<td>DV-192</td>
+<td>Kafka scanning</td>
+<td>Apache Atlas has no Kafka scanner at all, and the Aurelius legacy cluster scanner registered its System/Collection/Dataset/Field tree with no <code>typeAlias</code> on any entity, so every badge read the metamodel type</td>
+<td>The scanner writes <code>typeAlias</code> on the two browsed levels it registers: the Collection carries <code>Kafka Cluster</code> and each Dataset carries <code>Kafka Topic</code>, in the same bulk request as the tree. The System and the fields carry none, so their badges show the type name alone, and the icon stays resolved from the raw type name (KSA-01, KSA-03, DD-826)</td>
+<td>The badge alias exists since 18.1 (MMS-09, DD-721) and a person browsing a catalogue of many connectors reads <em>Dataset</em> nowhere near as usefully as <em>Kafka Topic</em>; the qualified names are untouched, so a re-scan still updates in place (KSA-02, KSC-07)</td>
+<td>13.1a</td>
+</tr>
 </tbody>
 </table>
 
