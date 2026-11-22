@@ -1032,13 +1032,16 @@ export class EntityEditor {
      * Every switch re-reads (no caching rule applies), and a switch does not
      * stack reads: an in-flight read is not repeated, and the drawer's
      * teardown drops the answer it no longer needs (the read dies with it).
-     * A failed read alerts once and leaves the list empty (HST-06).
+     * A read starts from an empty list, so the panel never shows the previous
+     * answer under the loading line (HST-05); a failed read alerts once and
+     * leaves the list empty (HST-06).
      */
     private loadAudits(): void {
         const guid = this.state.entity()?.guid ?? this.guid();
         if (!guid || this.auditsPending !== null) {
             return;
         }
+        this.audits.set([]);
         this.auditsLoading.set(true);
         this.auditsPending = this.entities.getAuditEvents(guid).subscribe({
             next: (events) => {
