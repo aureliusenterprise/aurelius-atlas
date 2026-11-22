@@ -3426,6 +3426,186 @@ describe("EntityEditor history change-table words (HST-14)", () => {
     });
 });
 
+/** The description blocks of an open change list, in the order they print
+ * (HST-15). */
+function proseBlocks(pane: HTMLElement): HTMLElement[] {
+    return [...pane.querySelectorAll<HTMLElement>(".aurelius-editor-audit-prose")];
+}
+
+/** The trail of the description tests: one write rewords one word of the
+ * definition, so the change carries a taken word and a put-in word (HST-15). */
+const PROSE_TRAIL: EntityAuditEventV2[] = [
+    stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { definition: "The table holds aligned variants" }),
+    stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { definition: "The table holds raw variants" }),
+];
+
+describe("EntityEditor history description diff (HST-15, HST-16)", () => {
+    it("a reworded description prints under the tables with its marks (HST-15)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock, PROSE_TRAIL);
+
+        // The block names its own attribute with the same word the form's field
+        // carries, and asks for no section caption above it (HST-14, HST-15).
+        const text = normalize(pane.textContent);
+        expect(text).toContain("Definition");
+        expect(text).not.toContain("Descriptions");
+        // The fix shows as the words that moved, with the words around it (HST-10's
+        // marks, DD-825).
+        const block = proseBlocks(pane)[0];
+        expect(block?.querySelector("ins")?.textContent?.trim()).toBe("aligned");
+        expect(normalize(block?.textContent)).toContain("The table holds");
+        expect(normalize(block?.textContent)).toContain("variants");
+        // Nothing else changed, so no table prints at all (HST-12's rule).
+        expect(auditTables(pane)).toHaveLength(0);
+    });
+
+    it("the two descriptions leave the attributes table (HST-15)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock, [
+            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", {
+                name: "second",
+                definition: "new definition",
+                description: "new summary",
+            }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", {
+                name: "first",
+                definition: "old definition",
+                description: "old summary",
+            }),
+        ]);
+        const tables = auditTables(pane);
+
+        // The table holds the value attribute only (HST-15).
+        expect(tables).toHaveLength(1);
+        expect(
+            [...tables[0].querySelectorAll("tbody tr")].map((row) =>
+                normalize(row.querySelectorAll("td")[1]?.textContent),
+            ),
+        ).toEqual(["Name"]);
+        expect(normalize(tables[0].textContent)).not.toContain("definition");
+        // Both prose attributes print, each once, under their own name.
+        expect(proseBlocks(pane)).toHaveLength(2);
+        expect(normalize(proseBlocks(pane)[0]?.textContent)).toContain("Definition");
+        expect(normalize(proseBlocks(pane)[1]?.textContent)).toContain("Description");
+    });
+
+    it("a worded-out description prints its whole text as taken (HST-15)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock, [
+            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { definition: "" }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { definition: "a written definition" }),
+        ]);
+        const block = proseBlocks(pane)[0];
+
+        expect(block?.querySelector("del")?.textContent?.trim()).toBe("a written definition");
+        expect(block?.querySelector("ins")).toBeNull();
+    });
+
+    it("a description filled for the first time prints all its words as put in (HST-15)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock, [
+            stateAuditEvent("ENTITY_CREATE", "1700000010000:0", { definition: "the first text" }),
+        ]);
+        const block = proseBlocks(pane)[0];
+
+        expect(block?.querySelector("ins")?.textContent?.trim()).toBe("the first text");
+        expect(block?.querySelector("del")).toBeNull();
+    });
+
+    it("a long run of kept words folds to one marker stating the count (HST-16)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const long = Array.from({ length: 40 }, (_, index) => `word${index}`).join(" ");
+        const pane = openChangePane(compiled, fixture, httpMock, [
+            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { definition: `${long} final` }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { definition: `${long} last` }),
+        ]);
+        const text = normalize(proseBlocks(pane)[0]?.textContent);
+
+        // The words around the fix print, the run between them says how many it
+        // left out, and the whole text does not (HST-16).
+        expect(text).toContain("word0 word1");
+        expect(text).toMatch(/\d+ words left out/);
+        expect(text).not.toContain("word20");
+        expect(proseBlocks(pane)[0]?.querySelector("del")?.textContent?.trim()).toBe("last");
+        expect(proseBlocks(pane)[0]?.querySelector("ins")?.textContent?.trim()).toBe("final");
+    });
+
+    it("a small edit prints in full, without a marker (HST-16)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock, PROSE_TRAIL);
+
+        expect(normalize(proseBlocks(pane)[0]?.textContent)).not.toContain("left out");
+    });
+
+    it("a marked word carries the theme's wash behind it (HST-15)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock, PROSE_TRAIL);
+        const block = proseBlocks(pane).at(0);
+
+        // The added words take the success wash and the taken words the danger
+        // wash, both from the theme's own helpers — no colour of its own, so the
+        // dark theme shades itself (DD-825).
+        expect(block?.querySelector("ins")?.classList.contains("has-background-success-soft")).toBe(true);
+        expect(block?.querySelector("del")?.classList.contains("has-background-danger-soft")).toBe(true);
+        // The marks themselves stay, so the change still reads without the colour.
+        expect(block?.querySelector("ins")?.tagName).toBe("INS");
+        expect(block?.querySelector("del")?.tagName).toBe("DEL");
+    });
+
+    it("the tables' own marks keep 7.37's plain look (HST-12, HST-15)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock);
+        const cell = auditTables(pane)[0].querySelector(".aurelius-editor-audit-value")!;
+
+        // The wash belongs to the prose section only: a table value cell answers
+        // every attribute the same short way (HST-10).
+        expect(cell.querySelector("del")?.className).toBe("");
+        expect(cell.querySelector("ins")?.className).toBe("");
+    });
+
+    it("the section prints for a person who cannot write and offers no button (HST-15, EDT-09)", () => {
+        const { fixture, compiled, httpMock } = setup({ atlasWrite: false });
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock, PROSE_TRAIL);
+
+        expect(proseBlocks(pane)).toHaveLength(1);
+        expect(pane.querySelectorAll(".aurelius-editor-restore")).toHaveLength(0);
+        // The words come from the states the change list already holds: opening
+        // the section asks the server for nothing (AUD-06, HST-16).
+        httpMock.verify();
+    });
+
+    it("a blank description the store carries on every body claims no line (HST-13, HST-15)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pane = openChangePane(compiled, fixture, httpMock, [
+            stateAuditEvent("ENTITY_CREATE", "1700000010000:0", { name: "n", definition: "", description: "set" }),
+        ]);
+
+        expect(proseBlocks(pane)).toHaveLength(1);
+        expect(normalize(proseBlocks(pane)[0]?.textContent)).toContain("Description");
+        expect(normalize(pane.textContent)).not.toContain("Definition");
+    });
+});
+
 /** The matcher for one restore write (HST-11, EWR-15): the single-attribute
  * PUT of the changed line's attribute, the body carrying its stored old value. */
 function restoreRequest(name: string) {

@@ -55,6 +55,7 @@ import {
     type AuditAttributeChange,
     auditRowKey,
     type AuditChanges,
+    type AuditProseChange,
     type AuditRelationshipChange,
     type AuditRestore,
     auditTrailChanges,
@@ -64,6 +65,7 @@ import {
 import { auditActionDisplay } from "./audit-display";
 import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
+import { type ProsePart, diffProse } from "./description-diff";
 import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState } from "./editor-state";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
@@ -1233,6 +1235,18 @@ export class EntityEditor {
     protected readonly auditRelationshipHeader = $localize`:@@search.components.editor.history.relationship:Relationship`;
     /** The relationship table's entity header (HST-12). */
     protected readonly auditEntityHeader = $localize`:@@search.components.editor.history.entity:Entity`;
+    /** The fold marker's words (HST-16): how many kept words a long run left
+     * out. The helper stays locale-free, so the count's words live here. */
+    protected auditWordsLeftOut(count: number): string {
+        return $localize`:@@search.components.editor.history.wordsLeftOut:${count}:count: words left out`;
+    }
+
+    /** The parts of one prose change (HST-15, HST-16): the stored before and
+     * after texts worded as kept, removed and added parts, so a one-sentence
+     * fix shows the fix and not two whole texts. */
+    protected proseParts(change: AuditProseChange): readonly ProsePart[] {
+        return diffProse(change.from, change.to);
+    }
     /** The restore button's text (HST-11). */
     protected readonly auditRestoreLine = $localize`:@@search.components.editor.history.restore:Restore`;
     /** The status line a finished restore fills (HST-11, LR-005). */

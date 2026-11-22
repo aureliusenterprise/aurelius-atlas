@@ -514,7 +514,8 @@
                                     @if (
                                         changes.kind === "diff" &&
                                         changes.attributes.length === 0 &&
-                                        changes.relationships.length === 0
+                                        changes.relationships.length === 0 &&
+                                        changes.descriptions.length === 0
                                     ) {
                                         <p class="is-size-7">{{ auditNoChangesLine }}</p>
                                     }
@@ -650,6 +651,57 @@
                                                 </td>
                                             </ng-template>
                                         </aurelius-atlas-ui-sortable-table>
+                                    }
+                                    @if (changes.kind === "diff" && changes.descriptions.length > 0) {
+                                        <!-- The two prose attributes leave the tables for
+                                             this section (HST-15, DD-825): their text is
+                                             worded, so a one-sentence fix shows the fix —
+                                             the words the write took away in the browser's
+                                             own old mark, the words it put in in its new
+                                             mark. A long run of words that stayed folds to
+                                             one marker stating how many it left out
+                                             (HST-16). The section reads only the states the
+                                             change list already holds, and offers no
+                                             restore: prose goes back through the editor's
+                                             own field. Each block names its own attribute,
+                                             so the section needs no caption of its own. -->
+                                        @for (change of changes.descriptions; track change.name) {
+                                            <div class="aurelius-editor-audit-prose is-size-7">
+                                                <p class="aurelius-editor-audit-prose-name">
+                                                    {{ auditName(change.name) }}
+                                                </p>
+                                                <p class="aurelius-editor-audit-prose-text">
+                                                    @for (part of proseParts(change); track $index) {
+                                                        @if (part.kind === "kept") {
+                                                            {{ part.text }}
+                                                        }
+                                                        @if (part.kind === "removed") {
+                                                            <!-- The browser's own old mark, shaded with
+                                                                 Bulma's theme-aware danger wash: the
+                                                                 strikethrough carries the meaning on its own
+                                                                 and the colour only draws the eye (HST-15). -->
+                                                            <del
+                                                                class="has-background-danger-soft has-text-danger-soft-invert"
+                                                            >
+                                                                {{ part.text }}
+                                                            </del>
+                                                        }
+                                                        @if (part.kind === "added") {
+                                                            <ins
+                                                                class="has-background-success-soft has-text-success-soft-invert"
+                                                            >
+                                                                {{ part.text }}
+                                                            </ins>
+                                                        }
+                                                        @if (part.kind === "folded") {
+                                                            <span class="aurelius-editor-audit-fold">
+                                                                {{ auditWordsLeftOut(part.words) }}
+                                                            </span>
+                                                        }
+                                                    }
+                                                </p>
+                                            </div>
+                                        }
                                     }
                                 </div>
                             }
