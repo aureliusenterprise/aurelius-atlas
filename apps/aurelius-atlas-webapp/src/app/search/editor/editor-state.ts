@@ -306,8 +306,8 @@ export class EditorState {
 
     /**
      * Save through the mutation door (VDE-05, DD-609): one POST carries the
-     * attributes, the tag box's names, the picker ends, and the meanings
-     * (VDE-03/04); an update names the base view's `updateTime` (AVW-04). The
+     * attributes, the tag box's names, and the picker ends (VDE-03/04); an
+     * update names the base view's `updateTime` (AVW-04). The
      * answer is the entity's live view (AVW-07, VDE-06). The success evicts
      * the saved guid from the read cache before firing the tick, so the
      * details re-read asks the door (VDE-10, VDR-07), and lands on the

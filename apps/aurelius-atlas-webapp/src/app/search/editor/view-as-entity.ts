@@ -23,9 +23,6 @@ import {
     toFormValues,
 } from "./form-fields";
 
-/** The relationship attribute term assignments ride (the glossary model's endDef2 name). */
-const MEANINGS = "meanings";
-
 /**
  * The editor's draft for a view (VDE-01, DD-608): the shape the form seed,
  * the tag box, the picker seeds, and the governance draft all read. The
@@ -63,11 +60,13 @@ export function entityFromView(view: EntityView): AtlasEntity {
 
 /**
  * The mutation-door body for one save (VDE-03..VDE-05): the full attribute
- * map, the tag box's names as `classifications`, one `sections` entry per
- * picker the form rendered, and the meanings picker's term GUIDs on the
- * door's `meanings` key — 5.2c's bookkeeping, not a plain edge (VDE-04,
- * DD-612). An update names the base view's `updateTime` (AVW-04); a create
- * names no guid and carries the qualified name the editor seeded (DD-592).
+ * map, the tag box's names as `classifications`, and one `sections` entry per
+ * picker the form rendered (VDE-04). Term assignments ride no key at all —
+ * the editor builds no picker for them, so the door leaves them as stored
+ * (EDT-36, DD-828; the door's own `meanings` key stays for the glossary
+ * callers, DD-612). An update names the base view's `updateTime` (AVW-04); a
+ * create names no guid and carries the qualified name the editor seeded
+ * (DD-592).
  * A field the person cleared rides `null`, so the door's merge (EWR-10)
  * drops the stored value instead of keeping it. A set no rendered picker
  * owns is left out, and the door leaves it unchanged (AVW-05).
@@ -94,17 +93,10 @@ export function bodyFromEdits(options: {
             : cleared(mergeOntoEntity(options.entity, options.fields, options.values).attributes ?? {}, options.fields);
 
     const sections: ViewSectionInput[] = [];
-    const meanings: string[] = [];
-    let meaningsRendered = false;
     for (const field of options.relationshipFields) {
         const picks = options.relationshipValues.get(field.name);
         if (picks === undefined) {
             continue; // a picker the form did not render: the set stays unchanged (AVW-05)
-        }
-        if (field.name === MEANINGS) {
-            meaningsRendered = true;
-            meanings.push(...picks.map((pick) => pick.guid));
-            continue;
         }
         sections.push({ attribute: field.name, entities: picks.map((pick) => pick.guid) });
     }
@@ -114,7 +106,6 @@ export function bodyFromEdits(options: {
         typeName: options.typeName,
         attributes,
         classifications: [...options.classifications],
-        ...(meaningsRendered ? { meanings } : {}),
         ...(options.relationshipFields.length > 0 ? { sections } : {}),
     };
 }

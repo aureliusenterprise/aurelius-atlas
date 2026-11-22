@@ -1339,7 +1339,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
     });
 
-    it("the meanings picker rides the door's meanings key (VDE-04, DD-612)", () => {
+    it("the editor builds no picker for term assignments (EDT-36, DD-828)", () => {
         const defs: AtlasTypesDef = {
             ...TYPEDEFS,
             entityDefs: TYPEDEFS.entityDefs!.map((def) =>
@@ -1361,16 +1361,22 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         arrive(fixture, httpMock, view, chainFor(defs, "DataSet"));
         vi.spyOn(TestBed.inject(Router), "navigate"); // the save's navigation, stubbed as every save spec does
 
+        // The glossary model's end is dropped before the form builds, so the
+        // picker never renders (EDT-36) — the read keeps answering the stored
+        // terms, the editor just never offers to edit them.
+        expect(compiled.querySelectorAll('[data-field="meanings"]')).toHaveLength(0);
+        expect(compiled.querySelectorAll(".aurelius-editor-relationship")).toHaveLength(0);
+
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
 
+        // Nothing rides the door's `meanings` key (DD-612's own road stays
+        // empty here) and no `sections` entry claims the set, so the door
+        // leaves the term assignments exactly as stored (AVW-05).
         const post = httpMock.expectOne(VIEW_POST_URL);
         const body = post.request.body as ViewSaveRequest;
-        // Term assignments are 5.2c's bookkeeping, not plain edges: the picker
-        // reads the `meanings` section and its picks ride the door's own
-        // `meanings` key — never the generic `sections` list (VDE-04).
-        expect(body.meanings).toEqual(["t1"]);
-        expect(body.sections ?? []).not.toContainEqual(expect.objectContaining({ attribute: "meanings" }));
+        expect(body.meanings).toBeUndefined();
+        expect("sections" in body).toBe(false);
         post.flush(savedView());
     });
 
