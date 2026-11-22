@@ -86,6 +86,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.37 | History change details | `apps/aurelius-atlas-webapp` | HST (DD-821) |
 | 7.38 | History attribute restore | `apps/aurelius-atlas-webapp` | HST (DD-822) |
 | 7.39 | History change tables | `apps/aurelius-atlas-webapp` | HST (DD-823) |
+| 7.40 | History definition diff | `apps/aurelius-atlas-webapp` | HST (DD-825) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
