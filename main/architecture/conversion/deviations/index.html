@@ -8235,6 +8235,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>No Aurelius screen shows an entity's assigned terms, so the picker wrote data no screen read back, and an edit could drop a term link a person could not see. The mutation door keeps the <code>meanings</code> key and its 5.2c bookkeeping (DD-612), so a future glossary screen re-enables the picker by dropping one name from the editor's field build.</td>
 <td>7.41</td>
 </tr>
+<tr>
+<td>DV-194</td>
+<td>Types</td>
+<td>Apache Atlas 2.4.0 has no data attribute type to change, so no Atlas rule breaks. The difference is in Aurelius's own model and its sample data: the m4i data attribute type stated three of its facts twice, as the attributes <code>hasPII</code>, <code>isKeyData</code> and <code>riskClassification</code> and as the five classifications <code>PII</code>, <code>key_data</code> and the three risk levels. All three are <code>isIndexable: false</code>, and no governance rule expression of the corpus names one of them.</td>
+<td>The type declares none of the three and holds type version <code>1.2</code>, and a tag reads only as a classification (ACA-01..03). 21 data attributes of <code>sample_data.zip</code> and the one of <code>small.zip</code> end untagged: they held <code>hasPII</code> null, <code>isKeyData</code> blank and <code>riskClassification</code> blank, which maps to no classification, and the increment invents none.</td>
+<td>The frozen 14.6 baselines hold unchanged, because no rule expression names any of the three names. The classification tags of every record stay as written, which <code>test__m4i_models.py</code> proves per bundle, and the editor answers no label for a removed attribute, which SHL-08 proves for both catalogues (ACA-05).</td>
+<td>18.6</td>
+</tr>
 </tbody>
 </table>
 

@@ -8567,6 +8567,13 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
+<td>18.6</td>
+<td>The data attribute states its tags only as classifications</td>
+<td>The <code>m4i_data_attribute</code> type drops <code>hasPII</code>, <code>isKeyData</code> and <code>riskClassification</code> and goes to type version <code>1.2</code>, because the five classifications <code>PII</code>, <code>key_data</code> and the three risk levels already say what the three attributes say: every record of the corpus maps onto them without exception. The bundles lose the keys and keep their tags, the editor label map and both catalogues retire the keys, and a store at the old shape is rebuilt because an update receives back every attribute it lacks (ACA-01..05, DD-829)</td>
+<td>Migration of a store at the old shape (nothing removes a stored attribute, ACA-04); new classifications (the five carry every value); the legacy dictionary keys and the details blacklist (DET-11)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>19.1</td>
 <td>One query semantics for the store and its fakes</td>
 <td>One module builds every Elasticsearch query clause core emits and one owns the free-text word rules, so the store, the App Search engine and both test fakes read one definition; the fake gains an honest <code>minimum_should_match</code>, the engines are typed on a narrow search contract, and a saved matrix proves the in-memory store and the fake answer alike (QRY-01 to QRY-06)</td>
