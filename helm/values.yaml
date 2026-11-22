@@ -116,9 +116,11 @@ global:
                 name: ""
                 kind: ClusterIssuer
             # Key algorithm for the browser leaves when the edge issuer is
-            # public: Let's Encrypt throttles RSA issuance per registered
-            # domain ("too many certificates"), ECDSA clears it. "" keeps
-            # cert-manager's default (RSA 2048) — unchanged stock render.
+            # public. Let's Encrypt counts new certificates by name, not by
+            # key type (50 per registered domain and 5 per exact name set,
+            # each every 7 days). ECDSA gives a smaller and faster leaf that
+            # every current browser trusts. "" keeps cert-manager's default
+            # (RSA 2048) — unchanged stock render.
             certificate:
                 privateKey:
                     algorithm: ""
