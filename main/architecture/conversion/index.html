@@ -8574,6 +8574,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>18.7</td>
+<td>The optional flag is a boolean and the content flag goes</td>
+<td>The <code>m4i_field</code> type changes <code>optionalField</code> from <code>string</code> to <code>boolean</code> and drops <code>hasContent</code>, and it goes to type version <code>1.2</code>. Every field record of the corpus stores the flag as null, which the boolean type accepts, so no record changes value (FFB-01, FFB-02). The editor answers the flag with a checkbox, because it builds a checkbox for a boolean field (FFB-05). The three bundles lose the <code>hasContent</code> key from all 265 field records, and <code>sample_data.zip</code> and <code>only_gov_quality.zip</code> lose the rule <code>m4i_field--hasContent</code> (FFB-03). An operator rebuilds a store at the old shape, because the type registry rejects an attribute whose type changed (FFB-04, DD-830).</td>
+<td>Migration of a store at the old shape (nothing removes a stored attribute, FFB-04). A content flag kept for later (no record of the corpus filled it). The string flag kept (it gives a text box).</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>19.1</td>
 <td>One query semantics for the store and its fakes</td>
 <td>One module builds every Elasticsearch query clause core emits and one owns the free-text word rules, so the store, the App Search engine and both test fakes read one definition; the fake gains an honest <code>minimum_should_match</code>, the engines are typed on a narrow search contract, and a saved matrix proves the in-memory store and the fake answer alike (QRY-01 to QRY-06)</td>

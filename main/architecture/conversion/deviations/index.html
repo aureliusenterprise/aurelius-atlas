@@ -8243,6 +8243,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The frozen 14.6 baselines hold unchanged, because no rule expression names any of the three names. The classification tags of every record stay as written, which <code>test__m4i_models.py</code> proves per bundle, and the editor answers no label for a removed attribute, which SHL-08 proves for both catalogues (ACA-05).</td>
 <td>18.6</td>
 </tr>
+<tr>
+<td>DV-195</td>
+<td>Types</td>
+<td>Apache Atlas 2.4.0 has no field type to change, so no Atlas rule breaks. The difference is in Aurelius's own model and its sample data: the m4i field type stored <code>optionalField</code> as a <code>string</code> and carried a second flag <code>hasContent</code>, and all 265 field records stored both as null. Two bundles shipped a governance rule over the second flag.</td>
+<td>The type holds <code>optionalField</code> as a <code>boolean</code> and no <code>hasContent</code>, at type version <code>1.2</code> (FFB-01). The bundles lose the key from 264 field records of <code>sample_data.zip</code> and the one of <code>small.zip</code>, and both rule bundles lose the rule, which leaves 65 rules (FFB-02, FFB-03). The editor builds a checkbox for the flag (FFB-05).</td>
+<td>Neither flag said anything as a string, because every record stored null and the boolean type accepts null, so no stored value changes. The content flag named no fact the model states elsewhere, and its rule stood inactive since 12.7d (DV-173), so it judged nothing and read nothing. A warm store keeps the string until a rebuild, because the loader skips a file whose attribute type changed (FFB-04, DD-830).</td>
+<td>18.7</td>
+</tr>
 </tbody>
 </table>
 
