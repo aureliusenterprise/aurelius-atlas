@@ -8182,6 +8182,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The read rides the ported Atlas v2 audit endpoint with no parameters, whose defaults answer the newest 100 events newest-first (AUD-08). No shipped screen asks for an older event, so the walk buys nothing a reader can reach. A <code>startKey</code> page or an infinite scroll stays out until a screen needs one.</td>
 <td>7.35</td>
 </tr>
+<tr>
+<td>DV-191</td>
+<td>Audit</td>
+<td>A propagation tell reaches an entity it can read. <code>AtlasGraphUtilsV2.findByGuid</code> filters on the GUID alone, so a soft-deleted entity still reads back and its <code>notifyPropagatedEntities</code> records a propagated add or delete on it. A deferred task's request context holds nothing the request deleted, so a task that runs after the entity was deleted records the event, and a restart that replays the task records it again.</td>
+<td>A propagation tell skips every entity not <code>ACTIVE</code>, whether it comes from a request or a task, so a deleted entity's history closes at its <code>ENTITY_DELETE</code> event (CAU-05, CAU-06, DD-818).</td>
+<td>Aurelius keeps soft-deleted entities readable with their classifications listed (EDL-06), so a tell that asks only "does it exist?" audits a tombstone. The task's write is still Java's — the propagation is removed — only the event differs, and no client reads an event on an entity it can no longer see.</td>
+<td>3.5</td>
+</tr>
 </tbody>
 </table>
 
