@@ -3,7 +3,8 @@
 - **Status:** in review
 - **Pull request:** #370
 - **Records:** adds VEV-07, VEV-08 (here) and DD-631..634 (here); amends VEV-01, VEV-02,
-  VEV-03 (12.7, here) and EDT-24 (7.24, one-way description alias). Relies on LAS-13 and
+  VEV-03 (12.7, here) and EDT-24 (7.24, one-way description alias, retired in place by 18.8,
+  SPA-06). Relies on LAS-13 and
   ASG-04 (the rule→type join and the relationship reading of 14.6), and on DET-42 (the
   details box, which already asks the store for the type's own rules).
 
@@ -27,12 +28,12 @@ spec states one direction.
 
 Delivered here:
 
-| Module                                    | Holds                                                        |
-| ----------------------------------------- | ------------------------------------------------------------ |
-| `aurelius_atlas_validate_entity.models`   | the draft grows `typeName` and `relationshipAttributes`      |
-| `aurelius_atlas_validate_entity.verdicts` | the type join on the rule's qualified name, the draft record |
-| `aurelius_atlas_validate_entity/routes`   | the draft model passes whole to the engine                   |
-| `aurelius-atlas-webapp` editor            | the description alias becomes one-way (EDT-24 amended)       |
+| Module                                    | Holds                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------- |
+| `aurelius_atlas_validate_entity.models`   | the draft grows `typeName` and `relationshipAttributes`                         |
+| `aurelius_atlas_validate_entity.verdicts` | the type join on the rule's qualified name, the draft record                    |
+| `aurelius_atlas_validate_entity/routes`   | the draft model passes whole to the engine                                      |
+| `aurelius-atlas-webapp` editor            | the description alias becomes one-way (EDT-24 amended; 18.8 retires it, SPA-06) |
 
 Explicitly not delivered, with the increment that will:
 
@@ -57,7 +58,9 @@ VEV-02 as amended: one ACTIVE rule of the draft's type answers one verdict, and 
 The cache of VEV-05 still holds the one whole read, and the type filter runs per call on
 it. EDT-24 as amended: the drawer shows a verdict under the control the verdict's attribute
 names, and a `definition` verdict names the `description` control one way (the legacy's
-alias direction, DD-633). A `description` verdict names only its own control.
+alias direction, DD-633). A `description` verdict names only its own control. **Amended (18.8,
+SPA-06, DD-832):** the `definition` alias retires with the attribute (SPA-01), so every verdict
+names the control of its own attribute.
 
 ## Aurelius origin
 

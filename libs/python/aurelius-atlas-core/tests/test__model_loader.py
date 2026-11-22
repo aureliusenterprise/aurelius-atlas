@@ -390,6 +390,39 @@ async def test__a_new_catalogue_takes_the_boolean_flag(store: TypedefStore, tmp_
     ]
 
 
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["SPA-03"])
+async def test__a_warm_catalogue_keeps_the_retired_prose_attribute(store: TypedefStore, tmp_path: Path) -> None:
+    """A store that holds ``definition`` keeps it through the 18.8 model, and takes its version (SPA-03).
+
+    The removal is a plain removal of a stored attribute, which ACA-04's give-back keeps (DD-832); only a
+    catalogue that holds nothing answers the one-prose shape, which is why 18.8 rebuilds the demo store.
+    """
+    path = tmp_path / "1.json"
+    write_json(path, model(entity("t", attr("name"), attr("definition"), version="1.0")))
+    await ModelLoader(store).load(tmp_path)
+
+    write_json(path, model(entity("t", attr("name"), attr("description"), version="1.1")))
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == []
+    served = stored(store, "t", AtlasEntityDef)
+    assert served.type_version == "1.1"
+    # the update's own attributes first, the given-back stored one after them
+    assert [attribute.name for attribute in served.attribute_defs] == ["name", "description", "definition"]
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["SPA-03"])
+async def test__a_new_catalogue_ships_the_one_prose_attribute(store: TypedefStore, tmp_path: Path) -> None:
+    """A store that holds nothing takes the type with ``description`` and no ``definition`` (SPA-03)."""
+    write_json(tmp_path / "1.json", model(entity("t", attr("name"), attr("description"), version="1.1")))
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == []
+    served = stored(store, "t", AtlasEntityDef)
+    assert served.type_version == "1.1"
+    assert [attribute.name for attribute in served.attribute_defs] == ["name", "description"]
+
+
 @pytest.mark.covers("aurelius_atlas_core.model_loader.TypedefPatch.record", rules=["MDL-05"])
 async def test__patches_run_once_unknown_actions_are_skipped(
     store: TypedefStore, document: MemoryTypedefDocument, tmp_path: Path

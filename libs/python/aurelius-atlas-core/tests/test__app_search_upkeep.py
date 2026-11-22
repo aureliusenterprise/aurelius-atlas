@@ -154,7 +154,7 @@ async def test__a_changed_definition_shows_on_the_entity_s_own_document_only() -
     """One document written: no other document holds a definition."""
     catalogue = await Catalogue.indexed(m4i("m4i_data_domain", "d"), m4i("m4i_data_entity", "e", dataDomain="d"))
 
-    await catalogue.writer.update_attribute_by_guid(catalogue.guids["d"], "definition", "What d is")
+    await catalogue.writer.update_attribute_by_guid(catalogue.guids["d"], "description", "What d is")
     written = await catalogue.indexer.run_once()
 
     await catalogue.assert_current()

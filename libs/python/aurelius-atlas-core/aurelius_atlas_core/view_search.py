@@ -61,8 +61,9 @@ MODES = ("keyword", "semantic", "hybrid")
 NEAREST_WINDOW = MAX_NEAREST
 """A meaning mode's window: ``offset + limit`` is at most 1,000, 11.4's rule of the same kNN search (ASV-08, DD-441)."""
 
-_NAME_ATTRIBUTES = ("name", "qualifiedName", "definition")
-"""The card fields matched as words, however many types store them under their own qualified name (AVR-04)."""
+_NAME_ATTRIBUTES = ("name", "qualifiedName", "description")
+"""The card fields matched as words, however many types store them under their own qualified name (AVR-04 as
+amended by 18.8/SPA-05: the prose field is ``description``, the m4i dictionary's ``definition`` is retired)."""
 
 _MATCHED = (
     "typeName",
@@ -124,7 +125,7 @@ def name_paths(registry: TypeRegistry) -> dict[str, tuple[str, ...]]:
 def door_fields(registry: TypeRegistry, type_name: str | None = None) -> dict[str, EngineField]:
     """The door's field table (AVR-03): the card's fields, their stored paths, and the quality sub-fields.
 
-    ``type_name`` narrows the per-type fields — ``name``, ``qualifiedName``, ``definition`` — to that type's
+    ``type_name`` narrows the per-type fields — ``name``, ``qualifiedName``, ``description`` — to that type's
     own path when it defines them: a filter, facet or sort of one of them then reads a single index field
     (DD-586); without it they hold every type's paths and only filtering and matching reach them.
     """
@@ -183,7 +184,7 @@ def _path_of(paths: tuple[str, ...], type_name: str, registry: TypeRegistry) -> 
 def query_fields(registry: TypeRegistry) -> dict[str, float]:
     """The fields a query's words are matched in, with their weights (AVR-04, DD-525).
 
-    The words go over every type's analysed name, qualified name and definition and over the classification
+    The words go over every type's analysed name, qualified name and description and over the classification
     names; the other text fields of the table are reached whole — a word matches a type name only by naming it
     exactly.
     """

@@ -49,8 +49,7 @@ const ANSWER: EntityView = {
     attributes: {
         name: "genomic_variants",
         qualifiedName: "genomic_variants@cluster",
-        definition: "Curated variant calls.",
-        description: "A seeded description.",
+        description: "Curated variant calls.",
         owner: "analyst-3",
     },
 };
@@ -221,7 +220,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(compiled.querySelector(".aurelius-details-classifications")).toBeNull();
     });
 
-    it("shows the description from the definition attribute (DET-10)", () => {
+    it("shows the description from the description attribute (DET-10, SPA-06)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
@@ -230,9 +229,9 @@ describe("Details data spine (DET-08..DET-13)", () => {
         );
     });
 
-    it("shows the legacy placeholder when neither attribute exists (DET-10, DD-321)", () => {
+    it("shows the legacy placeholder when the attribute does not exist (DET-10, DD-321)", () => {
         const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock, { ...ANSWER, name: "no-definition", attributes: { name: "no-definition" } });
+        arrive(fixture, httpMock, { ...ANSWER, name: "no-description", attributes: { name: "no-description" } });
 
         // The legacy description component's noDescription template: an
         // italic centered line in place of the markdown block.
@@ -246,7 +245,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock, {
             ...ANSWER,
-            attributes: { ...ANSWER.attributes, definition: "Curated **variant** calls." },
+            attributes: { ...ANSWER.attributes, description: "Curated **variant** calls." },
         });
 
         const box = compiled.querySelector(".aurelius-details-description");
@@ -255,7 +254,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(box!.querySelector("strong")!.textContent).toBe("variant");
     });
 
-    it("falls back to the description attribute, and keeps it out of the rows (DET-10, DET-11, DD-320)", () => {
+    it("shows the prose the one attribute holds and keeps it out of the rows (DET-10, DET-11, DD-320, SPA-06)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock, {
             ...ANSWER,
@@ -263,9 +262,9 @@ describe("Details data spine (DET-08..DET-13)", () => {
             attributes: { name: "atlas-typed", description: "A seeded description." },
         });
 
-        // The Atlas model types carry their text in `description`: the box
-        // shows it (DET-10) and the table drops it (DD-320 — the shown key
-        // appears once on the screen, the blacklist's own mechanism).
+        // 18.8 (ADR 070) retired the second prose key: the box shows
+        // `description` (DET-10) and the table drops it (DD-320 — the shown
+        // key appears once on the screen, the blacklist's own mechanism).
         expect(normalize(compiled.querySelector(".aurelius-details-description")?.textContent)).toBe(
             "A seeded description.",
         );
@@ -285,7 +284,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         arrive(fixture, httpMock);
 
         expect(compiled.querySelector("table.aurelius-details-properties")).toBeTruthy();
-        expect(compiled.querySelectorAll(".aurelius-details-properties tbody tr")).toHaveLength(2);
+        expect(compiled.querySelectorAll(".aurelius-details-properties tbody tr")).toHaveLength(1);
         expect(compiled.querySelector(".aurelius-details-properties-empty")).toBeNull();
     });
 
@@ -293,13 +292,14 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
-        // name, qualifiedName and definition are blacklisted (the legacy
-        // filter): description and owner are the renderable two, sorted.
+        // name and qualifiedName are blacklisted (the legacy filter) and the
+        // shown description leaves the table (DD-320): owner is the renderable
+        // one.
         const rows = [...compiled.querySelectorAll(".aurelius-details-properties tbody tr")].map((row) =>
             normalize(row.querySelector("td")?.textContent),
         );
-        expect(rows).toEqual(["description", "owner"]);
-        expect(normalize(compiled.querySelector(".aurelius-details-property-count")?.textContent)).toBe("2");
+        expect(rows).toEqual(["owner"]);
+        expect(normalize(compiled.querySelector(".aurelius-details-property-count")?.textContent)).toBe("1");
     });
 
     it("routes the details screen when a property link is clicked (DET-11, DET-06)", () => {
@@ -315,18 +315,18 @@ describe("Details data spine (DET-08..DET-13)", () => {
             ],
         });
 
-        // Sorted rows: description, owner, upstreamDatasets — the link is
-        // the third, and the only one whose value is a guid array (DET-11).
+        // Sorted rows: owner, upstreamDatasets — the shown description leaves
+        // the table (DD-320), so the link is the second, and the only one whose
+        // value is a guid array (DET-11).
         const rows = [...compiled.querySelectorAll(".aurelius-details-properties tbody tr")];
         expect(rows.map((row) => normalize(row.querySelector("td")?.textContent))).toEqual([
-            "description",
             "owner",
             "upstreamDatasets",
         ]);
 
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
         const items = fixture.debugElement.queryAll(By.directive(PropertiesItem));
-        (items[2].componentInstance as PropertiesItem).itemClicked.emit("linked-1");
+        (items[1].componentInstance as PropertiesItem).itemClicked.emit("linked-1");
 
         expect(navigate).toHaveBeenCalledWith(["/search/details", "linked-1"]);
     });
@@ -1239,7 +1239,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(compiled.querySelector("#related-fields")).toBeNull();
         expect(compiled.querySelector("#people-details")).toBeNull();
         expect(compiled.querySelector("table.aurelius-details-properties")).toBeTruthy();
-        expect(normalize(compiled.querySelector(".aurelius-details-property-count")?.textContent)).toBe("2");
+        expect(normalize(compiled.querySelector(".aurelius-details-property-count")?.textContent)).toBe("1");
 
         // Settle the DET-15 walk: DataSet's typedef names two plain
         // supertypes; each answers the built-in error and ends its branch.

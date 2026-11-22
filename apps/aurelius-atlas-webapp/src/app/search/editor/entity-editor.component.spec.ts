@@ -354,12 +354,12 @@ function govVerdict(attribute: string, message: string, compliant: boolean) {
 }
 
 /** The engine's verdicts over four corpus rules (EDT-21/EDT-24 as amended by
- * 12.7, VEV-02): the drawer renders the two whose attributes name one of its
- * controls (name, definition/description). */
+ * 12.7 and 18.8, VEV-02): the drawer renders the two whose attributes name one
+ * of its controls (name, description). */
 const VALIDATION = {
     verdicts: [
         govVerdict("dataEntity", "This entity is missing a dataEntity", false),
-        govVerdict("definition", "This entity has a definition", true),
+        govVerdict("description", "This entity has a description", true),
         govVerdict("domainLead", "This entity is missing a domainLead", false),
         govVerdict("name", "This entity has a name", true),
     ],
@@ -573,8 +573,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         // The text inputs, in the resolved order: name first, then the rest
         // by name; the description key rides the markdown field now (EDT-20)
         // and the unique qualifiedName is dropped entirely (the form never
-        // edits it).
-        expect(names).toEqual(["name", "displayName", "owner"]);
+        // edits it). The base owner, displayName and userDescription are
+        // hidden too (EDT-37), so only name is left of the base four.
+        expect(names).toEqual(["name"]);
 
         const nameField = compiled.querySelector<HTMLInputElement>("#editor-name");
         expect(nameField?.value).toBe("genomic_variants");
@@ -655,9 +656,11 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(blocks[1].querySelector("aurelius-atlas-ui-classification-chip")).toBeNull();
 
         // The pickers sit after the plain fields and before the box (EDT-13).
-        const owner = compiled.querySelector("#editor-owner")!;
+        // The base owner field is hidden (EDT-37), so the markdown
+        // description is the last plain field.
+        const prose = compiled.querySelector("#editor-description")!;
         const box = compiled.querySelector(".aurelius-editor-classification-box")!;
-        expect(owner.compareDocumentPosition(blocks[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(prose.compareDocumentPosition(blocks[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(blocks[0].compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
@@ -1078,7 +1081,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         const names = [...compiled.querySelectorAll<HTMLInputElement>("input.aurelius-editor-text")].map((input) =>
             input.id.replace("editor-", ""),
         );
-        expect(names).toEqual(["name", "displayName", "owner"]);
+        expect(names).toEqual(["name"]); // the base owner and displayName are hidden (EDT-37)
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("");
 
         // Save with a name: the door body names no guid and carries the uuid
@@ -1271,7 +1274,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(body.updateTime).toBe(1_700_000_021_000);
         expect(body.attributes["name"]).toBe("renamed_variants");
         expect(body.attributes["qualifiedName"]).toBe("genomic_variants@cluster"); // untouched passthrough
-        expect(body.attributes["owner"]).toBe("analyst-3");
+        // The hidden base attributes leave the body (EDT-37): the door merge
+        // (AVW-05) leaves them as stored, so no key is needed to keep them.
+        expect("owner" in body.attributes).toBe(false);
         // The full tag set rides the one body (VDE-03): the door replaces it
         // wholesale, so no add/replace/delete classification calls follow.
         expect(body.classifications).toEqual(["PII"]);
@@ -1449,12 +1454,13 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(normalize(nameBlock.querySelector("label.label")?.textContent)).toBe("Name *(required)");
         expect(nameBlock.querySelector("label .has-text-danger")?.getAttribute("aria-hidden")).toBe("true");
 
-        // An optional field gets neither.
-        const ownerBlock = compiled.querySelector<HTMLElement>('[data-field="owner"]')!;
-        expect(compiled.querySelector<HTMLInputElement>("#editor-owner")?.required).toBe(false);
+        // An optional field gets neither. The prose field is the optional one
+        // the form still renders (EDT-37 hid the base owner).
+        const proseBlock = compiled.querySelector<HTMLElement>('[data-field="description"]')!;
+        expect(compiled.querySelector("textarea#editor-description")).toBeTruthy();
         // An attribute the raw name of would be human-readable only by case
         // gets its catalogue string (EDT-33, 7-33).
-        expect(normalize(ownerBlock.querySelector("label.label")?.textContent)).toBe("Owner");
+        expect(normalize(proseBlock.querySelector("label.label")?.textContent)).toBe("Description");
     });
 
     it("the catalogue label beats the definition's displayName (EDT-03, EDT-33)", () => {
@@ -1469,7 +1475,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
                     ? {
                           ...def,
                           attributeDefs: def.attributeDefs!.map((attribute) =>
-                              attribute.name === "owner" ? { ...attribute, displayName: "owner" } : attribute,
+                              attribute.name === "description"
+                                  ? { ...attribute, displayName: "description" }
+                                  : attribute,
                           ),
                       }
                     : def,
@@ -1477,9 +1485,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         };
         arrive(fixture, httpMock, ANSWER, chainFor(defs, "DataSet"));
 
-        const block = compiled.querySelector<HTMLElement>('[data-field="owner"]')!;
+        const block = compiled.querySelector<HTMLElement>('[data-field="description"]')!;
 
-        expect(normalize(block.querySelector("label.label")?.textContent)).toBe("Owner");
+        expect(normalize(block.querySelector("label.label")?.textContent)).toBe("Description");
     });
 
     it("a required multi group names its rows and says required (FORM-REQ-001)", () => {
@@ -1629,7 +1637,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
-        // Edit the name; leave owner, description, and displayName untouched.
+        // Edit the name; leave the prose and the hidden base attributes alone.
         const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
         nameInput.value = "renamed_variants";
         nameInput.dispatchEvent(new Event("input"));
@@ -1643,7 +1651,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
             name: "stored_variants",
             displayText: "stored_variants",
             updateTime: 2_000_000_000_000,
-            attributes: { ...ANSWER.attributes, name: "stored_variants", owner: "ops-9" },
+            attributes: { ...ANSWER.attributes, name: "stored_variants", description: "stored summary" },
         };
         httpMock
             .expectOne(VIEW_POST_URL)
@@ -1661,8 +1669,11 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("renamed_variants"); // kept
         // The untouched control answers the stored value (VDE-07): the re-seed
-        // ran against the seed the old view gave.
-        expect(compiled.querySelector<HTMLInputElement>("#editor-owner")?.value).toBe("ops-9");
+        // ran against the seed the old view gave. The prose textarea is the
+        // untouched field — the base owner is hidden now (EDT-37).
+        expect(compiled.querySelector<HTMLTextAreaElement>("textarea#editor-description")?.value).toBe(
+            "stored summary",
+        );
 
         // A second Save rides the stored updateTime (VDE-07, AVW-04).
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
@@ -1671,7 +1682,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         const body = second.request.body as ViewSaveRequest;
         expect(body.updateTime).toBe(2_000_000_000_000);
         expect(body.attributes["name"]).toBe("renamed_variants");
-        expect(body.attributes["owner"]).toBe("ops-9");
+        expect(body.attributes["description"]).toBe("stored summary");
+        expect("owner" in body.attributes).toBe(false); // hidden (EDT-37)
         second.flush(savedView({ ...stored, updateTime: 2_000_000_050_000 }));
         fixture.detectChanges();
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
@@ -2085,17 +2097,17 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         arrive(fixture, httpMock);
 
         // The engine answers four verdicts (VEV-02); the DataSet drawer renders
-        // controls for two of their attributes — a `definition` verdict names
-        // the description key (the pair, DD-320, EDT-24 as amended by 12.7).
-        // The attributes no control carries (`dataEntity`, `domainLead`) render
-        // nowhere (DD-446).
+        // controls for two of their attributes — the `description` verdict
+        // names the one prose control (EDT-24 as amended by 12.7 and 18.8,
+        // SPA-06). The attributes no control carries (`dataEntity`,
+        // `domainLead`) render nowhere (DD-446).
         const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
         expect(lines).toHaveLength(2);
         // The DOM order is the form's (EDT-03's rank): the name control's
         // line first, the description control's after it.
         expect(lines.map((line) => normalize(line.textContent))).toEqual([
             "This entity has a name",
-            "This entity has a definition",
+            "This entity has a description",
         ]);
 
         // The lines sit under their own control, at the legacy's small size,
@@ -2104,11 +2116,11 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(normalize(nameLine?.textContent)).toBe("This entity has a name");
         expect(nameLine?.classList.contains("is-size-7")).toBe(true);
         expect(nameLine?.querySelector(".icon.has-text-success svg")).toBeTruthy();
-        const definitionLine = lines.find((line) =>
+        const descriptionLine = lines.find((line) =>
             line.closest(".aurelius-editor-field")?.querySelector("textarea#editor-description"),
         );
-        expect(normalize(definitionLine?.textContent)).toBe("This entity has a definition");
-        expect(definitionLine?.querySelector(".icon.has-text-success svg")).toBeTruthy();
+        expect(normalize(descriptionLine?.textContent)).toBe("This entity has a description");
+        expect(descriptionLine?.querySelector(".icon.has-text-success svg")).toBeTruthy();
     });
 
     it("a non-compliant verdict paints the warning icon (EDT-24)", () => {
@@ -2131,27 +2143,17 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(line.querySelector(".icon.has-text-success")).toBeNull();
     });
 
-    it("a definition verdict rides both controls once each (EDT-24, DD-633)", () => {
-        // The chain carries a `definition` attribute beside `description`: both
-        // markdown controls render (EDT-03's kindOf), and each verdict names one
-        // control (12.7a, DD-633): the description control keeps its own
-        // verdict, and the definition verdict rides the definition control.
-        const defs: AtlasTypesDef = {
-            ...TYPEDEFS,
-            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
-                def.name === "Asset"
-                    ? {
-                          ...def,
-                          attributeDefs: [...(def.attributeDefs ?? []), { name: "definition", typeName: "string" }],
-                      }
-                    : def,
-            ),
-        };
+    it("the retired key's verdict borrows nothing (EDT-24, SPA-06, DD-633 superseded)", () => {
+        // The alias DD-633 drew — a `definition` verdict naming the
+        // description control while the form carried no definition control —
+        // fell away with the attribute (18.8, ADR 070). On the shipped DataSet
+        // chain a `definition` verdict measures no control and paints no
+        // line; the description verdict paints under its own control alone.
         const { fixture, compiled, httpMock } = setup();
         arriveSlices(fixture, httpMock, false);
         httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
         fixture.detectChanges();
-        arriveChain(httpMock, "DataSet", chainFor(defs, "DataSet"));
+        arriveChain(httpMock, "DataSet", DATASET_CHAIN);
         fixture.detectChanges();
 
         httpMock.expectOne(VALIDATE_URL).flush({
@@ -2164,15 +2166,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         fixture.detectChanges();
 
         const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
-        expect(lines).toHaveLength(2);
-        const definitionLine = lines.find((line) =>
-            line.closest(".aurelius-editor-field")?.querySelector("textarea#editor-definition"),
-        );
-        const descriptionLine = lines.find((line) =>
-            line.closest(".aurelius-editor-field")?.querySelector("textarea#editor-description"),
-        );
-        expect(definitionLine && normalize(definitionLine.textContent)).toBe("This entity has a definition");
-        expect(descriptionLine && normalize(descriptionLine.textContent)).toBe("This entity has a description");
+        expect(lines.map((line) => normalize(line.textContent))).toEqual(["This entity has a description"]);
+        expect(lines[0].closest(".aurelius-editor-field")?.querySelector("textarea#editor-description")).toBeTruthy();
     });
 
     it("an anyOf verdict paints under each control the rule names (EDT-24, VEV-09, DD-636)", () => {
@@ -2226,7 +2221,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
         expect(lines.map((line) => normalize(line.textContent))).toEqual([
             "This entity has a name",
-            "This entity has a definition",
+            "This entity has a description",
         ]);
     });
 });
@@ -3439,10 +3434,10 @@ function proseBlocks(pane: HTMLElement): HTMLElement[] {
 }
 
 /** The trail of the description tests: one write rewords one word of the
- * definition, so the change carries a taken word and a put-in word (HST-15). */
+ * description, so the change carries a taken word and a put-in word (HST-15). */
 const PROSE_TRAIL: EntityAuditEventV2[] = [
-    stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { definition: "The table holds aligned variants" }),
-    stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { definition: "The table holds raw variants" }),
+    stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { description: "The table holds aligned variants" }),
+    stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { description: "The table holds raw variants" }),
 ];
 
 describe("EntityEditor history description diff (HST-15, HST-16)", () => {
@@ -3455,7 +3450,7 @@ describe("EntityEditor history description diff (HST-15, HST-16)", () => {
         // The block names its own attribute with the same word the form's field
         // carries, and asks for no section caption above it (HST-14, HST-15).
         const text = normalize(pane.textContent);
-        expect(text).toContain("Definition");
+        expect(text).toContain("Description");
         expect(text).not.toContain("Descriptions");
         // The fix shows as the words that moved, with the words around it (HST-10's
         // marks, DD-825).
@@ -3467,36 +3462,36 @@ describe("EntityEditor history description diff (HST-15, HST-16)", () => {
         expect(auditTables(pane)).toHaveLength(0);
     });
 
-    it("the two descriptions leave the attributes table (HST-15)", () => {
+    it("the one prose attribute leaves the attributes table (HST-15, EDT-20, SPA-06)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
         const pane = openChangePane(compiled, fixture, httpMock, [
             stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", {
                 name: "second",
-                definition: "new definition",
                 description: "new summary",
+                summaryNote: "new note",
             }),
             stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", {
                 name: "first",
-                definition: "old definition",
                 description: "old summary",
+                summaryNote: "old note",
             }),
         ]);
         const tables = auditTables(pane);
 
-        // The table holds the value attribute only (HST-15).
+        // The table holds the value attributes only: the one prose key leaves
+        // for its own section (HST-15), and `summaryNote` — not a prose key
+        // since 18.8 — rides the table as any other attribute does.
         expect(tables).toHaveLength(1);
         expect(
             [...tables[0].querySelectorAll("tbody tr")].map((row) =>
                 normalize(row.querySelectorAll("td")[1]?.textContent),
             ),
-        ).toEqual(["Name"]);
-        expect(normalize(tables[0].textContent)).not.toContain("definition");
-        // Both prose attributes print, each once, under their own name.
-        expect(proseBlocks(pane)).toHaveLength(2);
-        expect(normalize(proseBlocks(pane)[0]?.textContent)).toContain("Definition");
-        expect(normalize(proseBlocks(pane)[1]?.textContent)).toContain("Description");
+        ).toEqual(["Name", "summaryNote"]);
+        expect(normalize(tables[0].textContent)).not.toContain("description");
+        expect(proseBlocks(pane)).toHaveLength(1);
+        expect(normalize(proseBlocks(pane)[0]?.textContent)).toContain("Description");
     });
 
     it("a worded-out description prints its whole text as taken (HST-15)", () => {
@@ -3504,12 +3499,12 @@ describe("EntityEditor history description diff (HST-15, HST-16)", () => {
         arrive(fixture, httpMock);
 
         const pane = openChangePane(compiled, fixture, httpMock, [
-            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { definition: "" }),
-            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { definition: "a written definition" }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { description: "" }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { description: "a written description" }),
         ]);
         const block = proseBlocks(pane)[0];
 
-        expect(block?.querySelector("del")?.textContent?.trim()).toBe("a written definition");
+        expect(block?.querySelector("del")?.textContent?.trim()).toBe("a written description");
         expect(block?.querySelector("ins")).toBeNull();
     });
 
@@ -3518,7 +3513,7 @@ describe("EntityEditor history description diff (HST-15, HST-16)", () => {
         arrive(fixture, httpMock);
 
         const pane = openChangePane(compiled, fixture, httpMock, [
-            stateAuditEvent("ENTITY_CREATE", "1700000010000:0", { definition: "the first text" }),
+            stateAuditEvent("ENTITY_CREATE", "1700000010000:0", { description: "the first text" }),
         ]);
         const block = proseBlocks(pane)[0];
 
@@ -3532,8 +3527,8 @@ describe("EntityEditor history description diff (HST-15, HST-16)", () => {
 
         const long = Array.from({ length: 40 }, (_, index) => `word${index}`).join(" ");
         const pane = openChangePane(compiled, fixture, httpMock, [
-            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { definition: `${long} final` }),
-            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { definition: `${long} last` }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000020000:0", { description: `${long} final` }),
+            stateAuditEvent("ENTITY_UPDATE", "1700000010000:0", { description: `${long} last` }),
         ]);
         const text = normalize(proseBlocks(pane)[0]?.textContent);
 
@@ -3770,16 +3765,19 @@ describe("EntityEditor history attribute restore (HST-11)", () => {
             savedView({
                 name: "restored_name",
                 displayText: "restored_name",
-                attributes: { ...ANSWER.attributes, name: "restored_name", owner: "ops-9" },
+                attributes: { ...ANSWER.attributes, name: "restored_name", description: "restored summary" },
             }),
         );
         fixture.detectChanges();
         fixture.detectChanges();
 
         // The touched control keeps the person's value and the untouched one
-        // answers the stored entity (VDE-07, DD-610).
+        // answers the stored entity (VDE-07, DD-610). The untouched control is
+        // the prose textarea — the base owner is hidden (EDT-37).
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("typed by hand");
-        expect(compiled.querySelector<HTMLInputElement>("#editor-owner")?.value).toBe("ops-9");
+        expect(compiled.querySelector<HTMLTextAreaElement>("textarea#editor-description")?.value).toBe(
+            "restored summary",
+        );
         // The line says what the write did (LR-005), and the drawer stays open
         // with the change list the person was reading (DD-822).
         expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent)).toBe("Entity restored");

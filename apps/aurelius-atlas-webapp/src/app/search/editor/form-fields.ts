@@ -28,15 +28,26 @@ export type EditorField = {
 /**
  * The localized strings for the attributes the catalogue names (EDT-11, and
  * every attribute the shipped metamodel renders since 7-33: `name`,
- * `definition`, and one key per attribute — EDT-33). The component builds
+ * `description`, and one key per attribute — EDT-33). The component builds
  * these with `$localize` and passes them in — the helper stays pure.
  */
 export type EditorLabels = Readonly<Record<string, string>>;
 
-/** The two attribute keys the details box shows as the description (DET-10/DD-320).
- * Exported only so the WFE-05 guard (`form-rules.spec.ts`) can hold it against the
- * fixture the server's own tests produce (DD-805). */
-export const DESCRIPTION_KEYS = ["definition", "description"] as const;
+/** The attribute key the details box shows as the description (DET-10/DD-320).
+ * It was two keys until 18.8 (ADR 070), which retired `definition` in favour of
+ * Atlas's own `description`. Exported only so the WFE-05 guard
+ * (`form-rules.spec.ts`) can hold it against the fixture the server's own tests
+ * produce (DD-805). */
+export const DESCRIPTION_KEYS = ["description"] as const;
+
+/** The base attributes no Aurelius editor offers (EDT-37, DD-832): the owner,
+ * the display name the header already shows, and Atlas's free-text note. The
+ * store still holds all three and the details panels still print them; the
+ * editor builds no control for them and its save body names none of the three
+ * keys, so the door leaves what is stored untouched (AVW-05). Exported for the
+ * body builder (`view-as-entity.ts`), which drops the keys it would otherwise
+ * carry back from the read. */
+export const HIDDEN_BASE_ATTRIBUTES = new Set(["owner", "displayName", "userDescription"]);
 
 /** The primitive numeric `typeName`s (Atlas's built-in numeric types). Exported only
  * for the same WFE-05 guard; `bigint` was never one (the server's primitives carry
@@ -73,8 +84,8 @@ function kindOf(def: AtlasAttributeDef, enumNames: ReadonlySet<string>): EditorF
         return typeName === "array<string>" ? "multi" : null;
     }
     if (typeName === "string") {
-        // The two description keys ride the markdown field (EDT-20, DD-352);
-        // every other string stays a plain text input (EDT-03).
+        // The one prose key rides the markdown field (EDT-20, DD-352); every
+        // other string stays a plain text input (EDT-03).
         return DESCRIPTION_KEYS.includes(def.name as (typeof DESCRIPTION_KEYS)[number]) ? "markdown" : "text";
     }
     if (typeName === "boolean") {
@@ -205,7 +216,7 @@ export function buildFields(
     const fields: EditorField[] = [];
 
     for (const def of collectAttributeDefs(entityDef, defsByName)) {
-        if (!def.name || DROPPED_ATTRIBUTES.has(def.name)) {
+        if (!def.name || DROPPED_ATTRIBUTES.has(def.name) || HIDDEN_BASE_ATTRIBUTES.has(def.name)) {
             continue;
         }
         const kind = kindOf(def, enumNames);

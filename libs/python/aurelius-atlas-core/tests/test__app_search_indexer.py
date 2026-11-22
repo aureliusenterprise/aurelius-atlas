@@ -174,7 +174,9 @@ def test__the_own_fields_are_the_legacy_ones_but_dd_485_s() -> None:
         *["m4i_generic_process"] * 19,
         "m4i_gov_data_quality",
     ]
-    assert len(differing("definition")) == 87
+    # 18.8/SPA-05: the four sample entities whose prose sat on ``description`` alone now answer it, which the
+    # frozen ``atlas-dev`` oracle's definition column never held (DD-833).
+    assert len(differing("definition")) == 91
     assert differing("email") == {}
     assert differing("sourcetype") == {}
     assert all(derived[guid].referenceablequalifiedname != guid for guid in derived)
@@ -379,7 +381,7 @@ async def test__an_entity_already_in_the_chain_ends_it() -> None:
 @pytest.mark.covers(f"{X}.derive", rules=["LAS-04", "DCP-08"])
 async def test__a_dataset_in_a_collection_is_held_at_the_current_derivation_version() -> None:
     """The one collection end derives the same held document as any other parent does: ``hasparent`` true, the
-    collection first in the breadcrumb, and the derivation version unmoved at 3 (DCP-08, DD-764).
+    collection first in the breadcrumb, and the derivation version unmoved at 4 (DCP-08, DD-764, DD-833).
     """  # noqa: D205 - one sentence
     catalogue = await Catalogue.of(m4i("m4i_collection", "c"), m4i("m4i_dataset", "s", collections="c"))
 
@@ -389,7 +391,7 @@ async def test__a_dataset_in_a_collection_is_held_at_the_current_derivation_vers
     assert dataset.hasparent is True
     assert dataset.parentguid == catalogue.guids["c"]
     assert catalogue.keys(dataset.breadcrumbguid) == ["c"]
-    assert dataset.derivation_version == 3
+    assert dataset.derivation_version == 4
 
 
 @pytest.mark.covers(f"{X}.derive", rules=["LAS-04", "LAS-05"])
@@ -511,7 +513,7 @@ async def test__a_round_derives_again_a_document_of_the_version_before_the_curre
     assert written >= 1
     after = (await catalogue.documents.get([guid]))[guid].entity.app_search
     assert after is not None
-    assert after.derivation_version == 3
+    assert after.derivation_version == 4
     assert not after.stale
     assert catalogue.keys(after.deriveddatastewardguid) == ["p"]
     assert await catalogue.indexer().run_once() == 0

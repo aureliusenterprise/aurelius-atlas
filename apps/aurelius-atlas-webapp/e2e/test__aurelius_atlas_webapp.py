@@ -1027,7 +1027,7 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
                 "attributes": {
                     "qualifiedName": names["alpha"],
                     "name": names["alpha"],
-                    "definition": "The alpha definition.",
+                    "description": "The alpha definition.",
                 },
             },
             {
@@ -1036,7 +1036,7 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
                 "attributes": {
                     "qualifiedName": names["beta"],
                     "name": names["beta"],
-                    "definition": "The beta definition.",
+                    "description": "The beta definition.",
                 },
             },
             entity(
@@ -1258,7 +1258,7 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
     the shared rich card on the domain's Child Entities box shows the same
     roles labelled on it (VCF-15, 16.5f), the Data Attributes section seeds
     from ``relationshipAttributes`` and resolves its cards with their
-    definition text (DET-17, DET-19), the
+    description text (DET-17, DET-19), the
     keyword filter narrows the cards and the reset count line restores them
     (DET-20), and Child Entities renders at its zero count (the empty box,
     no cards). Opening the seeded attribute shows its Fields section — the
@@ -1317,7 +1317,7 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
 
         # DET-17/DET-19: the Data Attributes section at its seeded count,
-        # two cards whose bodies carry the seeded definition text.
+        # two cards whose bodies carry the seeded description text.
         section = authenticated.locator("#related-attributes")
         cards = section.locator("aurelius-atlas-ui-entity-card")
         expect(cards).to_have_count(2)
@@ -2454,13 +2454,14 @@ def test__the_editor_re_edits_from_the_stored_view_after_a_conflict(
     The drawer reads once and keeps its answer, so when another hand changes
     the entity while it is open the save is a lost update: the door answers 409
     with the stored view beside it (AVW-04) and the editor re-seeds from that
-    view (VDE-07) — the typed edit survives, the untouched owner slot takes the
+    view (VDE-07) — the typed edit survives, the untouched prose slot takes the
     stored answer's new value, and the line above the fields says what
     happened. The second Save rides the stored version and lands: the drawer
     goes away and the details screen underneath shows the saved text.
     """
     run = secrets.token_hex(4)
     name = f"zz{run}conflict"
+    kept = f"zz{run}kept"
     guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
     guid = guids["-0"]
 
@@ -2474,31 +2475,34 @@ def test__the_editor_re_edits_from_the_stored_view_after_a_conflict(
         # sets a new updateTime, so the drawer now edits a stale view.
         bumped = authenticated.request.put(
             urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}"),
-            params={"name": "owner"},
+            params={"name": "description"},
             data=json.dumps("ops-after-conflict"),
             headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
         )
         assert bumped.status == 200, bumped.text()
 
-        authenticated.locator("textarea#editor-description").fill("The kept edit.")
+        authenticated.locator("#editor-name").fill(kept)
         drawer.locator("button.aurelius-editor-save").click()
 
         # The door refuses the lost update whole (AVW-04): the warning line
         # appears, the drawer stays open, and the typed edit survives (VDE-07).
         expect(drawer.locator(".aurelius-editor-conflict")).to_be_visible()
-        expect(authenticated.locator("textarea#editor-description")).to_have_value("The kept edit.")
+        expect(authenticated.locator("#editor-name")).to_have_value(kept)
         expect(authenticated).to_have_url(re.compile(r"drawer:edit"))
 
-        # The re-seed (VDE-07): the untouched owner slot now carries the
-        # stored answer's new value; the typed description stayed.
-        expect(authenticated.locator("#editor-owner")).to_have_value("ops-after-conflict")
+        # The re-seed (VDE-07): the untouched prose slot now carries the
+        # stored answer's new value; the typed name stayed. The name is the
+        # typed field because the prose is the re-seed control, and the base
+        # owner is hidden from the editor (EDT-37).
+        expect(authenticated.locator("textarea#editor-description")).to_have_value("ops-after-conflict")
 
         # Saving again rides the stored updateTime and lands (AVW-04): the
-        # drawer closes and the details screen shows the kept edit.
+        # drawer closes and the details screen shows both writes.
         drawer.locator("button.aurelius-editor-save").click()
         expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
         expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
-        expect(authenticated.locator(".aurelius-details-description")).to_have_text("The kept edit.")
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(kept)
+        expect(authenticated.locator(".aurelius-details-description")).to_have_text("ops-after-conflict")
     finally:
         _delete_entity(authenticated, root_url, user_token, guid)
 

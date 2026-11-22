@@ -35,7 +35,7 @@ The job is a CLI, not a service: one process per scan, no HTTP router, no port
   the wildcard rule shared by `SCHEMAS` and `TABLES` (DBS-04/05).
 - `aurelius_atlas_db_scanner/reflect.py` — one inspector table to the scan's
   `TableInfo`: rendered column types as `fieldType`, comment-or-`Primary key`
-  mark as `definition`, the table comment, and each foreign key as ordered
+  mark as the field's `description`, the table comment, and each foreign key as ordered
   column pairs with the referred columns resolved positionally against the
   referred table's real primary key (DBS-06..08; the starting script's
   `ref_column or "id"` guess is fixed, DV-150). The `Inspector` Protocol is

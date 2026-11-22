@@ -46,7 +46,6 @@ export function attributeLabels(): Record<string, string> {
         dataQuality: $localize`:@@search.components.editor.attribute.dataQuality:Data Quality`,
         datasetGuid: $localize`:@@search.components.editor.attribute.datasetGuid:Dataset GUID`,
         datasets: $localize`:@@search.components.editor.attribute.datasets:Datasets`,
-        definition: $localize`:@@search.components.editor.attribute.definition:Definition`,
         description: $localize`:@@search.components.editor.attribute.description:Description`,
         dimension: $localize`:@@search.components.editor.attribute.dimension:Dimension`,
         displayName: $localize`:@@search.components.editor.attribute.displayName:Display Name`,

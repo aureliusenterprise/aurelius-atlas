@@ -68,14 +68,14 @@
                 },
                 {
                     "cardinality": "SINGLE",
-                    "description": "The definition of the collection",
-                    "displayName": "Definition",
+                    "description": "The human summary of the collection",
+                    "displayName": "Description",
                     "includeInNotification": true,
                     "indexType": "DEFAULT",
                     "isIndexable": true,
                     "isOptional": true,
                     "isUnique": false,
-                    "name": "definition",
+                    "name": "description",
                     "options": {},
                     "searchWeight": 1,
                     "typeName": "string",
@@ -119,7 +119,7 @@
             "name": "m4i_collection",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [
@@ -141,14 +141,14 @@
                 },
                 {
                     "cardinality": "SINGLE",
-                    "description": "The definition of the data attribute determined by the data steward and data owner",
-                    "displayName": "Definition",
+                    "description": "The human summary of the data attribute",
+                    "displayName": "Description",
                     "includeInNotification": true,
                     "indexType": "DEFAULT",
                     "isIndexable": true,
                     "isOptional": true,
                     "isUnique": false,
-                    "name": "definition",
+                    "name": "description",
                     "options": {},
                     "searchWeight": 1,
                     "typeName": "string",
@@ -224,7 +224,7 @@
             "name": "m4i_data_attribute",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.2"
+            "typeVersion": "1.3"
         },
         {
             "attributeDefs": [
@@ -246,14 +246,14 @@
                 },
                 {
                     "cardinality": "SINGLE",
-                    "description": "The definition of the data domain determined by the data steward and data owner",
-                    "displayName": "Definition",
+                    "description": "The human summary of the data domain",
+                    "displayName": "Description",
                     "includeInNotification": true,
                     "indexType": "DEFAULT",
                     "isIndexable": true,
                     "isOptional": true,
                     "isUnique": false,
-                    "name": "definition",
+                    "name": "description",
                     "options": {},
                     "searchWeight": 1,
                     "typeName": "string",
@@ -297,7 +297,7 @@
             "name": "m4i_data_domain",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.0"
+            "typeVersion": "1.1"
         },
         {
             "attributeDefs": [
@@ -319,14 +319,14 @@
                 },
                 {
                     "cardinality": "SINGLE",
-                    "description": "The definition of the data entity determined by the data steward and data owner",
-                    "displayName": "Definition",
+                    "description": "The human summary of the data entity",
+                    "displayName": "Description",
                     "includeInNotification": true,
                     "indexType": "DEFAULT",
                     "isIndexable": true,
                     "isOptional": true,
                     "isUnique": false,
-                    "name": "definition",
+                    "name": "description",
                     "options": {},
                     "searchWeight": 1,
                     "typeName": "string",
@@ -402,7 +402,7 @@
             "name": "m4i_data_entity",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [
@@ -560,22 +560,6 @@
         {
             "attributeDefs": [
                 {
-                    "cardinality": "SINGLE",
-                    "description": "The definition of the dataset",
-                    "displayName": "Definition",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "definition",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "string",
-                    "valuesMaxCount": 1,
-                    "valuesMinCount": 0
-                },
-                {
                     "cardinality": "SET",
                     "description": "The functional names of the data fields that belong to this data set",
                     "displayName": "Data Fields",
@@ -612,7 +596,7 @@
             "name": "m4i_dataset",
             "options": {},
             "superTypes": ["DataSet", "m4i_referenceable"],
-            "typeVersion": "1.2"
+            "typeVersion": "1.3"
         },
         {
             "attributeDefs": [
@@ -634,14 +618,14 @@
                 },
                 {
                     "cardinality": "SINGLE",
-                    "description": "The definition of the data field determined by the data steward and data owner",
-                    "displayName": "Definition",
+                    "description": "The human summary of the data field",
+                    "displayName": "Description",
                     "includeInNotification": true,
                     "indexType": "DEFAULT",
                     "isIndexable": true,
                     "isOptional": true,
                     "isUnique": false,
-                    "name": "definition",
+                    "name": "description",
                     "options": {},
                     "searchWeight": 1,
                     "typeName": "string",
@@ -733,7 +717,7 @@
             "name": "m4i_field",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.2"
+            "typeVersion": "1.3"
         },
         {
             "attributeDefs": [
@@ -750,29 +734,13 @@
                     "typeName": "array<m4i_person>",
                     "valuesMaxCount": 2147483647,
                     "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SINGLE",
-                    "description": "The definition of the process determined by the process owner",
-                    "displayName": "Definition",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "definition",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "string",
-                    "valuesMaxCount": 1,
-                    "valuesMinCount": 0
                 }
             ],
             "description": "A type definition for a generic process in the context of models4insight.com",
             "name": "m4i_generic_process",
             "options": {},
             "superTypes": ["Process", "m4i_referenceable"],
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         },
         {
             "attributeDefs": [
@@ -1100,14 +1068,14 @@
                 },
                 {
                     "cardinality": "SINGLE",
-                    "description": "The definition of the system",
-                    "displayName": "Definition",
+                    "description": "The human summary of the system",
+                    "displayName": "Description",
                     "includeInNotification": true,
                     "indexType": "DEFAULT",
                     "isIndexable": true,
                     "isOptional": true,
                     "isUnique": false,
-                    "name": "definition",
+                    "name": "description",
                     "options": {},
                     "searchWeight": 1,
                     "typeName": "string",
@@ -1167,7 +1135,7 @@
             "name": "m4i_system",
             "options": {},
             "superTypes": ["m4i_referenceable"],
-            "typeVersion": "1.1"
+            "typeVersion": "1.2"
         }
     ],
     "enumDefs": [],

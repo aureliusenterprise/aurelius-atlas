@@ -2,7 +2,8 @@
  * The word diff of a prose change (HST-15, HST-16, DD-825).
  *
  * A change list answers which attribute changed and shows its old and new text
- * (7.37). For the two prose attributes the editor paints as markdown (EDT-20),
+ * (7.37). For the prose attribute the editor paints as markdown (EDT-20 as
+ * amended by 18.8),
  * a one-sentence fix prints both whole texts and the reader has to find the fix
  * by eye. This helper answers the same change as the parts of one text: the
  * words that stayed are `kept`, the words the write took away are `removed`, the
@@ -26,8 +27,8 @@ const KEEP_WORDS = 3;
  * that search, and a drawer read must not wait for a big one. Past the ceiling
  * the answer falls back to the whole text out and the whole text in: the row of
  * 7.37, never wrong, only less kind.
- * shortcut: a definition over about 1,000 words swaps as a whole; upgrade to a
- * linear diff (Myers) if a stored definition reaches that size in practice. */
+ * shortcut: a description over about 1,000 words swaps as a whole; upgrade to a
+ * linear diff (Myers) if a stored description reaches that size in practice. */
 const MAX_WORDS = 1000;
 
 /** One word with the whitespace that follows it. Keeping the whitespace with

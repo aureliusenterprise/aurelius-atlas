@@ -94,13 +94,12 @@ def _display_text(stored: StoredEntity, entity_type: EntityType) -> str:
 
 
 def _card_definition(stored: StoredEntity, entity_type: EntityType) -> str | None:
-    """The card's description text (AVS-03, DD-614): ``definition``, else ``description``, else none.
+    """The card's description text (AVS-03, DD-614 as amended by 18.8/SPA-05): the entity's ``description``.
 
-    The body rule reads definition then description (DET-10/DD-320); the m4i types store their
-    text under ``definition`` and the Apache Atlas model types under ``description``, and the card
-    carries one field for both. The view's ``attributes`` keep each value as the store holds it.
+    Increment 18.8 retires the m4i dictionary's ``definition``, so the card reads the one prose attribute the
+    shipped model has. The card keeps its ``definition`` field name (DD-833): the 16.x card family reads it.
     """
-    return _text(stored.attributes, entity_type, "definition") or _text(stored.attributes, entity_type, "description")
+    return _text(stored.attributes, entity_type, "description")
 
 
 def _breadcrumb(document: StoredAppSearch) -> list[CardBreadcrumb]:

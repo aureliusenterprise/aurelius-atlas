@@ -190,6 +190,7 @@ nav:
                 - 067. The standalone stack ships as one generated release bundle: architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle.md
                 - 068. A catalogue bootstraps only the metamodel it serves: architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves.md
                 - 069. Each browser-facing surface answers on its own hostname: architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname.md
+                - 070. The catalogue ships one prose attribute: architecture/adr/070-the-catalogue-ships-one-prose-attribute.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md

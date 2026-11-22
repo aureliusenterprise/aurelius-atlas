@@ -35,9 +35,9 @@ FIXTURE = Path(__file__).parents[3] / "apps/aurelius-atlas-webapp/tests/fixtures
 
 PROBE_CANDIDATES = ("definition", "description", "summary", "comment")
 """Attribute names to probe for the card description (AVS-03): which of these
-``view_of`` actually reads, and in what order. ``summary`` and ``comment`` are the
-controls — plausible text keys the server must NOT read, or the vocabulary would
-silently widen."""
+``view_of`` actually reads, and in what order. 18.8/SPA-05 retires the dictionary's
+``definition``, so it joins ``summary`` and ``comment`` as a control: a plausible
+prose key the server must no longer read, or the vocabulary would silently widen."""
 
 
 def _probe_registry() -> tuple[TypeRegistry, EntityType]:
@@ -127,6 +127,6 @@ def test__fixture_is_the_vocabulary_the_server_produces() -> None:
 
 
 @pytest.mark.covers(rules=["WFE-05"])
-def test__description_keys_are_exactly_the_two_the_card_reads() -> None:
-    """The probe finds ``definition`` first and ``description`` second, and nothing else (AVS-03, WFE-05)."""
-    assert _probe_description_keys() == ["definition", "description"]
+def test__description_keys_are_the_one_the_card_reads() -> None:
+    """The probe finds ``description`` and nothing else, not the retired ``definition`` (AVS-03, WFE-05, SPA-05)."""
+    assert _probe_description_keys() == ["description"]

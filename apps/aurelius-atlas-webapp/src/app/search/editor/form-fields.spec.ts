@@ -40,6 +40,7 @@ const ASSET = entityDef(
         attr({ name: "name" }),
         attr({ name: "description", isOptional: true }),
         attr({ name: "owner", isOptional: true }),
+        attr({ name: "userDescription", isOptional: true }),
     ],
     ["Referenceable"],
 );
@@ -58,8 +59,35 @@ describe("buildFields (EDT-03)", () => {
     it("walks the supertype chain (DataSet carries only none of its own)", () => {
         const fields = buildFields(DATASET, SHIPPED, new Map());
 
-        expect(fields.map((field) => field.name)).toEqual(["name", "description", "displayName", "owner"]);
-        expect(fields.every((field) => field.name !== "qualifiedName")).toBe(true);
+        // The walk reaches the whole chain (EDT-03), and the editor's own drop
+        // set removes qualifiedName plus the three base attributes (EDT-37).
+        expect(fields.map((field) => field.name)).toEqual(["name", "description"]);
+        expect(fields.map((field) => field.name)).not.toContain("qualifiedName");
+        expect(fields.map((field) => field.name)).not.toContain("displayName");
+        expect(fields.map((field) => field.name)).not.toContain("owner");
+        expect(fields.map((field) => field.name)).not.toContain("userDescription");
+    });
+
+    it("builds no field for the base attributes a definition names itself (EDT-37)", () => {
+        // Inherited or own, the three never render (DD-832): a save body
+        // carries none of the keys, so the door leaves stored values alone
+        // (AVW-05). The details screens still read them (EDT-37's read side).
+        const defs = new Map<string, AtlasEntityDef>([
+            [
+                "E",
+                entityDef("E", [
+                    attr({ name: "name" }),
+                    attr({ name: "owner", isOptional: true }),
+                    attr({ name: "displayName", isOptional: true }),
+                    attr({ name: "userDescription", isOptional: true }),
+                    attr({ name: "comment", isOptional: true }),
+                ]),
+            ],
+        ]);
+
+        const fields = buildFields(defs.get("E")!, defs, new Map());
+
+        expect(fields.map((field) => field.name)).toEqual(["name", "comment"]);
     });
 
     it("dedupes by name, the definition's own first (the walk is first-wins)", () => {
@@ -98,18 +126,19 @@ describe("buildFields (EDT-03)", () => {
         });
     });
 
-    it("renders definition/description as the markdown field, name required (EDT-20)", () => {
+    it("renders the one prose key as the markdown field, name required (EDT-20, SPA-06)", () => {
         const defs = new Map<string, AtlasEntityDef>([
-            ["E", entityDef("E", [attr({ name: "name" }), attr({ name: "definition", isOptional: true })])],
+            ["E", entityDef("E", [attr({ name: "name" }), attr({ name: "description", isOptional: true })])],
         ]);
 
         const fields = buildFields(defs.get("E")!, defs, new Map());
 
         // The kind flips from the 7.7a textarea on purpose (EDT-20, DD-352):
-        // the description keys ride the ui library's markdown field now.
+        // the prose key rides the ui library's markdown field. 18.8 retired
+        // the pair's other key, so `description` is the only one (ADR 070).
         expect(fields.map((f) => [f.name, f.kind, f.required])).toEqual([
             ["name", "text", true],
-            ["definition", "markdown", false],
+            ["description", "markdown", false],
         ]);
     });
 
@@ -154,7 +183,7 @@ describe("buildFields (EDT-03)", () => {
                 "E",
                 entityDef("E", [
                     attr({ name: "zeta" }),
-                    attr({ name: "definition", isOptional: true }),
+                    attr({ name: "description", isOptional: true }),
                     attr({ name: "name" }),
                     attr({ name: "alpha", isOptional: true }),
                 ]),
@@ -165,7 +194,7 @@ describe("buildFields (EDT-03)", () => {
         // reader sees name order — the fallback keeps today's behaviour.
         expect(buildFields(defs.get("E")!, defs, new Map()).map((f) => f.name)).toEqual([
             "name",
-            "definition",
+            "description",
             "alpha",
             "zeta",
         ]);

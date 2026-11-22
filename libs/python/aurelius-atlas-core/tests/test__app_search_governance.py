@@ -90,17 +90,17 @@ def rule(type_name: str, key: str, expression: str | None = None, **attributes: 
 
 
 def catalogue_entities() -> list[AtlasEntity]:
-    """Domain ``d`` with a definition, ``x`` without; entity ``e`` in ``d``, ``o`` in none; rules over both types.
+    """Domain ``d`` with a description, ``x`` without; entity ``e`` in ``d``, ``o`` in none; rules over both types.
 
-    ``named`` needs a definition, ``domained`` a domain or a parent entity, ``defined`` (of the vocabulary, no
-    message, no dimension) a definition that is not empty.
+    ``named`` needs a description, ``domained`` a domain or a parent entity, ``defined`` (of the vocabulary, no
+    message, no dimension) a description that is not empty (SPA-04).
     """
     return [
-        m4i("m4i_data_domain", "d", {"definition": "Sales"}),
-        m4i("m4i_data_domain", "x", {"definition": ""}),
+        m4i("m4i_data_domain", "d", {"description": "Sales"}),
+        m4i("m4i_data_domain", "x", {"description": ""}),
         m4i("m4i_data_entity", "e", dataDomain="d"),
         m4i("m4i_data_entity", "o"),
-        rule("m4i_data_domain", "named", "completeness('definition')"),
+        rule("m4i_data_domain", "named", "completeness('description')"),
         rule(
             "m4i_data_entity",
             "domained",
@@ -111,7 +111,7 @@ def catalogue_entities() -> list[AtlasEntity]:
             "m4i_data_domain",
             "defined",
             dqcheckkind="ATTRIBUTE_NOT_EMPTY",
-            dqattribute="definition",
+            dqattribute="description",
             qualityDimension=None,
             nonCompliantMessage=None,
         ),
@@ -203,12 +203,12 @@ async def test__a_verdict_copies_its_rule_and_names_its_entity() -> None:
         "guid": catalogue.guids["named"],
         "qualityqualifiedname": "m4i_data_domain--named",
         "name": "Rule named",
-        "expression": "completeness('definition')",
+        "expression": "completeness('description')",
         "dataqualitytype": "attribute",
         "dataqualityruledescription": "About named",
         "dataqualityruledimension": "completeness",
         "noncompliant_message": "Misses named",
-        "usedattributes": ["definition"],
+        "usedattributes": ["description"],
         "dataqualityruletypename": "m4i_data_domain",
         "entity_guid": catalogue.guids["d"],
         "compliant": "1",
@@ -226,12 +226,12 @@ async def test__a_vocabulary_rule_without_message_or_dimension_answers_its_kind_
 
     assert (verdict["expression"], verdict["dataqualityruledimension"]) == ("", "completeness")
     assert verdict["noncompliant_message"] == "the attribute holds no value to show"
-    assert verdict["usedattributes"] == ["definition"]
+    assert verdict["usedattributes"] == ["description"]
 
 
 @pytest.mark.covers(f"{X}.verdicts", rules=["ASG-04", "HCA-09"])
 async def test__each_kind_meets_and_misses_its_attribute_or_relationship() -> None:
-    """An empty definition is present but empty; a domain or, failing it, a parent entity; neither misses."""
+    """An empty description is present but empty; a domain or, failing it, a parent entity; neither misses."""
     catalogue = await Catalogue.judged(*catalogue_entities())
 
     assert catalogue.compliant() == {
@@ -280,7 +280,7 @@ async def test__a_second_round_writes_nothing_and_each_change_shows_after_the_ne
     catalogue = await Catalogue.judged(*catalogue_entities())
     assert await catalogue.round() == 0
 
-    await catalogue.change("x", "definition", "Finance")
+    await catalogue.change("x", "description", "Finance")
     assert catalogue.compliant()[("x", "defined")] == "1"
 
     await catalogue.create(catalogue.moved("m4i_data_entity", "o", dataDomain="x"))
@@ -322,8 +322,8 @@ async def test__a_write_that_meets_a_change_in_between_waits_for_the_next_round(
 ) -> None:
     """An entity changed between the round's listing and its write keeps the change and is judged again later."""
     catalogue = await Catalogue.judged(
-        m4i("m4i_data_domain", "x", {"definition": ""}),
-        rule("m4i_data_domain", "defined", dqcheckkind="ATTRIBUTE_NOT_EMPTY", dqattribute="definition"),
+        m4i("m4i_data_domain", "x", {"description": ""}),
+        rule("m4i_data_domain", "defined", dqcheckkind="ATTRIBUTE_NOT_EMPTY", dqattribute="description"),
     )
     documents = catalogue.documents
     listed = documents.to_govern
@@ -333,7 +333,7 @@ async def test__a_write_that_meets_a_change_in_between_waits_for_the_next_round(
         found = await listed(digests, limit)
         if not changed and found:
             changed.append(True)
-            await catalogue.writer.update_attribute_by_guid(catalogue.guids["x"], "definition", "Sales")
+            await catalogue.writer.update_attribute_by_guid(catalogue.guids["x"], "description", "Sales")
         return found
 
     monkeypatch.setattr(documents, "to_govern", list_then_change)
@@ -357,7 +357,7 @@ def test__a_type_s_digest_follows_what_its_rules_check_and_copy_not_their_order(
     """The same rules in another order digest alike; a message or an attribute changed digests otherwise."""
     first, second = governance_rule(stored_rule("a")), governance_rule(stored_rule("b"))
     reworded = governance_rule(stored_rule("a", nonCompliantMessage="Needs a name"))
-    elsewhere = governance_rule(stored_rule("a", expression="completeness('definition')"))
+    elsewhere = governance_rule(stored_rule("a", expression="completeness('description')"))
     assert first is not None
     assert second is not None
     assert reworded is not None

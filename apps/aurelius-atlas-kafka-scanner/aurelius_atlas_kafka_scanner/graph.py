@@ -186,7 +186,9 @@ def _add_field_fields(
     )
     attributes: dict[str, str] = {"name": spec.name, "qualifiedName": qualified, "fieldType": spec.type_name}
     if spec.definition is not None:
-        attributes["definition"] = spec.definition
+        # KSC-06 as amended by 18.8/SPA-04: the Avro doc or JSON-schema description rides the one prose
+        # attribute the shipped model declares.
+        attributes["description"] = spec.definition
     node = AtlasEntity(
         guid=guid,
         type_name=FIELD_TYPE,

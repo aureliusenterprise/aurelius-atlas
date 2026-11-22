@@ -24,8 +24,10 @@ VECTOR_FIELD = f"{EMBEDDING_FIELD}.vector"
 MODEL_FIELD = f"{EMBEDDING_FIELD}.model"
 """The field of the model that computed the vector."""
 
-TEXT_ATTRIBUTES = ("name", "displayName", "qualifiedName", "description", "definition")
-"""The attributes the text is made of, by their name after the defining type, in the text's order (DD-437)."""
+TEXT_ATTRIBUTES = ("name", "displayName", "qualifiedName", "description")
+"""The attributes the text is made of, by their name after the defining type, in the text's order (DD-437,
+VEC-01 as amended by 18.8/SPA-05: the m4i dictionary's `definition` is retired, and `description` is the one
+prose attribute)."""
 
 INTERNAL_PREFIX = "__"
 """Types whose names start with it are the system's own records, which get no embedding (DD-437)."""

@@ -229,7 +229,6 @@
                     "datasetGuid": "Dataset-guid",
                     "datasets": "Datasets",
                     "datastewards": "Data Stewards",
-                    "definition": "Definitie",
                     "definitionPlaceholder": "Definitie",
                     "definitionWarning": "Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken. \n Vervang het vóór import door een standaardapostrof (').",
                     "description": "Beschrijving",

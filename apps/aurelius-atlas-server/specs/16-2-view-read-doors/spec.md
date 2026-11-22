@@ -3,7 +3,8 @@
 - **Status:** in progress
 - **Pull request:** #358
 - **Records:** ADR 064; DD-584 to DD-588 (here); relies on 16.1 (AVS-01..09), 14.4 (ASE-05..09's
-  matching and facet machinery, DD-525), 4.2b (QSR), 6.2c (AUZ-12)
+  matching and facet machinery, DD-525), 4.2b (QSR), 6.2c (AUZ-12). AVR-04 amended in place by 18.8
+  (SPA-05, DD-832): the matched prose field is `description`
 
 ## Scope
 
@@ -34,7 +35,7 @@ Not delivered, with the increment that will:
 | AVR-01 | `POST /api/aurelius/v1/search` needs `ENTITY_READ` (AUZ-12) and answers 403 in the Aurelius error shape without it                                                                                                                                                                                                                                                                                             |
 | AVR-02 | The body is a JSON object of `query`, `filters`, `facets`, `sort`, `limit` and `offset`; an unknown key, value kind or out-of-range option is answered 400 with one message per refusal (AVR-13's shape)                                                                                                                                                                                                       |
 | AVR-03 | A filter is a field's value or list of values, a `{from, to}` range on a number field, or a nested `{all, any, none}` object, over the card's fields and their quality sub-fields (`quality.accuracy.score` and the like). An unknown field is refused (AVR-02)                                                                                                                                                |
-| AVR-04 | `query` matches as 14.4's DD-525 does: its words over the analysed name, qualified name and definition, exact over the other text fields; an empty query matches every document                                                                                                                                                                                                                                |
+| AVR-04 | `query` matches as 14.4's DD-525 does: its words over the analysed name, qualified name and prose text, exact over the other text fields; an empty query matches every document. **Amended (18.8, SPA-05, DD-832):** the prose text is `description` — the matcher's name paths no longer hold the m4i dictionary's `definition`, because no shipped type declares it                                          |
 | AVR-05 | A facet is a card field name with an optional `size` (1 to 250, 10 by default); the answer counts the matching documents' values, most first, empty left out. A quality score sub-field (`quality.accuracy.score`, DD-587) is one such name; a facet on an unknown field, or on a number field that is not one, is refused                                                                                     |
 | AVR-06 | `sort` is a card field or `_score` with `asc` or `desc`, or a list; by default `_score` descending with ties by `guid`. An array field sorts as 14.4's ASE-08 does                                                                                                                                                                                                                                             |
 | AVR-07 | `limit` is 1 to 100 (10 by default) and `offset` 0 to 10,000 (0 by default). The answer holds `total`, the exact count of matching documents                                                                                                                                                                                                                                                                   |

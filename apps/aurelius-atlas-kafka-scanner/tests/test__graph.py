@@ -145,7 +145,7 @@ def test_a_nested_field_names_its_parent_end_and_keeps_its_rendered_type() -> No
     )
     parent, child = entities[3], entities[4]
     assert (parent.attributes or {})["fieldType"] == "Address"
-    assert (parent.attributes or {})["definition"] == "where"
+    assert (parent.attributes or {})["description"] == "where"
     assert (child.attributes or {})["qualifiedName"].endswith("--address--city")
     assert child.relationship_attributes == {
         "parentField": {"guid": parent.guid, "typeName": "m4i_field"},

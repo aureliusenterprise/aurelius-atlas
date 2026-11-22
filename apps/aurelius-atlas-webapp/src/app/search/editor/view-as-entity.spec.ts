@@ -128,8 +128,40 @@ describe("bodyFromEdits (VDE-03..VDE-05, DD-592, DD-609, DD-612)", () => {
 
         // The merge removes an empty text key; the door's merge keeps an
         // omitted key (AVW-05) — so a cleared control must ride null
-        // (EWR-10: a null optional primitive stores nothing).
+        // (EWR-10: a null optional primitive stores nothing). `owner` is one
+        // of the three hidden base attributes, and a control the form does
+        // render keeps its write (EDT-37).
         expect(body.attributes["owner"]).toBeNull();
+    });
+
+    it("the body names none of the three hidden base attributes (EDT-37)", () => {
+        // EDT-37: the editor builds no control for `owner`, `displayName` or
+        // `userDescription`, so no key of theirs rides a body — the read
+        // carries them, the body builder drops them, and the door's merge
+        // leaves the stored values exactly as stored (AVW-05).
+        const view: EntityView = {
+            ...VIEW,
+            attributes: {
+                name: "genomic_variants",
+                owner: "analyst-3",
+                displayName: "Genomic variants",
+                userDescription: "a free-text note",
+            },
+        };
+        const body = bodyFromEdits(
+            options({
+                base: view,
+                entity: entityFromView(view),
+                fields: [textField("name", true)],
+                values: { name: "renamed_variants" },
+            }),
+        );
+
+        for (const hidden of ["owner", "displayName", "userDescription"]) {
+            expect(hidden in body.attributes).toBe(false);
+        }
+        expect(body.attributes["name"]).toBe("renamed_variants");
+        expect(body.attributes["qualifiedName"]).toBe("genomic_variants@cluster");
     });
 
     it("a picker the form did not render is left out — its set stays unchanged", () => {

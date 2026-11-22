@@ -89,12 +89,13 @@ def test__one_document_per_m4i_entity_but_the_sources() -> None:
 def test__the_identity_fields_are_the_entity_s_but_the_listed_differences() -> None:
     """Type, super types and email hold everywhere; name, qualified name and definition but for DD-485's list.
 
-    DV-185: the 29 documents of the rules the corpus deleted are skipped, as their entity is gone.
+    DV-185: the 29 documents of the rules the corpus deleted are skipped, as their entity is gone. 18.8/SPA-05
+    moves the sample's prose to ``description``, so the entity's one prose attribute is the expectation (DV-196).
     """
     documents = [document for document in engine("atlas-dev") if document["guid"] not in DROPPED_RULES]
     names = {guid: attribute(guid, "name") or attribute(guid, "qualifiedName") for guid in entities()}
     qualified = {guid: attribute(guid, "qualifiedName") or guid for guid in entities()}
-    definitions = {guid: attribute(guid, "definition") for guid in entities()}
+    definitions = {guid: attribute(guid, "description") for guid in entities()}
 
     assert all(document["typename"] == entities()[document["guid"]]["typeName"] for document in documents)
     assert all(document["supertypenames"] == [document["typename"]] for document in documents)
@@ -116,10 +117,12 @@ def test__the_identity_fields_are_the_entity_s_but_the_listed_differences() -> N
         if document["typename"] == "m4i_generic_process"
     )
     lost = mismatches("definition", definitions)
-    assert len(lost) == 87
+    # 87 with HEAD's sample: 18.8/SPA-05 adds the two datasets and two processes whose prose sat on
+    # ``description`` alone and the legacy definition column never held it (DV-196).
+    assert len(lost) == 91
     assert {guid for guid, typename in lost.items() if typename not in BUSINESS} == {
         guid for guid in lost if not definitions[guid]
-    }
+    } | {guid for guid, typename in lost.items() if typename in {"m4i_dataset", "m4i_generic_process"}}
 
 
 @pytest.mark.covers(rules=["LAS-03"])

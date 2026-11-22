@@ -106,7 +106,7 @@ def test__a_stored_document_becomes_crumbs_relations_and_the_business_metadata(m
         entity_type,
         qualifiedName="a",
         name="A",
-        definition="An attribute",
+        description="An attribute",
     ).model_copy(
         update={
             "app_search": own_document(hand("m4i_data_attribute", entity_type, qualifiedName="a", name="A")).model_copy(
@@ -134,7 +134,7 @@ def test__a_stored_document_becomes_crumbs_relations_and_the_business_metadata(m
         ("m4i_field", [("f", None)]),  # ASU-02's pair: the GUID stays, the name is gone
     ]
     assert (view.name, view.qualified_name, view.display_text, view.definition) == ("A", "a", "A", "An attribute")
-    assert view.attributes == {"qualifiedName": "a", "name": "A", "definition": "An attribute"}
+    assert view.attributes == {"qualifiedName": "a", "name": "A", "description": "An attribute"}
 
 
 @pytest.mark.covers(f"{V}.view_of", rules=["AVS-10"])
@@ -169,21 +169,17 @@ def test__the_role_pairs_follow_the_type_keyed_relations_and_leave_the_sections_
     assert [(r.attribute, [e.guid for e in r.entities]) for r in view.sections] == [("m4i_data_domain", ["d"])]
 
 
-@pytest.mark.covers(f"{V}._card_definition", rules=["AVS-03", "DD-614"])
-def test__the_card_description_falls_back_to_the_description_attribute(m4i: TypeRegistry) -> None:
-    """The definition when it is there, the description when there is none, none when neither is (DD-614)."""
+@pytest.mark.covers(f"{V}._card_definition", rules=["AVS-03", "DD-614", "SPA-05"])
+def test__the_card_definition_is_the_description_attribute(m4i: TypeRegistry) -> None:
+    """The card's definition field carries the one prose attribute, and none when it is absent (AVS-03, DD-833)."""
     entity_type = type_of(m4i, "m4i_dataset")
 
-    only_definition = hand("m4i_dataset", entity_type, qualifiedName="s", definition="Defined")
-    only_description = hand("m4i_dataset", entity_type, qualifiedName="s", description="Described")
-    both = hand("m4i_dataset", entity_type, qualifiedName="s", definition="Defined", description="Described")
+    described = hand("m4i_dataset", entity_type, qualifiedName="s", description="Described")
 
-    assert view_of(only_definition, entity_type).definition == "Defined"
-    assert view_of(only_description, entity_type).definition == "Described"
-    assert view_of(both, entity_type).definition == "Defined"
+    assert view_of(described, entity_type).definition == "Described"
     assert view_of(hand("m4i_dataset", entity_type, qualifiedName="s"), entity_type).definition is None
-    # the fallback never touches the attributes: the view's attributes are the stored ones (AVS-01)
-    assert "description" not in view_of(only_definition, entity_type).attributes
+    # the card field is a copy: the view's attributes are the stored ones (AVS-01)
+    assert view_of(described, entity_type).attributes == {"qualifiedName": "s", "description": "Described"}
 
 
 @pytest.mark.covers(f"{V}.view_of", rules=["MMS-09"])

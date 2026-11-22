@@ -37,7 +37,7 @@ def m4i(type_name: str, key: str, **attributes: object) -> AtlasEntity:
 async def test__the_engine_searches_filters_facets_and_sorts_the_entity_index(
     dev_store: ElasticsearchStore, entity_prefix: str
 ) -> None:
-    """A domain's entities by a filter, a definition's word, a person's email, facets by count, a name sort."""
+    """A domain's entities by a filter, a description's word, a person's email, facets by count, a name sort."""
     types = TypedefStore(TypeRegistry(), MemoryTypedefDocument())
     await types.load()
     for models_dir in (BUILTIN_MODELS_DIR, M4I_MODELS_DIR):
@@ -49,8 +49,8 @@ async def test__the_engine_searches_filters_facets_and_sorts_the_entity_index(
         AtlasEntitiesWithExtInfo(
             entities=[
                 m4i("m4i_data_domain", "sales"),
-                m4i("m4i_data_entity", "order", domain="sales", definition="Customer orders placed online"),
-                m4i("m4i_data_entity", "invoice", domain="sales", definition="Invoices sent"),
+                m4i("m4i_data_entity", "order", domain="sales", description="Customer orders placed online"),
+                m4i("m4i_data_entity", "invoice", domain="sales", description="Invoices sent"),
                 m4i("m4i_person", "person", name="Pat", email="jo@example.org"),
             ]
         )

@@ -304,23 +304,18 @@ export class Details {
     );
 
     /**
-     * The attribute the description box shows (DET-10, DD-320):
-     * `definition`, else `description`, each only when it is a string, else
-     * nothing. The legacy box read `definition` because the legacy entity
-     * types are the m4i governance types, which carry their text there;
-     * this server ships the Apache Atlas model types, whose description
-     * attribute is `description`. The key is remembered so the properties
-     * table can drop it (DET-11): the text shows once on the screen.
+     * The attribute the description box shows (DET-10 as amended by 18.8,
+     * DD-320): `description`, only when it is a string, else nothing. The
+     * legacy box read `definition` first because the legacy entity types are
+     * the m4i governance types, which carried their text there; 18.8 (ADR 070)
+     * retired that attribute, so the box reads the one prose attribute this
+     * catalogue carries. The key is remembered so the properties table can
+     * drop it (DET-11): the text shows once on the screen.
      */
     protected readonly descriptionKey = computed(() => {
         const attributes = this.entity()?.attributes;
-        if (!attributes) {
-            return null;
-        }
-        for (const key of ["definition", "description"]) {
-            if (typeof attributes[key] === "string") {
-                return key;
-            }
+        if (typeof attributes?.["description"] === "string") {
+            return "description";
         }
         return null;
     });

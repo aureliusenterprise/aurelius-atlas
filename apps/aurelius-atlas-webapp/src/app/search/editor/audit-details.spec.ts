@@ -249,25 +249,28 @@ describe("audit-details (HST-10, DD-821)", () => {
         // Both states hold the attribute, so the write did something: it took
         // the text away. It belongs to the descriptions section, not the table.
         const { attributes, descriptions } = diffAuditStates(
-            { attributes: { definition: "a long definition" }, relationships: {} },
-            { attributes: { definition: "" }, relationships: {} },
+            { attributes: { description: "a long description" }, relationships: {} },
+            { attributes: { description: "" }, relationships: {} },
         );
 
         expect(attributes).toEqual([]);
-        expect(descriptions).toEqual([{ name: "definition", from: "a long definition", to: "" }]);
+        expect(descriptions).toEqual([{ name: "description", from: "a long description", to: "" }]);
     });
 
     it("words a reworded description once, in the descriptions section (HST-15)", () => {
         const { attributes, descriptions } = diffAuditStates(
-            { attributes: { definition: "old text" }, relationships: {} },
-            { attributes: { definition: "new text" }, relationships: {} },
+            { attributes: { description: "old text" }, relationships: {} },
+            { attributes: { description: "new text" }, relationships: {} },
         );
 
         expect(attributes.map((change) => change.name)).toEqual([]);
-        expect(descriptions).toEqual([{ name: "definition", from: "old text", to: "new text" }]);
+        expect(descriptions).toEqual([{ name: "description", from: "old text", to: "new text" }]);
     });
 
-    it("keeps the two descriptions out of the attributes table (HST-15)", () => {
+    it("keeps the one prose key out of the attributes table (HST-15, EDT-20, SPA-06)", () => {
+        // `description` is the prose key (HST-15). The key 18.8 retired is no
+        // prose key: a catalogue that still holds it rides the table as any
+        // other attribute does.
         const { attributes } = diffAuditStates(
             {
                 attributes: { name: "n", definition: "a", description: "b" },
@@ -279,7 +282,7 @@ describe("audit-details (HST-10, DD-821)", () => {
             },
         );
 
-        expect(attributes.map((change) => change.name)).toEqual(["name"]);
+        expect(attributes.map((change) => change.name)).toEqual(["name", "definition"]);
     });
 
     it("keeps values that only look blank (HST-13)", () => {
