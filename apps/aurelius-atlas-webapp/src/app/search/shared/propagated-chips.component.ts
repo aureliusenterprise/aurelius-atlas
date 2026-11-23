@@ -68,7 +68,7 @@ export interface PropagatedChipEntry {
                                 (click)="pick(source); $event.stopPropagation()"
                             >
                                 @if (iconOf(source); as icon) {
-                                    <span class="icon aurelius-details-source-icon">
+                                    <span class="icon is-small aurelius-details-source-icon">
                                         <fa-icon
                                             aria-hidden="true"
                                             [icon]="icon.icon"
@@ -130,9 +130,13 @@ export interface PropagatedChipEntry {
 
             /* The name is the source's button (the keyboard path, VDR-12): the
              * icon rides inside it and the text clips to its line with the
-             * full name in the tooltip, as the picker row's name does (EDT-33). */
+             * full name in the tooltip, as the picker row's name does (EDT-33).
+             * The icon wears Bulma's small box (1rem, as a crumb's does): the
+             * default 1.5rem square centres a glyph much narrower than
+             * itself, and that slack read as too wide a gap in front of the
+             * name. The gap is the icon-text spacing, in em (DD-837). */
             .aurelius-details-source-name {
-                align-items: baseline;
+                align-items: center;
                 appearance: none;
                 background: none;
                 border: 0;
@@ -140,7 +144,7 @@ export interface PropagatedChipEntry {
                 cursor: pointer;
                 display: flex;
                 font: inherit;
-                gap: 0 0.5rem;
+                gap: 0 0.25em;
                 margin: 0;
                 min-width: 0;
                 padding: 0;
@@ -151,6 +155,16 @@ export interface PropagatedChipEntry {
                 flex-shrink: 0;
             }
 
+            /* The dropdown sits inside the chip's tag, and Bulma tucks a
+             * tag's leading icon into the tag's padding with a negative
+             * inline-start margin. This row is not that tag's content, so
+             * the icon keeps its box whole and the em gap above alone spaces
+             * it from the name (the review asked for less air) (DD-837). */
+            .aurelius-details-source .aurelius-details-source-name .icon:first-child:not(:last-child) {
+                margin-inline-end: 0;
+                margin-inline-start: 0;
+            }
+
             .aurelius-details-source-name-text {
                 flex: 1 1 0;
                 min-width: 0;
@@ -159,18 +173,23 @@ export interface PropagatedChipEntry {
                 white-space: nowrap;
             }
 
-            /* The path rides its own line and clips instead of folding: the
-             * trail's nowrap variable and the clip are the picker row's idiom
-             * (DD-714), and the muted ink is what a card's trail never needed
-             * but a menu row does. */
+            /* The path rides its own line and clips sideways instead of
+             * folding: the trail's nowrap variable and the clip are the
+             * picker row's idiom (DD-714), and the muted ink is what a card's
+             * trail never needed but a menu row does. The row stretches it to
+             * the full width (align-items: stretch above), so it needs no
+             * flex basis here — the picker's 100% basis belongs to its
+             * wrapping row, and on this column it sized the height and
+             * sheared the crumb icons (DD-837). The clip stays on the x axis
+             * so a taller child than the line cannot be cut. */
             .aurelius-details-source-path {
                 --aurelius-breadcrumbs-wrap: nowrap;
 
-                flex: 1 0 100%;
                 font-size: 0.75rem;
                 min-width: 0;
                 opacity: 0.75;
-                overflow: hidden;
+                overflow-x: clip;
+                overflow-y: visible;
             }
 
             /* The icon wears the legacy family ink (DET-26): the type map's

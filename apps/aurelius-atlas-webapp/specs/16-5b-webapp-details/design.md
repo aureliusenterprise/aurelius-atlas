@@ -286,11 +286,16 @@ store lost still marks the card, and its dropdown names no row, as VDR-12 had al
 **Decision.** The part's source row becomes a container of two controls instead of one whole-row
 button. The first line is a button holding the source's type icon and its name: it is what routes
 to the source's details, the name clips with an ellipsis and carries the full name as its tooltip.
-The second line is the path as one line of breadcrumbs with wrapping off and overflow clipped, and
-each crumb is a real link that routes to its own entity (amends VDR-12 as DD-836 left it). The
-wider menu uses Bulma's own lever, `--bulma-dropdown-menu-min-width` set to 20rem on the chip, so
-the name and its path have room on one line each. Both controls stop their click, so a row on a
-card routes without opening the card (DD-836's consequence stands).
+The second line is the path as one line of breadcrumbs with wrapping off and clipped on the inline
+axis only, and each crumb is a real link that routes to its own entity (amends VDR-12 as DD-836
+left it). The wider menu uses Bulma's own lever, `--bulma-dropdown-menu-min-width` set to 20rem on
+the chip, and grows to its content up to a cap so the dropdown's origin sentence reads as one line
+of prose (the chip carries that rule, not this part). The icon in front of a name or a crumb wears
+Bulma's small box and sits a quarter-em off its text, and it keeps its box whole: Bulma tucks a
+tag's leading icon into the tag's padding with a negative inline-start margin, and the dropdown
+lives inside the chip's tag, so both the part and the breadcrumbs undo that shove where they own
+the row (measured: the crumb icon sat 4.5px outside the box that clips it). Both controls stop
+their click, so a row on a card routes without opening the card (DD-836's consequence stands).
 
 **Reason.** The review previewed the menu and asked for wider rows, no line-splitting, and clickable
 breadcrumbs. The row cannot stay a single button once its path holds links: HTML forbids a link
@@ -298,7 +303,10 @@ inside a button, and the app's accessibility lint forbids a click handler on a p
 the name the button keeps the keyboard route to the source (VDR-12 asks for it), and real anchors
 for the crumbs give it free to each crumb, which is what the details screen's own trail already
 does (DET-06). Clipping both lines keeps one row one height, so a menu of five sources stays
-scannable.
+scannable. The second preview asked for three more things: the sentence read as a sentence (so the
+menu takes the sentence's width rather than folding it), the crumb icons whole (so the clip stays
+inline-axis, since a 1rem icon has no room to spare in an 18px line), and less air in front of a
+name (so the icon drops to the small box and the em gap, Bulma's own icon-text spacing).
 
 **Alternatives.**
 
@@ -311,6 +319,11 @@ scannable.
   out of view.
 - Per-crumb tooltips instead of clipping: the tooltip would cover the next crumb, which is the one
   you hover next.
+- Both-axis clipping on the path, as the picker row's trail does: it shears the crumb icon, whose
+  box is taller than the small crumb's line. The picker's trail carries no icon on its crumbs, so
+  the idiom was safe there and is not here.
+- The menu left at its min-width with the sentence wrapped: DD-836's first cut, and the review
+  rejected the break.
 
 **Consequences.** VDR-12's sentence about what routes changes: the name routes to the source and a
 crumb routes to its crumb, so the specs name both clicks. The row's hover no longer paints as one
