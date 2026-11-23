@@ -1,3 +1,18 @@
+## 0.1.0-rc.11 (2026-11-23)
+
+### 🚀 Features
+
+- **core,data,webapp,docs:** the data attribute states its tags only as classifications (18.6, ACA-01..05, DD-829) ([#453](https://github.com/aureliusenterprise/aurelius-atlas/pull/453))
+- **core,data,webapp,docs:** the field states its optional flag as a boolean (18.7, FFB-01..05, DD-830) ([#454](https://github.com/aureliusenterprise/aurelius-atlas/pull/454))
+- **core,data,webapp,docs:** the catalogue ships one prose attribute (18.8, SPA-01..07, DD-832/DD-833) ([#455](https://github.com/aureliusenterprise/aurelius-atlas/pull/455))
+- **kafka:** the scanner's tree carries its badge alias (13.1a, KSA-01..03, DD-826) ([#450](https://github.com/aureliusenterprise/aurelius-atlas/pull/450))
+- **webapp:** the editor builds no term-assignment picker (7.41, EDT-36, DD-828, DV-193) ([#452](https://github.com/aureliusenterprise/aurelius-atlas/pull/452))
+
+### 🩹 Fixes
+
+- **realm:** the prod realm names its account pair (IRT-06, SHC-10) ([#449](https://github.com/aureliusenterprise/aurelius-atlas/pull/449))
+- **ui:** the table header sorts back to unsorted and points the right way (7.2, UIC-05, DD-827) ([#451](https://github.com/aureliusenterprise/aurelius-atlas/pull/451))
+
 ## 0.1.0-rc.10 (2026-11-22)
 
 ### 🚀 Features

@@ -3,7 +3,7 @@ dependencies = ["polars>=2.1.0"]
 description = "Data quality for Aurelius Atlas: the closed rule vocabulary, the row-mask engine and the score rollup."
 name = "aurelius-atlas-quality"
 requires-python = ">=3.14"
-version = "0.1.0-rc.10"
+version = "0.1.0-rc.11"
 
 [[project.authors]]
 name = "Aurelius Enterprise"
