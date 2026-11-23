@@ -35,6 +35,11 @@
     "aliases": []
   },
   {
+    "version": "fix-data2model-audience-502",
+    "title": "fix-data2model-audience-502",
+    "aliases": []
+  },
+  {
     "version": "fix-core-propagation-tell-skips-deleted",
     "title": "fix-core-propagation-tell-skips-deleted",
     "aliases": []
