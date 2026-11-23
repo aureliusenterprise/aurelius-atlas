@@ -1,7 +1,8 @@
 # The data2model chart — its runtime contract (CHT-02).
 # apps/aurelius-atlas-data2model: FastAPI, prefix AURELIUS_ATLAS_DATA2MODEL_,
-# port 21001. It verifies Keycloak bearer tokens (audience aurelius-atlas-data2model)
-# and exports OTLP with its own ingest identity. The service shape is copied
+# port 21001. It verifies Keycloak bearer tokens (audience aurelius, the webapp's
+# client — the lineage chain forwards the browser's token, AUX-04) and exports
+# OTLP with its own ingest identity. The service shape is copied
 # from the sibling aux charts (lineage-model, validate-entity) by design —
 # each chart owns its templates (DD-290).
 
@@ -108,7 +109,9 @@ telemetry:
 # 10.12) — both are deployment joins, not config literals; the OTEL
 # endpoint/token URL arrive from the telemetry block above when enabled (CHT-42).
 config:
-    AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius-atlas-data2model
+    # The lineage chain forwards the browser's token (AUX-04), so the verifier
+    # accepts the webapp's own client: the chain's audience, not the app's client id.
+    AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius
     AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     AURELIUS_ATLAS_DATA2MODEL_LOG_LEVEL: info
     AURELIUS_ATLAS_DATA2MODEL_TLS_CERT_FILE: /etc/aurelius-atlas/tls/tls.crt
