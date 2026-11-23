@@ -18,6 +18,7 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.stored_entity import (
+    StoredAppSearch,
     StoredDimensionTotals,
     StoredEntity,
     StoredQualityTotals,
@@ -28,6 +29,7 @@ from aurelius_atlas_core.view_derivation import (
     QUALITY_DIMENSIONS,
     card_of,
     read_ends,
+    read_page_propagations,
     read_propagations,
     view_of,
 )
@@ -516,7 +518,19 @@ def test__a_view_holds_its_propagated_classifications_with_their_sources() -> No
     entity_type = type_of(registry(), "table")
     stored = hand("table", entity_type, qualifiedName="t", name="T")
     sources = [
-        StoredEntity(guid="a", type_name="table", attributes={"asset.name": "A"}, state=EntityStatus.ACTIVE),
+        StoredEntity(
+            guid="a",
+            type_name="table",
+            attributes={"asset.name": "A"},
+            state=EntityStatus.ACTIVE,
+            app_search=StoredAppSearch(
+                source_hash="h",
+                referenceablequalifiedname="a",
+                breadcrumbguid=["d"],
+                breadcrumbname=["D"],
+                breadcrumbtype=["domain"],
+            ),
+        ),
         StoredEntity(guid="b", type_name="table", attributes={"asset.qualifiedName": "b"}),
     ]
 
@@ -527,11 +541,15 @@ def test__a_view_holds_its_propagated_classifications_with_their_sources() -> No
     ] == [
         ("c_pii", [("a", "A", "table"), ("b", None, "table")])  # b has no name attribute (ASU-02)
     ]
+    # a source read with its document carries its stored trail, so a row can show where it sits (DD-836)
+    assert [crumb.type_name for crumb in view.propagated_classifications[0].entities[0].breadcrumb or []] == ["domain"]
+    assert view.propagated_classifications[0].entities[1].breadcrumb is None  # b was read without a document
     assert view.classification_names == []  # a propagated name never joins the entity's own (AVS-01)
     assert view_of(stored, entity_type).propagated_classifications == []
     nameless = view_of(stored, entity_type, propagated=[("c_pii", [])])
     assert [(c.type_name, c.entities) for c in nameless.propagated_classifications] == [("c_pii", [])]
-    assert card_of(view).model_dump(include={"propagated_classifications"}) == {}  # a card has no such field
+    # a card carries the propagation too: a result line names the tags and their sources (VDR-12, DD-836)
+    assert card_of(view).propagated_classifications == view.propagated_classifications
 
 
 async def _propagation_store() -> tuple[EntityStore, dict[str, str]]:
@@ -575,6 +593,26 @@ async def test__read_propagations_answer_the_tag_and_the_entity_it_came_from() -
     a = await store.get(guids["a"])
     assert a is not None
     assert await read_propagations(store, a.entity) == []  # the tag attached here is a's own (AVS-01)
+
+
+@pytest.mark.covers(f"{V}.read_page_propagations", rules=["VDR-12"])
+async def test__read_page_propagations_answer_the_whole_page_in_one_each_read() -> None:
+    """One classifications read and one source read answer every entity of the page (VDR-12, DD-836).
+
+    The page holds the tagged source (its own tag answers nothing), the downstream dataset and the process
+    between them (both carry the tag from its source, PRO-01), and a page with nothing to answer costs one
+    classifications read only.
+    """
+    store, guids = await _propagation_store()
+    page = [await _source(store, guid) for guid in (guids["a"], guids["b"], guids["p1"])]
+
+    read = await read_page_propagations(store, page)
+
+    assert set(read) == {guids["b"], guids["p1"]}  # a's tag is its own (VDR-05)
+    for guid in (guids["b"], guids["p1"]):
+        assert [(name, [e.guid for e in sources]) for name, sources in read[guid]] == [("c_pii", [guids["a"]])]
+    # the source entity arrives with its document, so the page's card can draw its trail (DD-836)
+    assert await store.get(guids["a"]) is not None
 
 
 @pytest.mark.covers(f"{V}.read_propagations", rules=["VDR-05"])

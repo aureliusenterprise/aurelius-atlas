@@ -198,12 +198,11 @@ mutation door's refusal rest on (DD-326, AVW-08).
 - Group by name and count the sources, as the legacy's badge did: the legacy count answers
   "how many", the source rows answer "where from", which is the question that was asked.
 
-**Consequences.** The door answers one field no card carries: a result line has no source to
-name, so `EntityCard.of` drops the field and the chips on cards stay as 16.5d left them. The
-legacy's dedupe by type name is kept as the grouping, and its click-to-tag-page becomes a click
-to the source entity's details — the tag page is the dashboard's, and the webapp has none. The
-ui-lib marker was hover-only Bulma (UIC-16); its trigger becomes a button and the menu opens on
-focus, so the keyboard reaches the sources.
+**Consequences.** The door answers one field, grouped by name as the legacy's dedupe grouped it,
+and its click-to-tag-page becomes a click to the source entity's details — the tag page is the
+dashboard's, and the webapp has none. The ui-lib marker was hover-only Bulma (UIC-16); its trigger
+becomes a button and the menu opens on focus, so the keyboard reaches the sources. DD-836 lets the
+cards carry the same field, so a result line marks what its header marks.
 
 ## DD-835. The read door reads the propagated tags in one batched round
 
@@ -237,3 +236,43 @@ searching them would split one answer across two indexes.
 **Consequences.** The read door grows two batched store calls per open. A name the store lists
 whose instance document is gone answers nothing for that name, as the entity's own names already
 behave. The trace check's rule ids gain VDR-12 on `view_of` and on `read_propagations`.
+
+## DD-836. The search door fills the propagated tags, and a source row shows its path
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-23
+
+**Decision.** The field moves to the shared shape: `propagatedClassifications` lives on
+`EntityCard`, so `EntityView` keeps it through inheritance and every door that reads the tags
+fills it (VDR-12). `read_page_propagations(store, stored)` reads a whole page in the same two
+calls DD-835's single read uses: one `get_classifications` over the page's entities, one
+`get_many` over their sources (DD-836). A source answers a `breadcrumb` next to its name, and
+only when its document has parents. The webapp draws the chip and its source rows once, as one
+part the header and the card mount: a row shows the source's type icon, its name, and the stored
+path in place of the type name the first cut printed.
+
+**Reason.** The review asked for the tags on the result lines too: a list is where a user first
+sees a mark, and a card that hid it could only be explained by opening every row. A field on the
+shared shape is the family's own rule (ADR 064 R2), and one part is the family's other: the same
+entity cannot read differently on the two screens. The path replaces the type name because the
+row's name is already the entity, its type is its badge on the card, and the question the chip
+answers is where a tag came from. `breadcrumb` stays optional on a related entity so a section's
+end and a parentless source answer exactly what they answered before (AVS-05).
+
+**Alternatives.**
+
+- A second request for the page's tags: 50 cards, 50 reads on every search page (fails ADR 064
+  R1).
+- A card-only field beside the view's: the same name in two places, and `EntityCard.of` would
+  have to forget it (fails R2).
+- The path under the name and the type kept: three lines per row in a menu as wide as its card.
+- The card inventing its own row markup: the header's rows and the card's would drift the first
+  time either was touched.
+
+**Consequences.** A search page grows two store reads, whatever its page size. `EntityCard.of`
+projects the field, so a view turned into a card keeps it and the mutation door's answer can lose
+nothing. Every existing `RelationEntity` answer (a section's ends, a parentless source) stays
+byte-identical because the new key appears only with real crumbs. The part's rows stop their click
+from bubbling, so a source row opens the source and not the card it sits on. A tag whose source the
+store lost still marks the card, and its dropdown names no row, as VDR-12 had already left it.

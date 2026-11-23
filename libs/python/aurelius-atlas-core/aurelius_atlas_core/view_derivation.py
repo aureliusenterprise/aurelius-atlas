@@ -248,14 +248,23 @@ def _propagated(propagated: Propagations | None) -> list[ClassificationSource]:
     The door read the sources; this groups them under their classification's type name, keeping the order the
     entity lists its instances in (CLS-02). Two instances of one type on two different sources answer one entry
     with both sources, as the legacy header counted them (DD-834). A name whose source the store no longer has
-    keeps its entry with no entities: the tag is still the entity's to show, only its origin is unknown.
+    keeps its entry with no entities: the tag is still the entity's to show, only its origin is unknown. Each
+    source read with a document that has parents carries its stored trail, so a row can name where the source
+    sits; one read without, or with none, carries no crumbs (VDR-12, DD-836).
     """
     entries: dict[str, dict[str, RelationEntity]] = {}
     for type_name, sources in propagated or []:
         by_guid = entries.setdefault(type_name, {})
         for entity in sources:
+            crumbs = _breadcrumb(entity.app_search) if entity.app_search else []
             by_guid[entity.guid] = RelationEntity.model_validate(
-                {"guid": entity.guid, "name": _end_name(entity), "type_name": entity.type_name, "status": entity.state}
+                {
+                    "guid": entity.guid,
+                    "name": _end_name(entity),
+                    "type_name": entity.type_name,
+                    "status": entity.state,
+                    **({"breadcrumb": crumbs} if crumbs else {}),
+                }
             )
     return [
         ClassificationSource.model_validate({"type_name": type_name, "entities": list(by_guid.values())})
@@ -317,3 +326,36 @@ async def read_propagations(store: WriteStore, stored: StoredEntity) -> Propagat
         (instance.type_name, [sources[instance.entity_guid].entity] if instance.entity_guid in sources else [])
         for instance in instances
     ]
+
+
+async def read_page_propagations(store: WriteStore, stored: Sequence[StoredEntity]) -> dict[str, Propagations]:
+    """The propagated classifications of many entities at once, keyed by GUID (VDR-12, DD-836).
+
+    A page of cards asks what ``read_propagations`` asks for one entity, and the same two reads answer it for
+    the whole page: one ``get_classifications`` of every instance the page lists, and one ``get_many`` of the
+    sources those instances name. The door that already has the documents in hand passes them here, so a card
+    carries what the header shows (DD-836); an entity that lists no instance, or lists only its own, answers
+    nothing and costs nothing beyond the one classifications read.
+    """
+    listed = list(dict.fromkeys(guid for entity in stored for guid in entity.classification_guids or []))
+    if not listed:
+        return {}
+    found = await store.get_classifications(listed)
+    per_entity = {
+        entity.guid: [
+            found[guid].classification
+            for guid in entity.classification_guids or []
+            if guid in found and found[guid].classification.entity_guid not in (None, entity.guid)
+        ]
+        for entity in stored
+    }
+    with_any = {guid: instances for guid, instances in per_entity.items() if instances}
+    guids = list(dict.fromkeys(i.entity_guid for instances in with_any.values() for i in instances if i.entity_guid))
+    read = await store.get_many(guids) if guids else {}
+    return {
+        guid: [
+            (instance.type_name, [read[instance.entity_guid].entity] if instance.entity_guid in read else [])
+            for instance in instances
+        ]
+        for guid, instances in with_any.items()
+    }

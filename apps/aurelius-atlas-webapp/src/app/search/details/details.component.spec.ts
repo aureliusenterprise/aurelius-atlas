@@ -58,14 +58,22 @@ const ANSWER: EntityView = {
 const NO_CHIPS: EntityView = { ...ANSWER, classificationNames: [] };
 
 /** The view with a tag propagation brought (VDR-12, DV-197): own names stay
- *  PII/CONFIDENTIAL, and PII additionally rides in as a propagated entry. */
+ *  PII/CONFIDENTIAL, and PII additionally rides in as a propagated entry.
+ *  The first source sits under a stored parent (its row shows the path, not
+ *  the type, DD-836); the second has none and so shows its name alone. */
 const PROPAGATED: EntityView = {
     ...ANSWER,
     propagatedClassifications: [
         {
             typeName: "PII",
             entities: [
-                { guid: "src-1", name: "source_table", typeName: "DataSet", status: "ACTIVE" },
+                {
+                    guid: "src-1",
+                    name: "source_table",
+                    typeName: "m4i_dataset",
+                    status: "ACTIVE",
+                    breadcrumb: [{ guid: "dom-1", name: "Genomics", typeName: "m4i_data_domain" }],
+                },
                 { guid: "src-2", name: "other_table", typeName: "Process", status: "ACTIVE" },
             ],
         },
@@ -247,14 +255,22 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const marker = controls[2].querySelector(".tag.is-primary.dropdown.is-hoverable");
         expect(marker).toBeTruthy();
         expect(marker?.getAttribute("title")).toBe("Is propagated");
-        // The projected source rows carry the display names (DD-379): the
-        // source entity's own name over its type's display name.
+        // A source row shows what a card line shows (DD-836): the type icon,
+        // the name, and the path it sits on in place of the type name.
         const sources = [...controls[2].querySelectorAll(".aurelius-details-source")];
         expect(sources).toHaveLength(2);
         expect(normalize(sources[0].querySelector(".aurelius-details-source-name")?.textContent)).toBe("source_table");
-        expect(normalize(sources[0].querySelector(".aurelius-details-source-type")?.textContent)).toBe("DataSet");
+        expect(sources[0].querySelector(".aurelius-details-source-icon fa-icon")).toBeTruthy();
+        // The path is the stored parents only — the source's own name is the
+        // row's, so the crumb trail of the row must not repeat it.
+        expect(normalize(sources[0].querySelector(".aurelius-details-source-path")?.textContent)).toBe("Genomics");
+        expect(sources[0].querySelectorAll(".aurelius-details-source-path .breadcrumb li")).toHaveLength(1);
+        // No stored parent, no path (DD-630) — and no type line either, which
+        // the review took out of the row.
         expect(normalize(sources[1].querySelector(".aurelius-details-source-name")?.textContent)).toBe("other_table");
-        expect(normalize(sources[1].querySelector(".aurelius-details-source-type")?.textContent)).toBe("Process");
+        expect(sources[1].querySelector(".aurelius-details-source-path")).toBeNull();
+        expect(sources[1].querySelector(".aurelius-details-source-icon")).toBeNull();
+        expect(compiled.querySelector(".aurelius-details-source-type")).toBeNull();
     });
 
     it("routes to the source's details when its row is clicked (VDR-12, DV-197)", () => {

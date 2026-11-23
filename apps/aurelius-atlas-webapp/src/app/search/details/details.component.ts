@@ -34,6 +34,7 @@ import { viewProperties } from "./property-filter";
 import { LineageModel } from "./lineage/lineage-model.component";
 import { LineageModelState } from "./lineage/lineage-state";
 import { CatalogueCard } from "../shared/catalogue-card.component";
+import { PropagatedChips, type PropagatedChipEntry } from "../shared/propagated-chips.component";
 import { DetailsGovQualityState } from "./sections/gov-quality.state";
 import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
@@ -79,6 +80,7 @@ import { cardTypeAlias } from "../shared/type-alias";
         Markdown,
         PeopleBox,
         PropertiesItem,
+        PropagatedChips,
         SectionStats,
         TypeName,
         RouterLink,
@@ -305,31 +307,20 @@ export class Details {
     /**
      * The chips of the classifications propagation brought (VDR-05, VDR-12,
      * DV-197): one per propagated name, each by its dictionary display name,
-     * with the entities it came from as its chip's sources. The view answers
-     * these and a card never does, so only the opened entity shows them. The
-     * chip's trigger is the Aurelius chip's own (UIC-16), and the legacy
-     * header drew the same tags in a row of their own.
+     * with the entities it came from as its chip's sources — the rows the
+     * shared part draws (icon, name, path; DD-836). Both doors answer these
+     * now (the cards too), and the header shows the entity it opened.
      */
-    protected readonly propagatedClassifications = computed(() =>
+    protected readonly propagatedClassifications = computed<PropagatedChipEntry[]>(() =>
         (this.entity()?.propagatedClassifications ?? [])
             .filter((entry) => typeof entry.typeName === "string" && entry.typeName !== "")
             .map((entry) => ({
                 label: nameDisplay(entry.typeName),
-                sources: (entry.entities ?? [])
-                    .filter((source) => typeof source.guid === "string" && source.guid !== "")
-                    .map((source) => ({
-                        guid: source.guid,
-                        name: source.name || source.typeName || source.guid,
-                        typeName: source.typeName ? nameDisplay(source.typeName) : "",
-                    })),
+                sources: (entry.entities ?? []).filter(
+                    (source) => typeof source.guid === "string" && source.guid !== "",
+                ),
             })),
     );
-
-    /** The chip trigger's title and the dropdown's lead line (UIC-20's bridge keys). */
-    protected readonly propagatedLabel = $localize`:@@search.components.classification.isPropagated:Is propagated`;
-
-    /** The dropdown's origin line (UIC-20's bridge key, `originates`). */
-    protected readonly originLabel = $localize`:@@search.components.classification.originates:originates from the following sources:`;
 
     /**
      * The attribute the description box shows (DET-10 as amended by 18.8,

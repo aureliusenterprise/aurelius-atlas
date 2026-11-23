@@ -5,6 +5,7 @@ import { Breadcrumbs, ClassificationChip, EntityCard, Markdown, PeopleBox, type 
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { PEOPLE_ENDS } from "../details/shared/people";
+import { PropagatedChips, type PropagatedChipEntry } from "./propagated-chips.component";
 import { trailOf } from "./trail";
 
 /** The relationship attribute the document's derived people arrive under (LAS-05). */
@@ -36,7 +37,7 @@ const PERSON_ATTRIBUTE = "m4i_person";
  */
 @Component({
     selector: "aurelius-atlas-webapp-catalogue-card",
-    imports: [Breadcrumbs, ClassificationChip, EntityCard, Markdown, PeopleBox],
+    imports: [Breadcrumbs, ClassificationChip, EntityCard, Markdown, PeopleBox, PropagatedChips],
     // The demo's card body is a stack of blocks with a 16px gap; here the
     // body is the slotted content of the shell, so the rhythm lives on
     // [card-content]: a flex column with a fixed gap, and the chips field
@@ -71,13 +72,21 @@ const PERSON_ATTRIBUTE = "m4i_person";
                     [activeGuid]="pageGuid() ?? card().guid"
                     (itemClicked)="cardClicked.emit($event)"
                 />
-                @if (classifications().length > 0) {
+                @if (classifications().length > 0 || propagated().length > 0) {
                     <div class="field is-grouped is-grouped-multiline">
                         @for (name of classifications(); track name) {
                             <div class="control">
                                 <aurelius-atlas-ui-classification-chip [label]="name" />
                             </div>
                         }
+                        <!-- The propagated tags ride the same row (VDR-12 as
+                             amended by DD-836): a result line marks its own
+                             tags just as the opened entity does, by the shared
+                             part — same chip, same source rows. -->
+                        <aurelius-atlas-webapp-propagated-chips
+                            [entries]="propagated()"
+                            (sourceClicked)="cardClicked.emit($event)"
+                        />
                     </div>
                 }
                 @if (description()) {
@@ -143,6 +152,24 @@ export class CatalogueCard {
         (this.card().classificationNames ?? [])
             .filter((name) => typeof name === "string" && name !== "")
             .map((name) => nameDisplay(name)),
+    );
+
+    /**
+     * The propagated chips (VDR-12 as amended by DD-836): one per tag the
+     * door brought in, each by its dictionary display name, with the entities
+     * it came from. The search door fills the card's field now, so a result
+     * line marks what it carries by propagation exactly as the header of the
+     * same entity does — the card draws no row of its own.
+     */
+    protected readonly propagated = computed<PropagatedChipEntry[]>(() =>
+        (this.card().propagatedClassifications ?? [])
+            .filter((entry) => typeof entry.typeName === "string" && entry.typeName !== "")
+            .map((entry) => ({
+                label: nameDisplay(entry.typeName),
+                sources: (entry.entities ?? []).filter(
+                    (source) => typeof source.guid === "string" && source.guid !== "",
+                ),
+            })),
     );
 
     /** The description text (VCF-03 as amended by SPA-05): the card's

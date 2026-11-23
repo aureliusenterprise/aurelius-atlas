@@ -27,12 +27,19 @@ export type CardQuality = {
     ruleGuids?: string[];
 };
 
-/** One related entity (`RelationEntity`, AVS-02, AVS-04). */
+/**
+ * One related entity (`RelationEntity`, AVS-02, AVS-04).
+ *
+ * `breadcrumb` holds the trail its document stored, top down, so a propagation source's row can show where the
+ * source sits (VDR-12, DD-836). Only a related entity read with a document that has parents carries it: a
+ * section's end or a source with no trail answers none.
+ */
 export type RelationEntity = {
     guid: string;
     name?: string | null;
     typeName?: string | null;
     status?: AtlasEntityStatus | null;
+    breadcrumb?: CardBreadcrumb[] | null;
 };
 
 /** The entities related under one attribute name (`EntityRelation`, AVS-02, AVS-04). */
@@ -82,20 +89,23 @@ export type EntityCard = {
     /** Whether the entity holds any parent (RPS-06, DD-758). The card answers the
      * stored boolean; a card from an older door omits it, which reads as unknown. */
     hasParent?: boolean;
+    /**
+     * The classifications propagation brought, each with the entities it came from (`ClassificationSource`,
+     * VDR-12 as amended by DD-836): every door that reads them fills it, so a result line names its tags too.
+     */
+    propagatedClassifications?: ClassificationSource[];
 };
 
 /**
  * One entity as a screen needs it (`EntityView`, AVS-04): a card plus its own
  * values, sections and business metadata. 16.5b reads the details screen from
- * it; the results page reads only the card. `propagatedClassifications` names
- * the tags propagation brought and where each came from (VDR-12): a view's own
- * field, never a card's, so a result line shows none.
+ * it; the results page reads only the card. The propagated tags ride the card
+ * (VDR-12, DD-836), so both screens read them from there.
  */
 export type EntityView = EntityCard & {
     attributes?: Record<string, unknown>;
     businessMetadata?: Record<string, Record<string, unknown>> | null;
     sections?: EntityRelation[];
-    propagatedClassifications?: ClassificationSource[];
 };
 
 /** How the search door ranks (`mode`, ASV-01): words, meaning, or both. */

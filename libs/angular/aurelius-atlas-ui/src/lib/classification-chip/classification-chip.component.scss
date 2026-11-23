@@ -26,6 +26,17 @@
     display: block;
 }
 
+/* The dropdown's lead line: the classification's name (bold) and the
+ * origin sentence, read as one line of prose. They are separate inline
+ * elements — the label can be any author text — and Angular's template
+ * compaction removes the space between them, so the gap is made here,
+ * in character units, and wraps like text (VDR-12). */
+.aurelius-classification-chip-origin {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.5ch;
+}
+
 /* The trigger button only seats the icon — Bulma paints the tag on the
  * wrapper div — so the UA's button chrome goes. */
 .aurelius-classification-chip-propagated-trigger {

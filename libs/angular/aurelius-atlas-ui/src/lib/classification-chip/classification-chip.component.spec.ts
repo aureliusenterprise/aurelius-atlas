@@ -106,6 +106,12 @@ describe("ClassificationChip", () => {
         expect(trigger.querySelector(".dropdown-item strong").textContent).toBe("PII");
         expect(trigger.querySelector(".dropdown-item span").textContent).toBe("originates from the following sources:");
         expect(trigger.querySelector(".icon svg")).toBeTruthy();
+        // The lead line is one flex line of prose: Angular's template
+        // compaction drops the space between the two elements, so the class
+        // carrying the CSS gap must sit on the line that holds them (VDR-12).
+        const origin = trigger.querySelector(".aurelius-classification-chip-origin");
+        expect(origin.querySelector("strong")).toBeTruthy();
+        expect(origin.querySelector("span")).toBeTruthy();
     });
 
     it("projects the caller's sources rows into the dropdown (UIC-16, DD-189)", () => {

@@ -255,7 +255,10 @@ async def test__the_read_door_answers_a_propagated_tag_with_the_entity_it_came_f
     assert own["propagatedClassifications"] == []
 
     card = (await seeded.post(SEARCH, json={"query": "b"})).json()["cards"][0]
-    assert "propagatedClassifications" not in card  # a result line names no source (AVS-01)
+    # a result line names the propagated tag and its source too (VDR-12, DD-836)
+    assert card["propagatedClassifications"] == [
+        {"typeName": "c_pii", "entities": [{"guid": a, "name": "A", "typeName": "p_data", "status": "ACTIVE"}]}
+    ]
 
 
 @pytest.mark.covers(f"{S}.search", f"{R}.read", rules=["AVR-08", "AVR-10", "MMS-09"])

@@ -39,12 +39,19 @@ class CardQuality(AtlasModel):
 
 
 class RelationEntity(AtlasModel):
-    """One related entity: its GUID and name, and its type and state where the reader read them (AVS-02, AVS-04)."""
+    """One related entity: its GUID and name, and its type and state where the reader read them (AVS-02, AVS-04).
+
+    ``breadcrumb`` holds the trail its document stored, top down, so a propagation source's row can show where
+    the source sits, as a card's own trail does (VDR-12, DD-836). Only a related entity read with a document
+    that has parents carries it: a section's end or a source with no trail answers none, so no answer gains a
+    key it did not hold before (AVS-05).
+    """
 
     guid: str
     name: str | None = None
     type_name: str | None = None
     status: EntityStatus | None = None
+    breadcrumb: list[CardBreadcrumb] | None = None
 
 
 class EntityRelation(AtlasModel):
@@ -77,6 +84,8 @@ class EntityCard(AtlasModel):
     attribute (DD-614, narrowed by 18.8/SPA-05 when the m4i dictionary retired its own ``definition``).
     ``stale`` is the stored document's mark and
     ``updateTime`` the entity's: the shape's whole freshness claim (AVS-06, DD-583).
+    ``propagatedClassifications`` names the classifications propagation brought with the entities each came
+    from: every door that reads them fills it, and a door that answers none leaves it empty (VDR-12, DD-836).
     """
 
     guid: str
@@ -101,6 +110,7 @@ class EntityCard(AtlasModel):
     stale: bool = False
     has_parent: bool = False
     """Whether the entity holds any parent, from its document (RPS-06, DD-758); false without a document."""
+    propagated_classifications: list[ClassificationSource] = Field(default_factory=list)
 
     @classmethod
     def of(cls, view: EntityView) -> EntityCard:
@@ -113,11 +123,8 @@ class EntityView(EntityCard):
 
     ``attributes`` are the entity's own attribute values as the store holds them; ``sections`` merge the entity's
     own relationship ends with its document's stored pairs, each end listed once under its attribute (AVS-04).
-    ``propagatedClassifications`` names the classifications the entity carries by propagation with the entities
-    each came from: a view's own field, never a card's, because a result line has no source to name (VDR-05).
     """
 
     attributes: dict[str, Any] = Field(default_factory=dict)
     business_metadata: dict[str, dict[str, Any]] | None = None
     sections: list[EntityRelation] = Field(default_factory=list)
-    propagated_classifications: list[ClassificationSource] = Field(default_factory=list)
