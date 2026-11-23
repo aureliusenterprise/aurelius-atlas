@@ -33,6 +33,7 @@ const COMPLIANT: GovQualityRow = {
     name: "Person has a name",
     description: "A name is stored.",
     dimension: "COMPLETENESS",
+    ruleType: "COLUMN",
     compliant: true,
 };
 const BROKEN: GovQualityRow = {
@@ -40,6 +41,7 @@ const BROKEN: GovQualityRow = {
     name: "Person has an email address",
     description: "",
     dimension: "accuracy",
+    ruleType: "TABLE",
     compliant: false,
 };
 const UNVERDICTED: GovQualityRow = {
@@ -47,6 +49,7 @@ const UNVERDICTED: GovQualityRow = {
     name: "Person has a role",
     description: "",
     dimension: "",
+    ruleType: "",
     compliant: null,
 };
 

@@ -35,11 +35,11 @@ import { LineageModel } from "./lineage/lineage-model.component";
 import { LineageModelState } from "./lineage/lineage-state";
 import { CatalogueCard } from "../shared/catalogue-card.component";
 import { PropagatedChips, type PropagatedChipEntry } from "../shared/propagated-chips.component";
-import { DetailsGovQualityState } from "./sections/gov-quality.state";
+import { DetailsGovQualityState, type GovSectionView } from "./sections/gov-quality.state";
 import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
-import type { StatDef } from "./sections/section-config";
+import { hasGovQualityBox, type StatDef } from "./sections/section-config";
 import { peopleRowsOfSections } from "./shared/people";
 import { trailOf } from "../shared/trail";
 import { cardTypeAlias } from "../shared/type-alias";
@@ -118,8 +118,8 @@ export class Details {
     /** The Lineage Model fetch state (DD-400): the LDG-32 stat reads it. */
     protected readonly lineage = inject(LineageModelState);
 
-    /** The Governance Quality Rules box of the layout (DET-42, DD-520). */
-    private readonly govQuality = inject(DetailsGovQualityState);
+    /** The Governance Quality Rules box of the layout (DET-42 as amended by 7.25a, DD-520/DD-841). */
+    protected readonly govQuality = inject(DetailsGovQualityState);
 
     /** Whether the pencil shows (EDT-09, DD-324): the atlas-write grant. */
     protected readonly canWrite = canWriteEntities();
@@ -210,9 +210,10 @@ export class Details {
             this.sections.seed(this.entity(), this.layoutState.layout());
         });
         // The rule box follows the entity (DET-42): every arrival re-reads,
-        // the save re-read among them — the sections store's rule.
+        // the save re-read among them — the sections store's rule. Every
+        // m4i layout except the rule page carries the box (DET-48).
         effect(() => {
-            this.govQuality.load(this.layout()?.govQualityBox ? this.entity() : null);
+            this.govQuality.load(hasGovQualityBox(this.layout()) ? this.entity() : null);
         });
 
         // A deep link's anchor lands when its box arrives (DET-25, DD-381).
@@ -228,7 +229,7 @@ export class Details {
         afterRenderEffect(() => {
             const anchor = this.fragment();
             this.entity();
-            this.views();
+            this.sectionViews();
             if (anchor === null || anchor === "") {
                 return;
             }
@@ -370,6 +371,36 @@ export class Details {
     /** The card sections as the store renders them (DET-17..DET-22). */
     protected readonly views = this.sections.views;
 
+    /** The Governance Quality Rules box as the chrome renders it (DET-44..DET-47). */
+    protected readonly govView = this.govQuality.view;
+
+    /**
+     * The layout's box list in the config's order (DET-48, DD-841): every
+     * entry of the layout's `sections` row, the relationship-seeded ones
+     * drawn by the sections store and the `gov-quality` entry by the box's
+     * own store. The order is the spec's — the legacy's box order, which is
+     * the list's order — and the template draws one pass over it.
+     */
+    protected readonly sectionViews = computed<DetailsSectionView[]>(() => {
+        const layout = this.layout();
+        if (layout === undefined) {
+            return [];
+        }
+        const byAnchor = new Map(this.views().map((view) => [view.anchor, view]));
+        const drawn: DetailsSectionView[] = [];
+        for (const def of layout.sections) {
+            if (def.kind === "gov-quality") {
+                drawn.push(this.govView());
+            } else {
+                const view = byAnchor.get(def.anchor);
+                if (view !== undefined) {
+                    drawn.push(view);
+                }
+            }
+        }
+        return drawn;
+    });
+
     /** The description box's title: the layout's own key, or the default's. */
     protected readonly descriptionTitle = computed(
         () => this.layout()?.descriptionTitle ?? $localize`:@@search.details.default.description:Description`,
@@ -404,9 +435,6 @@ export class Details {
             })),
         })),
     );
-
-    /** The Governance Quality Rules rows (DET-42), empty for every other type. */
-    protected readonly govRows = this.govQuality.rows;
 
     /**
      * The count behind one stat (DET-24): the properties' own count, the
@@ -548,11 +576,17 @@ export class Details {
     /**
      * The search box's text as typed (the card section's `queryChange`
      * model): the store filters on it (DD-375) and the echo survives a
-     * re-render while a chunk answers mid-type.
+     * re-render while a chunk answers mid-type. The Governance Quality
+     * Rules box rides its own store (7.25a, DD-841) — the same rule, the
+     * box's rows instead of the section's cards.
      * @param view the section
      * @param text the box's text
      */
-    protected onSectionText(view: SectionView, text: string | null): void {
+    protected onSectionText(view: DetailsSectionView, text: string | null): void {
+        if (view.kind === "gov-quality") {
+            this.govQuality.setText(text);
+            return;
+        }
         this.sections.setText(view.anchor, text);
     }
 
@@ -563,44 +597,76 @@ export class Details {
      * @param view the section
      * @param query the submitted term, or null on clear
      */
-    protected onSectionQuery(view: SectionView, query: string | null): void {
+    protected onSectionQuery(view: DetailsSectionView, query: string | null): void {
+        if (view.kind === "gov-quality") {
+            this.govQuality.setQuery(query);
+            return;
+        }
         this.sections.setQuery(view.anchor, query);
     }
 
-    /** A section's reset link was clicked (DET-20).
+    /** A section's reset link was clicked (DET-20, DET-44).
      * @param view the section */
-    protected onSectionReset(view: SectionView): void {
+    protected onSectionReset(view: DetailsSectionView): void {
+        if (view.kind === "gov-quality") {
+            this.govQuality.reset();
+            return;
+        }
         this.sections.reset(view.anchor);
     }
 
-    /** A section's popover row was ticked or unticked (VCF-11).
+    /** A section's popover row was ticked or unticked (VCF-11, DET-46).
      * @param view the section
      * @param event the group's key with the row's value and new state */
     protected onSectionFacetToggled(
-        view: SectionView,
+        view: DetailsSectionView,
         event: { group: string; value: string; checked: boolean },
     ): void {
+        if (view.kind === "gov-quality") {
+            this.govQuality.toggleFacet(event.group, event.value, event.checked);
+            return;
+        }
         this.sections.toggleFacet(view.anchor, event.group, event.value, event.checked);
     }
 
     /**
-     * A section's sort select changed (DET-21).
+     * A section's sort select changed (DET-21, DET-45).
      * @param view the section
      * @param sort the selected key
      */
-    protected onSectionSort(view: SectionView, sort: string | null): void {
+    protected onSectionSort(view: DetailsSectionView, sort: string | null): void {
+        if (view.kind === "gov-quality") {
+            this.govQuality.setSort(sort);
+            return;
+        }
         this.sections.setSort(view.anchor, sort);
     }
 
-    /** A section's direction button toggled (DET-21).
+    /** A section's direction button toggled (DET-21, DET-45).
      * @param view the section */
-    protected onSectionDirection(view: SectionView): void {
+    protected onSectionDirection(view: DetailsSectionView): void {
+        if (view.kind === "gov-quality") {
+            this.govQuality.toggleDirection();
+            return;
+        }
         this.sections.toggleDirection(view.anchor);
     }
 
-    /** A section's scroll container asked for the next page (DET-22).
+    /** A section's scroll container asked for the next page (DET-22, DET-47).
      * @param view the section */
-    protected onSectionPage(view: SectionView): void {
+    protected onSectionPage(view: DetailsSectionView): void {
+        if (view.kind === "gov-quality") {
+            this.govQuality.nextPage();
+            return;
+        }
         this.sections.nextPage(view.anchor);
     }
 }
+
+/**
+ * One box of the layout's section list, as the template draws it (7.25a,
+ * DET-48): a relationship-seeded card section, or the Governance Quality
+ * Rules box. The chrome's fields ride both (DET-44), and the `kind` picks
+ * the store a handler reaches (DD-841).
+ */
+type DetailsSectionView = SectionView | GovSectionView;

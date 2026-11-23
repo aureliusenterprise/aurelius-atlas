@@ -806,6 +806,7 @@ function arriveSections(
     httpMock: HttpTestingController,
     body: EntityView = m4iEntity(),
     answer: Record<string, unknown> = attributesAnswer(),
+    rules: Record<string, unknown>[] = [],
 ) {
     arrive(fixture, httpMock, body);
     for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
@@ -817,6 +818,16 @@ function arriveSections(
     // and httpMock.verify() stays honest (the box's drawing is its own spec).
     for (const request of httpMock.match((r) => r.url === "/lineage-model/")) {
         request.flush(null, { status: 204, statusText: "No Content" });
+    }
+    // DET-48 (7.25a): every m4i page now carries the Governance Quality
+    // Rules box, so its two reads land with the layout too. The section
+    // specs below do not read the box — the empty answer keeps it titled and
+    // empty, and httpMock.verify() honest.
+    for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/search/basic")) {
+        request.flush({ entities: rules });
+    }
+    for (const request of httpMock.match((r) => r.url === "/validate-entity/")) {
+        request.flush({ verdicts: [], unreadRules: [] });
     }
     fixture.detectChanges();
 }
@@ -862,6 +873,15 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
 
         for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
             request.flush(attributesAnswer());
+        }
+        // The Governance Quality Rules box reads too (DET-48): this spec
+        // watches the Data Attributes box, so its empty answers only keep
+        // the mock honest.
+        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/search/basic")) {
+            request.flush({ entities: [] });
+        }
+        for (const request of httpMock.match((r) => r.url === "/validate-entity/")) {
+            request.flush({ verdicts: [], unreadRules: [] });
         }
         fixture.detectChanges();
 
@@ -1169,6 +1189,8 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             ["People", "/#people-details"],
             ["Data Attributes", "/#related-attributes"],
             ["Child Entities", "/#related-entities"],
+            // DET-48 (7.25a): the box's entry, in the legacy slot before the properties.
+            ["Governance Quality Rules", "/#gov-quality"],
             ["Properties", "/#properties-details"],
         ]);
     });
@@ -1329,6 +1351,15 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         fixture.detectChanges();
         httpMock.expectOne("/api/aurelius/v1/entity/guid/m4i-1").flush(m4iEntity({ sections: [] }));
         fixture.detectChanges();
+        // The re-read re-loads the Governance Quality Rules box too (DET-44):
+        // its second round lands here.
+        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/search/basic")) {
+            request.flush({ entities: [] });
+        }
+        for (const request of httpMock.match((r) => r.url === "/validate-entity/")) {
+            request.flush({ verdicts: [], unreadRules: [] });
+        }
+        fixture.detectChanges();
 
         // The new entity has no ends: every section re-seeds to zero.
         expect(normalize(compiled.querySelector("#related-attributes h6")?.textContent)).toBe("0 result(s)");
@@ -1435,6 +1466,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             "Lineage Model",
             "Producers",
             "Consumers",
+            "Governance Quality Rules",
             "Properties",
         ]);
         // No People box on this layout (DET-16's row).
@@ -1500,7 +1532,15 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) =>
             normalize(link.textContent),
         );
-        expect(items).toEqual(["Description", "Systems", "Lineage Model", "Inputs", "Outputs", "Properties"]);
+        expect(items).toEqual([
+            "Description",
+            "Systems",
+            "Lineage Model",
+            "Inputs",
+            "Outputs",
+            "Governance Quality Rules",
+            "Properties",
+        ]);
 
         // No typedef read: the name is a direct dispatch hit (DET-15).
         httpMock.expectNone(TYPEDEF_URL);
@@ -1751,6 +1791,236 @@ describe("Details person page (DET-39..DET-43)", () => {
         expect(compiled.querySelector("#gov-quality")).toBeNull();
         httpMock.expectNone("/api/atlas/v2/search/basic");
         httpMock.expectNone("/validate-entity/");
+        httpMock.verify();
+    });
+});
+
+/**
+ * The box of the screen, drawn by the shared card section: the chrome's
+ * count line, keyword, sort, funnel and grid, on every layout that carries
+ * it (DET-44..DET-48). The store's own specs cover the pipeline; these pin
+ * the screen's wiring — the handlers, and that the box sits last.
+ */
+describe("Details Governance Quality Rules section (DET-44..DET-48, DD-841)", () => {
+    /** The three rules the chrome turns on: two dimensions, two types, one refused. */
+    function chromeRules(): Record<string, unknown>[] {
+        return [
+            govRule("r1", "Alpha rule", { ruleType: "COLUMN", ruleDescription: "A column is filled." }),
+            govRule("r2", "bravo rule", {
+                qualityDimension: "ACCURACY",
+                ruleType: "TABLE",
+            }),
+            govRule("r3", "Charlie rule", { qualityDimension: "ACCURACY", ruleType: "TABLE" }),
+        ];
+    }
+
+    /** Bring a person up with the three seed rules. */
+    function arriveBox() {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrive(fixture, httpMock, m4iPerson());
+        for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
+            request.flush(personEndsAnswer());
+        }
+        httpMock.expectOne("/api/atlas/v2/search/basic").flush({ entities: chromeRules() });
+        httpMock.expectOne("/validate-entity/").flush({
+            verdicts: [
+                {
+                    ruleGuid: "r2",
+                    ruleName: "bravo rule",
+                    attribute: "",
+                    dimension: "ACCURACY",
+                    compliant: false,
+                    message: "",
+                },
+            ],
+            unreadRules: [],
+        });
+        fixture.detectChanges();
+        return { fixture, compiled, httpMock };
+    }
+
+    it("the chrome draws its count line, sorts and facets on the person page (DET-44, DET-45, DET-46)", () => {
+        const { compiled } = arriveBox();
+
+        const box = compiled.querySelector<HTMLElement>("#gov-quality")!;
+        expect(normalize(box.querySelector("h2")?.textContent)).toBe("Governance Quality Rules");
+        // The count line carries the whole set and is the reset link (DET-44).
+        const count = box.querySelector<HTMLAnchorElement>("h6.aurelius-card-section-count a")!;
+        expect(count.classList.contains("aurelius-card-section-reset")).toBe(true);
+        expect(normalize(count.textContent)).toBe("3 result(s)");
+        // The four legacy sorts, Relevance first (DET-45), the raw literals
+        // the catalogues carry no key for (DET-21's precedent).
+        expect([...box.querySelectorAll<HTMLOptionElement>("select option")].map((option) => option.value)).toEqual([
+            "relevance",
+            "name",
+            "dataqualityruledimension",
+            "compliant",
+            "dataqualitytype",
+        ]);
+        // The funnel carries the two rule groups (DET-46).
+        const funnel = box.querySelector<HTMLButtonElement>(".aurelius-card-section-funnel")!;
+        expect(funnel.classList.contains("is-primary")).toBe(false);
+        funnel.click();
+        const menus = [...box.querySelectorAll<HTMLElement>(".dropdown-menu .menu-label")].map((label) =>
+            normalize(label.textContent),
+        );
+        expect(menus).toEqual(["Dimension", "Rule Type"]);
+        expect([...box.querySelectorAll(".dropdown-menu input[type='checkbox']")]).toHaveLength(4);
+    });
+
+    it("the count line clears the keyword, the tick, the sort and the page (DET-44)", async () => {
+        const { fixture, compiled } = arriveBox();
+        const box = compiled.querySelector<HTMLElement>("#gov-quality")!;
+        const titles = () => [...box.querySelectorAll(".title.is-4 a")].map((link) => normalize(link.textContent));
+        expect(titles()).toEqual(["Alpha rule", "bravo rule", "Charlie rule"]);
+
+        // A facet tick narrows the rows first — the popover counts over the
+        // keyword-filtered set (VCF-12), so the tick comes before the typing.
+        box.querySelector<HTMLButtonElement>(".aurelius-card-section-funnel")!.click();
+        const accuracy = [...box.querySelectorAll<HTMLElement>(".dropdown-menu label")].find(
+            (label) => normalize(label.textContent) === "ACCURACY (2)",
+        )!;
+        accuracy.querySelector<HTMLInputElement>("input[type='checkbox']")!.click();
+        fixture.detectChanges();
+        expect(titles()).toEqual(["bravo rule", "Charlie rule"]);
+        expect(normalize(box.querySelector("a.aurelius-card-section-reset")?.textContent)).toBe("2 result(s)");
+
+        // The keyword narrows the rows further, as it is typed (DET-47).
+        const search = box.querySelector<HTMLInputElement>("input[type='search']")!;
+        search.value = "alpha";
+        search.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        expect(titles()).toEqual([]);
+        expect(normalize(box.querySelector("a.aurelius-card-section-reset")?.textContent)).toBe("0 result(s)");
+
+        // The sort and its direction join the filtered state.
+        const select = box.querySelector<HTMLSelectElement>("select")!;
+        select.value = "dataqualitytype";
+        select.dispatchEvent(new Event("change"));
+        fixture.detectChanges();
+        box.querySelector<HTMLButtonElement>(".aurelius-card-section-direction")!.click();
+        fixture.detectChanges();
+        expect(
+            box.querySelector<HTMLButtonElement>(".aurelius-card-section-funnel")!.classList.contains("is-primary"),
+        ).toBe(true);
+
+        // The count line is the reset: every control returns and the whole
+        // set shows again (DET-44, DET-20's rule).
+        box.querySelector<HTMLAnchorElement>("a.aurelius-card-section-reset")!.click();
+        fixture.detectChanges();
+        // The cleared keyword reaches the input through the search field's
+        // ngModel, which writes on a microtask.
+        await fixture.whenStable();
+        expect(search.value).toBe("");
+        expect(titles()).toEqual(["Alpha rule", "bravo rule", "Charlie rule"]);
+        expect(normalize(box.querySelector("h6")?.textContent)).toBe("3 result(s)");
+        expect(box.querySelector<HTMLSelectElement>("select")!.value).toBe("relevance");
+        expect(
+            box.querySelector<HTMLButtonElement>(".aurelius-card-section-funnel")!.classList.contains("is-primary"),
+        ).toBe(false);
+        // The tick the reset dropped: reopening shows nothing checked.
+        box.querySelector<HTMLButtonElement>(".aurelius-card-section-funnel")!.click();
+        expect(
+            [...box.querySelectorAll<HTMLInputElement>(".dropdown-menu input[type='checkbox']")].some(
+                (input) => input.checked,
+            ),
+        ).toBe(false);
+    });
+
+    it("the facet filter and the sort drive the rows through the screen (DET-45, DET-46)", () => {
+        const { fixture, compiled } = arriveBox();
+        const box = compiled.querySelector<HTMLElement>("#gov-quality")!;
+        const titles = () => [...box.querySelectorAll(".title.is-4 a")].map((link) => normalize(link.textContent));
+
+        // The dimension facet keeps its two rows (DET-46).
+        box.querySelector<HTMLButtonElement>(".aurelius-card-section-funnel")!.click();
+        const accuracy = [...box.querySelectorAll<HTMLElement>(".dropdown-menu label")].find(
+            (label) => normalize(label.textContent) === "ACCURACY (2)",
+        )!;
+        accuracy.querySelector<HTMLInputElement>("input[type='checkbox']")!.click();
+        fixture.detectChanges();
+        expect(titles()).toEqual(["bravo rule", "Charlie rule"]);
+
+        // The verdict sort puts the passed rule first, the refused one next,
+        // and the unread rule last (DET-45).
+        const select = box.querySelector<HTMLSelectElement>("select")!;
+        select.value = "compliant";
+        select.dispatchEvent(new Event("change"));
+        fixture.detectChanges();
+        expect(titles()).toEqual(["bravo rule", "Charlie rule"]);
+        // A keyword reaching the name the facet hid cannot return it (DET-47).
+        const search = box.querySelector<HTMLInputElement>("input[type='search']")!;
+        search.value = "alpha";
+        search.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        expect(titles()).toEqual([]);
+    });
+
+    // One page per test: TestBed configures once per test, so the loop sits
+    // at describe level and emits a test per layout.
+    const pages: { guid: string; entity: EntityView; answer?: Record<string, unknown> }[] = [
+        { guid: "m4i-1", entity: m4iEntity() },
+        { guid: "ds-1", entity: m4iDataset(), answer: doorAnswer([]) },
+        { guid: "pr-1", entity: m4iProcess(), answer: doorAnswer([]) },
+        { guid: "pe-1", entity: m4iPerson(), answer: personEndsAnswer() },
+    ];
+    for (const page of pages) {
+        it(`the ${page.entity.typeName} page draws the box last, with its nav entry (DET-48, DD-841)`, () => {
+            // The legacy pages the box closed: it joins the layout's section
+            // list in the legacy slot — after the last card box (and the
+            // Lineage Model box, which the dataset and process pages seat
+            // before it) and before the Properties accordion.
+            const { fixture, compiled, httpMock } = setup(page.guid);
+            arriveSections(fixture, httpMock, page.entity, page.answer ?? attributesAnswer());
+
+            const box = compiled.querySelector<HTMLElement>("#gov-quality");
+            expect(box, page.entity.typeName).toBeTruthy();
+            expect(box?.classList.contains("aurelius-details-section"), page.entity.typeName).toBe(true);
+            // Last of the section boxes, directly before the Properties block —
+            // the legacy order of the nine templates.
+            const landmarks = [
+                ...compiled.querySelectorAll<HTMLElement>(".aurelius-details-section, #properties-details"),
+            ].map((node) => node.id);
+            expect(landmarks.slice(-2), page.entity.typeName).toEqual(["gov-quality", "properties-details"]);
+            // The nav entry, in the same slot.
+            const nav = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) => [
+                normalize(link.textContent),
+                link.getAttribute("href"),
+            ]);
+            expect(nav.at(-2), page.entity.typeName).toEqual(["Governance Quality Rules", "/#gov-quality"]);
+            expect(nav.at(-1)![1], page.entity.typeName).toBe("/#properties-details");
+            // The box read for the page: the search and the verdict call both
+            // answered empty (arriveSections settles them), and the count
+            // line shows the answer — the box is live, not a dead shell.
+            expect(
+                normalize(box?.querySelector("a.aurelius-card-section-reset")?.textContent),
+                page.entity.typeName,
+            ).toBe("0 result(s)");
+            httpMock.verify();
+        });
+    }
+
+    it("the rule page draws no box and asks for none (DET-48, DV-199)", () => {
+        // The tenth layout is the only one the legacy left without the box.
+        const { fixture, compiled, httpMock } = setup("dq-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({
+                guid: "dq-1",
+                typeName: "m4i_data_quality",
+                displayText: "rule_entity",
+                sections: sectionsOf({ fields: [end("f1", "chromosome_pos")] }),
+            }),
+            doorAnswer([doorCard("f1", "m4i_field", "chromosome_pos")]),
+        );
+
+        expect(compiled.querySelector("#gov-quality")).toBeNull();
+        httpMock.expectNone("/api/atlas/v2/search/basic");
+        httpMock.expectNone("/validate-entity/");
+        expect(
+            [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) => link.textContent),
+        ).not.toContain("Governance Quality Rules");
         httpMock.verify();
     });
 });

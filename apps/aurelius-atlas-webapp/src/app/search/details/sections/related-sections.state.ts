@@ -77,6 +77,13 @@ export type SectionCard =
 
 /** A section as the renderer draws it (the card-section component's inputs). */
 export interface SectionView {
+    /**
+     * Marks the section's store for the screen's merged box list (7.25a,
+     * DD-841): the relationship-seeded card section of DET-17..DET-22. The
+     * Governance Quality Rules box carries `"gov-quality"` and its own store
+     * (DET-48), and the discriminant picks which store a handler reaches.
+     */
+    kind: "related";
     anchor: string;
     title: string;
     /** The seed count — the count line and the stats bar (DET-17). */
@@ -156,8 +163,8 @@ export class RelatedSectionsState {
     /** The view the last seed read ({@link endCount}'s source, DET-40). */
     private lastSeed: { view: EntityView | null } = { view: null };
 
-    /** The sections as the renderer draws them, in layout order. */
-    readonly views = computed<SectionView[]>(() => this.records().map((record) => this.viewOf(record)));
+    /** The sections as the renderer draws them, in layout order (one entry per seeded section). */
+    readonly views = computed<readonly SectionView[]>(() => this.records().map((record) => this.viewOf(record)));
 
     /**
      * (Re-)seed every section from the view (DET-17, VDR-03): the count
@@ -467,6 +474,7 @@ export class RelatedSectionsState {
         const stateApplied = filtered || record.sort !== DEFAULT_SORT || record.descending;
 
         return {
+            kind: "related",
             anchor: record.def.anchor,
             title: record.def.title,
             facets: facetGroupsOf(record, matched),

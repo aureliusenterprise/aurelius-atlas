@@ -191,7 +191,7 @@
          description, flat people — the same component the results row
          mounts); the loading row stays the plain ui card's (DET-18). -->
 @if (layout()) {
-    @for (view of views(); track view.anchor) {
+    @for (view of sectionViews(); track view.anchor) {
         <div [id]="view.anchor" class="box aurelius-details-section">
             <aurelius-atlas-ui-details-card-section
                 [title]="view.title"
@@ -221,7 +221,15 @@
                 (sortChange)="onSectionSort(view, $event)"
                 (nextPage)="onSectionPage(view)"
             >
-                @for (card of view.cards; track card.guid) {
+                @if (view.kind === "gov-quality") {
+                    <!-- The Governance Quality Rules box (DET-42 as amended
+                             by 7.25a, DET-44..DET-47): the chrome above, the
+                             box's own rule cards below — the same card the
+                             person page drew, projected into the chrome's
+                             grid (DD-841). A rule title opens the rule. -->
+                    <aurelius-atlas-webapp-gov-quality-cards [rows]="view.rows" (ruleClicked)="onCardClick($event)" />
+                }
+                @for (card of view.kind === "related" ? view.cards : []; track card.guid) {
                     <!-- The column rides Bulma's sizing helpers: three
                              across on a desktop at most, two on a tablet,
                              one full-width on a phone (DET-22, DD-377 —
@@ -263,21 +271,6 @@
                 <aurelius-atlas-webapp-lineage-model [guid]="guid()" />
             </section>
         }
-    }
-
-    <!-- The Governance Quality Rules box (DET-42, DD-520): the person
-         page's #gov-quality div, below the responsibilities box. The
-         rows — the person type's ACTIVE rules with their verdict icons —
-         ride the screen's store; a rule title opens the rule's page. An
-         empty box while loading, or after a failed read, is the settled
-         shape (DD-521's quiet swallow). -->
-    @if (layout()?.govQualityBox) {
-        <div id="gov-quality" class="box aurelius-details-gov-quality">
-            <h2 class="title is-3" i18n="@@search.details.components.governanceQualityCards.title">
-                Governance Quality Rules
-            </h2>
-            <aurelius-atlas-webapp-gov-quality-cards [rows]="govRows()" (ruleClicked)="onCardClick($event)" />
-        </div>
     }
 }
 

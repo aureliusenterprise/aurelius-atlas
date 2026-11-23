@@ -8,13 +8,19 @@ import { typeIcon } from "../../meta/type-icons";
 import type { GovQualityRow } from "./gov-quality.state";
 
 /**
- * The rows of the Governance Quality Rules box (DET-42, DD-521): the dumb
- * half of the person page's `#gov-quality` box. One card per rule — the
- * 7.13 card with the rule's name as its link title and the badge of its
- * type — and the legacy card's body projected into its `card-content`
- * slot: the rule's description line, then the verdict line (the success or
- * warning icon of the rule's verdict for the opened record, then the rule's
+ * The rows of the Governance Quality Rules box (DET-42 as amended by 7.25a,
+ * DD-521/DD-841): the dumb half of the box. One card per rule — the 7.13
+ * card with the rule's name as its link title and the badge of its type —
+ * and the legacy card's body projected into its `card-content` slot: the
+ * rule's description line, then the verdict line (the success or warning
+ * icon of the rule's verdict for the opened record, then the rule's
  * dimension titlecased; no icon at no verdict, the unread rule of VEV-03).
+ *
+ * The box is a card section now, so the shared chrome (UIC-27) owns the
+ * title, count line, funnel, sort and keyword — and the card grid. This part
+ * projects its rows into that grid as plain columns and takes no box of its
+ * own (`display: contents`, the propagated chips' idiom): each row's column
+ * joins the chrome's `.columns` directly (7.25a, DD-841).
  *
  * The state lives with the screen's store (`gov-quality.state.ts`); this
  * part knows nothing but the rows it is handed (the DD-136 split). A title
@@ -24,52 +30,60 @@ import type { GovQualityRow } from "./gov-quality.state";
 @Component({
     imports: [EntityCard, FontAwesomeModule],
     selector: "aurelius-atlas-webapp-gov-quality-cards",
-    template: `
-        <div class="columns is-multiline">
-            @for (row of rows(); track row.guid) {
-                <!-- The grid's column sizing rides the DET-22 helpers:
-                     three across on a desktop at most. -->
-                <div class="column is-half-tablet is-one-third-desktop">
-                    <aurelius-atlas-ui-entity-card
-                        [guid]="row.guid"
-                        [name]="row.name"
-                        [typeName]="ruleTypeName"
-                        [typeIcon]="ruleIcon?.icon"
-                        [typeIconClass]="ruleIcon?.classIcon"
-                        [showQuality]="false"
-                        (entityClicked)="ruleClicked.emit($event)"
-                    >
-                        <div card-content class="aurelius-gov-quality-body">
-                            @if (row.description !== "") {
-                                <p class="aurelius-gov-quality-description">{{ row.description }}</p>
-                            }
-                            <p class="is-size-7 aurelius-gov-quality-verdict">
-                                <span class="icon-text">
-                                    @if (row.compliant !== null) {
-                                        <span
-                                            class="icon"
-                                            [class.has-text-success]="row.compliant"
-                                            [class.has-text-warning]="!row.compliant"
-                                        >
-                                            @if (row.compliant) {
-                                                <fa-icon aria-hidden="true" [icon]="faCheckCircle"></fa-icon>
-                                            } @else {
-                                                <fa-icon aria-hidden="true" [icon]="faExclamationTriangle"></fa-icon>
-                                            }
-                                        </span>
-                                    }
-                                    @if (row.dimension !== "") {
-                                        <span class="aurelius-gov-quality-dimension">{{
-                                            titlecase(row.dimension)
-                                        }}</span>
-                                    }
-                                </span>
-                            </p>
-                        </div>
-                    </aurelius-atlas-ui-entity-card>
-                </div>
+    styles: [
+        `
+            /* The rows are the chrome grid's columns, not a grid of their
+             * own (7.25a, DD-841): the card section's columns container is
+             * the grid, so the host must take no box of its own — Bulma's
+             * column sizing only applies to a direct child of a columns row.
+             */
+            :host {
+                display: contents;
             }
-        </div>
+        `,
+    ],
+    template: `
+        @for (row of rows(); track row.guid) {
+            <!-- The grid's column sizing rides the DET-22 helpers: three
+                 across on a desktop at most. -->
+            <div class="column is-half-tablet is-one-third-desktop">
+                <aurelius-atlas-ui-entity-card
+                    [guid]="row.guid"
+                    [name]="row.name"
+                    [typeName]="ruleTypeName"
+                    [typeIcon]="ruleIcon?.icon"
+                    [typeIconClass]="ruleIcon?.classIcon"
+                    [showQuality]="false"
+                    (entityClicked)="ruleClicked.emit($event)"
+                >
+                    <div card-content class="aurelius-gov-quality-body">
+                        @if (row.description !== "") {
+                            <p class="aurelius-gov-quality-description">{{ row.description }}</p>
+                        }
+                        <p class="is-size-7 aurelius-gov-quality-verdict">
+                            <span class="icon-text">
+                                @if (row.compliant !== null) {
+                                    <span
+                                        class="icon"
+                                        [class.has-text-success]="row.compliant"
+                                        [class.has-text-warning]="!row.compliant"
+                                    >
+                                        @if (row.compliant) {
+                                            <fa-icon aria-hidden="true" [icon]="faCheckCircle"></fa-icon>
+                                        } @else {
+                                            <fa-icon aria-hidden="true" [icon]="faExclamationTriangle"></fa-icon>
+                                        }
+                                    </span>
+                                }
+                                @if (row.dimension !== "") {
+                                    <span class="aurelius-gov-quality-dimension">{{ titlecase(row.dimension) }}</span>
+                                }
+                            </span>
+                        </p>
+                    </div>
+                </aurelius-atlas-ui-entity-card>
+            </div>
+        }
     `,
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

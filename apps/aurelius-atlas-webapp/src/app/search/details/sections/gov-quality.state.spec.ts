@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import type { EntityView } from "aurelius-atlas-data-access";
 
-import { DetailsGovQualityState } from "./gov-quality.state";
+import { type GovSectionView, DetailsGovQualityState } from "./gov-quality.state";
 
 /**
  * The Governance Quality Rules store (DET-42, DD-520/DD-521): the rule read
@@ -86,7 +86,7 @@ describe("Gov-quality store (DET-42)", () => {
             excludeDeletedEntities: true,
             includeSubTypes: false,
             limit: 100,
-            attributes: ["name", "ruleDescription", "qualityDimension", "active"],
+            attributes: ["name", "ruleDescription", "qualityDimension", "ruleType", "active"],
             entityFilters: {
                 attributeName: "qualifiedName",
                 operator: "startsWith",
@@ -168,6 +168,7 @@ describe("Gov-quality store (DET-42)", () => {
                 name: "Person has a name",
                 description: "A name is stored.",
                 dimension: "COMPLETENESS",
+                ruleType: "",
                 compliant: null,
             },
             {
@@ -175,6 +176,7 @@ describe("Gov-quality store (DET-42)", () => {
                 name: "Person has an email address",
                 description: "",
                 dimension: "COMPLETENESS",
+                ruleType: "",
                 compliant: false,
             },
         ]);
@@ -213,8 +215,8 @@ describe("Gov-quality store (DET-42)", () => {
         flushVerdicts(httpMock, { verdicts: [], unreadRules: [] });
 
         expect(store.rows()).toEqual([
-            { guid: "r2", name: "Only display", description: "", dimension: "", compliant: null },
-            { guid: "r1", name: "Unwrapped", description: "Body.", dimension: "", compliant: null },
+            { guid: "r2", name: "Only display", description: "", dimension: "", ruleType: "", compliant: null },
+            { guid: "r1", name: "Unwrapped", description: "Body.", dimension: "", ruleType: "", compliant: null },
         ]);
         httpMock.verify();
     });
@@ -239,7 +241,14 @@ describe("Gov-quality store (DET-42)", () => {
         httpMock.expectOne(VALIDATE_URL).flush({}, { status: 502, statusText: "Bad Gateway" });
 
         expect(store.rows()).toEqual([
-            { guid: "r1", name: "Person has a name", description: "", dimension: "COMPLETENESS", compliant: null },
+            {
+                guid: "r1",
+                name: "Person has a name",
+                description: "",
+                dimension: "COMPLETENESS",
+                ruleType: "",
+                compliant: null,
+            },
         ]);
         httpMock.verify();
     });
@@ -281,5 +290,339 @@ describe("Gov-quality store (DET-42)", () => {
         validate.flush({ verdicts: [], unreadRules: [] });
         expect(store.rows()).toEqual([]);
         httpMock.verify();
+    });
+});
+
+/** A seeded rule: the basic test's rule, widened by the type (DET-42 amended). */
+interface SeedRule {
+    guid: string;
+    name: string;
+    dimension?: string;
+    ruleType?: string;
+    description?: string;
+    /** The verdict; left out, the rule is unread and shows no verdict. */
+    compliant?: boolean | null;
+}
+
+/**
+ * Bring the box up with the given rules, answering both reads in one go.
+ * The store sorts the rules by name (DET-42), so that order is what the
+ * Relevance sort shows — the seeds below name themselves accordingly.
+ */
+function seed(store: DetailsGovQualityState, httpMock: HttpTestingController, rules: SeedRule[]): void {
+    store.load(PERSON);
+    // The helper spreads its extra straight into the header's attributes.
+    flushRules(
+        httpMock,
+        rules.map((seedRule) =>
+            rule(seedRule.guid, seedRule.name, {
+                ruleDescription: seedRule.description ?? "",
+                qualityDimension: seedRule.dimension ?? "",
+                ruleType: seedRule.ruleType ?? "",
+                active: true,
+            }),
+        ),
+    );
+    flushVerdicts(httpMock, {
+        verdicts: rules
+            .filter((seedRule) => seedRule.compliant !== undefined)
+            .map((seedRule) => ({
+                ruleGuid: seedRule.guid,
+                ruleName: seedRule.name,
+                attribute: "",
+                dimension: seedRule.dimension ?? "",
+                compliant: seedRule.compliant,
+                message: "",
+            })),
+        unreadRules: rules.filter((seedRule) => seedRule.compliant === undefined).map((seedRule) => seedRule.guid),
+    });
+}
+
+/** The four rules the sorts and facets turn on: two dimensions, two types,
+ * one refused, one unread, and one carrying neither a dimension nor a type. */
+const SORT_SEED: SeedRule[] = [
+    { guid: "a", name: "Alpha", dimension: "COMPLETENESS", ruleType: "COLUMN", compliant: true },
+    { guid: "b", name: "bravo", dimension: "ACCURACY", ruleType: "TABLE", compliant: false },
+    // Charlie and delta carry no verdict at all — the aux could not read them.
+    { guid: "c", name: "Charlie" },
+    { guid: "d", name: "delta", dimension: "ACCURACY", ruleType: "TABLE" },
+];
+
+describe("The Governance Quality Rules card section (DET-44..DET-48, DD-842)", () => {
+    /** The store with the four seed rules on screen. */
+    function arrive() {
+        const { store, httpMock } = setup();
+        seed(store, httpMock, SORT_SEED);
+        return { store, httpMock };
+    }
+
+    /** One popover group of the view, by key. */
+    function group(view: GovSectionView, key: string) {
+        return view.facets.find((facet) => facet.key === key)!;
+    }
+
+    it("the section chrome starts on Relevance with both facet groups (DET-44, DET-46)", () => {
+        const { store } = arrive();
+
+        const view = store.view();
+        expect(view.kind).toBe("gov-quality");
+        expect(view.anchor).toBe("gov-quality");
+        expect(view.title).toBe("Governance Quality Rules");
+        expect(view.count).toBe(4);
+        expect(view.countShown).toBe(4);
+        expect(view.filtered).toBe(false);
+        expect(view.filterActive).toBe(false);
+        expect(view.sort).toBe("relevance");
+        expect(view.descending).toBe(false);
+        expect(view.query).toBeNull();
+        expect(view.allLoaded).toBe(true);
+        expect(view.loading).toBe(false);
+        // The two groups, in the legacy order, counted over the rows (VCF-12).
+        expect(view.facets.map((facet) => [facet.key, facet.title])).toEqual([
+            ["dataqualityruledimension", "Dimension"],
+            ["dataqualitytype", "Rule Type"],
+        ]);
+        expect(group(view, "dataqualityruledimension").items.map((item) => [item.label, item.count])).toEqual([
+            ["ACCURACY", 2],
+            ["COMPLETENESS", 1],
+        ]);
+        expect(group(view, "dataqualitytype").items.map((item) => [item.label, item.count])).toEqual([
+            ["TABLE", 2],
+            ["COLUMN", 1],
+        ]);
+        // The sort menu, in the legacy order with Relevance first (DET-45).
+        expect(view.sortOptions.map((option) => option.key)).toEqual([
+            "relevance",
+            "name",
+            "dataqualityruledimension",
+            "compliant",
+            "dataqualitytype",
+        ]);
+    });
+
+    it("the sorts order the rows, by key with missing values last (DET-45)", () => {
+        const { store } = arrive();
+        const guids = () => store.view().rows.map((row) => row.guid);
+
+        // Relevance is the rule read's order: the name (DET-42).
+        expect(guids()).toEqual(["a", "b", "c", "d"]);
+
+        // Name — the same order, case-insensitively (Alpha, bravo, Charlie,
+        // delta): the legacy's own first sort option.
+        store.setSort("name");
+        expect(guids()).toEqual(["a", "b", "c", "d"]);
+
+        // The dimension sorts missing values last ascending, first descending.
+        store.setSort("dataqualityruledimension");
+        expect(store.view().descending).toBe(false);
+        expect(guids()).toEqual(["b", "d", "a", "c"]);
+        store.toggleDirection();
+        expect(store.view().descending).toBe(true);
+        expect(guids()).toEqual(["c", "a", "b", "d"]);
+
+        // Ties keep the Relevance order in both directions (DET-45): the
+        // ACCURACY pair b, d stays b before d in each direction. A new sort
+        // key keeps the direction the button holds (the legacy's two controls
+        // are independent), so it goes back to ascending here.
+        store.toggleDirection();
+        store.setSort("compliant");
+        expect(store.view().descending).toBe(false);
+        // Passed, refused, then the no-verdict rows in Relevance order.
+        expect(guids()).toEqual(["a", "b", "c", "d"]);
+        store.toggleDirection();
+        // Reversed: the no-verdict rows lead, still in Relevance order, then
+        // the refused rule, then the passed one.
+        expect(guids()).toEqual(["c", "d", "b", "a"]);
+
+        // The rule type sorts the same way (DET-45): COLUMN, then the two
+        // TABLE rows in Relevance order, then the row with no type last.
+        store.toggleDirection(); // back to ascending
+        store.setSort("dataqualitytype");
+        expect(store.view().descending).toBe(false);
+        expect(guids()).toEqual(["a", "b", "d", "c"]);
+    });
+
+    it("the facet filters select within and across the groups (DET-46)", () => {
+        const { store } = arrive();
+        const guids = () => store.view().rows.map((row) => row.guid);
+
+        // One value narrows to its rows; the other group recounts over them.
+        store.toggleFacet("dataqualityruledimension", "ACCURACY", true);
+        expect(guids()).toEqual(["b", "d"]);
+        expect(store.view().filtered).toBe(true);
+        expect(store.view().filterActive).toBe(true);
+        expect(store.view().count).toBe(4);
+        expect(store.view().countShown).toBe(2);
+        expect(group(store.view(), "dataqualitytype").items.map((item) => [item.label, item.count])).toEqual([
+            ["TABLE", 2],
+        ]);
+
+        // A second value in the same group widens it (VCF-11's OR).
+        store.toggleFacet("dataqualityruledimension", "COMPLETENESS", true);
+        expect(guids()).toEqual(["a", "b", "d"]);
+
+        // A value in the other group narrows across groups (VCF-11's AND):
+        // Alpha is a COLUMN rule, so it drops.
+        store.toggleFacet("dataqualitytype", "TABLE", true);
+        expect(guids()).toEqual(["b", "d"]);
+
+        // Unticking the last value of a group clears it (VCF-12's sibling).
+        store.toggleFacet("dataqualitytype", "TABLE", false);
+        expect(guids()).toEqual(["a", "b", "d"]);
+        store.toggleFacet("dataqualityruledimension", "COMPLETENESS", false);
+        store.toggleFacet("dataqualityruledimension", "ACCURACY", false);
+        expect(store.view().filtered).toBe(false);
+        expect(store.view().filterActive).toBe(false);
+    });
+
+    it("the keyword searches the name, description, dimension and type (DET-47)", () => {
+        const { store, httpMock } = setup();
+        seed(store, httpMock, [
+            {
+                guid: "a",
+                name: "Email present",
+                description: "Every person has one",
+                dimension: "COMPLETENESS",
+                ruleType: "COLUMN",
+                compliant: true,
+            },
+            {
+                guid: "b",
+                name: "Region code",
+                description: "",
+                dimension: "ACCURACY",
+                ruleType: "TABLE",
+                compliant: true,
+            },
+            { guid: "c", name: "Table layout", description: "", dimension: "", ruleType: "TABLE", compliant: true },
+        ]);
+        const guids = () => store.view().rows.map((row) => row.guid);
+
+        // Matched on the name.
+        store.setText("email");
+        expect(guids()).toEqual(["a"]);
+        expect(store.view().filtered).toBe(true);
+        expect(store.view().query).toBe("email");
+
+        // Matched on the description.
+        store.setText("Every");
+        expect(guids()).toEqual(["a"]);
+
+        // Matched on the dimension, case-insensitive.
+        store.setText("accuracy");
+        expect(guids()).toEqual(["b"]);
+
+        // Matched on the rule type.
+        store.setText("table");
+        expect(guids()).toEqual(["b", "c"]);
+
+        // An empty keyword shows all the rows again.
+        store.setText("");
+        expect(store.view().query).toBeNull();
+        expect(store.view().filtered).toBe(false);
+        expect(store.view().filterActive).toBe(false);
+    });
+
+    it("the section shows nine rows at a time and grows by nine (DET-47)", () => {
+        const { store, httpMock } = setup();
+        // Padded names: the store's name order is then the seeded numeric order.
+        const twenty: SeedRule[] = Array.from({ length: 20 }, (_, index) => {
+            const suffix = String(index).padStart(2, "0");
+            return {
+                guid: `r${suffix}`,
+                name: `Rule ${suffix}`,
+                dimension: "COMPLETENESS",
+                ruleType: "COLUMN",
+                compliant: true,
+            };
+        });
+        seed(store, httpMock, twenty);
+        const guids = () => store.view().rows.map((row) => row.guid);
+
+        let view = store.view();
+        expect(view.count).toBe(20);
+        expect(guids()).toEqual(twenty.slice(0, 9).map((seedRule) => seedRule.guid));
+        expect(view.allLoaded).toBe(false);
+        // Unfiltered, the count line shows the whole set (DET-20 carried).
+        expect(view.countShown).toBe(20);
+
+        store.nextPage();
+        view = store.view();
+        expect(guids()).toEqual(twenty.slice(0, 18).map((seedRule) => seedRule.guid));
+        expect(view.allLoaded).toBe(false);
+
+        store.nextPage();
+        view = store.view();
+        expect(view.rows).toHaveLength(20);
+        expect(view.allLoaded).toBe(true);
+        // Asking past the end changes nothing.
+        store.nextPage();
+        expect(store.view().rows).toHaveLength(20);
+    });
+
+    it("the count line clears every control and returns page one (DET-44)", () => {
+        const { store, httpMock } = setup();
+        const twenty: SeedRule[] = Array.from({ length: 20 }, (_, index) => {
+            const suffix = String(index).padStart(2, "0");
+            return {
+                guid: `r${suffix}`,
+                name: `${index % 2 === 0 ? "Match" : "Rule"} ${suffix}`,
+                dimension: index % 2 === 0 ? "COMPLETENESS" : "ACCURACY",
+                ruleType: "COLUMN",
+                compliant: true,
+            };
+        });
+        seed(store, httpMock, twenty);
+
+        store.setText("Match");
+        store.toggleFacet("dataqualityruledimension", "COMPLETENESS", true);
+        store.setSort("name");
+        store.toggleDirection();
+        store.nextPage();
+        expect(store.view().rows.length).toBe(10);
+        expect(store.view().filterActive).toBe(true);
+
+        store.reset();
+
+        const view = store.view();
+        expect(view.query).toBeNull();
+        expect(view.sort).toBe("relevance");
+        expect(view.descending).toBe(false);
+        expect(view.filterActive).toBe(false);
+        expect(view.filtered).toBe(false);
+        expect(view.count).toBe(20);
+        expect(view.rows).toHaveLength(9); // page one of the unfiltered set
+        expect(view.facets.every((facet) => facet.items.every((item) => !item.checked))).toBe(true);
+    });
+
+    it("a reload returns the chrome to its defaults (DET-44)", () => {
+        const { store, httpMock } = arrive();
+
+        store.setText("bravo");
+        store.setSort("name");
+        store.load(PERSON);
+        flushRules(httpMock, [rule("r1", "Fresh rule")]);
+        flushVerdicts(httpMock, { verdicts: [], unreadRules: [] });
+
+        const view = store.view();
+        expect(view.query).toBeNull();
+        expect(view.sort).toBe("relevance");
+        expect(view.descending).toBe(false);
+        expect(view.filterActive).toBe(false);
+        expect(store.rows().map((row) => row.guid)).toEqual(["r1"]);
+    });
+
+    it("a rule with no verdict sorts after the refused one (DET-45)", () => {
+        const { store, httpMock } = arrive();
+
+        // Charlie and delta carry no verdict; the compliant sort puts them
+        // after the refused row (DET-45), and the rows themselves stay.
+        store.setSort("compliant");
+        expect(store.view().rows.map((row) => [row.guid, row.compliant])).toEqual([
+            ["a", true],
+            ["b", false],
+            ["c", null],
+            ["d", null],
+        ]);
     });
 });

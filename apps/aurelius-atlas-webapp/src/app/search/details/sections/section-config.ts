@@ -19,6 +19,12 @@
  * names the card box the Lineage Model box follows — the legacy pages put
  * the `#lineage-model` div between two card boxes, and it is no card
  * section, so its place rides the layout row, not the `sections` list.
+ *
+ * 7.25a adds the Governance Quality Rules box to the list (DET-48, DD-841):
+ * the `kind: "gov-quality"` entry every legacy page carried last. It is a
+ * card section like the others — the same chrome, the same position rules —
+ * but it seeds from its own reads, so it is marked and its own store draws
+ * it (DD-841).
  */
 
 /**
@@ -41,7 +47,11 @@ export type FacetGroupKey =
     | "m4i_dataset"
     | "m4i_system"
     | "typeName"
-    | "name";
+    | "name"
+    // The governance box's two groups (DET-46, 7.25a): the rule's dimension
+    // and its rule type, the legacy box's own facet ask.
+    | "dataqualityruledimension"
+    | "dataqualitytype";
 
 /** One card section of a layout (DET-17..DET-22 render it). */
 export interface SectionDef {
@@ -58,7 +68,22 @@ export interface SectionDef {
      * the popover's "No filters available." line (VCF-10).
      */
     readonly facets: readonly FacetGroupKey[];
+    /**
+     * Which store draws the section (7.25a, DD-841). Absent means the
+     * relationship-seeded card section of DET-17..DET-22;
+     * `"gov-quality"` is the Governance Quality Rules box, which draws
+     * the same chrome over its own rows (its store seeds from a rule
+     * search and a verdict call, not an end).
+     */
+    readonly kind?: "gov-quality";
 }
+
+/**
+ * The Governance Quality Rules box's title (DET-48): the one key every
+ * legacy page drew — nine pages, one unit. Its section entries and the box's
+ * own view read this constant, so the string exists once.
+ */
+export const GOV_QUALITY_TITLE = $localize`:@@search.details.components.governanceQualityCards.title:Governance Quality Rules`;
 
 /**
  * The facet group titles (DD-622): each reuses the Aurelius catalogue key
@@ -80,6 +105,10 @@ export const FACET_GROUP_TITLES: Readonly<Record<FacetGroupKey, string>> = {
     typeName: $localize`:@@typename:Type Name`,
     // No catalogue key: the legacy option value, titlecased raw (DD-622).
     name: `Name`,
+    // The governance box's two groups (DET-46): the rule dimension and rule
+    // type, both carried by every locale as the legacy menu label.
+    dataqualityruledimension: $localize`:@@dataqualityruledimension:Dimension`,
+    dataqualitytype: $localize`:@@dataqualitytype:Rule Type`,
 };
 
 /**
@@ -165,12 +194,6 @@ export interface TypeLayout {
      * every other row keeps the DET-24 bar unchanged.
      */
     readonly statsGroups?: readonly StatGroupDef[];
-    /**
-     * Whether the layout renders the Governance Quality Rules box (DET-42,
-     * DD-520). Absent means false; only the person row carries it — the
-     * other pages' boxes stay with 7.25 (7.24's deferral).
-     */
-    readonly govQualityBox?: boolean;
     /** The properties accordion's title (the layout's own `properties` key). */
     readonly propertiesTitle: string;
     /** The side-navigation entries, in legacy order. */
@@ -217,6 +240,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 seedKeys: ["dataEntity"],
                 facets: ROLE_FACETS,
             },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
+            },
         ],
         stats: [
             {
@@ -241,6 +271,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.domain.dataEntities:Data Entities`,
                 anchor: "related-entities",
             },
+            {
+                label: $localize`:@@search.details.domain.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
             { label: $localize`:@@search.details.domain.properties:Properties`, anchor: "properties-details" },
         ],
     },
@@ -260,6 +294,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.entity.entitiesCards.title:Child Entities`,
                 seedKeys: ["childEntity"],
                 facets: ROLE_FACETS,
+            },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
             },
         ],
         stats: [
@@ -294,6 +335,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.entity.childEntities:Child Entities`,
                 anchor: "related-entities",
             },
+            {
+                label: $localize`:@@search.details.entity.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
             { label: $localize`:@@search.details.entity.properties:Properties`, anchor: "properties-details" },
         ],
     },
@@ -307,6 +352,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.attribute.fieldsCards.title:Fields`,
                 seedKeys: ["fields"],
                 facets: ["m4i_system", "m4i_collection", "m4i_dataset"],
+            },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
             },
         ],
         stats: [
@@ -329,6 +381,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             { label: $localize`:@@search.details.attribute.people:People`, anchor: "people-details" },
             { label: $localize`:@@search.details.attribute.fields:Fields`, anchor: "related-fields" },
+            {
+                label: $localize`:@@search.details.attribute.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
             { label: $localize`:@@search.details.attribute.properties:Properties`, anchor: "properties-details" },
         ],
     },
@@ -362,6 +418,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 // The legacy asked the rule dimension (DV-168): no card
                 // field carries it, so the popover shows the empty line.
                 facets: [],
+            },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
             },
         ],
         stats: [
@@ -399,6 +462,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             { label: $localize`:@@search.details.field.childFields:Child Fields`, anchor: "related-fields" },
             { label: $localize`:@@search.details.field.dataQualityRules:Data Quality Rules`, anchor: "related-rules" },
+            {
+                label: $localize`:@@search.details.field.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
             { label: $localize`:@@search.details.field.properties:Properties`, anchor: "properties-details" },
         ],
     },
@@ -479,6 +546,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 seedKeys: ["inputToProcesses"],
                 facets: ["typeName", "m4i_system"],
             },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
+            },
         ],
         stats: [
             {
@@ -539,6 +613,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.dataset.consumers:Consumers`,
                 anchor: "related-consumers",
             },
+            {
+                label: $localize`:@@search.details.dataset.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
             { label: $localize`:@@search.details.dataset.properties:Properties`, anchor: "properties-details" },
         ],
         // LDG-09: the Lineage Model box follows Child Datasets (the legacy
@@ -555,6 +633,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.collection.datasetsCards.title:Datasets`,
                 seedKeys: ["datasets"],
                 facets: ROLE_FACETS,
+            },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
             },
         ],
         stats: [
@@ -576,6 +661,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "description-details",
             },
             { label: $localize`:@@search.details.collection.datasets:Datasets`, anchor: "related-datasets" },
+            {
+                label: $localize`:@@search.details.collection.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
             { label: $localize`:@@search.details.collection.properties:Properties`, anchor: "properties-details" },
         ],
     },
@@ -602,6 +691,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 seedKeys: ["processes"],
                 facets: ["typeName", "m4i_system"],
             },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
+            },
         ],
         // The legacy systems/processes stats read the systems' governance
         // scores; with no DQ source both stats stay out (DD-369) and the bar
@@ -624,6 +720,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             { label: $localize`:@@search.details.system.collections:Collections`, anchor: "related-collections" },
             { label: $localize`:@@search.details.system.subSystems:Subsystems`, anchor: "related-systems" },
             { label: $localize`:@@search.details.system.processes:Processes`, anchor: "related-processes" },
+            {
+                label: $localize`:@@search.details.system.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
             { label: $localize`:@@search.details.system.properties:Properties`, anchor: "properties-details" },
         ],
     },
@@ -657,6 +757,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.process.outputCards.title:Outputs`,
                 seedKeys: ["outputs"],
                 facets: ["typeName", "m4i_system", "m4i_collection"],
+            },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
             },
         ],
         stats: [
@@ -702,6 +809,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             { label: $localize`:@@search.details.process.inputs:Inputs`, anchor: "related-inputs" },
             { label: $localize`:@@search.details.process.outputs:Outputs`, anchor: "related-outputs" },
+            {
+                label: $localize`:@@search.details.process.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
             { label: $localize`:@@search.details.process.properties:Properties`, anchor: "properties-details" },
         ],
         lineageAfter: "related-systems",
@@ -730,6 +841,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                     "stewardAttribute",
                 ],
                 facets: ["typeName", "m4i_data_domain", "m4i_data_entity", "name"],
+            },
+            {
+                anchor: "gov-quality",
+                title: GOV_QUALITY_TITLE,
+                seedKeys: [],
+                facets: ["dataqualityruledimension", "dataqualitytype"],
+                kind: "gov-quality",
             },
         ],
         // The grouped bar renders these (DET-40); the flat list stays empty
@@ -787,7 +905,6 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 ],
             },
         ],
-        govQualityBox: true,
         propertiesTitle: $localize`:@@search.details.person.properties:Properties`,
         nav: [
             {
@@ -811,4 +928,14 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
  */
 export function layoutForTypeName(typeName: string): TypeLayout | undefined {
     return (LAYOUTS as Record<string, TypeLayout | undefined>)[typeName];
+}
+
+/**
+ * Whether a layout carries the Governance Quality Rules box (DET-48, the
+ * nine legacy pages). The section list is the source: the entry's presence
+ * is the box's presence, replacing 7.29's `govQualityBox` flag.
+ * @param layout the layout, or undefined for the default screen
+ */
+export function hasGovQualityBox(layout: TypeLayout | undefined): boolean {
+    return layout?.sections.some((section) => section.kind === "gov-quality") ?? false;
 }

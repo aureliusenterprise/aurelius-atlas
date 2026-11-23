@@ -2877,6 +2877,242 @@ def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: 
             _delete_entity(authenticated, root_url, user_token, rule_guid)
 
 
+def _wait_gov_rules_searched(page: Page, root_url: str, token: str, names: list[str], *, timeout: float = 30) -> None:
+    """Ask the box's own rule read until it answers every name (bounded, DET-42).
+
+    The box reads its rules once, on arrival, through ``/search/basic`` — which
+    rides Elasticsearch's near-real-time refresh. A page opened right after a
+    seed can therefore read without the seed and never re-read. The read the
+    store makes is replayed here (the same type, the same ``m4i_dataset--``
+    prefix) until it carries this run's rules, so the screen opens on a read
+    that already holds them — the propagation-retry idiom of
+    ``_wait_entity_read``, on the search door (CLS-12's sibling).
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        answer = page.request.post(
+            urljoin(root_url, "/api/atlas/v2/search/basic"),
+            data=json.dumps(
+                {
+                    "typeName": "m4i_gov_data_quality",
+                    "excludeDeletedEntities": True,
+                    "includeSubTypes": False,
+                    "limit": 100,
+                    "attributes": ["name", "ruleDescription", "qualityDimension", "ruleType", "active"],
+                    "entityFilters": {
+                        "attributeName": "qualifiedName",
+                        "operator": "startsWith",
+                        "attributeValue": "m4i_dataset--",
+                    },
+                }
+            ),
+            headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+        )
+        assert answer.status == 200, answer.text()
+        found = {entity.get("attributes", {}).get("name") for entity in answer.json().get("entities", [])}
+        if set(names) <= found:
+            return
+        assert time.monotonic() < deadline, f"the rule read never carried the seed: missing {set(names) - found}"
+        time.sleep(1)
+
+
+_AT_LEAST_TEN = re.compile(r"^(?:1[0-9]|[2-9][0-9]|[1-9][0-9]{2,}) result\(s\)$")
+"""The count line of a box holding ten rows or more: the corpus's ACTIVE rules
+plus this run's three, never pinned to a store-dependent number (DD-223)."""
+
+
+def _drives_the_quality_rules_chrome(box: Locator, run: str, rule_names: list[str]) -> None:
+    """Drive the box's chrome on the run's three rules (DET-44..DET-47).
+
+    The keyword narrows the section to this run's rules, the verdict icons
+    ride the aux app's live answers, the ``compliant`` sort puts the passed
+    rule first and the iconless unread one last, the Dimension facet drops the
+    ACCURACY row, and the count line resets it all. ``rule_names`` are in the
+    store's Relevance order (a-z), which is the keyword-filtered order the
+    chrome draws (DET-42, DET-45).
+    """
+    count_line = box.locator("h6.aurelius-card-section-count a")
+
+    # DET-47: the keyword narrows the section as it is typed (DD-375's rule),
+    # and the count line moves to the filtered count (DET-44).
+    search = box.locator("aurelius-atlas-ui-search-field input")
+    search.fill(f"zz{run}")
+    expect(box.locator("p.title.is-4 a")).to_have_text(rule_names)
+    expect(count_line).to_have_text("3 result(s)")
+
+    # DET-42 (DV-155): the verdict icons ride the aux app's live answers — the
+    # passed rule successed, the refused one warninged, the rule the aux app
+    # cannot read (its ACCURACY dimension) stays iconless (VEV-03).
+    named = box.locator("aurelius-atlas-ui-entity-card", has_text=rule_names[2])
+    described = box.locator("aurelius-atlas-ui-entity-card", has_text=rule_names[1])
+    accurate = box.locator("aurelius-atlas-ui-entity-card", has_text=rule_names[0])
+    expect(named.locator(".aurelius-gov-quality-verdict .icon.has-text-success")).to_have_count(1)
+    expect(described.locator(".aurelius-gov-quality-verdict .icon.has-text-warning")).to_have_count(1)
+    expect(accurate.locator(".aurelius-gov-quality-verdict .icon")).to_have_count(0)
+
+    # DET-45: the `compliant` sort puts the passed rule first and the refused
+    # one before the iconless unread row. VCF-08 (DD-623): a sort off its
+    # default marks the funnel.
+    box.locator("select").select_option("compliant")
+    expect(box.locator("p.title.is-4 a")).to_have_text(rule_names[::-1])
+    funnel = box.locator("button.aurelius-card-section-funnel")
+    expect(funnel).to_have_class(re.compile(r"\bis-primary\b"))
+
+    # DET-46: the funnel's Dimension group counts the keyword-filtered set
+    # (VCF-12) and ticking COMPLETENESS drops the ACCURACY row (VCF-11).
+    funnel.click()
+    popover = box.locator(".aurelius-card-section-filter .dropdown-menu")
+    expect(popover).to_be_visible()
+    groups = popover.locator("aurelius-atlas-ui-facet-list")
+    # The count rides an ``&nbsp;`` (UIC-34), so the rows fold spaces (the roles-box idiom).
+    dimension_rows = [
+        re.sub(r"\s+", " ", text).strip() for text in groups.first.locator(".menu-list li").all_inner_texts()
+    ]
+    assert dimension_rows == ["COMPLETENESS (2)", "ACCURACY (1)"]
+    groups.first.get_by_role("checkbox", name=re.compile("completeness", re.IGNORECASE)).check()
+    expect(box.locator("p.title.is-4 a")).to_have_text(rule_names[1:][::-1])
+    expect(count_line).to_have_text("2 result(s)")
+
+    # DET-44: the count line is the reset — keyword, tick, sort and direction
+    # return to their defaults and the section repaginates to nine.
+    count_line.click()
+    expect(search).to_have_value("")
+    expect(count_line).to_have_text(_AT_LEAST_TEN)
+    expect(box.locator("select")).to_have_value("relevance")
+    expect(funnel).to_have_class(re.compile(r"^(?!.*\bis-primary\b).*$"))
+
+
+# impact=major, likelihood=medium (the box is the m4i furniture; the chrome moves
+# rarely, but the verdict join rides a deployed aux app)
+@pytest.mark.high
+@pytest.mark.covers(rules=["DET-44", "DET-45", "DET-46", "DET-47", "DET-48"])
+def test__the_dataset_page_turns_the_quality_rules_section(
+    authenticated: Page, root_url: str, fresh_user_token: Callable[[], str]
+) -> None:
+    """The #gov-quality box is a card section on the dataset page (DET-44..DET-48, DD-841..DD-843).
+
+    The 7.25a chrome over the deployed chain: the box draws the shared section
+    (title, count line, sort, funnel, keyword) as the layout's last section,
+    with its nav entry, over the demo corpus's ACTIVE ``m4i_dataset--`` rules
+    plus this run's three. Those three carry the increment's variety — a
+    passing completeness rule, a refused one, and an accuracy-stamped one the
+    aux app cannot read (iconless, VEV-03) — in two rule types, and every
+    assertion is keyed to the run's word, because the shared store's corpus
+    rules ride the box too and counting them is not this test's business
+    (DD-223). The keyword narrows to the run's three, the ``compliant`` sort
+    orders them passed, refused, iconless, the Dimension facet drops the
+    accuracy row, and the count line resets it all. Self-cleaned; no shared
+    service restarts (DD-223).
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}dataset"
+    rule_names = [f"zz{run}accurate", f"zz{run}described", f"zz{run}named"]
+
+    def rule_attributes(key: str, **extra: str) -> dict[str, str]:
+        """One seeded rule: the run's name, the shared sentences, the caller's kind (VEV-02)."""
+        rule_name = f"zz{run}{key}"
+        return {
+            "name": rule_name,
+            "qualifiedName": f"m4i_dataset--{rule_name}",
+            "active": "true",
+            "ruleDescription": f"zz{run} the dataset rule {key}",
+            "compliantMessage": f"zz{run} the {key} check passes",
+            "nonCompliantMessage": f"zz{run} the {key} check fails",
+            **extra,
+        }
+
+    # The browser phase outlasts the dev realm's 60s token (fresh_user_token's
+    # rule, the quality-rules suite's idiom): every API call mints its own.
+    guids = _seed_entities(authenticated, root_url, fresh_user_token(), "m4i_dataset", [name])
+    guid = guids["-0"]
+    rule_guids = [
+        # ACCURACY over a completeness kind: the aux app refuses the rule and
+        # reports it unread (GOV_DIMENSION_MISMATCH), so its row stays iconless.
+        _seed_gov_rule(
+            authenticated,
+            root_url,
+            fresh_user_token(),
+            rule_attributes(
+                "accurate",
+                dqcheckkind="ATTRIBUTE_PRESENT",
+                dqattribute="name",
+                qualityDimension="ACCURACY",
+                ruleType="TABLE",
+            ),
+        ),
+        # The description the seed never carries: a refusal, warning-iconed.
+        _seed_gov_rule(
+            authenticated,
+            root_url,
+            fresh_user_token(),
+            rule_attributes(
+                "described",
+                dqcheckkind="ATTRIBUTE_NOT_EMPTY",
+                dqattribute="description",
+                qualityDimension="COMPLETENESS",
+                ruleType="COLUMN",
+            ),
+        ),
+        # The name every seed carries: a pass, success-iconed.
+        _seed_gov_rule(
+            authenticated,
+            root_url,
+            fresh_user_token(),
+            rule_attributes(
+                "named",
+                dqcheckkind="ATTRIBUTE_PRESENT",
+                dqattribute="name",
+                qualityDimension="COMPLETENESS",
+                ruleType="COLUMN",
+            ),
+        ),
+    ]
+
+    try:
+        _wait_entity_read(authenticated, root_url, fresh_user_token(), guid, predicate=bool)
+        _wait_gov_rules_searched(authenticated, root_url, fresh_user_token(), rule_names)
+
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(name)
+
+        box = authenticated.locator("#gov-quality")
+
+        # DET-48: the box is a section of the screen, the layout's last one —
+        # the Properties accordion follows it, and the side nav carries its
+        # entry in the same slot.
+        expect(box).to_have_class(re.compile(r"aurelius-details-section"))
+        expect(box.locator("h2")).to_have_text("Governance Quality Rules")
+        landmarks = authenticated.locator(".aurelius-details-section, #properties-details")
+        assert landmarks.nth(-2).get_attribute("id") == "gov-quality"
+        assert landmarks.nth(-1).get_attribute("id") == "properties-details"
+        nav = authenticated.locator(".aurelius-details-nav .menu-list a")
+        nav_labels = [text.strip() for text in nav.all_inner_texts()]
+        assert nav_labels.index("Governance Quality Rules") == len(nav_labels) - 2
+        assert nav_labels[-1] == "Properties"
+
+        # DET-44/DET-47: the count line draws the rows the read holds — the
+        # demo's ACTIVE dataset rules beside this run's three, more than one
+        # page — and the grid shows nine at a time (DET-22's page rule).
+        expect(box.locator("h6.aurelius-card-section-count a")).to_have_text(_AT_LEAST_TEN)
+        expect(box.locator("aurelius-atlas-ui-entity-card")).to_have_count(9)
+
+        _drives_the_quality_rules_chrome(box, run, rule_names)
+
+        # DET-48: the nav entry jumps to the box — the address names the
+        # anchor and the screen stays on the entity (DET-25's rule). The side
+        # nav is the collapsible UIC-18 menu, so the toggle opens it first
+        # (the DET-25 suite's idiom).
+        nav = authenticated.locator(".aurelius-details-nav")
+        nav.locator("button").click()
+        nav.locator(".menu-list a", has_text="Governance Quality Rules").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}#gov-quality$"))
+        expect(box).to_be_visible()
+    finally:
+        _delete_entity(authenticated, root_url, fresh_user_token(), guid)
+        for rule_guid in rule_guids:
+            _delete_entity(authenticated, root_url, fresh_user_token(), rule_guid)
+
+
 # impact=minor, likelihood=medium (the card's governance mark; the verdicts
 # land through the worker's round, so the wait is on the mark, not the seed)
 @pytest.mark.medium
