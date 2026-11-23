@@ -2206,6 +2206,8 @@
       
         
       
+        
+      
     
     
     
@@ -4140,6 +4142,33 @@
     
   
   069. Each browser-facing surface answers on its own hostname
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/070-the-catalogue-ships-one-prose-attribute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  070. The catalogue ships one prose attribute
 
     
   </span>
@@ -8218,6 +8247,46 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A propagation tell skips every entity not <code>ACTIVE</code>, whether it comes from a request or a task, so a deleted entity's history closes at its <code>ENTITY_DELETE</code> event (CAU-05, CAU-06, DD-818).</td>
 <td>Aurelius keeps soft-deleted entities readable with their classifications listed (EDL-06), so a tell that asks only "does it exist?" audits a tombstone. The task's write is still Java's — the propagation is removed — only the event differs, and no client reads an event on an entity it can no longer see.</td>
 <td>3.5</td>
+</tr>
+<tr>
+<td>DV-192</td>
+<td>Kafka scanning</td>
+<td>Apache Atlas has no Kafka scanner at all, and the Aurelius legacy cluster scanner registered its System/Collection/Dataset/Field tree with no <code>typeAlias</code> on any entity, so every badge read the metamodel type</td>
+<td>The scanner writes <code>typeAlias</code> on the two browsed levels it registers: the Collection carries <code>Kafka Cluster</code> and each Dataset carries <code>Kafka Topic</code>, in the same bulk request as the tree. The System and the fields carry none, so their badges show the type name alone, and the icon stays resolved from the raw type name (KSA-01, KSA-03, DD-826)</td>
+<td>The badge alias exists since 18.1 (MMS-09, DD-721) and a person browsing a catalogue of many connectors reads <em>Dataset</em> nowhere near as usefully as <em>Kafka Topic</em>; the qualified names are untouched, so a re-scan still updates in place (KSA-02, KSC-07)</td>
+<td>13.1a</td>
+</tr>
+<tr>
+<td>DV-193</td>
+<td>Webapp</td>
+<td>The stock dashboards' create and edit forms build a control for every relationship attribute definition of the type (<code>CreateEntityLayoutView.js</code> in <code>dashboardv2</code> and <code>dashboardv3</code>), so they list a <code>meanings</code> control beside the lineage ends. The stock detail page prints the entity's assigned glossary terms from <code>relationshipAttributes.meanings</code> (its associated-terms card, <code>DetailPageLayoutView.js</code>).</td>
+<td>The webapp editor builds no picker for <code>meanings</code> and a save body carries no <code>meanings</code> key, so a save leaves the entity's stored term assignments unchanged (EDT-36, AVW-05). The details properties table already drops the attribute under the legacy blacklist (DET-11). The stock dashboards the server serves still print the assigned terms, vendored unchanged (DD-017).</td>
+<td>No Aurelius screen shows an entity's assigned terms, so the picker wrote data no screen read back, and an edit could drop a term link a person could not see. The mutation door keeps the <code>meanings</code> key and its 5.2c bookkeeping (DD-612), so a future glossary screen re-enables the picker by dropping one name from the editor's field build.</td>
+<td>7.41</td>
+</tr>
+<tr>
+<td>DV-194</td>
+<td>Types</td>
+<td>Apache Atlas 2.4.0 has no data attribute type to change, so no Atlas rule breaks. The difference is in Aurelius's own model and its sample data: the m4i data attribute type stated three of its facts twice, as the attributes <code>hasPII</code>, <code>isKeyData</code> and <code>riskClassification</code> and as the five classifications <code>PII</code>, <code>key_data</code> and the three risk levels. All three are <code>isIndexable: false</code>, and no governance rule expression of the corpus names one of them.</td>
+<td>The type declares none of the three and holds type version <code>1.2</code>, and a tag reads only as a classification (ACA-01..03). 21 data attributes of <code>sample_data.zip</code> and the one of <code>small.zip</code> end untagged: they held <code>hasPII</code> null, <code>isKeyData</code> blank and <code>riskClassification</code> blank, which maps to no classification, and the increment invents none.</td>
+<td>The frozen 14.6 baselines hold unchanged, because no rule expression names any of the three names. The classification tags of every record stay as written, which <code>test__m4i_models.py</code> proves per bundle, and the editor answers no label for a removed attribute, which SHL-08 proves for both catalogues (ACA-05).</td>
+<td>18.6</td>
+</tr>
+<tr>
+<td>DV-195</td>
+<td>Types</td>
+<td>Apache Atlas 2.4.0 has no field type to change, so no Atlas rule breaks. The difference is in Aurelius's own model and its sample data: the m4i field type stored <code>optionalField</code> as a <code>string</code> and carried a second flag <code>hasContent</code>, and all 265 field records stored both as null. Two bundles shipped a governance rule over the second flag.</td>
+<td>The type holds <code>optionalField</code> as a <code>boolean</code> and no <code>hasContent</code>, at type version <code>1.2</code> (FFB-01). The bundles lose the key from 264 field records of <code>sample_data.zip</code> and the one of <code>small.zip</code>, and both rule bundles lose the rule, which leaves 65 rules (FFB-02, FFB-03). The editor builds a checkbox for the flag (FFB-05).</td>
+<td>Neither flag said anything as a string, because every record stored null and the boolean type accepts null, so no stored value changes. The content flag named no fact the model states elsewhere, and its rule stood inactive since 12.7d (DV-173), so it judged nothing and read nothing. A warm store keeps the string until a rebuild, because the loader skips a file whose attribute type changed (FFB-04, DD-830).</td>
+<td>18.7</td>
+</tr>
+<tr>
+<td>DV-196</td>
+<td>Types</td>
+<td>Apache Atlas 2.4.0 has no data dictionary to change, so no Atlas rule breaks. The difference is in Aurelius's own model and its sample data: the m4i data dictionary declared a second prose attribute <code>definition</code> on eight types beside Apache Atlas's own <code>description</code>, the corpus split its prose 181 to 4 across the two keys, and <code>owner</code>, <code>displayName</code> and <code>userDescription</code> held one non-null value across 1,231 m4i entities.</td>
+<td>The dictionary declares no <code>definition</code> attribute, the eight types move a type version, and the six that no supertype gives <code>description</code> declare it (SPA-01, DD-832). The three bundles hold their prose under <code>description</code> alone and keep 65 rules (SPA-02). The vector, document, matcher, card, details box and editor name <code>description</code> only, and the editor builds no field for the three base attributes (SPA-05..07, EDT-37).</td>
+<td>Apache Atlas owns the key: <code>Asset</code> declares <code>description</code>, and the stock dashboards Aurelius serves read it, so the m4i key was the duplicate (ADR 070, ADR 058). The frozen 14.1 oracle moves its <code>definition</code> diff count from 87 to 91, because two datasets and two generic processes held prose under <code>description</code> alone (<code>test__legacy_app_search_fixtures.py</code>). The document and card keep the <code>definition</code> field name (DD-833). A warm catalogue keeps the attribute and still loads (SPA-03, ACA-04).</td>
+<td>18.8</td>
 </tr>
 </tbody>
 </table>
