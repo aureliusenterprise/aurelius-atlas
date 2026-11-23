@@ -258,6 +258,23 @@ def test__validate_entity_admits_the_webapp() -> None:
     assert names(off, "NetworkPolicy") == set()
 
 
+@pytest.mark.covers(rules=["DTM-10"])
+def test__data2model_admits_the_browser_client() -> None:
+    """The chart verifies the browser client's own audience (8.1, AUX-04, DD-385).
+
+    The lineage app forwards the user's token to `/extract` (LM-04), so the
+    browser's audience must pass here — the chart's first values named the
+    app's own client id, a client no realm defines, and every lineage extract
+    401'd into the webapp's 502 alert. No extra-audiences join: the app keeps
+    no own client identity at the boundary (the validate-entity shape).
+    """
+    chart = AUX_CHARTS["data2model"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    envs = env_map(_app(docs))
+    assert env_value(envs, "AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE") == "aurelius"
+    assert "AURELIUS_ATLAS_DATA2MODEL_AUTH_EXTRA_AUDIENCES" not in envs
+
+
 @pytest.mark.covers(rules=["EDT-22"])
 def test__validate_entity_admits_the_browser_client() -> None:
     """The chart verifies the browser client's own audience (7.24, DD-445).

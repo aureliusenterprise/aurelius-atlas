@@ -51,8 +51,11 @@ the webapp's parser's input.
 - `project.json` — `serve` depends on dev Keycloak (tokens) + observability (the OTLP
   leg); `test`/`e2e`/`build`/`docker-*`/`decrypt` are inferred by `tools/plugins/python.ts`.
 - Auth is the shared lib (`aurelius-atlas-auth`, DD-197): `auth.require_auth` on the
-  route, audience `aurelius-atlas-data2model` (tokens minted for another client are
-  rejected, AUX-04/AUX-05). `/extract` is read-only, so no write role.
+  route, audience `aurelius`. That is the webapp's client, because the lineage chain
+  forwards the user's token (AUX-04). Every runnable context sets it: `.env`, the
+  compose piece, and the chart. The settings default `aurelius-atlas-data2model` (the
+  app's own client id) serves only the unit tests. `/extract` is read-only, so no write
+  role.
 - OTLP export is app-owned (DD-196/DD-197): `otel_*` settings, `otel-data2model` client,
   collector leg `https://localhost:4319`. Unset = no OTLP export (AUX-03, DD-210).
 - Every HTTP call is visible (DD-210): `HTTPX2ClientInstrumentor` covers the httpx2
@@ -84,8 +87,9 @@ the webapp's parser's input.
 
 `helm/` — the `atlas-data2model` chart (CHT-02, workloads in 10.3a):
 port 21001, probes, the `AURELIUS_ATLAS_DATA2MODEL_` settings env, the
-Keycloak audience (`aurelius-atlas-data2model`), and the OTLP ingest
-identity. Its deployment/service/sa/pdb/certificate templates are the shipped
+Keycloak audience (`aurelius`, the webapp's client. See the auth bullet above
+and `test__charts_aux.py`), and the OTLP ingest identity. Its
+deployment/service/sa/pdb/certificate templates are the shipped
 aux-API shape, kept as a copy per chart by design (DD-290) — no shared
 library chart. The `Certificate` (CHT-27) carries SANs = the Service name +
 FQDNs and its whole Secret (tls.crt/key + ca.crt) mounts at
