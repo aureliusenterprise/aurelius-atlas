@@ -46,13 +46,23 @@
             />
         }
     </div>
-    @if (classifications().length > 0) {
+    @if (classifications().length > 0 || propagatedClassifications().length > 0) {
         <div class="block aurelius-details-classifications field is-grouped is-grouped-multiline">
             @for (name of classifications(); track name) {
                 <div class="control">
                     <aurelius-atlas-ui-classification-chip [label]="name" />
                 </div>
             }
+            <!-- The propagated tags ride the same row (VDR-12), marked by the
+                 chip's own hoverable trigger (UIC-16) whose dropdown names the
+                 entities each came from — the legacy header's separate
+                 "Propagated Classifications" row, kept as one row here (DD-834).
+                 The whole control is the shared part the cards mount too
+                 (DD-836): icon, name and path per source row. -->
+            <aurelius-atlas-webapp-propagated-chips
+                [entries]="propagatedClassifications()"
+                (sourceClicked)="onSourceClick($event)"
+            />
         </div>
     }
     <aurelius-atlas-ui-breadcrumbs

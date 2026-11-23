@@ -39,18 +39,37 @@ class CardQuality(AtlasModel):
 
 
 class RelationEntity(AtlasModel):
-    """One related entity: its GUID and name, and its type and state where the reader read them (AVS-02, AVS-04)."""
+    """One related entity: its GUID and name, and its type and state where the reader read them (AVS-02, AVS-04).
+
+    ``breadcrumb`` holds the trail its document stored, top down, so a propagation source's row can show where
+    the source sits, as a card's own trail does (VDR-12, DD-836). Only a related entity read with a document
+    that has parents carries it: a section's end or a source with no trail answers none, so no answer gains a
+    key it did not hold before (AVS-05).
+    """
 
     guid: str
     name: str | None = None
     type_name: str | None = None
     status: EntityStatus | None = None
+    breadcrumb: list[CardBreadcrumb] | None = None
 
 
 class EntityRelation(AtlasModel):
     """The entities related under one attribute name: a stored pair or the entity's own end (AVS-02, AVS-04)."""
 
     attribute: str
+    entities: list[RelationEntity] = Field(default_factory=list)
+
+
+class ClassificationSource(AtlasModel):
+    """One classification the entity carries by propagation, and the entities it came from (AVS-04).
+
+    ``typeName`` names the classification; ``entities`` holds the entities the instance is attached to, each with
+    the name the store answered. A source the store no longer has answers an empty list: the tag stays the
+    entity's to show, only its origin is unknown.
+    """
+
+    type_name: str
     entities: list[RelationEntity] = Field(default_factory=list)
 
 
@@ -65,6 +84,8 @@ class EntityCard(AtlasModel):
     attribute (DD-614, narrowed by 18.8/SPA-05 when the m4i dictionary retired its own ``definition``).
     ``stale`` is the stored document's mark and
     ``updateTime`` the entity's: the shape's whole freshness claim (AVS-06, DD-583).
+    ``propagatedClassifications`` names the classifications propagation brought with the entities each came
+    from: every door that reads them fills it, and a door that answers none leaves it empty (VDR-12, DD-836).
     """
 
     guid: str
@@ -89,6 +110,7 @@ class EntityCard(AtlasModel):
     stale: bool = False
     has_parent: bool = False
     """Whether the entity holds any parent, from its document (RPS-06, DD-758); false without a document."""
+    propagated_classifications: list[ClassificationSource] = Field(default_factory=list)
 
     @classmethod
     def of(cls, view: EntityView) -> EntityCard:

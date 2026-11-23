@@ -11,7 +11,7 @@ import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.relationship_store import RelationshipStore
-from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES, sample_entity
+from aurelius_atlas_core.testing.entity_samples import CLASSIFICATION_TYPES, SAMPLE_TYPES, sample_entity
 from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelationship
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_store_es.testing.fake import FakeClient
@@ -202,6 +202,63 @@ async def test__the_read_door_answers_the_ends_of_its_entity_own_relationships(
     await RelationshipStore(store, user="u").delete_by_id(created.guid)
     after = (await seeded.get(f"{VIEW}/{TABLE}")).json()
     assert after["sections"] == []  # a deleted edge answers nothing (DD-604)
+
+
+@pytest.mark.covers(f"{R}.read", rules=["VDR-05"])
+async def test__the_read_door_answers_a_propagated_tag_with_the_entity_it_came_from(
+    seeded: httpx.AsyncClient, app: FastAPI
+) -> None:
+    """The view names a tag propagated onto the entity, and the source it rode in from (VDR-05, DD-835).
+
+    ``a`` carries ``c_pii``; the process reads it and writes ``b``, so the tag propagates downstream (PRO-01).
+    ``b``'s view answers the name with ``a`` as its source, and never moves it into the entity's own names.
+    """
+    created = await seeded.post("/api/atlas/v2/types/typedefs", json=CLASSIFICATION_TYPES)
+    assert created.status_code == 200, created.text
+    store: EntityStore = app.state.entity_store
+    registry = store.registry
+    a = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    b = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    p1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+    await store.write(
+        [
+            EntityChange(sample_entity(registry, "p_data", a, {"qualifiedName": "a", "name": "A"})),
+            EntityChange(sample_entity(registry, "p_data", b, {"qualifiedName": "b", "name": "B"})),
+            EntityChange(sample_entity(registry, "p_process", p1, {"qualifiedName": "p1", "name": "P1"})),
+        ]
+    )
+    await RelationshipStore(store, user="u").create(
+        AtlasRelationship(
+            type_name="p_input",
+            end1=AtlasObjectId(guid=a, type_name="p_data"),
+            end2=AtlasObjectId(guid=p1, type_name="p_process"),
+        )
+    )
+    await RelationshipStore(store, user="u").create(
+        AtlasRelationship(
+            type_name="p_output",
+            end1=AtlasObjectId(guid=p1, type_name="p_process"),
+            end2=AtlasObjectId(guid=b, type_name="p_data"),
+        )
+    )
+    attached = await seeded.post(f"/api/atlas/v2/entity/guid/{a}/classifications", json=[{"typeName": "c_pii"}])
+    assert attached.status_code == 204, attached.text
+
+    view = (await seeded.get(f"{VIEW}/{b}")).json()
+    assert view["classificationNames"] == []  # the tag is a's, not b's (AVS-01)
+    assert view["propagatedClassifications"] == [
+        {"typeName": "c_pii", "entities": [{"guid": a, "name": "A", "typeName": "p_data", "status": "ACTIVE"}]}
+    ]
+
+    own = (await seeded.get(f"{VIEW}/{a}")).json()
+    assert own["classificationNames"] == ["c_pii"]  # attached here, so a's own (VDR-05)
+    assert own["propagatedClassifications"] == []
+
+    card = (await seeded.post(SEARCH, json={"query": "b"})).json()["cards"][0]
+    # a result line names the propagated tag and its source too (VDR-12, DD-836)
+    assert card["propagatedClassifications"] == [
+        {"typeName": "c_pii", "entities": [{"guid": a, "name": "A", "typeName": "p_data", "status": "ACTIVE"}]}
+    ]
 
 
 @pytest.mark.covers(f"{S}.search", f"{R}.read", rules=["AVR-08", "AVR-10", "MMS-09"])

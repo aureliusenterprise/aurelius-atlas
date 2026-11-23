@@ -158,6 +158,62 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
         expect(chips.map((chip: Element) => normalize(chip.textContent))).toEqual(["Has PII"]);
     });
 
+    it("marks a propagated tag on the card and names its sources (VDR-12, DD-836)", () => {
+        const { fixture, host } = mount({
+            ...CARD,
+            propagatedClassifications: [
+                {
+                    typeName: "PII",
+                    entities: [
+                        {
+                            guid: "src-1",
+                            name: "source_table",
+                            typeName: "m4i_dataset",
+                            breadcrumb: [{ guid: "d0", name: "Genomics", typeName: "m4i_data_domain" }],
+                        },
+                    ],
+                },
+            ],
+        });
+        // The propagated chip rides the card's own chip row, marked by the
+        // chip's trigger — the same control the header of the entity shows.
+        const chips = [...fixture.nativeElement.querySelectorAll("aurelius-atlas-ui-classification-chip")];
+        expect(chips).toHaveLength(2);
+        const marker = chips[1].querySelector(".tag.is-primary.dropdown.is-hoverable");
+        expect(marker?.getAttribute("title")).toBe("Is propagated");
+        // A source row shows a card line: the type icon, the name, and the
+        // path it sits on in place of the type name (DD-836). The row is a
+        // div — a button cannot hold the trail's links — and its name keeps
+        // a button, so the source stays keyboard-reachable (VDR-12).
+        const row = fixture.nativeElement.querySelector(".aurelius-details-source");
+        expect(row.tagName).toBe("DIV");
+        expect(normalize(row.querySelector(".aurelius-details-source-name")?.textContent)).toBe("source_table");
+        expect(row.querySelector("button.aurelius-details-source-name")).toBeTruthy();
+        expect(row.querySelector(".aurelius-details-source-icon fa-icon")).toBeTruthy();
+        expect(normalize(row.querySelector(".aurelius-details-source-path")?.textContent)).toBe("Genomics");
+        expect(fixture.nativeElement.querySelector(".aurelius-details-source-type")).toBeNull();
+        // The name button opens the source — and only the source: it stops
+        // bubbling, so no ancestor can also route (DD-836).
+        const name = row.querySelector("button.aurelius-details-source-name") as HTMLButtonElement;
+        expect(name.querySelector(".aurelius-details-source-icon fa-icon")).toBeTruthy();
+        name.click();
+        expect(host.last).toBe("src-1");
+        // The trail rides with its links on (the review asked for clickable
+        // crumbs): a crumb click names its own entity, never the source or
+        // the card.
+        const crumb = row.querySelector(".aurelius-details-source-path .breadcrumb a") as HTMLAnchorElement;
+        expect(crumb).toBeTruthy();
+        crumb.click();
+        expect(host.last).toBe("d0");
+    });
+
+    it("a card whose door answered no propagated field draws no propagated chip (DD-836)", () => {
+        const { fixture } = mount({ ...CARD, propagatedClassifications: undefined });
+        expect(fixture.nativeElement.querySelector(".tag.is-primary.dropdown.is-hoverable")).toBeNull();
+        // The own chip row is untouched.
+        expect(fixture.nativeElement.querySelectorAll("aurelius-atlas-ui-classification-chip")).toHaveLength(1);
+    });
+
     it("renders the description as markdown, omitted at none (VCF-01, VCF-03)", () => {
         const { fixture } = mount(CARD);
         const body = fixture.nativeElement.querySelector(".aurelius-card-description");

@@ -106,6 +106,12 @@ describe("ClassificationChip", () => {
         expect(trigger.querySelector(".dropdown-item strong").textContent).toBe("PII");
         expect(trigger.querySelector(".dropdown-item span").textContent).toBe("originates from the following sources:");
         expect(trigger.querySelector(".icon svg")).toBeTruthy();
+        // The lead line is one flex line of prose: Angular's template
+        // compaction drops the space between the two elements, so the class
+        // carrying the CSS gap must sit on the line that holds them (VDR-12).
+        const origin = trigger.querySelector(".aurelius-classification-chip-origin");
+        expect(origin.querySelector("strong")).toBeTruthy();
+        expect(origin.querySelector("span")).toBeTruthy();
     });
 
     it("projects the caller's sources rows into the dropdown (UIC-16, DD-189)", () => {
@@ -115,6 +121,23 @@ describe("ClassificationChip", () => {
         const rows = fixture.nativeElement.querySelectorAll(".dropdown-item.source-row");
         expect(rows).toHaveLength(1);
         expect(rows[0].textContent).toBe("Source entity");
+    });
+
+    it("gives the propagation trigger a keyboard-focusable button (VDR-12)", () => {
+        // Bulma's is-hoverable opens on :hover alone, so the marker's
+        // trigger must be a real button for Tab to reach the sources (the
+        // :focus-within rule that opens the menu is exercised in the webapp's
+        // e2e, where CSS applies).
+        host.propagated.set(true);
+        fixture.detectChanges();
+
+        const trigger = fixture.nativeElement.querySelector(".aurelius-classification-chip-propagated-trigger");
+        expect(trigger.tagName).toBe("BUTTON");
+        expect(trigger.getAttribute("aria-label")).toBe("Is propagated");
+        // The sources ride inside the same dropdown, so the tab order passes
+        // from the trigger into the menu.
+        const menu = fixture.nativeElement.querySelector(".dropdown-menu");
+        expect(menu.querySelector(".dropdown-item.source-row")).toBeTruthy();
     });
 
     it("is not a menu to assistive tech — the popover carries no menu roles (ROLE-MENU-MISUSE)", () => {

@@ -8,6 +8,22 @@
     display: block;
 }
 
+/* A trail seated inside a Bulma tag inherits the tag's icon margins, which
+   tuck a tag's leading icon into the tag's own padding with a negative
+   inline-start margin. A crumb clips to its own box, so that shove pushes
+   the icon out of it and cuts its side off, and the tag's trailing margin
+   is smaller than the breadcrumb's own. The crumb keeps the spacing
+   Bulma's breadcrumb rule asks for (UIC-11, DD-837). */
+.breadcrumb li .icon:first-child:not(:last-child) {
+    margin-inline-end: 0.5em;
+    margin-inline-start: 0;
+}
+
+.breadcrumb li .icon:last-child:not(:first-child) {
+    margin-inline-end: 0;
+    margin-inline-start: 0.5em;
+}
+
 .business {
     color: orange;
 }

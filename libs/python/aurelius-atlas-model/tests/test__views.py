@@ -10,6 +10,7 @@ from aurelius_atlas_model.instance import EntityStatus
 from aurelius_atlas_model.views import (
     CardBreadcrumb,
     CardQuality,
+    ClassificationSource,
     EntityCard,
     EntityRelation,
     EntityView,
@@ -49,6 +50,7 @@ def test__a_card_holds_the_identity_the_derived_trail_the_relations_and_the_qual
         "governed",
         "stale",
         "hasParent",
+        "propagatedClassifications",
     ]
     assert [str(info.alias) for info in CardBreadcrumb.model_fields.values()] == ["guid", "name", "typeName"]
     assert [str(info.alias) for info in CardQuality.model_fields.values()] == [
@@ -59,12 +61,19 @@ def test__a_card_holds_the_identity_the_derived_trail_the_relations_and_the_qual
         "ruleGuids",
     ]
     assert [str(info.alias) for info in EntityRelation.model_fields.values()] == ["attribute", "entities"]
-    assert [str(info.alias) for info in RelationEntity.model_fields.values()] == ["guid", "name", "typeName", "status"]
+    assert [str(info.alias) for info in RelationEntity.model_fields.values()] == [
+        "guid",
+        "name",
+        "typeName",
+        "status",
+        "breadcrumb",
+    ]
+    assert [str(info.alias) for info in ClassificationSource.model_fields.values()] == ["typeName", "entities"]
 
 
 @pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["AVS-04"])
 def test__a_view_is_a_card_plus_its_own_values_its_metadata_and_its_sections() -> None:
-    """The card's fields plus attributes, businessMetadata and sections, nothing else (AVS-04)."""
+    """The card's fields plus attributes, businessMetadata and sections (AVS-04)."""
     card = set(EntityCard.model_fields)
     extra = [str(info.alias) for name, info in EntityView.model_fields.items() if name not in card]
     assert extra == ["attributes", "businessMetadata", "sections"]
@@ -81,11 +90,14 @@ def test__the_card_of_a_view_keeps_the_shared_fields_and_drops_the_own_ones() ->
             attributes={"description": "kept out"},
             businessMetadata={"cost": {"centre": "C"}},
             sections=[{"attribute": "fields", "entities": [{"guid": "f"}]}],
+            propagatedClassifications=[{"typeName": "PII", "entities": [{"guid": "s"}]}],
         )
     )
     written = card.to_json()
 
     assert (card.name, [crumb.name for crumb in card.breadcrumb]) == ("N", ["Domain"])
+    # a result line names the propagation too, so the card keeps the field with its sources (VDR-12, DD-836)
+    assert written["propagatedClassifications"] == [{"typeName": "PII", "entities": [{"guid": "s"}]}]
     assert not {"attributes", "businessMetadata", "sections"} & set(written)
 
 
@@ -118,6 +130,7 @@ def test__a_card_writes_camel_case_names_and_no_null_keys() -> None:
         "quality": [],
         "stale": False,
         "hasParent": False,
+        "propagatedClassifications": [],
     }
     # No alias: the key is absent, as every unset field is (AVS-01, MMS-09).
     assert "typeAlias" not in EntityCard(guid="g", type_name="t").to_json()

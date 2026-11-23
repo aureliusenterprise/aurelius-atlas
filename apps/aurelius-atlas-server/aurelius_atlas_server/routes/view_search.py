@@ -46,6 +46,7 @@ async def search(
     # An empty body asks for everything, as App Search's engine reads one (ASE-04); the door's own
     # refusals answer VIEW_REFUSED through the error handler (AVR-13).
     weight = settings.hybrid_vector_weight if mode == "hybrid" else 1.0
-    return await ViewSearchEngine(found.documents, found.registry).search(
+    # The store fills each card's propagated tags with one batched read of the page (VDR-12, DD-836).
+    return await ViewSearchEngine(found.documents, found.registry, found.entity_store).search(
         {} if body is None else body, vector=vector, weight=weight
     )

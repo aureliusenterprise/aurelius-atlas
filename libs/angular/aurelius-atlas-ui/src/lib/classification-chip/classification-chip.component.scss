@@ -13,7 +13,76 @@
  * keep the dot in its exact seat; the grown box paints nothing outside
  * the dot, so nothing spills over the chip's edge either. (DD-336,
  * DD-337, from the 7.7a editor's review of small screens.)
+ *
+ * The propagated marker's keyboard reach (UIC-16, VDR-12): Bulma's
+ * `is-hoverable` opens its menu on `:hover` alone, so the sources are
+ * unreachable without a mouse. The marker's trigger is a button
+ * (keyboard-focusable, and it gives touch and click a press target);
+ * these rules open the menu on keyboard focus too — the `:focus-within`
+ * idiom the navbar (brand `_main.scss`) and the editor boxes use — and
+ * keep the focus ring visible on the marker.
  */
+.dropdown.is-hoverable:focus-within .dropdown-menu {
+    display: block;
+}
+
+/* The dropdown's lead line: the classification's name (bold) and the
+ * origin sentence, read as one line of prose. They are separate inline
+ * elements — the label can be any author text — and Angular's template
+ * compaction removes the space between them, so the gap is made here, in
+ * character units. The line never breaks: the review asked for the
+ * sentence to read as a sentence, so the menu grows to fit it instead of
+ * folding the phrase under the name (VDR-12). */
+.aurelius-classification-chip-origin {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0 0.5ch;
+    white-space: nowrap;
+}
+
+/* Bulma shrinks an absolutely positioned menu to its containing block
+ * (the trigger tag, which is only as wide as its glyph) and floors that
+ * with the min-width custom property. The nowrap lead line above must not
+ * overflow the menu's own background, so the chip lets its menu take its
+ * content's width; a host that wants a wider floor sets the min-width
+ * property as the webapp's part does (VDR-12, DD-837). The cap keeps a
+ * long classification name off the edge of the viewport, and the name
+ * takes the cut rather than the sentence (DD-837). */
+.aurelius-classification-chip-propagated .dropdown-menu {
+    max-width: 28rem;
+    width: max-content;
+}
+
+.aurelius-classification-chip-origin strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The sentence is the line's fixed half: the name above it is the one that
+ * takes the cut when the cap bites (DD-837). */
+.aurelius-classification-chip-origin span {
+    flex-shrink: 0;
+}
+
+/* The trigger button only seats the icon — Bulma paints the tag on the
+ * wrapper div — so the UA's button chrome goes. */
+.aurelius-classification-chip-propagated-trigger {
+    appearance: none;
+    background: none;
+    border: 0;
+    border-radius: inherit;
+    color: inherit;
+    cursor: inherit;
+    font: inherit;
+    margin: 0;
+    padding: 0;
+}
+
+.aurelius-classification-chip-propagated-trigger:focus-visible {
+    outline: 2px solid hsl(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l));
+    outline-offset: 1px;
+}
 @media screen and (pointer: coarse) {
     /* Three classes to outrank Bulma's `.delete.is-small` size rule —
      * and its `.tag .delete` margins, which are 0.25rem/-0.375rem here;

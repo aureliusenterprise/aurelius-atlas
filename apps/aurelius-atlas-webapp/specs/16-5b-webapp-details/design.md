@@ -103,7 +103,7 @@ unmapped crumb renders the raw name, as DET-26's badge does.
 
 ## DD-607. The chips answer the entity's own classifications
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-834
 - **Increment:** 16.5b
 - **Date:** 2026-11-14
 
@@ -165,3 +165,168 @@ entity, which is what DET-11 and DET-32 ask for (DV-177's scenario returns to `p
 editor's draft keeps the pairs under their type name (DD-608): the store ignores a key the type does
 not declare, so a save cannot write one. A unit pin covers a derived pair on its own and beside a
 read end naming the same GUID.
+
+## DD-834. The header marks the propagated tags and names where they came from
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-23
+
+**Decision.** The header's chip row carries both kinds, and the mark tells them apart (VDR-12):
+the entity's own names ride plain chips (VDR-05), and each name propagation brought rides the
+same row on the ui-lib chip's own propagated marker (UIC-16). The view answers the propagated
+names in a field of their own, `propagatedClassifications`: one entry per name, each listing the
+entities it came from (DD-835). The marker's dropdown names those entities, and a row routes to
+that entity's details. A name whose source the store no longer has keeps its entry with no
+entities: the tag stays the entity's to show, only its origin is unknown. This supersedes
+DD-607's clause that propagated tags stop showing, and DV-166 with it (DV-197 in the ledger).
+
+**Reason.** The legacy detail page split the entity's classifications by `entityGuid` and drew
+the propagated ones as a labelled row (dashboardv2's `DetailPageLayoutView`). A user asked where
+a tag on a field came from, and the screen had taken that answer away when 16.5b moved the header
+to the read door. The split stays what the store models (DD-090's two search fields), so the
+field carries it: the entity's own names never move, which is what the editor's diff and the
+mutation door's refusal rest on (DD-326, AVW-08).
+
+**Alternatives.**
+
+- Widen `classificationNames` with the propagated names: the editor saves that list, so a save
+  would try to attach a tag that belongs to its source (fails AVW-08).
+- The legacy's separate labelled row: a second structure to seat, for what the Aurelius chip
+  already marks and explains on hover.
+- A second request for the propagated names: a second read for one chip row (fails ADR 064 R1).
+- Group by name and count the sources, as the legacy's badge did: the legacy count answers
+  "how many", the source rows answer "where from", which is the question that was asked.
+
+**Consequences.** The door answers one field, grouped by name as the legacy's dedupe grouped it,
+and its click-to-tag-page becomes a click to the source entity's details — the tag page is the
+dashboard's, and the webapp has none. The ui-lib marker was hover-only Bulma (UIC-16); its trigger
+becomes a button and the menu opens on focus, so the keyboard reaches the sources. DD-836 lets the
+cards carry the same field, so a result line marks what its header marks.
+
+## DD-835. The read door reads the propagated tags in one batched round
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-23
+
+**Decision.** `read_propagations(store, stored)` (in `view_derivation`, beside `read_ends`) reads
+the entity's classification instances once, keeps the ones whose `entityGuid` names another
+entity, and reads those entities in one `get_many` (VDR-12). `view_of` takes the result as its
+`propagated` parameter and groups it by name into the view's entries. The read route passes it,
+and the mutation door's conflict view computes it the same way, so one answer shape serves both
+doors. The editor never sends the field, and the mutation door's parse ignores what it does not
+know, so a save round-trips it unchanged.
+
+**Reason.** The stored entity already lists every instance it carries, own and propagated alike
+(DD-090), so the split is one batched classification read and one entity read — the seam
+`read_ends` set for the same reason (DD-604): one entity, its own tags, one round. Deriving the
+sources from the stored pairs would key them by type name and lose the status the row shows, and
+searching them would split one answer across two indexes.
+
+**Alternatives.**
+
+- Derive the sources from the view's `sections`: pairs are relationship ends, not tag sources, and
+  a tag propagates over edges the entity never lists (PRO-04's walk).
+- Answer the tag's own classification instances instead: they name the type, not the entity the
+  tag rode in from, which is the fact the chip shows.
+- Leave the mutation door's conflict view without the field: the screen's conflict editor reads
+  the same view shape, and a field missing there reads as "nothing propagated" (fails R2).
+
+**Consequences.** The read door grows two batched store calls per open. A name the store lists
+whose instance document is gone answers nothing for that name, as the entity's own names already
+behave. The trace check's rule ids gain VDR-12 on `view_of` and on `read_propagations`.
+
+## DD-836. The search door fills the propagated tags, and a source row shows its path
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-23
+
+**Decision.** The field moves to the shared shape: `propagatedClassifications` lives on
+`EntityCard`, so `EntityView` keeps it through inheritance and every door that reads the tags
+fills it (VDR-12). `read_page_propagations(store, stored)` reads a whole page in the same two
+calls DD-835's single read uses: one `get_classifications` over the page's entities, one
+`get_many` over their sources (DD-836). A source answers a `breadcrumb` next to its name, and
+only when its document has parents. The webapp draws the chip and its source rows once, as one
+part the header and the card mount: a row shows the source's type icon, its name, and the stored
+path in place of the type name the first cut printed.
+
+**Reason.** The review asked for the tags on the result lines too: a list is where a user first
+sees a mark, and a card that hid it could only be explained by opening every row. A field on the
+shared shape is the family's own rule (ADR 064 R2), and one part is the family's other: the same
+entity cannot read differently on the two screens. The path replaces the type name because the
+row's name is already the entity, its type is its badge on the card, and the question the chip
+answers is where a tag came from. `breadcrumb` stays optional on a related entity so a section's
+end and a parentless source answer exactly what they answered before (AVS-05).
+
+**Alternatives.**
+
+- A second request for the page's tags: 50 cards, 50 reads on every search page (fails ADR 064
+  R1).
+- A card-only field beside the view's: the same name in two places, and `EntityCard.of` would
+  have to forget it (fails R2).
+- The path under the name and the type kept: three lines per row in a menu as wide as its card.
+- The card inventing its own row markup: the header's rows and the card's would drift the first
+  time either was touched.
+
+**Consequences.** A search page grows two store reads, whatever its page size. `EntityCard.of`
+projects the field, so a view turned into a card keeps it and the mutation door's answer can lose
+nothing. Every existing `RelationEntity` answer (a section's ends, a parentless source) stays
+byte-identical because the new key appears only with real crumbs. The part's rows stop their click
+from bubbling, so a source row opens the source and not the card it sits on. A tag whose source the
+store lost still marks the card, and its dropdown names no row, as VDR-12 had already left it.
+
+## DD-837. The source row's name is the button, and the path's crumbs are links
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-23
+
+**Decision.** The part's source row becomes a container of two controls instead of one whole-row
+button. The first line is a button holding the source's type icon and its name: it is what routes
+to the source's details, the name clips with an ellipsis and carries the full name as its tooltip.
+The second line is the path as one line of breadcrumbs with wrapping off and clipped on the inline
+axis only, and each crumb is a real link that routes to its own entity (amends VDR-12 as DD-836
+left it). The wider menu uses Bulma's own lever, `--bulma-dropdown-menu-min-width` set to 20rem on
+the chip, and grows to its content up to a cap so the dropdown's origin sentence reads as one line
+of prose (the chip carries that rule, not this part). The icon in front of a name or a crumb wears
+Bulma's small box and sits a quarter-em off its text, and it keeps its box whole: Bulma tucks a
+tag's leading icon into the tag's padding with a negative inline-start margin, and the dropdown
+lives inside the chip's tag, so both the part and the breadcrumbs undo that shove where they own
+the row (measured: the crumb icon sat 4.5px outside the box that clips it). Both controls stop
+their click, so a row on a card routes without opening the card (DD-836's consequence stands).
+
+**Reason.** The review previewed the menu and asked for wider rows, no line-splitting, and clickable
+breadcrumbs. The row cannot stay a single button once its path holds links: HTML forbids a link
+inside a button, and the app's accessibility lint forbids a click handler on a plain div. Giving
+the name the button keeps the keyboard route to the source (VDR-12 asks for it), and real anchors
+for the crumbs give it free to each crumb, which is what the details screen's own trail already
+does (DET-06). Clipping both lines keeps one row one height, so a menu of five sources stays
+scannable. The second preview asked for three more things: the sentence read as a sentence (so the
+menu takes the sentence's width rather than folding it), the crumb icons whole (so the clip stays
+inline-axis, since a 1rem icon has no room to spare in an 18px line), and less air in front of a
+name (so the icon drops to the small box and the em gap, Bulma's own icon-text spacing).
+
+**Alternatives.**
+
+- The whole row clickable again, crumbs as plain text: DD-836's first cut, superseded here because
+  the review wants to open an intermediate folder, not only the source.
+- A div row with its own click handler and restated hover, as the editor's token picker rows are:
+  rejected, the picker's rows are listbox options with that semantics, and here they would be a
+  button pretending to be a div (accessibility lint refuses).
+- The trail kept with wrapping on: one source then takes three lines of menu and pushes the others
+  out of view.
+- Per-crumb tooltips instead of clipping: the tooltip would cover the next crumb, which is the one
+  you hover next.
+- Both-axis clipping on the path, as the picker row's trail does: it shears the crumb icon, whose
+  box is taller than the small crumb's line. The picker's trail carries no icon on its crumbs, so
+  the idiom was safe there and is not here.
+- The menu left at its min-width with the sentence wrapped: DD-836's first cut, and the review
+  rejected the break.
+
+**Consequences.** VDR-12's sentence about what routes changes: the name routes to the source and a
+crumb routes to its crumb, so the specs name both clicks. The row's hover no longer paints as one
+Bulma item (Bulma styles only whole items), so the name button and the crumbs carry their own
+hover. The menu is wider than a small card's dropdown was: on a card the menu opens over the next
+card, which is what Bulma's `dropdown-content` positioning already handles.

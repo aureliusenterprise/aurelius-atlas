@@ -34,6 +34,7 @@ import { viewProperties } from "./property-filter";
 import { LineageModel } from "./lineage/lineage-model.component";
 import { LineageModelState } from "./lineage/lineage-state";
 import { CatalogueCard } from "../shared/catalogue-card.component";
+import { PropagatedChips, type PropagatedChipEntry } from "../shared/propagated-chips.component";
 import { DetailsGovQualityState } from "./sections/gov-quality.state";
 import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
@@ -79,6 +80,7 @@ import { cardTypeAlias } from "../shared/type-alias";
         Markdown,
         PeopleBox,
         PropertiesItem,
+        PropagatedChips,
         SectionStats,
         TypeName,
         RouterLink,
@@ -293,14 +295,31 @@ export class Details {
     /**
      * The classification chips' labels (DET-09, DD-379, VDR-05): the view's
      * attached classification names, each by its dictionary display name —
-     * the legacy chip's `name | translate`. Propagated tags are no longer
-     * shown (DV-166): the view answers owned names only, and the editor's
-     * box never let a propagated tag be edited (DD-326).
+     * the legacy chip's `name | translate`. These are the entity's own, and
+     * the only ones the editor can change (DD-326).
      */
     protected readonly classifications = computed(() =>
         (this.entity()?.classificationNames ?? [])
             .filter((name) => typeof name === "string" && name !== "")
             .map((name) => nameDisplay(name)),
+    );
+
+    /**
+     * The chips of the classifications propagation brought (VDR-05, VDR-12,
+     * DV-197): one per propagated name, each by its dictionary display name,
+     * with the entities it came from as its chip's sources — the rows the
+     * shared part draws (icon, name, path; DD-836). Both doors answer these
+     * now (the cards too), and the header shows the entity it opened.
+     */
+    protected readonly propagatedClassifications = computed<PropagatedChipEntry[]>(() =>
+        (this.entity()?.propagatedClassifications ?? [])
+            .filter((entry) => typeof entry.typeName === "string" && entry.typeName !== "")
+            .map((entry) => ({
+                label: nameDisplay(entry.typeName),
+                sources: (entry.entities ?? []).filter(
+                    (source) => typeof source.guid === "string" && source.guid !== "",
+                ),
+            })),
     );
 
     /**
@@ -462,6 +481,15 @@ export class Details {
      * @param guid the entity the crumb points at
      */
     protected onCrumbClick(guid: string): void {
+        void this.router.navigate(["/search/details", guid]);
+    }
+
+    /**
+     * A propagation source was clicked (VDR-12): the same route the crumbs
+     * take, so a tag's origin is one click away.
+     * @param guid the entity the classification is attached to
+     */
+    protected onSourceClick(guid: string): void {
         void this.router.navigate(["/search/details", guid]);
     }
 

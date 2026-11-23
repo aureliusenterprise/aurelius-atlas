@@ -32,12 +32,19 @@ from aurelius_atlas_core.app_search_schema import (
     known,
 )
 from aurelius_atlas_core.entity_documents import SearchDocuments
+from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH
 from aurelius_atlas_core.search_aggregator import ASSET_ENTITY_TYPE, OWNER_ATTRIBUTE
 from aurelius_atlas_core.search_fields import KEYWORD, field_name, kind_of
 from aurelius_atlas_core.search_query import FACET_SIZE, MAX_NEAREST, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
-from aurelius_atlas_core.view_derivation import QUALITY_DIMENSIONS, card_of, view_of
+from aurelius_atlas_core.view_derivation import (
+    QUALITY_DIMENSIONS,
+    Propagations,
+    card_of,
+    read_page_propagations,
+    view_of,
+)
 
 VIEW_ENGINE = "view"
 """The door's population by name: every active entity, typed out by ``filters.typeName`` (AVR-11, DD-586)."""
@@ -335,12 +342,20 @@ def _refuse(messages: list[str]) -> NoReturn:
 
 
 class ViewSearchEngine:
-    """The search door over ``documents``' entity index, typed by ``registry`` (AVR-08, DD-584)."""
+    """The search door over ``documents``' entity index, typed by ``registry`` (AVR-08, DD-584).
 
-    def __init__(self, documents: SearchDocuments, registry: TypeRegistry) -> None:
-        """The door reading ``documents`` and naming attributes and fields through ``registry``."""
+    ``store`` lets the door fill each card's propagated classifications with one batched read of the page
+    (VDR-12, DD-836); without it the door answers the field empty, as a door that reads none does (DD-835).
+    """
+
+    def __init__(self, documents: SearchDocuments, registry: TypeRegistry, store: WriteStore | None = None) -> None:
+        """The door reading ``documents`` and naming attributes and fields through ``registry``.
+
+        ``store`` fills each card's propagated classifications over the whole page (VDR-12, DD-836).
+        """
         self._documents = documents
         self._registry = registry
+        self._store = store
 
     async def search(
         self, body: object, *, vector: Sequence[float] | None = None, weight: float = 1.0
@@ -378,8 +393,11 @@ class ViewSearchEngine:
         if SERVICE_TYPE in request.facets:
             feed = aggregations.get(_FEED, aggregations.get("typeName#0", {})).get("buckets", [])
             facets[SERVICE_TYPE] = _service_types(self._registry, feed)[: request.facets[SERVICE_TYPE].size]
+        entities = [_stored(hit["_source"]) for hit in hits["hits"]]
+        # The page's propagated tags ride its cards, two reads for the whole page (VDR-12, DD-836).
+        read = await read_page_propagations(self._store, entities) if self._store is not None else {}
         return {
-            "cards": [_card(hit["_source"], self._registry).to_json() for hit in hits["hits"]],
+            "cards": [_card(entity, self._registry, read.get(entity.guid)).to_json() for entity in entities],
             "facets": facets,
             "total": int(hits["total"]["value"]),
         }
@@ -438,13 +456,21 @@ def _single_type(body: object) -> str | None:
     return None
 
 
-def _card(source: Mapping[str, Any], registry: TypeRegistry) -> EntityCard:
-    """One hit's card: the view of its stored document, projected (AVR-08); its type names the attributes."""
-    stored = StoredEntity.model_validate(source)
+def _stored(source: Mapping[str, Any]) -> StoredEntity:
+    """One hit's stored entity, as the index holds it."""
+    return StoredEntity.model_validate(source)
+
+
+def _card(stored: StoredEntity, registry: TypeRegistry, propagated: Propagations | None = None) -> EntityCard:
+    """One hit's card: the view of its stored document, projected (AVR-08); its type names the attributes.
+
+    ``propagated`` carries the tags the page's batched read found for this entity; without them the card
+    answers none, as a door without a store does (VDR-12, DD-836).
+    """
     entity_type = registry.entity_type(stored.type_name)
     if entity_type is None:  # pragma: no cover - the store only holds entities of known types
         raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, f"the type {stored.type_name} of entity {stored.guid}")
-    return card_of(view_of(stored, entity_type))
+    return card_of(view_of(stored, entity_type, propagated=propagated))
 
 
 def _answered_facets(facets: Mapping[str, Facet], aggregations: Mapping[str, Any]) -> dict[str, list[Any]]:

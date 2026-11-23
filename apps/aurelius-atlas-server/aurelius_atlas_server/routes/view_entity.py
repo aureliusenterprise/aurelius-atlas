@@ -8,7 +8,7 @@ answers the live view of the written entity (AVW-07), its refusals in the door's
 its conflicts beside the stored view (DD-591).
 """
 
-from aurelius_atlas_core.view_derivation import read_ends, view_of
+from aurelius_atlas_core.view_derivation import read_ends, read_propagations, view_of
 from aurelius_atlas_core.view_mutation import ViewMutationDoor, ViewVersionConflictError
 from aurelius_atlas_model.errors import validate_guid
 from aurelius_atlas_model.params import EntityWriteParams
@@ -52,7 +52,8 @@ async def _live_view(store: Store, guid: str) -> EntityView | None:
     if entity_type is None:  # pragma: no cover - the store only holds entities of known types
         raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, f"the type {found.entity.type_name} of entity {guid}")
     ends = await read_ends(store, found.entity, entity_type)  # VDR-02, DD-604: one batched read of the entity's ends
-    return view_of(found.entity, entity_type, ends=ends)
+    propagated = await read_propagations(store, found.entity)  # VDR-05, DD-835: and one of the tags' sources
+    return view_of(found.entity, entity_type, ends=ends, propagated=propagated)
 
 
 @VIEW_ENTITY.post("/entity", responses=VIEW_RESULT, **VIEW_BODY)
