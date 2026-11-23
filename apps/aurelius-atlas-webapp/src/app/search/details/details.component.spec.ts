@@ -260,7 +260,11 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const sources = [...controls[2].querySelectorAll(".aurelius-details-source")];
         expect(sources).toHaveLength(2);
         expect(normalize(sources[0].querySelector(".aurelius-details-source-name")?.textContent)).toBe("source_table");
-        expect(sources[0].querySelector(".aurelius-details-source-icon fa-icon")).toBeTruthy();
+        // The icon wears the type map's family ink, as a badge's or a crumb's
+        // does (DET-26) — a DataSet's icon is `technical`.
+        const sourceIcon = sources[0].querySelector(".aurelius-details-source-icon fa-icon");
+        expect(sourceIcon).toBeTruthy();
+        expect(sourceIcon?.classList.contains("technical")).toBe(true);
         // The path is the stored parents only — the source's own name is the
         // row's, so the crumb trail of the row must not repeat it.
         expect(normalize(sources[0].querySelector(".aurelius-details-source-path")?.textContent)).toBe("Genomics");
@@ -278,11 +282,32 @@ describe("Details data spine (DET-08..DET-13)", () => {
         arrive(fixture, httpMock, PROPAGATED);
 
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
-        const source = compiled.querySelector(".aurelius-details-source") as HTMLButtonElement;
-        expect(source.tagName).toBe("BUTTON"); // keyboard-reachable (VDR-12)
-        source.click();
+        // The row is a container — a button cannot hold the trail's links
+        // (DD-836) — and the source's activation is its name button, which
+        // carries the icon and stays the keyboard path (VDR-12).
+        const row = compiled.querySelector(".aurelius-details-source") as HTMLElement;
+        expect(row.tagName).toBe("DIV");
+        const name = row.querySelector("button.aurelius-details-source-name") as HTMLButtonElement;
+        expect(name.querySelector(".aurelius-details-source-icon fa-icon")).toBeTruthy();
+        name.click();
 
+        expect(navigate).toHaveBeenCalledTimes(1);
         expect(navigate).toHaveBeenCalledWith(["/search/details", "src-1"]);
+    });
+
+    it("routes to a breadcrumb of the source's path, not to the source (VDR-12, DD-836)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, PROPAGATED);
+
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        // The trail rides inside the row with its links on: a crumb names its
+        // own entity, and its click must not also open the source.
+        const crumb = compiled.querySelector(".aurelius-details-source-path .breadcrumb a") as HTMLAnchorElement;
+        expect(crumb).toBeTruthy();
+        crumb.click();
+
+        expect(navigate).toHaveBeenCalledTimes(1);
+        expect(navigate).toHaveBeenCalledWith(["/search/details", "dom-1"]);
     });
 
     it("still marks a propagated tag whose source the store lost (VDR-12)", () => {

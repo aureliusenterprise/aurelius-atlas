@@ -276,3 +276,44 @@ nothing. Every existing `RelationEntity` answer (a section's ends, a parentless 
 byte-identical because the new key appears only with real crumbs. The part's rows stop their click
 from bubbling, so a source row opens the source and not the card it sits on. A tag whose source the
 store lost still marks the card, and its dropdown names no row, as VDR-12 had already left it.
+
+## DD-837. The source row's name is the button, and the path's crumbs are links
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-23
+
+**Decision.** The part's source row becomes a container of two controls instead of one whole-row
+button. The first line is a button holding the source's type icon and its name: it is what routes
+to the source's details, the name clips with an ellipsis and carries the full name as its tooltip.
+The second line is the path as one line of breadcrumbs with wrapping off and overflow clipped, and
+each crumb is a real link that routes to its own entity (amends VDR-12 as DD-836 left it). The
+wider menu uses Bulma's own lever, `--bulma-dropdown-menu-min-width` set to 20rem on the chip, so
+the name and its path have room on one line each. Both controls stop their click, so a row on a
+card routes without opening the card (DD-836's consequence stands).
+
+**Reason.** The review previewed the menu and asked for wider rows, no line-splitting, and clickable
+breadcrumbs. The row cannot stay a single button once its path holds links: HTML forbids a link
+inside a button, and the app's accessibility lint forbids a click handler on a plain div. Giving
+the name the button keeps the keyboard route to the source (VDR-12 asks for it), and real anchors
+for the crumbs give it free to each crumb, which is what the details screen's own trail already
+does (DET-06). Clipping both lines keeps one row one height, so a menu of five sources stays
+scannable.
+
+**Alternatives.**
+
+- The whole row clickable again, crumbs as plain text: DD-836's first cut, superseded here because
+  the review wants to open an intermediate folder, not only the source.
+- A div row with its own click handler and restated hover, as the editor's token picker rows are:
+  rejected, the picker's rows are listbox options with that semantics, and here they would be a
+  button pretending to be a div (accessibility lint refuses).
+- The trail kept with wrapping on: one source then takes three lines of menu and pushes the others
+  out of view.
+- Per-crumb tooltips instead of clipping: the tooltip would cover the next crumb, which is the one
+  you hover next.
+
+**Consequences.** VDR-12's sentence about what routes changes: the name routes to the source and a
+crumb routes to its crumb, so the specs name both clicks. The row's hover no longer paints as one
+Bulma item (Bulma styles only whole items), so the name button and the crumbs carry their own
+hover. The menu is wider than a small card's dropdown was: on a card the menu opens over the next
+card, which is what Bulma's `dropdown-content` positioning already handles.

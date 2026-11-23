@@ -2193,23 +2193,29 @@ def _a_tag_propagates_down_an_edge(
 
 
 def _the_propagated_chip_menu_names_its_source(page: Page, marker: Locator, tag: str, source_name: str) -> Locator:
-    """The marked chip's menu reads as prose and lists the source with its icon (VDR-12, DD-836).
+    """The marked chip's menu reads as prose and lists the source by its name (VDR-12, DD-836).
 
     The trigger is focused first: Bulma's `is-hoverable` opens on hover alone,
     so the keyboard path is the one the scenario drives. The lead line keeps a
     space between the tag and the origin sentence — Angular's template
     compaction removes the whitespace between the two elements, so the check
-    reads the rendered text, which fails when the gap is missing. The source
-    row shows the source's type icon and its name, where the first cut printed
-    its type (DD-836).
+    reads the rendered text, which fails when the gap is missing. The row shows
+    the source's name where the first cut printed its type (DD-836); its type
+    icon and path ride the type map and the stored trail, which the seeded base
+    model has neither of — the component specs pin those with a mapped, parented
+    type. The row's name button opens the source (a crumb would name its own
+    entity, DD-836), so the caller clicks what this returns.
     """
     marker.locator("button.aurelius-classification-chip-propagated-trigger").focus()
     origin = page.locator(".aurelius-classification-chip-origin")
     assert " ".join(origin.inner_text().split()) == f"{tag} originates from the following sources:"
-    source_row = page.locator("button.aurelius-details-source").filter(has_text=source_name)
+    # The row is a container — a button cannot hold the trail's links (DD-836) —
+    # and the name button is the source's activation, the keyboard path too.
+    source_row = page.locator(".aurelius-details-source").filter(has_text=source_name)
     expect(source_row).to_be_visible()
-    expect(source_row.locator(".aurelius-details-source-icon svg")).to_be_visible()
-    return source_row
+    name_button = source_row.locator("button.aurelius-details-source-name")
+    expect(name_button).to_have_text(source_name)
+    return name_button
 
 
 # impact=major, likelihood=low (the header's read of propagated tags; the

@@ -182,16 +182,29 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
         const marker = chips[1].querySelector(".tag.is-primary.dropdown.is-hoverable");
         expect(marker?.getAttribute("title")).toBe("Is propagated");
         // A source row shows a card line: the type icon, the name, and the
-        // path it sits on in place of the type name (DD-836).
-        const row = fixture.nativeElement.querySelector("button.aurelius-details-source");
+        // path it sits on in place of the type name (DD-836). The row is a
+        // div — a button cannot hold the trail's links — and its name keeps
+        // a button, so the source stays keyboard-reachable (VDR-12).
+        const row = fixture.nativeElement.querySelector(".aurelius-details-source");
+        expect(row.tagName).toBe("DIV");
         expect(normalize(row.querySelector(".aurelius-details-source-name")?.textContent)).toBe("source_table");
+        expect(row.querySelector("button.aurelius-details-source-name")).toBeTruthy();
         expect(row.querySelector(".aurelius-details-source-icon fa-icon")).toBeTruthy();
         expect(normalize(row.querySelector(".aurelius-details-source-path")?.textContent)).toBe("Genomics");
         expect(fixture.nativeElement.querySelector(".aurelius-details-source-type")).toBeNull();
-        // The row click opens the source — and only the source: the row
-        // stops bubbling, so the card does not also route itself (DD-836).
-        row.click();
+        // The name button opens the source — and only the source: it stops
+        // bubbling, so no ancestor can also route (DD-836).
+        const name = row.querySelector("button.aurelius-details-source-name") as HTMLButtonElement;
+        expect(name.querySelector(".aurelius-details-source-icon fa-icon")).toBeTruthy();
+        name.click();
         expect(host.last).toBe("src-1");
+        // The trail rides with its links on (the review asked for clickable
+        // crumbs): a crumb click names its own entity, never the source or
+        // the card.
+        const crumb = row.querySelector(".aurelius-details-source-path .breadcrumb a") as HTMLAnchorElement;
+        expect(crumb).toBeTruthy();
+        crumb.click();
+        expect(host.last).toBe("d0");
     });
 
     it("a card whose door answered no propagated field draws no propagated chip (DD-836)", () => {
