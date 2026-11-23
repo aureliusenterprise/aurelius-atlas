@@ -2298,6 +2298,11 @@ def test__the_details_header_marks_a_propagated_tag_with_its_source(
 
         for guid in (target_guid, process_guid, source_guid):
             _delete_entity(authenticated, root_url, user_token, guid)
+        # The type stays referenced until the soft-deleted entities are purged
+        # (an async task), so this retry races the purge on top of the detaches
+        # above. It gets its own budget: a slow propagation recompute in the
+        # detach loop, or a slow purge, must not spend the type delete's time.
+        deadline = time.monotonic() + 60
         while True:
             removed = authenticated.request.delete(
                 urljoin(root_url, f"/api/atlas/v2/types/typedef/name/{tag}"),
