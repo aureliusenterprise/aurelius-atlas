@@ -8060,7 +8060,7 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>DV-166</td>
 <td>Webapp</td>
 <td>The details header's chips show every classification on the entity, the ones propagated onto it from tagged terms among them</td>
-<td>The chips show the classifications the entity owns: the view answers attached names only (VDR-05, AVS), and a propagated tag shows nowhere on the screen</td>
+<td><em>Superseded by DV-197 (16.5b):</em> The chips show the classifications the entity owns: the view answers attached names only (VDR-05, AVS), and a propagated tag shows nowhere on the screen</td>
 <td>The view family answers attached names only (DD-090's field), the editor's box never let a propagated tag be edited (DD-326), and the mutation door protects it from a save's diff (AVW-08) — the tag belongs to its source</td>
 <td>16.5b</td>
 </tr>
@@ -8287,6 +8287,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The dictionary declares no <code>definition</code> attribute, the eight types move a type version, and the six that no supertype gives <code>description</code> declare it (SPA-01, DD-832). The three bundles hold their prose under <code>description</code> alone and keep 65 rules (SPA-02). The vector, document, matcher, card, details box and editor name <code>description</code> only, and the editor builds no field for the three base attributes (SPA-05..07, EDT-37).</td>
 <td>Apache Atlas owns the key: <code>Asset</code> declares <code>description</code>, and the stock dashboards Aurelius serves read it, so the m4i key was the duplicate (ADR 070, ADR 058). The frozen 14.1 oracle moves its <code>definition</code> diff count from 87 to 91, because two datasets and two generic processes held prose under <code>description</code> alone (<code>test__legacy_app_search_fixtures.py</code>). The document and card keep the <code>definition</code> field name (DD-833). A warm catalogue keeps the attribute and still loads (SPA-03, ACA-04).</td>
 <td>18.8</td>
+</tr>
+<tr>
+<td>DV-197</td>
+<td>Webapp</td>
+<td>The stock detail page splits the entity's classifications by the entity each is attached to (<code>DetailPageLayoutView.js</code> in <code>dashboardv2</code>): those attached to other entities form a separate labelled "Propagated Classifications" row, deduped by type name with a count badge, each routing to the tag's page.</td>
+<td>The header's one chip row shows the entity's own tags plain, and each propagated name as a chip marked by the ui-lib marker (UIC-16), whose dropdown names the entities the tag came from and routes a row to that entity's details (VDR-12). Every door that reads them answers <code>propagatedClassifications</code>, one entry per name (DD-835, DD-836), so a card marks the same tags as that entity's header, and a source row shows its icon, name and path.</td>
+<td>The user asked where a tag on a field came from, and DV-166 had taken that answer away. The Aurelius chip already marks propagation and names it on hover, so a second labelled row would seat what the mark says (DD-834). The legacy count badge answered how many, and the source rows answer from where, which is the question. A source routes to its entity, as the webapp has no tag page. The editor's diff and the mutation door's refusal stand on the entity's own names, unchanged (DD-326, AVW-08).</td>
+<td>16.5b</td>
 </tr>
 </tbody>
 </table>
