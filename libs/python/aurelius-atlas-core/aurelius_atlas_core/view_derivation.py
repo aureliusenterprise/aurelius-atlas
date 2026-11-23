@@ -16,6 +16,7 @@ from aurelius_atlas_model.instance import RelationshipStatus
 from aurelius_atlas_model.views import (
     CardBreadcrumb,
     CardQuality,
+    CardVerdict,
     ClassificationSource,
     EntityCard,
     EntityRelation,
@@ -24,7 +25,7 @@ from aurelius_atlas_model.views import (
 )
 from aurelius_atlas_typesystem.entity_type import EntityType
 
-from aurelius_atlas_core.app_search_document import RELATION_FIELDS, ROLE_FIELDS, awaits_document
+from aurelius_atlas_core.app_search_document import RELATION_FIELDS, ROLE_FIELDS, StoredVerdict, awaits_document
 from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.graph_helper import collection_elements, other_end, relationship_type_name
 from aurelius_atlas_core.search_fields import own_classifications
@@ -43,6 +44,9 @@ type Propagations = Sequence[tuple[str, Sequence[StoredEntity]]]
 ``read_propagations`` answers this for the door that reads them; a door that answers none passes nothing, and
 the view then holds the field empty."""
 
+VERDICT_LIMIT = 100
+"""The rows one card's governance mark lists: the legacy card's page size (AVS-11, DD-839)."""
+
 
 def card_of(view: EntityView) -> EntityCard:
     """The card of a view: the shared fields, the entity's own values and sections left out (DD-581)."""
@@ -55,6 +59,7 @@ def view_of(
     *,
     ends: RelationEnds | None = None,
     propagated: Propagations | None = None,
+    verdicts: Sequence[StoredVerdict] | None = None,
 ) -> EntityView:
     """The view of one stored entity: its fields, its document's derived fields, and its sections (AVS-01, AVS-04).
 
@@ -62,7 +67,9 @@ def view_of(
     attributes; both are what a read of the type costs the door, not a join per entity. ``ends`` carries the
     entities of relationship attributes the door read, by attribute name; without them the sections hold the
     document's stored pairs only (AVS-08). ``propagated`` carries the propagated classifications and their
-    source entities the door read; without them the view answers none (VDR-05, DD-835).
+    source entities the door read; without them the view answers none (VDR-05, DD-835). ``verdicts`` carries
+    the entity's stored governance verdicts the door read; the card keeps the refused ones (AVS-11, DD-838),
+    and a door that answers none leaves the field empty.
     """
     document = stored.app_search
     stale = bool(document.stale) if document else awaits_document(stored)
@@ -85,6 +92,7 @@ def view_of(
         "breadcrumb": _breadcrumb(document) if document else [],
         "relations": _relations(document) if document else [],
         "quality": _quality(stored.quality_totals) if stored.quality_totals else [],
+        "verdicts": _verdicts(verdicts),
         "governed": stored.governed,
         "stale": stale,
         "has_parent": bool(document.hasparent) if document else False,
@@ -168,6 +176,24 @@ def _quality(totals: StoredQualityTotals) -> list[CardQuality]:
             )
         )
     return entries
+
+
+def _verdicts(verdicts: Sequence[StoredVerdict] | None) -> list[CardVerdict]:
+    """The card's refused verdict rows: sorted by rule name then GUID, capped (AVS-11, DD-839).
+
+    The store's documents answer every verdict of the entity (ASG-08); the card shows the refusals only, as
+    the legacy card's fetch did (``compliant: ['0']``). ``name`` is the rule's name and ``message`` the
+    verdict's ``noncompliant_message``, which the worker already fills from the rule or its kind's reason
+    (ASG-03). The cap is the legacy card's page size, and the sort keeps the dropdown stable between pages.
+    """
+    refused = sorted(
+        (verdict for verdict in verdicts or [] if verdict.compliant == "0"),
+        key=lambda verdict: (verdict.name, verdict.guid),
+    )
+    return [
+        CardVerdict(rule=verdict.guid, name=verdict.name, message=verdict.noncompliant_message)
+        for verdict in refused[:VERDICT_LIMIT]
+    ]
 
 
 def _own_attributes(stored: StoredEntity, entity_type: EntityType) -> dict[str, Any]:
@@ -359,3 +385,14 @@ async def read_page_propagations(store: WriteStore, stored: Sequence[StoredEntit
         ]
         for guid, instances in with_any.items()
     }
+
+
+async def read_page_verdicts(store: WriteStore, stored: Sequence[StoredEntity]) -> dict[str, list[StoredVerdict]]:
+    """The governance verdicts of many entities at once, keyed by entity GUID (VDR-13, DD-838).
+
+    The search door answers a page's cards, the read door its one entity, both through the documents
+    contract's ``verdicts_by_entity`` — one paged read of the verdicts index for the whole page, the pattern
+    ``read_page_propagations`` set (DD-836). The derivation keeps the refused rows (AVS-11); an entity with
+    no verdict documents answers nothing.
+    """
+    return await store.documents.verdicts_by_entity([entity.guid for entity in stored])

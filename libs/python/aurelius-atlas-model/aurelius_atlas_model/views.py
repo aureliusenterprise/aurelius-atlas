@@ -28,7 +28,7 @@ class CardQuality(AtlasModel):
     """One quality dimension's roll-up on a card: its score, the scores counted, their total, and the rules (AVS-01).
 
     ``dimension`` names the dimension or ``overall``; ``rule_guids`` lists the rules behind a field's totals
-    (LAS-12). The per-rule verdicts are not here: they live in their own index (ASG-03, DD-583).
+    (LAS-12). The refused per-rule verdicts ride the card itself, in ``verdicts`` (AVS-11, DD-838).
     """
 
     dimension: str
@@ -36,6 +36,19 @@ class CardQuality(AtlasModel):
     count: float = 0.0
     total: float = 0.0
     rule_guids: list[str] = Field(default_factory=list)
+
+
+class CardVerdict(AtlasModel):
+    """One non-compliant governance verdict on a card: the rule it refuses, named, and the message (AVS-11, DD-838).
+
+    ``rule`` is the rule's GUID and ``name`` its name; ``message`` is the verdict's ``noncompliant_message``
+    (ASG-03). These are the rows the card's governance mark counts and lists (VCF-19); the compliant verdicts
+    stay in their index (ASG-03, DD-839).
+    """
+
+    rule: str
+    name: str
+    message: str
 
 
 class RelationEntity(AtlasModel):
@@ -86,6 +99,8 @@ class EntityCard(AtlasModel):
     ``updateTime`` the entity's: the shape's whole freshness claim (AVS-06, DD-583).
     ``propagatedClassifications`` names the classifications propagation brought with the entities each came
     from: every door that reads them fills it, and a door that answers none leaves it empty (VDR-12, DD-836).
+    ``verdicts`` holds the refused governance verdicts the door joined from the verdicts index, in rule-name
+    order and capped (AVS-11, VDR-13, DD-838); ``governed`` stays the store's judged mark (ASG-06).
     """
 
     guid: str
@@ -106,6 +121,8 @@ class EntityCard(AtlasModel):
     breadcrumb: list[CardBreadcrumb] = Field(default_factory=list)
     relations: list[EntityRelation] = Field(default_factory=list)
     quality: list[CardQuality] = Field(default_factory=list)
+    verdicts: list[CardVerdict] = Field(default_factory=list)
+    """The refused governance verdicts the door joined (AVS-11, VDR-13); empty for an entity with none."""
     governed: bool | None = None
     stale: bool = False
     has_parent: bool = False

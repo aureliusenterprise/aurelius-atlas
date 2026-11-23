@@ -1,6 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
 import type { EntityCard as ViewCard } from "aurelius-atlas-data-access";
-import { Breadcrumbs, ClassificationChip, EntityCard, Markdown, PeopleBox, type PeopleRow } from "aurelius-atlas-ui";
+import {
+    Breadcrumbs,
+    ClassificationChip,
+    EntityCard,
+    GovQualityList,
+    Markdown,
+    PeopleBox,
+    type PeopleRow,
+} from "aurelius-atlas-ui";
 
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
@@ -25,6 +33,12 @@ const PERSON_ATTRIBUTE = "m4i_person";
  * of 16.5d kept as the fallback for a document still awaiting its
  * re-derive round (VCF-16, DD-628).
  *
+ * The card's governance mark (VCF-19, 16.5h) rides the shell's quality column,
+ * which only an entity the governance worker has judged opens (VCF-20): the
+ * mark is UIC-38's, fed straight from `card.verdicts` (AVS-11, VDR-13) — no
+ * fetch, no loading state, the mark paints with the card. An unjudged card
+ * draws no mark at all, not even the legacy's blanket green check (DV-198).
+ *
  * The results row and the details section card mount this one component
  * (VCF-05): the same entity cannot render differently on the two screens
  * twice. The badge carries the card's alias alone, no base-type suffix —
@@ -37,7 +51,7 @@ const PERSON_ATTRIBUTE = "m4i_person";
  */
 @Component({
     selector: "aurelius-atlas-webapp-catalogue-card",
-    imports: [Breadcrumbs, ClassificationChip, EntityCard, Markdown, PeopleBox, PropagatedChips],
+    imports: [Breadcrumbs, ClassificationChip, EntityCard, GovQualityList, Markdown, PeopleBox, PropagatedChips],
     // The demo's card body is a stack of blocks with a 16px gap; here the
     // body is the slotted content of the shell, so the rhythm lives on
     // [card-content]: a flex column with a fixed gap, and the chips field
@@ -62,9 +76,17 @@ const PERSON_ATTRIBUTE = "m4i_person";
             [typeAlias]="badgeAlias()"
             [typeIcon]="badgeIcon()?.icon"
             [typeIconClass]="badgeIcon()?.classIcon"
-            [showQuality]="false"
+            [showQuality]="showGovQuality()"
             (entityClicked)="cardClicked.emit($event)"
         >
+            @if (showGovQuality()) {
+                <!-- The governance mark, in the shell's quality column and
+                     nothing else (VCF-19, VCF-20): the rows are the door's
+                     joined refusals (AVS-11), each one its message and
+                     nothing under it. The card still knows the rule name
+                     (DD-839), and shows it in the details box. -->
+                <aurelius-atlas-ui-gov-quality-list card-quality [nonCompliant]="govQuality()" />
+            }
             <div card-content>
                 <aurelius-atlas-ui-breadcrumbs
                     class="aurelius-card-trail"
@@ -170,6 +192,24 @@ export class CatalogueCard {
                     (source) => typeof source.guid === "string" && source.guid !== "",
                 ),
             })),
+    );
+
+    /**
+     * Whether the card opens the quality column (VCF-20, DD-840): only an
+     * entity the governance worker has judged (`governed` true, AVS-01) draws
+     * a mark. `false` or absent is unjudged — not compliant — so the column
+     * stays closed and no check or warning shows.
+     */
+    protected readonly showGovQuality = computed(() => this.card().governed === true);
+
+    /**
+     * The mark's dropdown rows (VCF-19): the card's joined refusals straight
+     * through (AVS-11, VDR-13), each verdict its one message (DD-839 keeps
+     * the rule name on the wire for the details box). No fetch — the door
+     * already joined them, in rule-name order.
+     */
+    protected readonly govQuality = computed(() =>
+        (this.card().verdicts ?? []).map((verdict) => ({ message: verdict.message })),
     );
 
     /** The description text (VCF-03 as amended by SPA-05): the card's

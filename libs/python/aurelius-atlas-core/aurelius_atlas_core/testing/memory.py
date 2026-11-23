@@ -453,6 +453,19 @@ class MemoryEntityDocuments:
                 del self.verdicts[verdict_id]
         self.verdicts.update((verdict.id, verdict) for found in verdicts.values() for verdict in found)
 
+    async def verdicts_by_entity(self, entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]:
+        """The held verdicts of these entities, grouped by entity GUID in id order (ASG-08, DD-838).
+
+        The store's dict is keyed by verdict id, so the sort the Elasticsearch read gets from its query
+        comes from sorting the ids here. An entity with no verdicts answers no key.
+        """
+        wanted = set(entity_guids)
+        grouped: dict[str, list[StoredVerdict]] = {}
+        for verdict in (self.verdicts[guid_id] for guid_id in sorted(self.verdicts)):
+            if verdict.entity_guid in wanted:
+                grouped.setdefault(verdict.entity_guid, []).append(verdict)
+        return grouped
+
     def _all_versioned(self) -> list[VersionedEntity]:
         found = []
         for guid in sorted(self.entities):

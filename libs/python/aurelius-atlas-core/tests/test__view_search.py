@@ -1,4 +1,4 @@
-"""The search door of the view family over the entity index (AVR-02..09, AVR-11, AVR-13).
+"""The search door of the view family over the entity index (AVR-02..09, AVR-11, AVR-13, VDR-13).
 
 Every test opens the door over a fake store holding the entities it names, typed by the data dictionary's
 models, and asks it in the door's own shapes (DD-584). The last test sets the door over the sample catalogue:
@@ -10,8 +10,9 @@ from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core.app_search_answer import AppSearchEngine
-from aurelius_atlas_core.app_search_document import own_document
+from aurelius_atlas_core.app_search_document import StoredVerdict, own_document
 from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.search_fields import search_fields
 from aurelius_atlas_core.stored_entity import (
     StoredDimensionTotals,
@@ -237,6 +238,45 @@ async def test__the_answer_holds_cards_facets_and_a_total(m4i: TypeRegistry) -> 
     ]
     assert card["quality"][-1]["score"] == 0.75
     assert answer["facets"]["typeName"] == [{"value": "m4i_data_entity", "count": 1}]
+
+
+@pytest.mark.covers(X, f"{V}._card", rules=["VDR-13", "AVS-11"])
+async def test__a_card_carries_the_verdicts_the_door_joined(m4i: TypeRegistry) -> None:
+    """The door joins each card's refused governance verdicts from the verdicts index (VDR-13, AVS-11, DD-838).
+
+    One read of the verdicts index answers the whole page, the way the propagated classifications do (VDR-12);
+    an entity with no verdict documents answers the field empty, and a door without a store answers it empty
+    for every card.
+    """
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", FakeClient()))
+    await documents.prepare()
+    await documents.write([(entity, None) for entity in (hold(m4i, "d-1"), hold(m4i, "d-2"))])
+    refused = [
+        StoredVerdict(
+            id="d-1--r-z", entity_guid="d-1", guid="r-z", name="Zeta", compliant="0", noncompliant_message="no value"
+        ),
+        StoredVerdict(
+            id="d-1--r-a",
+            entity_guid="d-1",
+            guid="r-a",
+            name="Alpha",
+            compliant="0",
+            noncompliant_message="not carried",
+        ),
+        StoredVerdict(id="d-1--r-p", entity_guid="d-1", guid="r-p", name="Passes", compliant="1"),
+    ]
+    await documents.replace_verdicts({"d-1": refused})
+
+    answer = await ViewSearchEngine(documents, m4i, EntityStore(m4i, documents)).search({"limit": 10})
+    by_guid = {card["guid"]: card["verdicts"] for card in answer["cards"]}
+
+    assert by_guid["d-1"] == [
+        {"rule": "r-a", "name": "Alpha", "message": "not carried"},
+        {"rule": "r-z", "name": "Zeta", "message": "no value"},
+    ]  # refused only, by rule name (AVS-11)
+    assert by_guid["d-2"] == []  # no verdict documents: the field is there and empty (AVS-05)
+    bare = await ViewSearchEngine(documents, m4i).search({"limit": 10})
+    assert all(card["verdicts"] == [] for card in bare["cards"])  # a door without a store joins none (VDR-13)
 
 
 @pytest.mark.covers(X, f"{V}._card", f"{V}.door_fields", rules=["RPS-06"])

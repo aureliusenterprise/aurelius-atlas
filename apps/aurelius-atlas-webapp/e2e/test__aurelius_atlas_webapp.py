@@ -2877,6 +2877,103 @@ def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: 
             _delete_entity(authenticated, root_url, user_token, rule_guid)
 
 
+# impact=minor, likelihood=medium (the card's governance mark; the verdicts
+# land through the worker's round, so the wait is on the mark, not the seed)
+@pytest.mark.medium
+@pytest.mark.covers(rules=["VCF-19", "VCF-20", "VDR-13"])
+def test__the_results_card_draws_the_governance_mark(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The results card shows the joined verdicts; an unjudged card shows no mark (VCF-19, VCF-20, VDR-13).
+
+    16.5h over the deployed chain: the worker's round writes the verdicts, the
+    door joins them into the card, and the card paints the mark — one search
+    request, no per-card fetch (DV-198). The mark is the warning with its count
+    and a hover dropdown carrying the rule's refusal message (VCF-19). The two
+    seeds ride a run-scoped pair of types: only an ``m4i_`` type gets an App
+    Search document, and only a documented entity is judged (ASG-03), so a
+    plain ``DataSet`` could never carry a mark. One rule of the ruled type gives
+    the card exactly one refusal — the corpus's own rules never reach a run type,
+    so the count is this run's alone. The twin type carries no rule: it stays
+    unjudged, and its card opens no quality column at all, not even the legacy's
+    blanket green check (VCF-20, DD-840). The wait is on the mark, because the
+    verdicts arrive through the worker's round, not with the seed's answer.
+    Self-cleaned, types last (the purge precedes the typedef delete, ENS-09).
+    """
+    run = secrets.token_hex(4)
+    ruled_type, plain_type = f"m4i_{run}_govcard", f"m4i_{run}_plain"
+    name = f"zz{run}govcard"
+    message = f"zz{run} the record has no description"
+    seeded = authenticated.request.post(
+        urljoin(root_url, "/api/atlas/v2/types/typedefs"),
+        data=json.dumps(
+            {
+                "entityDefs": [
+                    # The pair rides DataSet like the editor scenario's runtime
+                    # types, so the seed needs only the two mandatory attributes.
+                    {"name": type_name, "superTypes": ["DataSet"], "attributeDefs": []}
+                    for type_name in (ruled_type, plain_type)
+                ]
+            }
+        ),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert seeded.status == 200, seeded.text()
+
+    guids = _seed_entities(authenticated, root_url, user_token, ruled_type, [name])
+    guid = guids["-0"]
+    rule_guid = _seed_gov_rule(
+        authenticated,
+        root_url,
+        user_token,
+        {
+            "name": f"zz{run}description-filled",
+            # The rule's qualified name is what binds it to the type (LAS-13,
+            # ASG-02): the ruled run type and nothing else.
+            "qualifiedName": f"{ruled_type}--zz{run}description-filled",
+            "active": "true",
+            "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
+            "dqattribute": "description",
+            "qualityDimension": "COMPLETENESS",
+            "compliantMessage": f"zz{run} the record describes itself",
+            "nonCompliantMessage": message,
+        },
+    )
+    # The unruled type (VCF-20): nothing judges it, so its card must draw no
+    # mark at all.
+    pname = f"zz{run}plaincard"
+    proc_guids = _seed_entities(authenticated, root_url, user_token, plain_type, [pname])
+
+    try:
+        authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={quote(f'{name} {pname}')}"))
+        rows = authenticated.locator(".result-row")
+        # The fresh seeds search asynchronously (the store's refresh lags the
+        # seed answer), so the row count waits like the mark below does.
+        expect(rows).to_have_count(2, timeout=30_000)
+
+        # The judged record's card: the warning with its count, waiting on the
+        # worker's round rather than the seed (ASG-06's write is what lands it).
+        row = rows.filter(has_text=name)
+        trigger = row.locator(".quality .aurelius-gov-quality-trigger")
+        expect(trigger).to_have_text("1x", timeout=90_000)
+
+        # The hover dropdown (UIC-38): the verdict's one message, and nothing
+        # under it (VCF-19) — the legacy's second line stayed empty.
+        trigger.hover()
+        dropdown = row.locator(".quality .dropdown-menu")
+        expect(dropdown).to_be_visible()
+        expect(dropdown.locator(".dropdown-item h6")).to_have_text(message)
+        expect(dropdown.locator(".dropdown-item p")).to_have_count(0)
+
+        # The unjudged card: no quality column, no check, no warning (VCF-20).
+        other = rows.filter(has_text=pname)
+        expect(other.locator(".quality")).to_have_count(0)
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+        _delete_entity(authenticated, root_url, user_token, rule_guid)
+        for proc_guid in proc_guids.values():
+            _delete_entity(authenticated, root_url, user_token, proc_guid)
+        _purge_and_drop_types(authenticated, root_url, user_token, [ruled_type, plain_type], [ruled_type, plain_type])
+
+
 # impact=major, likelihood=low (the drawer survives a dead call; a contained resilience path)
 @pytest.mark.medium
 @pytest.mark.covers(rules=["EDT-23"])

@@ -10,6 +10,7 @@ from aurelius_atlas_model.instance import EntityStatus
 from aurelius_atlas_model.views import (
     CardBreadcrumb,
     CardQuality,
+    CardVerdict,
     ClassificationSource,
     EntityCard,
     EntityRelation,
@@ -47,6 +48,7 @@ def test__a_card_holds_the_identity_the_derived_trail_the_relations_and_the_qual
         "breadcrumb",
         "relations",
         "quality",
+        "verdicts",
         "governed",
         "stale",
         "hasParent",
@@ -69,6 +71,7 @@ def test__a_card_holds_the_identity_the_derived_trail_the_relations_and_the_qual
         "breadcrumb",
     ]
     assert [str(info.alias) for info in ClassificationSource.model_fields.values()] == ["typeName", "entities"]
+    assert [str(info.alias) for info in CardVerdict.model_fields.values()] == ["rule", "name", "message"]
 
 
 @pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["AVS-04"])
@@ -128,6 +131,7 @@ def test__a_card_writes_camel_case_names_and_no_null_keys() -> None:
         "breadcrumb": [],
         "relations": [],
         "quality": [],
+        "verdicts": [],
         "stale": False,
         "hasParent": False,
         "propagatedClassifications": [],

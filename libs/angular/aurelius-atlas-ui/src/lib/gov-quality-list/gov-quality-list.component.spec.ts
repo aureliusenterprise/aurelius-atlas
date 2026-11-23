@@ -4,8 +4,8 @@ import { GovQualityList, GovQualityRow } from "./gov-quality-list.component";
 
 /** The rows one mocked validation leaves non-compliant. */
 const nonCompliant: GovQualityRow[] = [
-    { message: "This entity is missing a kibanaSpace", detail: "attribute: completeness" },
-    { message: "The entity has no business owner", detail: "attribute: businessOwner" },
+    { message: "This entity is missing a kibanaSpace" },
+    { message: "The entity has no business owner" },
 ];
 
 describe("GovQualityList", () => {
@@ -42,7 +42,7 @@ describe("GovQualityList", () => {
         expect(dropdown).toBeTruthy();
     });
 
-    it("lists every row: the message as the heading, the detail as the line (UIC-38)", async () => {
+    it("lists every row as its one message, with no line under it (UIC-38, DD-839)", async () => {
         const el = await setup(nonCompliant);
 
         const items = el.querySelectorAll(".dropdown-item");
@@ -50,7 +50,11 @@ describe("GovQualityList", () => {
         expect(items[0].querySelector("h6.title.is-6")?.textContent?.trim()).toBe(
             "This entity is missing a kibanaSpace",
         );
-        expect(items[1].querySelector("p")?.textContent?.trim()).toBe("attribute: businessOwner");
+        expect(items[1].querySelector("h6.title.is-6")?.textContent?.trim()).toBe("The entity has no business owner");
+        expect(el.querySelectorAll("p")).toHaveLength(0);
+        // The legacy's own separator class (DD-839): the component styles carry
+        // the legacy's thin line and small margin, because Bulma 1 renamed the
+        // divider class and styles this one as nothing.
         expect(el.querySelectorAll("hr.dropdown-separator")).toHaveLength(1);
     });
 

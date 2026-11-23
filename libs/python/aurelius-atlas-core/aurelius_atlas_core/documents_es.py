@@ -736,6 +736,34 @@ class ElasticsearchEntityDocuments:
                 return found
             after = hits[-1]["sort"]
 
+    async def verdicts_by_entity(self, entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]:
+        """Page through these entities' verdict documents, grouped by entity GUID (ASG-08, DD-838).
+
+        The same paged terms read ``_verdict_ids`` runs, with the sources kept: one filter over
+        ``entity_guid``, sorted by ``id`` with ``search_after`` (ASG-03). The sort is global, so each
+        entity's group keeps its id order. An empty request asks the store nothing, and an entity with no
+        verdict documents gets no key.
+        """
+        if not entity_guids:
+            return {}
+        grouped: dict[str, list[StoredVerdict]] = {}
+        after: list[Any] | None = None
+        while True:
+            response = await self._client.search(
+                index=self._verdicts,
+                size=REFERRING_PAGE,
+                query=es_clauses.terms("entity_guid", list(entity_guids)),
+                sort=[{"id": "asc"}],
+                search_after=after,
+            )
+            hits = response["hits"]["hits"]
+            for hit in hits:
+                verdict = StoredVerdict.model_validate(hit["_source"])
+                grouped.setdefault(verdict.entity_guid, []).append(verdict)
+            if len(hits) < REFERRING_PAGE:
+                return grouped
+            after = hits[-1]["sort"]
+
     async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments; and the index
         self,
         *,
