@@ -57,6 +57,21 @@ const ANSWER: EntityView = {
 /** The view minus its classification names — the chip-less variant (VDR-05). */
 const NO_CHIPS: EntityView = { ...ANSWER, classificationNames: [] };
 
+/** The view with a tag propagation brought (VDR-12, DV-197): own names stay
+ *  PII/CONFIDENTIAL, and PII additionally rides in as a propagated entry. */
+const PROPAGATED: EntityView = {
+    ...ANSWER,
+    propagatedClassifications: [
+        {
+            typeName: "PII",
+            entities: [
+                { guid: "src-1", name: "source_table", typeName: "DataSet", status: "ACTIVE" },
+                { guid: "src-2", name: "other_table", typeName: "Process", status: "ACTIVE" },
+            ],
+        },
+    ],
+};
+
 /**
  * Bring the screen up at the given guid: the paramMap Subject carries the
  * address (a guid change is then observable), and the first
@@ -218,6 +233,56 @@ describe("Details data spine (DET-08..DET-13)", () => {
         arrive(fixture, httpMock, NO_CHIPS);
 
         expect(compiled.querySelector(".aurelius-details-classifications")).toBeNull();
+    });
+
+    it("marks a propagated tag in the same chip row and names its sources (DET-09, VDR-12, DV-197)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, PROPAGATED);
+
+        // One row carries both kinds (DD-834): the entity's own chips first,
+        // the propagated one after them — and it is the chip's own marker.
+        const controls = [...compiled.querySelectorAll(".aurelius-details-classifications .control")];
+        expect(controls).toHaveLength(3);
+        expect(normalize(controls[2].textContent)).toContain("Has PII");
+        const marker = controls[2].querySelector(".tag.is-primary.dropdown.is-hoverable");
+        expect(marker).toBeTruthy();
+        expect(marker?.getAttribute("title")).toBe("Is propagated");
+        // The projected source rows carry the display names (DD-379): the
+        // source entity's own name over its type's display name.
+        const sources = [...controls[2].querySelectorAll(".aurelius-details-source")];
+        expect(sources).toHaveLength(2);
+        expect(normalize(sources[0].querySelector(".aurelius-details-source-name")?.textContent)).toBe("source_table");
+        expect(normalize(sources[0].querySelector(".aurelius-details-source-type")?.textContent)).toBe("DataSet");
+        expect(normalize(sources[1].querySelector(".aurelius-details-source-name")?.textContent)).toBe("other_table");
+        expect(normalize(sources[1].querySelector(".aurelius-details-source-type")?.textContent)).toBe("Process");
+    });
+
+    it("routes to the source's details when its row is clicked (VDR-12, DV-197)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, PROPAGATED);
+
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        const source = compiled.querySelector(".aurelius-details-source") as HTMLButtonElement;
+        expect(source.tagName).toBe("BUTTON"); // keyboard-reachable (VDR-12)
+        source.click();
+
+        expect(navigate).toHaveBeenCalledWith(["/search/details", "src-1"]);
+    });
+
+    it("still marks a propagated tag whose source the store lost (VDR-12)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        // The door answers the name with no entities: the tag stays the
+        // entity's to show, only its origin is unknown.
+        arrive(fixture, httpMock, {
+            ...ANSWER,
+            classificationNames: [],
+            propagatedClassifications: [{ typeName: "PII", entities: [] }],
+        });
+
+        const controls = [...compiled.querySelectorAll(".aurelius-details-classifications .control")];
+        expect(controls).toHaveLength(1);
+        expect(controls[0].querySelector(".tag.is-primary.dropdown.is-hoverable")).toBeTruthy();
+        expect(controls[0].querySelector(".aurelius-details-source")).toBeNull();
     });
 
     it("shows the description from the description attribute (DET-10, SPA-06)", () => {

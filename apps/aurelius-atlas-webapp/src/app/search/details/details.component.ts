@@ -293,15 +293,43 @@ export class Details {
     /**
      * The classification chips' labels (DET-09, DD-379, VDR-05): the view's
      * attached classification names, each by its dictionary display name —
-     * the legacy chip's `name | translate`. Propagated tags are no longer
-     * shown (DV-166): the view answers owned names only, and the editor's
-     * box never let a propagated tag be edited (DD-326).
+     * the legacy chip's `name | translate`. These are the entity's own, and
+     * the only ones the editor can change (DD-326).
      */
     protected readonly classifications = computed(() =>
         (this.entity()?.classificationNames ?? [])
             .filter((name) => typeof name === "string" && name !== "")
             .map((name) => nameDisplay(name)),
     );
+
+    /**
+     * The chips of the classifications propagation brought (VDR-05, VDR-12,
+     * DV-197): one per propagated name, each by its dictionary display name,
+     * with the entities it came from as its chip's sources. The view answers
+     * these and a card never does, so only the opened entity shows them. The
+     * chip's trigger is the Aurelius chip's own (UIC-16), and the legacy
+     * header drew the same tags in a row of their own.
+     */
+    protected readonly propagatedClassifications = computed(() =>
+        (this.entity()?.propagatedClassifications ?? [])
+            .filter((entry) => typeof entry.typeName === "string" && entry.typeName !== "")
+            .map((entry) => ({
+                label: nameDisplay(entry.typeName),
+                sources: (entry.entities ?? [])
+                    .filter((source) => typeof source.guid === "string" && source.guid !== "")
+                    .map((source) => ({
+                        guid: source.guid,
+                        name: source.name || source.typeName || source.guid,
+                        typeName: source.typeName ? nameDisplay(source.typeName) : "",
+                    })),
+            })),
+    );
+
+    /** The chip trigger's title and the dropdown's lead line (UIC-20's bridge keys). */
+    protected readonly propagatedLabel = $localize`:@@search.components.classification.isPropagated:Is propagated`;
+
+    /** The dropdown's origin line (UIC-20's bridge key, `originates`). */
+    protected readonly originLabel = $localize`:@@search.components.classification.originates:originates from the following sources:`;
 
     /**
      * The attribute the description box shows (DET-10 as amended by 18.8,
@@ -462,6 +490,15 @@ export class Details {
      * @param guid the entity the crumb points at
      */
     protected onCrumbClick(guid: string): void {
+        void this.router.navigate(["/search/details", guid]);
+    }
+
+    /**
+     * A propagation source was clicked (VDR-12): the same route the crumbs
+     * take, so a tag's origin is one click away.
+     * @param guid the entity the classification is attached to
+     */
+    protected onSourceClick(guid: string): void {
         void this.router.navigate(["/search/details", guid]);
     }
 

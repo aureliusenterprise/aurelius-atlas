@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from aurelius_atlas_core.app_search_answer import AppSearchEngine
 from aurelius_atlas_core.app_search_document import own_document
+from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.relationship_store import RelationshipStore
@@ -21,9 +22,17 @@ from aurelius_atlas_core.stored_entity import (
     StoredEntity,
     StoredQualityTotals,
 )
+from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
-from aurelius_atlas_core.view_derivation import QUALITY_DIMENSIONS, card_of, read_ends, view_of
+from aurelius_atlas_core.view_derivation import (
+    QUALITY_DIMENSIONS,
+    card_of,
+    read_ends,
+    read_propagations,
+    view_of,
+)
 from aurelius_atlas_model.instance import (
+    AtlasClassification,
     AtlasEntitiesWithExtInfo,
     AtlasEntity,
     AtlasObjectId,
@@ -495,3 +504,92 @@ async def test__one_end_under_two_read_attributes_answers_under_both(m4i: TypeRe
 
     entries = {r.attribute: [e.guid for e in r.entities] for r in view.sections}
     assert entries == {"inputToProcesses": [x], "outputFromProcesses": [x]}  # the one process answers both boxes
+
+
+@pytest.mark.covers(f"{V}.view_of", rules=["VDR-05"])
+def test__a_view_holds_its_propagated_classifications_with_their_sources() -> None:
+    """The door's read answers one entry per propagated name, with each source named (VDR-05).
+
+    Two sources of one name answer one entry with both, as the legacy header counted them (DD-834); an entity
+    the door read nothing about answers the field empty (DD-835).
+    """
+    entity_type = type_of(registry(), "table")
+    stored = hand("table", entity_type, qualifiedName="t", name="T")
+    sources = [
+        StoredEntity(guid="a", type_name="table", attributes={"asset.name": "A"}, state=EntityStatus.ACTIVE),
+        StoredEntity(guid="b", type_name="table", attributes={"asset.qualifiedName": "b"}),
+    ]
+
+    view = view_of(stored, entity_type, propagated=[("c_pii", [sources[0]]), ("c_pii", [sources[1]])])
+
+    assert [
+        (c.type_name, [(e.guid, e.name, e.type_name) for e in c.entities]) for c in view.propagated_classifications
+    ] == [
+        ("c_pii", [("a", "A", "table"), ("b", None, "table")])  # b has no name attribute (ASU-02)
+    ]
+    assert view.classification_names == []  # a propagated name never joins the entity's own (AVS-01)
+    assert view_of(stored, entity_type).propagated_classifications == []
+    nameless = view_of(stored, entity_type, propagated=[("c_pii", [])])
+    assert [(c.type_name, c.entities) for c in nameless.propagated_classifications] == [("c_pii", [])]
+    assert card_of(view).model_dump(include={"propagated_classifications"}) == {}  # a card has no such field
+
+
+async def _propagation_store() -> tuple[EntityStore, dict[str, str]]:
+    """A store of the sample types holding ``a -> p1 -> b``, with ``c_pii`` attached to ``a``.
+
+    The tag propagates downstream through ``p_input``/``p_output`` (PRO-01), so ``b`` carries it from ``a``.
+    """
+    store = EntityStore(sample_registry(classifications=True), MemoryEntityDocuments())
+    created = await EntityWriter(store).create_or_update(
+        AtlasEntitiesWithExtInfo.model_validate(
+            {
+                "entities": [
+                    {"typeName": "p_data", "guid": "-a", "attributes": {"qualifiedName": "a", "name": "A"}},
+                    {"typeName": "p_data", "guid": "-b", "attributes": {"qualifiedName": "b", "name": "B"}},
+                    {
+                        "typeName": "p_process",
+                        "guid": "-p1",
+                        "attributes": {"qualifiedName": "p1"},
+                        "relationshipAttributes": {"inputs": [{"guid": "-a"}], "outputs": [{"guid": "-b"}]},
+                    },
+                ]
+            }
+        )
+    )
+    guids = {key.removeprefix("-"): value for key, value in (created.guid_assignments or {}).items()}
+    await EntityClassifications(store).add_classifications(
+        guids["a"], [AtlasClassification.model_validate({"typeName": "c_pii", "attributes": {"level": 5}})]
+    )
+    return store, guids
+
+
+@pytest.mark.covers(f"{V}.read_propagations", rules=["VDR-05"])
+async def test__read_propagations_answer_the_tag_and_the_entity_it_came_from() -> None:
+    """The propagated name and its source answer for the downstream entity; its own tag answers nothing (VDR-05)."""
+    store, guids = await _propagation_store()
+    b = await store.get(guids["b"])
+    assert b is not None
+
+    assert await read_propagations(store, b.entity) == [("c_pii", [await _source(store, guids["a"])])]
+
+    a = await store.get(guids["a"])
+    assert a is not None
+    assert await read_propagations(store, a.entity) == []  # the tag attached here is a's own (AVS-01)
+
+
+@pytest.mark.covers(f"{V}.read_propagations", rules=["VDR-05"])
+async def test__read_propagations_answer_nothing_once_the_sources_tag_is_gone() -> None:
+    """Deleting the tag on its source takes the propagated one with it, so the view answers no name (VDR-05, PRO-04)."""
+    store, guids = await _propagation_store()
+    await EntityClassifications(store).delete_classification(guids["a"], "c_pii")
+    b = await store.get(guids["b"])
+    assert b is not None
+
+    assert await read_propagations(store, b.entity) == []
+
+
+async def _source(store: EntityStore, guid: str) -> StoredEntity:
+    """The stored entity ``guid``, for comparing a source the door read."""
+    found = await store.get(guid)
+    assert found is not None
+    return found.entity

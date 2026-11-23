@@ -42,6 +42,16 @@ export type EntityRelation = {
 };
 
 /**
+ * One classification the entity carries by propagation, and the entities it came from
+ * (`ClassificationSource`, AVS-04 as amended by 16.5b, VDR-12). An empty `entities`
+ * means the store no longer has the source: the tag stays, its origin is unknown.
+ */
+export type ClassificationSource = {
+    typeName: string;
+    entities?: RelationEntity[];
+};
+
+/**
  * One catalogue entity as a result line, chip or badge needs it (`EntityCard`,
  * AVS-01, ADR 064). `displayText` is the name, or the qualified name when there
  * is no name (AVS-03); `typeAlias` is the author's alias of the type, the badge
@@ -77,12 +87,15 @@ export type EntityCard = {
 /**
  * One entity as a screen needs it (`EntityView`, AVS-04): a card plus its own
  * values, sections and business metadata. 16.5b reads the details screen from
- * it; the results page reads only the card.
+ * it; the results page reads only the card. `propagatedClassifications` names
+ * the tags propagation brought and where each came from (VDR-12): a view's own
+ * field, never a card's, so a result line shows none.
  */
 export type EntityView = EntityCard & {
     attributes?: Record<string, unknown>;
     businessMetadata?: Record<string, Record<string, unknown>> | null;
     sections?: EntityRelation[];
+    propagatedClassifications?: ClassificationSource[];
 };
 
 /** How the search door ranks (`mode`, ASV-01): words, meaning, or both. */

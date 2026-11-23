@@ -71,7 +71,7 @@ from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
-from aurelius_atlas_core.view_derivation import read_ends, view_of
+from aurelius_atlas_core.view_derivation import read_ends, read_propagations, view_of
 
 PLACEHOLDER = "-1"
 """The request GUID a create names its own entity by, before the server mints the real one (DV-162, AVW-06)."""
@@ -464,7 +464,8 @@ class ViewMutationDoor:
             if stored_type is None:
                 raise ViewVersionConflictError(_bare_view(found.entity).model_copy(update={"stale": False}))
             ends = await read_ends(self._store, found.entity, stored_type)
-            view = view_of(found.entity, stored_type, ends=ends)
+            propagated = await read_propagations(self._store, found.entity)
+            view = view_of(found.entity, stored_type, ends=ends, propagated=propagated)
             raise ViewVersionConflictError(view.model_copy(update={"stale": False}))
         rewind = RewindStore(self._store)
         buffer = _BufferedNotifier(self._notifier)
@@ -740,7 +741,8 @@ class ViewMutationDoor:
         if entity_type is None:  # pragma: no cover - the store only holds entities of known types
             raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, f"the type {found.entity.type_name} of entity {guid}")
         ends = await read_ends(self._store, found.entity, entity_type)
-        return view_of(found.entity, entity_type, ends=ends).model_copy(update={"stale": False})
+        propagated = await read_propagations(self._store, found.entity)
+        return view_of(found.entity, entity_type, ends=ends, propagated=propagated).model_copy(update={"stale": False})
 
 
 def _is_pair(

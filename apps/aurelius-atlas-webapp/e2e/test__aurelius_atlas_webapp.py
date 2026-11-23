@@ -2122,6 +2122,146 @@ def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, user_tok
             time.sleep(1)
 
 
+# impact=major, likelihood=low (the header's read of propagated tags; the
+# propagation engine is server-tested, this is the one screen that shows them)
+@pytest.mark.high
+def test__the_details_header_marks_a_propagated_tag_with_its_source(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """A tag that rode in on an edge shows in the header, marked, and names its source (VDR-12, DV-197).
+
+    The legacy header's propagated-classification row, restored on the Aurelius
+    surface: `a` is tagged, the seeded process reads `a` and writes `b`, so
+    `a`'s tag propagates downstream (PRO-01, on the base model's
+    `process_dataset_outputs` edge, ONE_TO_TWO). `b`'s details show the tag in
+    the same chip row as its own, wearing the chip's propagation marker, and the
+    marker's dropdown names `a` — clicking that row opens `a`'s details. The
+    header chips answer only what the read door returns, so the entity's own
+    names stay its own (VDR-05) and `a` shows the tag unmarked.
+    """
+    run = secrets.token_hex(4)
+    tag = f"zz{run}prop"
+    source_name = f"zz{run}source"
+    process_name = f"zz{run}process"
+    target_name = f"zz{run}target"
+
+    typedef = authenticated.request.post(
+        urljoin(root_url, "/api/atlas/v2/types/typedefs"),
+        data=json.dumps({"classificationDefs": [{"name": tag, "entityTypes": ["DataSet"]}]}),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert typedef.status == 200, typedef.text()
+
+    # One bulk call for both data sets: the scenario is already at the
+    # statement budget the linter allows.
+    datasets = _seed_entities(authenticated, root_url, user_token, "DataSet", [source_name, target_name])
+    source_guid, target_guid = datasets["-0"], datasets["-1"]
+    process_guid = _seed_entities(authenticated, root_url, user_token, "Process", [process_name])["-0"]
+
+    try:
+        # The edge carries the tag downstream (the ONE_TO_TWO direction of
+        # process_dataset_outputs: the process reads its inputs, writes its
+        # outputs). The body repeats the mandatory plain attributes — the
+        # update validates the whole entity (probed, the links scenario).
+        linked = authenticated.request.post(
+            urljoin(root_url, "/api/atlas/v2/entity"),
+            data=json.dumps(
+                {
+                    "entity": {
+                        "guid": process_guid,
+                        "typeName": "Process",
+                        "attributes": {"name": process_name, "qualifiedName": process_name},
+                        "relationshipAttributes": {
+                            "inputs": [{"guid": source_guid, "typeName": "DataSet"}],
+                            "outputs": [{"guid": target_guid, "typeName": "DataSet"}],
+                        },
+                    }
+                }
+            ),
+            headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+        )
+        assert linked.status == 200, linked.text()
+
+        tagged = authenticated.request.post(
+            urljoin(root_url, f"/api/atlas/v2/entity/guid/{source_guid}/classifications"),
+            data=json.dumps([{"typeName": tag}]),
+            headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+        )
+        assert tagged.status == 204, tagged.text()
+
+        # The propagated instance is a separate write the server runs after the
+        # tag (TSK-02): the target's own read must show it before the browser
+        # opens on it, or the screen caches the pre-propagation answer (the
+        # propagation-retry idiom, CLS-12). The legacy GET answers every
+        # instance the entity lists, own and propagated alike (CLS-02), so the
+        # wait is on the tag appearing in the entity's own list at all.
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            target_guid,
+            predicate=lambda entity: any(
+                classification.get("typeName") == tag for classification in entity.get("classifications", [])
+            ),
+        )
+
+        # The target's header: one chip, marked propagated, and its dropdown
+        # names the source the tag rode in from.
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{target_guid}"))
+        controls = authenticated.locator(".aurelius-details-classifications .control")
+        expect(controls).to_have_count(1)
+        marker = controls.locator(".tag.is-primary.dropdown.is-hoverable")
+        expect(marker).to_have_attribute("title", "Is propagated")
+
+        # The menu's rows are keyboard reachable (the trigger is a button, and
+        # :focus-within opens it where hover alone would not).
+        marker.locator("button.aurelius-classification-chip-propagated-trigger").focus()
+        source_row = authenticated.locator("button.aurelius-details-source").filter(has_text=source_name)
+        expect(source_row).to_be_visible()
+
+        # Clicking the source names where the tag came from: its details.
+        source_row.click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{source_guid}$"))
+
+        # The source's own header shows the same tag unmarked — it is its own
+        # there, and the read door answers it in classificationNames (VDR-05).
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{source_guid}"))
+        own = authenticated.locator(".aurelius-details-classifications .control")
+        expect(own).to_have_count(1)
+        expect(own.first).to_contain_text(tag)
+        expect(own.locator(".tag.is-primary.dropdown.is-hoverable")).to_have_count(0)
+    finally:
+        # The detach has to come before the entity and the typedef, and both
+        # race the propagation work the tag started (CLS-12's retry, the tags
+        # scenario) — on both entities, since the target holds a propagated
+        # instance of the same type.
+        deadline = time.monotonic() + 30
+        for guid in (source_guid, target_guid):
+            while True:
+                detached = authenticated.request.delete(
+                    urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}/classification/{tag}"),
+                    headers={"authorization": f"Bearer {user_token}"},
+                )
+                if detached.status in (204, 404):  # detached, or already gone
+                    break
+                assert detached.status == 406, detached.text()
+                assert time.monotonic() < deadline, detached.text()
+                time.sleep(1)
+
+        for guid in (target_guid, process_guid, source_guid):
+            _delete_entity(authenticated, root_url, user_token, guid)
+        while True:
+            removed = authenticated.request.delete(
+                urljoin(root_url, f"/api/atlas/v2/types/typedef/name/{tag}"),
+                headers={"authorization": f"Bearer {user_token}"},
+            )
+            if removed.status in (204, 404):  # gone, or never landed
+                break
+            assert removed.status == 409, removed.text()
+            assert time.monotonic() < deadline, removed.text()
+            time.sleep(1)
+
+
 @pytest.mark.critical
 def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_token: str) -> None:
     """The hero `+` opens the picker; a chosen type and a name create an entity (EDT-04, EDT-12).

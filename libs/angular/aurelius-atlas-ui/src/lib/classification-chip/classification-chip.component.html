@@ -38,14 +38,24 @@
             }
         </span>
         @if (propagated()) {
+            <!-- The trigger is a button, not a div: Bulma's is-hoverable
+                 opens on :hover alone, and a plain div leaves the sources
+                 unreachable by keyboard (VDR-12). The button also gives
+                 touch a press target; the menu's own rows are projected. -->
             <div
-                class="tag is-primary dropdown is-hoverable"
+                class="tag is-primary dropdown is-hoverable aurelius-classification-chip-propagated"
                 [attr.title]="propagatedLabel() ?? propagatedLabelDefault"
             >
                 <div class="dropdown-trigger">
-                    <span class="icon is-small">
-                        <fa-icon [icon]="propagatedIcon"></fa-icon>
-                    </span>
+                    <button
+                        type="button"
+                        class="aurelius-classification-chip-propagated-trigger"
+                        [attr.aria-label]="propagatedLabel() ?? propagatedLabelDefault"
+                    >
+                        <span class="icon is-small">
+                            <fa-icon [icon]="propagatedIcon"></fa-icon>
+                        </span>
+                    </button>
                 </div>
                 <!-- ROLE-MENU-MISUSE: no role="menu" — the sources are
                      read-only rows, not menuitems; Bulma's CSS never read

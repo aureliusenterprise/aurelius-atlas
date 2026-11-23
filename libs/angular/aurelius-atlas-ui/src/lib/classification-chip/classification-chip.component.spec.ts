@@ -117,6 +117,23 @@ describe("ClassificationChip", () => {
         expect(rows[0].textContent).toBe("Source entity");
     });
 
+    it("gives the propagation trigger a keyboard-focusable button (VDR-12)", () => {
+        // Bulma's is-hoverable opens on :hover alone, so the marker's
+        // trigger must be a real button for Tab to reach the sources (the
+        // :focus-within rule that opens the menu is exercised in the webapp's
+        // e2e, where CSS applies).
+        host.propagated.set(true);
+        fixture.detectChanges();
+
+        const trigger = fixture.nativeElement.querySelector(".aurelius-classification-chip-propagated-trigger");
+        expect(trigger.tagName).toBe("BUTTON");
+        expect(trigger.getAttribute("aria-label")).toBe("Is propagated");
+        // The sources ride inside the same dropdown, so the tab order passes
+        // from the trigger into the menu.
+        const menu = fixture.nativeElement.querySelector(".dropdown-menu");
+        expect(menu.querySelector(".dropdown-item.source-row")).toBeTruthy();
+    });
+
     it("is not a menu to assistive tech — the popover carries no menu roles (ROLE-MENU-MISUSE)", () => {
         // The propagation popover once claimed role="menu" while holding
         // read-only rows, so screen readers announced a menu with no items.

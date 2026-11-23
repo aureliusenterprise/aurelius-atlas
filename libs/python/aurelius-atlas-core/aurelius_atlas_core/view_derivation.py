@@ -16,6 +16,7 @@ from aurelius_atlas_model.instance import RelationshipStatus
 from aurelius_atlas_model.views import (
     CardBreadcrumb,
     CardQuality,
+    ClassificationSource,
     EntityCard,
     EntityRelation,
     EntityView,
@@ -27,6 +28,7 @@ from aurelius_atlas_core.app_search_document import RELATION_FIELDS, ROLE_FIELDS
 from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.graph_helper import collection_elements, other_end, relationship_type_name
 from aurelius_atlas_core.search_fields import own_classifications
+from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity, StoredQualityTotals
 
 QUALITY_DIMENSIONS = ("accuracy", "completeness", "timeliness", "uniqueness", "validity", "overall")
@@ -35,19 +37,32 @@ QUALITY_DIMENSIONS = ("accuracy", "completeness", "timeliness", "uniqueness", "v
 type RelationEnds = Mapping[str, Sequence[StoredEntity]]
 """The ends of relationship attributes, by attribute name: what a door that read them passes in (AVS-04)."""
 
+type Propagations = Sequence[tuple[str, Sequence[StoredEntity]]]
+"""The propagated classifications and their source entities, in the order the entity lists them (VDR-05).
+
+``read_propagations`` answers this for the door that reads them; a door that answers none passes nothing, and
+the view then holds the field empty."""
+
 
 def card_of(view: EntityView) -> EntityCard:
     """The card of a view: the shared fields, the entity's own values and sections left out (DD-581)."""
     return EntityCard.of(view)
 
 
-def view_of(stored: StoredEntity, entity_type: EntityType, *, ends: RelationEnds | None = None) -> EntityView:
+def view_of(
+    stored: StoredEntity,
+    entity_type: EntityType,
+    *,
+    ends: RelationEnds | None = None,
+    propagated: Propagations | None = None,
+) -> EntityView:
     """The view of one stored entity: its fields, its document's derived fields, and its sections (AVS-01, AVS-04).
 
     ``entity_type`` names the attributes (the store keeps values by qualified name, AVS-04) and the business
     attributes; both are what a read of the type costs the door, not a join per entity. ``ends`` carries the
     entities of relationship attributes the door read, by attribute name; without them the sections hold the
-    document's stored pairs only (AVS-08).
+    document's stored pairs only (AVS-08). ``propagated`` carries the propagated classifications and their
+    source entities the door read; without them the view answers none (VDR-05, DD-835).
     """
     document = stored.app_search
     stale = bool(document.stale) if document else awaits_document(stored)
@@ -76,6 +91,7 @@ def view_of(stored: StoredEntity, entity_type: EntityType, *, ends: RelationEnds
         "attributes": _own_attributes(stored, entity_type),
         "business_metadata": _business_metadata(stored, entity_type),
         "sections": _sections(document, ends),
+        "propagated_classifications": _propagated(propagated),
     }
     return EntityView.model_validate(fields)
 
@@ -226,6 +242,27 @@ def _end_name(entity: StoredEntity) -> str | None:
     return None
 
 
+def _propagated(propagated: Propagations | None) -> list[ClassificationSource]:
+    """One entry per propagated classification, with the entities it came from, in the listed order (VDR-05).
+
+    The door read the sources; this groups them under their classification's type name, keeping the order the
+    entity lists its instances in (CLS-02). Two instances of one type on two different sources answer one entry
+    with both sources, as the legacy header counted them (DD-834). A name whose source the store no longer has
+    keeps its entry with no entities: the tag is still the entity's to show, only its origin is unknown.
+    """
+    entries: dict[str, dict[str, RelationEntity]] = {}
+    for type_name, sources in propagated or []:
+        by_guid = entries.setdefault(type_name, {})
+        for entity in sources:
+            by_guid[entity.guid] = RelationEntity.model_validate(
+                {"guid": entity.guid, "name": _end_name(entity), "type_name": entity.type_name, "status": entity.state}
+            )
+    return [
+        ClassificationSource.model_validate({"type_name": type_name, "entities": list(by_guid.values())})
+        for type_name, by_guid in entries.items()
+    ]
+
+
 async def read_ends(store: WriteStore, stored: StoredEntity, entity_type: EntityType) -> RelationEnds:
     """The entities at the other ends of ``stored``'s relationship attributes, by attribute name (VDR-02, DD-604).
 
@@ -255,3 +292,28 @@ async def read_ends(store: WriteStore, stored: StoredEntity, entity_type: Entity
         name: [found.entity for guid in dict.fromkeys(ends) if (found := entities.get(guid)) is not None]
         for name, ends in guids_by_attribute.items()
     }
+
+
+async def read_propagations(store: WriteStore, stored: StoredEntity) -> Propagations:
+    """The classifications propagated onto ``stored``, each with the entities it came from (VDR-05, DD-835).
+
+    ``stored`` lists every classification instance it carries, attached or propagated (DD-090); the ones whose
+    ``entityGuid`` names another entity are the propagated ones (the same split ``search_fields`` writes into
+    ``__propagatedTraitNames``). Their sources are read in one ``get_many``, the seam ``read_ends`` set: one
+    entity, its own instances, one round. A classification attached to the entity itself answers nothing, and a
+    source the store no longer has answers that name with no entity.
+    """
+    listed = stored.classification_guids or []
+    found = await store.get_classifications(listed) if listed else {}
+    instances: list[StoredClassification] = [
+        found[guid].classification
+        for guid in listed
+        if guid in found and found[guid].classification.entity_guid not in (None, stored.guid)
+    ]
+    if not instances:
+        return []
+    sources = await store.get_many(list(dict.fromkeys(i.entity_guid for i in instances if i.entity_guid)))
+    return [
+        (instance.type_name, [sources[instance.entity_guid].entity] if instance.entity_guid in sources else [])
+        for instance in instances
+    ]

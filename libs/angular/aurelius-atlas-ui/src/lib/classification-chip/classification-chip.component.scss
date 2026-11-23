@@ -13,7 +13,37 @@
  * keep the dot in its exact seat; the grown box paints nothing outside
  * the dot, so nothing spills over the chip's edge either. (DD-336,
  * DD-337, from the 7.7a editor's review of small screens.)
+ *
+ * The propagated marker's keyboard reach (UIC-16, VDR-12): Bulma's
+ * `is-hoverable` opens its menu on `:hover` alone, so the sources are
+ * unreachable without a mouse. The marker's trigger is a button
+ * (keyboard-focusable, and it gives touch and click a press target);
+ * these rules open the menu on keyboard focus too — the `:focus-within`
+ * idiom the navbar (brand `_main.scss`) and the editor boxes use — and
+ * keep the focus ring visible on the marker.
  */
+.dropdown.is-hoverable:focus-within .dropdown-menu {
+    display: block;
+}
+
+/* The trigger button only seats the icon — Bulma paints the tag on the
+ * wrapper div — so the UA's button chrome goes. */
+.aurelius-classification-chip-propagated-trigger {
+    appearance: none;
+    background: none;
+    border: 0;
+    border-radius: inherit;
+    color: inherit;
+    cursor: inherit;
+    font: inherit;
+    margin: 0;
+    padding: 0;
+}
+
+.aurelius-classification-chip-propagated-trigger:focus-visible {
+    outline: 2px solid hsl(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l));
+    outline-offset: 1px;
+}
 @media screen and (pointer: coarse) {
     /* Three classes to outrank Bulma's `.delete.is-small` size rule —
      * and its `.tag .delete` margins, which are 0.25rem/-0.375rem here;

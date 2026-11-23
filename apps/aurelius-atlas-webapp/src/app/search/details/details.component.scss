@@ -63,3 +63,24 @@
         outline-offset: 2px;
     }
 }
+
+/*
+ * The propagated chip's source rows (VDR-12, DD-834): the buttons a
+ * caller projects into the chip's menu. Bulma 1 already styles
+ * `button.dropdown-item` (fill, hover, full width), so only the menu's
+ * menu-item defaults that fit a one-word entry are eased here: entity
+ * names are long and wrap, and the menu's wide trailing gutter is for
+ * menu items with a shortcut column (which these have not). Focus style
+ * is the browser's own ring, kept.
+ */
+.aurelius-details-source {
+    padding-inline-end: 1rem;
+    white-space: normal;
+}
+
+/* The source's type sits under its name — the menu row is two lines, so
+ * it breaks and takes the menu's weak ink. */
+.aurelius-details-source-type {
+    display: block;
+    opacity: 0.75;
+}

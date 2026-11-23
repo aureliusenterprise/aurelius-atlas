@@ -103,7 +103,7 @@ unmapped crumb renders the raw name, as DET-26's badge does.
 
 ## DD-607. The chips answer the entity's own classifications
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-834
 - **Increment:** 16.5b
 - **Date:** 2026-11-14
 
@@ -165,3 +165,75 @@ entity, which is what DET-11 and DET-32 ask for (DV-177's scenario returns to `p
 editor's draft keeps the pairs under their type name (DD-608): the store ignores a key the type does
 not declare, so a save cannot write one. A unit pin covers a derived pair on its own and beside a
 read end naming the same GUID.
+
+## DD-834. The header marks the propagated tags and names where they came from
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-23
+
+**Decision.** The header's chip row carries both kinds, and the mark tells them apart (VDR-12):
+the entity's own names ride plain chips (VDR-05), and each name propagation brought rides the
+same row on the ui-lib chip's own propagated marker (UIC-16). The view answers the propagated
+names in a field of their own, `propagatedClassifications`: one entry per name, each listing the
+entities it came from (DD-835). The marker's dropdown names those entities, and a row routes to
+that entity's details. A name whose source the store no longer has keeps its entry with no
+entities: the tag stays the entity's to show, only its origin is unknown. This supersedes
+DD-607's clause that propagated tags stop showing, and DV-166 with it (DV-197 in the ledger).
+
+**Reason.** The legacy detail page split the entity's classifications by `entityGuid` and drew
+the propagated ones as a labelled row (dashboardv2's `DetailPageLayoutView`). A user asked where
+a tag on a field came from, and the screen had taken that answer away when 16.5b moved the header
+to the read door. The split stays what the store models (DD-090's two search fields), so the
+field carries it: the entity's own names never move, which is what the editor's diff and the
+mutation door's refusal rest on (DD-326, AVW-08).
+
+**Alternatives.**
+
+- Widen `classificationNames` with the propagated names: the editor saves that list, so a save
+  would try to attach a tag that belongs to its source (fails AVW-08).
+- The legacy's separate labelled row: a second structure to seat, for what the Aurelius chip
+  already marks and explains on hover.
+- A second request for the propagated names: a second read for one chip row (fails ADR 064 R1).
+- Group by name and count the sources, as the legacy's badge did: the legacy count answers
+  "how many", the source rows answer "where from", which is the question that was asked.
+
+**Consequences.** The door answers one field no card carries: a result line has no source to
+name, so `EntityCard.of` drops the field and the chips on cards stay as 16.5d left them. The
+legacy's dedupe by type name is kept as the grouping, and its click-to-tag-page becomes a click
+to the source entity's details — the tag page is the dashboard's, and the webapp has none. The
+ui-lib marker was hover-only Bulma (UIC-16); its trigger becomes a button and the menu opens on
+focus, so the keyboard reaches the sources.
+
+## DD-835. The read door reads the propagated tags in one batched round
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-23
+
+**Decision.** `read_propagations(store, stored)` (in `view_derivation`, beside `read_ends`) reads
+the entity's classification instances once, keeps the ones whose `entityGuid` names another
+entity, and reads those entities in one `get_many` (VDR-12). `view_of` takes the result as its
+`propagated` parameter and groups it by name into the view's entries. The read route passes it,
+and the mutation door's conflict view computes it the same way, so one answer shape serves both
+doors. The editor never sends the field, and the mutation door's parse ignores what it does not
+know, so a save round-trips it unchanged.
+
+**Reason.** The stored entity already lists every instance it carries, own and propagated alike
+(DD-090), so the split is one batched classification read and one entity read — the seam
+`read_ends` set for the same reason (DD-604): one entity, its own tags, one round. Deriving the
+sources from the stored pairs would key them by type name and lose the status the row shows, and
+searching them would split one answer across two indexes.
+
+**Alternatives.**
+
+- Derive the sources from the view's `sections`: pairs are relationship ends, not tag sources, and
+  a tag propagates over edges the entity never lists (PRO-04's walk).
+- Answer the tag's own classification instances instead: they name the type, not the entity the
+  tag rode in from, which is the fact the chip shows.
+- Leave the mutation door's conflict view without the field: the screen's conflict editor reads
+  the same view shape, and a field missing there reads as "nothing propagated" (fails R2).
+
+**Consequences.** The read door grows two batched store calls per open. A name the store lists
+whose instance document is gone answers nothing for that name, as the entity's own names already
+behave. The trace check's rule ids gain VDR-12 on `view_of` and on `read_propagations`.

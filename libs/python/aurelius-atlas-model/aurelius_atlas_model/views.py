@@ -54,6 +54,18 @@ class EntityRelation(AtlasModel):
     entities: list[RelationEntity] = Field(default_factory=list)
 
 
+class ClassificationSource(AtlasModel):
+    """One classification the entity carries by propagation, and the entities it came from (AVS-04).
+
+    ``typeName`` names the classification; ``entities`` holds the entities the instance is attached to, each with
+    the name the store answered. A source the store no longer has answers an empty list: the tag stays the
+    entity's to show, only its origin is unknown.
+    """
+
+    type_name: str
+    entities: list[RelationEntity] = Field(default_factory=list)
+
+
 class EntityCard(AtlasModel):
     """One catalogue entity as a search result, a chip and a badge need it (AVS-01, ADR 064).
 
@@ -101,8 +113,11 @@ class EntityView(EntityCard):
 
     ``attributes`` are the entity's own attribute values as the store holds them; ``sections`` merge the entity's
     own relationship ends with its document's stored pairs, each end listed once under its attribute (AVS-04).
+    ``propagatedClassifications`` names the classifications the entity carries by propagation with the entities
+    each came from: a view's own field, never a card's, because a result line has no source to name (VDR-05).
     """
 
     attributes: dict[str, Any] = Field(default_factory=dict)
     business_metadata: dict[str, dict[str, Any]] | None = None
     sections: list[EntityRelation] = Field(default_factory=list)
+    propagated_classifications: list[ClassificationSource] = Field(default_factory=list)

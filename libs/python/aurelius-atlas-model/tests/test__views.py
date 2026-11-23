@@ -10,6 +10,7 @@ from aurelius_atlas_model.instance import EntityStatus
 from aurelius_atlas_model.views import (
     CardBreadcrumb,
     CardQuality,
+    ClassificationSource,
     EntityCard,
     EntityRelation,
     EntityView,
@@ -60,19 +61,20 @@ def test__a_card_holds_the_identity_the_derived_trail_the_relations_and_the_qual
     ]
     assert [str(info.alias) for info in EntityRelation.model_fields.values()] == ["attribute", "entities"]
     assert [str(info.alias) for info in RelationEntity.model_fields.values()] == ["guid", "name", "typeName", "status"]
+    assert [str(info.alias) for info in ClassificationSource.model_fields.values()] == ["typeName", "entities"]
 
 
 @pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["AVS-04"])
 def test__a_view_is_a_card_plus_its_own_values_its_metadata_and_its_sections() -> None:
-    """The card's fields plus attributes, businessMetadata and sections, nothing else (AVS-04)."""
+    """The card's fields plus attributes, businessMetadata, sections and propagatedClassifications (AVS-04)."""
     card = set(EntityCard.model_fields)
     extra = [str(info.alias) for name, info in EntityView.model_fields.items() if name not in card]
-    assert extra == ["attributes", "businessMetadata", "sections"]
+    assert extra == ["attributes", "businessMetadata", "sections", "propagatedClassifications"]
 
 
 @pytest.mark.covers(f"{V}.EntityCard.of", rules=["AVS-04"])
 def test__the_card_of_a_view_keeps_the_shared_fields_and_drops_the_own_ones() -> None:
-    """The projection keeps the entity's own values and derived fields, and leaves out the view's three."""
+    """The projection keeps the entity's own values and derived fields, and leaves out the view's four."""
     card = EntityCard.of(
         view(
             name="N",
@@ -81,12 +83,14 @@ def test__the_card_of_a_view_keeps_the_shared_fields_and_drops_the_own_ones() ->
             attributes={"description": "kept out"},
             businessMetadata={"cost": {"centre": "C"}},
             sections=[{"attribute": "fields", "entities": [{"guid": "f"}]}],
+            propagatedClassifications=[{"typeName": "PII", "entities": [{"guid": "s"}]}],
         )
     )
     written = card.to_json()
 
     assert (card.name, [crumb.name for crumb in card.breadcrumb]) == ("N", ["Domain"])
-    assert not {"attributes", "businessMetadata", "sections"} & set(written)
+    # a result line has no source to name, so a card never carries the view's propagation (VDR-05)
+    assert not {"attributes", "businessMetadata", "sections", "propagatedClassifications"} & set(written)
 
 
 @pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["AVS-05"])
