@@ -7718,7 +7718,14 @@ checks a PR must pass:</p>
 <td>Quality scores and compliance</td>
 <td>The scores return: the DQ score stats and pies on the layouts, the DQ and dimension sorts, the card quality badges, the Governance Quality Rules box, the compliant/non-compliant cards, the quickview addon, and the search-side DQ list (the rest of DD-369's hold-out, over UIC-36..39)</td>
 <td>Aurelius <code>details/**</code> (score boxes), <code>details/gov-quality/**</code>, quickview addon</td>
-<td>planned</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>7.25a</td>
+<td>Governance Quality Rules section on every page</td>
+<td>The Governance Quality Rules box becomes a card section of the layout's section list, drawn by the 7.21a chrome with its count line, sorts, facets, keyword and page of nine (DET-42 amended, DET-44..DET-47, DD-841/DD-842, DV-199): the legacy's four sorts and its Dimension and Rule Type facets run in the browser over the rules the box reads, and the box lands on all nine layouts in the legacy position with the legacy's per-page nav entry (DET-48, DD-843).</td>
+<td>Aurelius <code>search/components/governance-quality-cards</code>, <code>details/sections</code></td>
+<td>in review</td>
 </tr>
 <tr>
 <td>7.26</td>
@@ -8328,6 +8335,13 @@ checks a PR must pass:</p>
 <td>With tenancy on, <code>aurelius-atlas-validate-entity</code> reads a tenant's governance rules with the caller's token and caches them per tenant, so the editor's verdicts appear again (VET-01..05, DD-820)</td>
 <td>none</td>
 <td>in progress</td>
+</tr>
+<tr>
+<td>12.7g</td>
+<td>The unread corpus rules retire</td>
+<td>All 34 governance rules of the sample corpus that the vocabulary cannot read go <code>active: false</code> in both bundles (DD-844), the 12.7d retirement precedent (DD-638), so the iconless rows leave the details box, the verdicts and the read set with no code change. The 33 <code>conditional_value('target_relationship_type', 'source_typename' \| 'target_typename', {...})</code> rules each ask what type a relationship or its neighbour is, and <code>m4i_field--qualifiedName</code> carries <code>uniqueness('qualifiedName')</code>. No verdict moves: the count line counts rule entities by state, and the 34 already read nothing</td>
+<td>none (the 12.7d retirement, DD-638; both legacy evaluators read a DataFrame, so neither form ever had a vocabulary reading - DV-200 records the closer-to-oracle carve-out)</td>
+<td>in review</td>
 </tr>
 <tr>
 <td>13.1</td>

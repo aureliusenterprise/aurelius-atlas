@@ -1398,6 +1398,9 @@ Methods:
 - **`unseen_relationships`** –
 
   Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+- **`verdicts_by_entity`** –
+
+  The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
 - **`without_app_search`** –
 
   Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
@@ -1479,6 +1482,16 @@ unseen_relationships(limit: int) -> list[VersionedRelationship]
 ```
 
 Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+
+#### verdicts\_by\_entity
+
+```
+verdicts_by_entity(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]
+```
+
+The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+
+Each group is in document id order, and an entity with no verdicts has no key. The doors answer a card's `verdicts` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
 
 #### without\_app\_search
 
@@ -1799,6 +1812,9 @@ Methods:
 - **`unseen_relationships`** –
 
   Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+- **`verdicts_by_entity`** –
+
+  The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
 - **`without_app_search`** –
 
   Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
@@ -2048,6 +2064,16 @@ unseen_relationships(limit: int) -> list[VersionedRelationship]
 ```
 
 Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+
+#### verdicts\_by\_entity
+
+```
+verdicts_by_entity(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]
+```
+
+The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+
+Each group is in document id order, and an entity with no verdicts has no key. The doors answer a card's `verdicts` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
 
 #### without\_app\_search
 
