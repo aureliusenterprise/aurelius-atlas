@@ -367,28 +367,14 @@ def test__the_mappings_keep_names_as_text_guids_as_keywords_and_numbers_as_doubl
 
 
 def sample_totals() -> dict[str, dict[str, Any]]:
-    """The sample catalogue with a PASS score for each legacy result, over the dataset of its field, rolled up."""
+    """The sample catalogue as it ships, its 42 baked scores rolled up by one quality round (DD-858)."""
 
     async def build() -> dict[str, dict[str, Any]]:
         documents = await indexed_sample()
-        by_guid = {document["guid"]: document for document in legacy()}
-        scores = [
-            StoredEntity(
-                guid=f"score-{index}",
-                type_name="m4i_dq_score",
-                attributes={
-                    "Referenceable.qualifiedName": f"score-{index}",
-                    "m4i_dq_score.verdict": "PASS",
-                    "m4i_dq_score.score": result["dqscore"],
-                    "m4i_dq_score.ruleGuid": result["qualityguid"],
-                    "m4i_dq_score.datasetGuid": by_guid[result["fieldguid"]]["deriveddatasetguid"][0],
-                },
-            )
-            for index, result in enumerate(legacy_results())
-        ]
-        await documents.write([(score, None) for score in scores])
+        assert len(await documents.scores()) == 42
         await QualityIndexer(documents).run_once()
-        found = await documents.get(list(by_guid))
+        guids = [document["guid"] for document in legacy()]
+        found = await documents.get(guids)
         return {guid: _score_fields(versioned.entity) for guid, versioned in found.items()}
 
     return asyncio.run(build())

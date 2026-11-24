@@ -426,8 +426,9 @@ def test__the_sample_answers_what_14_4_answered_plus_the_entities_it_left_out(
 ) -> None:
     """The door answers what 14.4 answered, plus what it left out.
 
-    The engine's 654 documents (DV-185, DV-195) plus the active source entities it never derived; each type's
-    facet count is what ``atlas-dev`` counted for the same sample (AVR-11, DD-586).
+    The engine's 654 documents (DV-185, DV-195) plus the active source entities it never derived and, from 12.9,
+    the 42 score entities the sample ships (DD-500, DD-858); each type's facet count is what ``atlas-dev``
+    counted for the same sample (AVR-11, DD-586).
     """
     door, engine = sample_door
     answer = asyncio.run(door.search({"facets": {"typeName": {"size": 250}}, "limit": 1}))
@@ -435,11 +436,12 @@ def test__the_sample_answers_what_14_4_answered_plus_the_entities_it_left_out(
 
     counted = {entry["value"]: entry["count"] for entry in answer["facets"]["typeName"]}
     expected = legacy_counts("typename")
-    assert answer["total"] == 657
+    assert answer["total"] == 699
     assert held_by_engine["meta"]["page"]["total_results"] == 654
     for value, count in expected.items():
         assert counted[value] == count
-    assert set(counted) - set(expected) == {"m4i_source"}
+    assert set(counted) - set(expected) == {"m4i_source", "m4i_dq_score"}
+    assert counted["m4i_dq_score"] == 42
 
 
 @pytest.mark.covers(X, f"{V}.door_fields", f"{V}._service_types", rules=["VSR-01"])

@@ -73,16 +73,18 @@ def mismatches(field: str, expected: dict[str, object]) -> dict[str, str]:
 
 
 @pytest.mark.covers(rules=["LAS-01"])
-def test__one_document_per_m4i_entity_but_the_sources() -> None:
-    """Every entity has its document, under its GUID, except the three ``m4i_source`` entities."""
+def test__one_document_per_m4i_entity_but_the_sources_and_scores() -> None:
+    """Every entity has its document, under its GUID, except the three ``m4i_source`` entities and, from 12.9,
+    the 42 ``m4i_dq_score`` entities the sample ships (DD-500, DD-858).
+    """  # noqa: D205 - one sentence
     documents = engine("atlas-dev")
     without = set(entities()) - {document["guid"] for document in documents}
 
     assert len(documents) == len({document["guid"] for document in documents}) == 684
     assert all(document["id"] == document["guid"] for document in documents)
     assert all(entity["status"] == "ACTIVE" for entity in entities().values())
-    assert {entities()[guid]["typeName"] for guid in without} == {"m4i_source"}
-    assert len(without) == 3
+    assert {entities()[guid]["typeName"] for guid in without} == {"m4i_source", "m4i_dq_score"}
+    assert len(without) == 45
 
 
 @pytest.mark.covers(rules=["LAS-02"])
