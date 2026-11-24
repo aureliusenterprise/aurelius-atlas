@@ -121,6 +121,7 @@
 - [068\. A catalogue bootstraps only the metamodel it serves](<https://aureliusenterprise.github.io/main/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/index.md>)
 - [069\. Each browser-facing surface answers on its own hostname](<https://aureliusenterprise.github.io/main/architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/index.md>)
 - [070\. The catalogue ships one prose attribute](<https://aureliusenterprise.github.io/main/architecture/adr/070-the-catalogue-ships-one-prose-attribute/index.md>)
+- [071\. A rule's verdicts come through the view family](<https://aureliusenterprise.github.io/main/architecture/adr/071-a-rule-s-verdicts-come-through-the-view-family/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/main/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/main/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/index.md>)

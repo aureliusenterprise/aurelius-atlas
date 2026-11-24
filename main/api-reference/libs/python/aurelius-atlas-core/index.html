@@ -2997,6 +2997,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.verdicts_by_rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;verdicts_by_rule
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.without_app_search" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3636,6 +3647,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;verdicts_by_entity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.StoreDocuments.verdicts_by_rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;verdicts_by_rule
       </span>
     </span>
   </a>
@@ -12986,6 +13008,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.verdicts_by_rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;verdicts_by_rule
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.without_app_search" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -13625,6 +13658,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;verdicts_by_entity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.StoreDocuments.verdicts_by_rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;verdicts_by_rule
       </span>
     </span>
   </a>
@@ -21560,6 +21604,18 @@ has work for, and writes its results back — nothing else. <code>StoreDocuments
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            verdicts_by_rule
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.EntityDocuments.verdicts_by_rule)" href="./#aurelius_atlas_core.entity_documents.EntityDocuments.verdicts_by_rule">verdicts_by_rule</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            without_app_search
 
 
@@ -21890,6 +21946,32 @@ or none, and those with verdicts no longer judged (ASG-06, DD-535).</p>
         <p>The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).</p>
 <p>Each group is in document id order, and an entity with no verdicts has no key. The doors answer a
 card's <code>verdicts</code> from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.EntityDocuments.verdicts_by_rule" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">verdicts_by_rule</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.EntityDocuments.verdicts_by_rule" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">verdicts_by_rule</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.verdicts_by_rule(rule_guid)">rule_guid</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="aurelius_atlas_core.app_search_document.StoredVerdict">StoredVerdict</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).</p>
+<p>The same paged read as <code>verdicts_by_entity</code>, filtered over <code>guid</code>; a rule with no verdict
+documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).</p>
 
 
     </div>
@@ -23318,6 +23400,18 @@ it is typed on the wide contract; an indexer or a door stays on the narrow one (
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            verdicts_by_rule
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.StoreDocuments.verdicts_by_rule)" href="./#aurelius_atlas_core.entity_documents.StoreDocuments.verdicts_by_rule">verdicts_by_rule</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            without_app_search
 
 
@@ -24179,6 +24273,32 @@ or none, and those with verdicts no longer judged (ASG-06, DD-535).</p>
         <p>The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).</p>
 <p>Each group is in document id order, and an entity with no verdicts has no key. The doors answer a
 card's <code>verdicts</code> from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.StoreDocuments.verdicts_by_rule" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">verdicts_by_rule</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.StoreDocuments.verdicts_by_rule" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">verdicts_by_rule</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.StoreDocuments.verdicts_by_rule(rule_guid)">rule_guid</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="aurelius_atlas_core.app_search_document.StoredVerdict">StoredVerdict</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).</p>
+<p>The same paged read as <code>verdicts_by_entity</code>, filtered over <code>guid</code>; a rule with no verdict
+documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).</p>
 
 
     </div>

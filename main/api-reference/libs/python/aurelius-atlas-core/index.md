@@ -1401,6 +1401,9 @@ Methods:
 - **`verdicts_by_entity`** –
 
   The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+- **`verdicts_by_rule`** –
+
+  The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
 - **`without_app_search`** –
 
   Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
@@ -1492,6 +1495,16 @@ verdicts_by_entity(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]
 The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
 
 Each group is in document id order, and an entity with no verdicts has no key. The doors answer a card's `verdicts` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
+
+#### verdicts\_by\_rule
+
+```
+verdicts_by_rule(rule_guid: str) -> list[StoredVerdict]
+```
+
+The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
+
+The same paged read as `verdicts_by_entity`, filtered over `guid`; a rule with no verdict documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).
 
 #### without\_app\_search
 
@@ -1815,6 +1828,9 @@ Methods:
 - **`verdicts_by_entity`** –
 
   The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+- **`verdicts_by_rule`** –
+
+  The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
 - **`without_app_search`** –
 
   Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
@@ -2074,6 +2090,16 @@ verdicts_by_entity(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]
 The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
 
 Each group is in document id order, and an entity with no verdicts has no key. The doors answer a card's `verdicts` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
+
+#### verdicts\_by\_rule
+
+```
+verdicts_by_rule(rule_guid: str) -> list[StoredVerdict]
+```
+
+The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
+
+The same paged read as `verdicts_by_entity`, filtered over `guid`; a rule with no verdict documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).
 
 #### without\_app\_search
 

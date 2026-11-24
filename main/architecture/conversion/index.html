@@ -7728,6 +7728,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.25b</td>
+<td>The governance rule's own verdict page</td>
+<td>The tenth legacy layout returns for <code>m4i_gov_data_quality</code>: the description box, the three-heading stats bar, the Compliance Chart with the UIC-36 pie, and the two verdict card boxes fed by 16.5i's verdicts door (DET-50..DET-55, VDR-15, DD-848..850, DV-201, ADR 071). The two boxes seed from the rule's stored verdicts, split by the door's <code>compliant</code> flag, and resolve their cards through the shared chunked door read as every DET-17 box does; the score is the legacy's compliant share, <code>0</code> where the legacy painted <code>NaN</code>.</td>
+<td>Aurelius <code>details/gov-quality/**</code> (the legacy's tenth <code>componentsByType</code> entry)</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td>7.26</td>
 <td>HTTP retry: the dead-connection resend</td>
 <td>The browser resends an idempotent call once when its connection dies rather than its answer (APC-12/13, DD-449, DV-145): the editor-drawer field race (uvicorn's 5 s keep-alive close against the dev proxy's pooled socket) becomes invisible, and proxy restarts with it</td>
