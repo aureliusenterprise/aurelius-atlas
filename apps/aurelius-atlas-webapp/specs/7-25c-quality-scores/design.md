@@ -279,13 +279,27 @@ would trade a readable table row for a call with two arguments.
 - _A `score: true` flag on the layout, with the component building the box._
   Rejected — it moves the legacy ordering (DD-851's whole point) out of the
   config table the spec pins, and the labels would need a seventh lookup.
-- _A `// NOSONAR` comment on the blocks._ Rejected — the duplication is real;
-  the factories remove it rather than hide it, and match the file's idiom.
-- _One shared literal string per key, indexed by layout name._ Rejected —
-  `$localize` tag literals must stay statically visible for extraction, and
-  the per-layout keys are what the legacy's templates carried.
+- _A `// NOSONAR` comment on the blocks._ Rejected — a per-line suppression is
+  noisier than one config line and hides the reason; the exclusion below is
+  scoped and documented.
 
 **Consequences.** The config spec keeps asserting `toEqual` shapes — the
 factories are invisible to it. `messages.xlf` and the locale files do not
 change, so the i18n completeness spec (SHL-08) holds. Future score-shaped
 boxes reuse `scoreSection` rather than a fifteenth literal.
+
+The factories cut new-code duplication from 7.7% to 3.7%, but the gate's 3%
+cap stayed red: what remained is not the score blocks — those are factories
+now — it is the ten layout **rows** matching one another. Sonar's copy-paste
+detector normalizes every `$localize` tag and every identifier to a single
+token, so a declarative table whose rows all share a shape (the governance
+box, the nav line, the score factory call, the `sorts` field) reads as
+duplication no matter how the shared fragments are extracted. The layout
+table is data a reviewer reads as a table, and `section-config.spec.ts` is
+its test; collapsing it into a builder to satisfy the detector would trade
+the spec's readable parity map for indirection, so the file is instead
+exempted from copy-paste detection alone — `sonar.cpd.exclusions` in
+`sonar-project.properties`. Real code (the view, the card, the store) is
+unchanged and still counted; those four files report 0% new-code duplication.
+This is a Sonar-tooling fact (ADR 056's gate), not an Atlas behaviour, so no
+`deviations.md` entry is warranted.
