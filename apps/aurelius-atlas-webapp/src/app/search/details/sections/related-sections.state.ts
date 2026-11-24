@@ -171,10 +171,22 @@ export class RelatedSectionsState {
      * shows at once and the resolve starts. A null view or layout clears
      * the sections; a new layout or view re-seeds from scratch — the
      * editor's save re-read rides this entry (DD-327).
+     *
+     * A section whose row says `seedFrom: "verdicts"` (7.25b, DD-848)
+     * seeds from {@link verdicts} instead of the view's ends: the screen
+     * hands the GUIDs the verdict door answered, in its order, keyed by
+     * the section's anchor. Everything downstream — the chunked resolve,
+     * the search, the facets, the page — is the shared card section
+     * unchanged (DET-53); an anchor with no entry seeds empty.
      * @param view the read door's answer for the opened entity, or null
      * @param layout the entity's layout, or undefined for the default
+     * @param verdicts seed GUIDs per anchor for the verdict-seeded boxes
      */
-    seed(view: EntityView | null, layout: TypeLayout | undefined): void {
+    seed(
+        view: EntityView | null,
+        layout: TypeLayout | undefined,
+        verdicts: Record<string, readonly string[]> = {},
+    ): void {
         this.generation++;
         this.lastSeed = { view };
         if (view === null || layout === undefined) {
@@ -184,7 +196,7 @@ export class RelatedSectionsState {
 
         const records = layout.sections.map((def) => ({
             def,
-            seed: this.seedOf(view, def),
+            seed: this.seedOf(view, def, verdicts),
             resolved: new Map<string, EntityCard>(),
             failed: new Set<string>(),
             missing: new Set<string>(),
@@ -331,11 +343,21 @@ export class RelatedSectionsState {
     /**
      * The seed of one section (DET-17, VDR-03): the view's ACTIVE ends for
      * the section's keys, in order, deduped by guid — {@link sectionEnds}.
+     * A verdict-seeded row (7.25b, DD-848) answers the screen's GUIDs for
+     * its anchor instead, in door order, deduped the same way; the display
+     * text starts as the guid and the resolved card replaces it.
      * @param view the read door's answer for the opened entity
      * @param def the section's config
+     * @param verdicts seed GUIDs per anchor, keyed by anchor (DD-848)
      * @returns the seed entries
      */
-    private seedOf(view: EntityView, def: SectionDef): SeedEntry[] {
+    private seedOf(view: EntityView, def: SectionDef, verdicts: Record<string, readonly string[]>): SeedEntry[] {
+        if (def.seedFrom === "verdicts") {
+            const seen = new Set<string>();
+            return (verdicts[def.anchor] ?? [])
+                .filter((guid) => (seen.has(guid) ? false : (seen.add(guid), true)))
+                .map((guid) => ({ guid, displayText: guid }));
+        }
         return sectionEnds(view.sections, def.seedKeys).map(seedEntry);
     }
 

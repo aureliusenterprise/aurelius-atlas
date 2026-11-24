@@ -81,6 +81,7 @@ area you are about to work in; the rest can wait.
 | [068](./068-a-catalogue-bootstraps-only-the-metamodel-it-serves.md)                   | A new catalogue bootstraps only the metamodel it serves — the Atlas base model, the glossary, and m4i — and the vendored domain models and their icon and lineage traces leave the shipped system.                                                        | Proposed          |
 | [069](./069-each-browser-facing-surface-answers-on-its-own-hostname.md)               | Each browser-facing surface answers on a hostname of its own under one domain, so an address says what it is; the sign-in address never shares an address with a product surface, and only the single-machine bundle uses one host with paths.            | Proposed          |
 | [070](./070-the-catalogue-ships-one-prose-attribute.md)                               | Apache Atlas's `description` is the only prose attribute of the Aurelius data model — the m4i dictionary keeps no `definition`, every record's text moves to `description`, and a catalogue at the old shape is rebuilt.                                  | Proposed          |
+| [071](./071-a-rule-s-verdicts-come-through-the-view-family.md)                        | A rule's verdict page reads its stored verdicts from a fourth door of the view family (`POST /api/aurelius/v1/rule/verdicts`) over the verdicts index, never the retired App Search wire and never a re-judge.                                            | Proposed          |
 
 ## Why record decisions
 

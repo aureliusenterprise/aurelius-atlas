@@ -12,6 +12,7 @@ from aurelius_atlas_model.base import AtlasModel, JavaInt
 from aurelius_atlas_model.discovery import QuickSearchParameters
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode, validate_query_length
 from aurelius_atlas_model.params import FILTERS_WITHOUT_TYPE, NEGATIVE_PAGE
+from aurelius_atlas_model.views import RuleVerdict
 from pydantic import Field
 
 
@@ -171,6 +172,27 @@ class ViewSearchAnswer(AtlasModel):
     cards: list[dict[str, Any]] = Field(default_factory=list)
     facets: dict[str, Any] = Field(default_factory=dict)
     total: int = 0
+
+
+class RuleVerdictsRequest(AtlasModel):
+    """The request of ``POST /api/aurelius/v1/rule/verdicts`` (VDR-14).
+
+    The door reads the raw body and answers any problem itself (AVR-13's shape),
+    so this model documents the shape rather than enforcing it.
+    """
+
+    rule: str | None = None
+    """The rule's GUID: the verdicts' index is read for it, never the entity."""
+
+
+class RuleVerdictsAnswer(AtlasModel):
+    """The answer of ``POST /api/aurelius/v1/rule/verdicts`` (AVS-12, DD-846).
+
+    ``verdicts`` holds one ``RuleVerdict`` row per stored verdict of the rule, in
+    the store's document id order (ASG-09).
+    """
+
+    verdicts: list[RuleVerdict] = Field(default_factory=list)
 
 
 class ViewForTypeAnswer(AtlasModel):

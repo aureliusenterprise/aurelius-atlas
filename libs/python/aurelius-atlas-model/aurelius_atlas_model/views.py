@@ -51,6 +51,21 @@ class CardVerdict(AtlasModel):
     message: str
 
 
+class RuleVerdict(AtlasModel):
+    """One stored governance verdict of a rule, as the verdicts door answers it (AVS-12, DD-846).
+
+    ``entity`` is the judged entity's GUID; ``compliant`` is the document's ``"1"`` or ``"0"`` as a boolean,
+    ``null`` for a document holding neither (ASG-03). ``name`` and ``message`` are the rule name and the
+    verdict's ``noncompliant_message`` the document copied when it was written — the rows the rule page's
+    card lists and chart draw (VDR-14).
+    """
+
+    entity: str
+    compliant: bool | None
+    name: str = ""
+    message: str = ""
+
+
 class RelationEntity(AtlasModel):
     """One related entity: its GUID and name, and its type and state where the reader read them (AVS-02, AVS-04).
 

@@ -12,6 +12,7 @@ import {
     Accordion,
     Breadcrumbs,
     ClassificationChip,
+    DataQualityPie,
     DetailsCardSection,
     DetailsNavigation,
     EntityCard,
@@ -36,6 +37,7 @@ import { LineageModelState } from "./lineage/lineage-state";
 import { CatalogueCard } from "../shared/catalogue-card.component";
 import { PropagatedChips, type PropagatedChipEntry } from "../shared/propagated-chips.component";
 import { DetailsGovQualityState, type GovSectionView } from "./sections/gov-quality.state";
+import { DetailsRuleVerdictsState } from "./sections/rule-verdicts.state";
 import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
@@ -71,6 +73,7 @@ import { cardTypeAlias } from "../shared/type-alias";
         Breadcrumbs,
         CatalogueCard,
         ClassificationChip,
+        DataQualityPie,
         DetailsCardSection,
         DetailsNavigation,
         EntityCard,
@@ -90,7 +93,14 @@ import { cardTypeAlias } from "../shared/type-alias";
     // drawer lives in the root `drawer` aux outlet and a page-scoped provider
     // would hide the box's state from it, so the service is the root
     // singleton both this page and the drawer read.
-    providers: [DetailsState, DetailsBreadcrumbState, DetailsLayoutState, RelatedSectionsState, DetailsGovQualityState],
+    providers: [
+        DetailsState,
+        DetailsBreadcrumbState,
+        DetailsLayoutState,
+        RelatedSectionsState,
+        DetailsGovQualityState,
+        DetailsRuleVerdictsState,
+    ],
     templateUrl: "./details.component.html",
     styleUrl: "./details.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -120,6 +130,9 @@ export class Details {
 
     /** The Governance Quality Rules box of the layout (DET-42 as amended by 7.25a, DD-520/DD-841). */
     protected readonly govQuality = inject(DetailsGovQualityState);
+
+    /** The opened rule's verdict rows (DET-51, DD-850): the chart's score. */
+    protected readonly ruleVerdicts = inject(DetailsRuleVerdictsState);
 
     /** Whether the pencil shows (EDT-09, DD-324): the atlas-write grant. */
     protected readonly canWrite = canWriteEntities();
@@ -206,14 +219,29 @@ export class Details {
         effect(() => {
             this.layoutState.resolve(this.entity()?.typeName ?? null);
         });
+        // The rule page's verdict boxes seed from the verdict rows (DD-848):
+        // the read effect below hands the screen its rows, and every arrival
+        // re-seeds — the sections store's rule for a new view. The two
+        // computeds keep the effect awake across the read (DET-51).
         effect(() => {
-            this.sections.seed(this.entity(), this.layoutState.layout());
+            this.sections.seed(this.entity(), this.layoutState.layout(), {
+                "related-non-compliants": this.ruleVerdicts.nonCompliantGuids(),
+                "related-compliants": this.ruleVerdicts.compliantGuids(),
+            });
         });
         // The rule box follows the entity (DET-42): every arrival re-reads,
         // the save re-read among them — the sections store's rule. Every
         // m4i layout except the rule page carries the box (DET-48).
         effect(() => {
             this.govQuality.load(hasGovQualityBox(this.layout()) ? this.entity() : null);
+        });
+        // The verdict read follows the rule (DET-51): the layout carrying a
+        // Compliance Chart is the rule page and only the rule page, so its
+        // arrival asks the door once per entity, and every other entity
+        // asks nothing. The save re-read re-asks — the sections store's rule.
+        effect(() => {
+            const view = this.entity();
+            this.ruleVerdicts.load(this.layout()?.complianceChart === undefined ? null : view);
         });
 
         // A deep link's anchor lands when its box arrives (DET-25, DD-381).
@@ -373,6 +401,15 @@ export class Details {
 
     /** The Governance Quality Rules box as the chrome renders it (DET-44..DET-47). */
     protected readonly govView = this.govQuality.view;
+
+    /**
+     * The Compliance Chart box of the rule page (DET-54, DD-849): the
+     * layout's strings and DET-51's score, or null for every other layout.
+     */
+    protected readonly complianceChart = computed(() => {
+        const def = this.layout()?.complianceChart;
+        return def === undefined ? null : { ...def, score: this.ruleVerdicts.score() };
+    });
 
     /**
      * The layout's box list in the config's order (DET-48, DD-841): every

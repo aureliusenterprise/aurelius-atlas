@@ -48,6 +48,7 @@ from aurelius_atlas_server.routes import (
     TENANCY,
     TYPES,
     VIEW_ENTITY,
+    VIEW_RULE,
     VIEW_SEARCH,
     VIEW_TYPES,
 )
@@ -269,6 +270,7 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
         APP_SEARCH,
         VIEW_SEARCH,
         VIEW_ENTITY,
+        VIEW_RULE,
         VIEW_TYPES,
         TENANCY,
     ):

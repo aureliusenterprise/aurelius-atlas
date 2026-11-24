@@ -39,6 +39,29 @@ export type CardVerdict = {
 };
 
 /**
+ * One stored governance verdict of a rule, as the verdicts door answers it
+ * (`RuleVerdict`, AVS-12, DD-846, VDR-14): the judged entity, the verdict, and
+ * the rule name and message the verdict document copied. `compliant` is the
+ * document's `"1"` or `"0"` as a boolean, `null` for a document holding
+ * neither — which the rule page draws in neither list (DET-51).
+ */
+export type RuleVerdict = {
+    entity: string;
+    compliant: boolean | null;
+    name: string;
+    message: string;
+};
+
+/**
+ * The answer of `POST /api/aurelius/v1/rule/verdicts` (`RuleVerdictsAnswer`,
+ * AVS-12): the rule's stored verdict rows, in the store's document id order
+ * (ASG-09).
+ */
+export type RuleVerdictsAnswer = {
+    verdicts: RuleVerdict[];
+};
+
+/**
  * One related entity (`RelationEntity`, AVS-02, AVS-04).
  *
  * `breadcrumb` holds the trail its document stored, top down, so a propagation source's row can show where the

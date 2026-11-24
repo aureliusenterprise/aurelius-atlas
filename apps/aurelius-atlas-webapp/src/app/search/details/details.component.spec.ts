@@ -2025,6 +2025,326 @@ describe("Details Governance Quality Rules section (DET-44..DET-48, DD-841)", ()
     });
 });
 
+/** The view family's verdicts door (VDR-15, 7.25b): the rule page's one read. */
+const VERDICTS_URL = "/api/aurelius/v1/rule/verdicts";
+
+/**
+ * The governance rule's body (DET-50): no sections — its two boxes seed from
+ * the verdicts, not an end. `ruleExpression` is the one attribute the
+ * properties table shows (every other attribute is the header's, the
+ * description's, or on the legacy blacklist, DET-11).
+ */
+function m4iGovRule(overrides: Partial<EntityView> = {}): EntityView {
+    return {
+        guid: "gv-1",
+        typeName: "m4i_gov_data_quality",
+        displayText: "Name filled",
+        name: "Name filled",
+        qualifiedName: "Name filled@cluster",
+        status: "ACTIVE",
+        stale: false,
+        attributes: {
+            name: "Name filled",
+            qualifiedName: "Name filled@cluster",
+            description: "Every dataset carries a name.",
+            ruleExpression: "is_filled('name')",
+        },
+        ...overrides,
+    };
+}
+
+/** One door row: the judged entity, its verdict, the legacy's extras. */
+function verdictRow(entity: string, compliant: boolean | null): Record<string, unknown> {
+    return { entity, compliant, name: entity, message: "The dataset carries no name" };
+}
+
+/** The door answer for the two verdict boxes' seeded entities (DET-53): the
+ * two datasets, each carrying the chain ends the box's facet groups count. */
+function verdictCardsAnswer(): Record<string, unknown> {
+    return doorAnswer([
+        doorCard("e-1", "m4i_dataset", "raw_logs", {
+            relations: [
+                {
+                    attribute: "m4i_data_domain",
+                    entities: [{ guid: "d-1", name: "genomics", typeName: "m4i_data_domain" }],
+                },
+                {
+                    attribute: "m4i_data_entity",
+                    entities: [{ guid: "en-1", name: "variants", typeName: "m4i_data_entity" }],
+                },
+            ],
+        }),
+        doorCard("e-2", "m4i_dataset", "hourly_index", {
+            relations: [
+                {
+                    attribute: "m4i_data_domain",
+                    entities: [{ guid: "d-1", name: "genomics", typeName: "m4i_data_domain" }],
+                },
+                {
+                    attribute: "m4i_data_entity",
+                    entities: [{ guid: "en-1", name: "variants", typeName: "m4i_data_entity" }],
+                },
+            ],
+        }),
+    ]);
+}
+
+/**
+ * Bring the rule page up: the entity, the verdict read, and both boxes'
+ * card chunk all settle. `verdicts` rides the door's rows and `cards` the
+ * search door's answer; `failVerdicts` stands in for a read that failed
+ * (DET-55).
+ */
+function arriveRule(
+    fixture: { detectChanges: () => void },
+    httpMock: HttpTestingController,
+    body: EntityView = m4iGovRule(),
+    verdicts: Record<string, unknown>[] = [verdictRow("e-1", false), verdictRow("e-2", true)],
+    cards: Record<string, unknown> = verdictCardsAnswer(),
+    failVerdicts = false,
+): void {
+    arrive(fixture, httpMock, body);
+    const door = httpMock.expectOne(VERDICTS_URL);
+    if (failVerdicts) {
+        door.flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
+    } else {
+        door.flush({ verdicts });
+    }
+    fixture.detectChanges(); // the rows land, the seed re-runs, the chunks fire
+    for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
+        request.flush(cards);
+    }
+    fixture.detectChanges();
+}
+
+/** The Compliance Chart box's pie, as the screen drew it (DET-54). */
+function pieOf(fixture: {
+    debugElement: { query: (predicate: ReturnType<typeof By.css>) => { componentInstance: unknown } | null };
+}) {
+    const pie = fixture.debugElement.query(By.css("aurelius-atlas-ui-data-quality-pie"));
+    return pie?.componentInstance as { value: () => number; size: () => number } | undefined;
+}
+
+describe("Details governance rule page (DET-50..DET-55, DD-848..DD-850)", () => {
+    it("draws the legacy page in the legacy order and nav (DET-50)", () => {
+        const { fixture, compiled, httpMock } = setup("gv-1");
+        arriveRule(fixture, httpMock);
+
+        // The landmarks top to bottom: the description, the stats bar, the
+        // chart, the two verdict boxes, the properties — the legacy template.
+        const landmarks = [...compiled.querySelectorAll<HTMLElement>("[id]")]
+            .map((node) => node.id)
+            .filter((id) =>
+                ["description-details", "related-non-compliants", "related-compliants", "properties-details"].includes(
+                    id,
+                ),
+            );
+        expect(landmarks).toEqual([
+            "description-details",
+            "related-non-compliants",
+            "related-compliants",
+            "properties-details",
+        ]);
+        // The chart sits between the stats bar and the Non-compliant box.
+        const boxes = [...compiled.querySelectorAll<HTMLElement>(".box")];
+        const chart = compiled.querySelector<HTMLElement>(".aurelius-details-compliance-chart")!;
+        expect(chart.classList.contains("box"), "the chart is a box").toBe(true);
+        const stats = compiled.querySelector<HTMLElement>(".aurelius-details-stats")!;
+        const nonCompliant = compiled.querySelector<HTMLElement>("#related-non-compliants")!;
+        expect(boxes.indexOf(stats) < boxes.indexOf(chart), "chart after the stats").toBe(true);
+        expect(boxes.indexOf(chart) < boxes.indexOf(nonCompliant), "chart before the box").toBe(true);
+        // The layout's own titles (the bridge's `search.details.govQuality.*`).
+        expect(normalize(compiled.querySelector("#description-details h2")?.textContent)).toBe("Description");
+        expect(normalize(compiled.querySelector(".aurelius-details-compliance-chart h2")?.textContent)).toBe(
+            "Compliance Chart",
+        );
+        // The box titles the legacy cards components carried (the chrome's
+        // h2, UIC-27).
+        const sectionTitle = (anchor: string) =>
+            normalize(compiled.querySelector<HTMLElement>(`#${anchor} .aurelius-card-section-level h2`)?.textContent);
+        expect(sectionTitle("related-non-compliants")).toBe("Non-compliant");
+        expect(sectionTitle("related-compliants")).toBe("Compliant");
+        // The People box is not on this page (DET-50), and the page carries
+        // no Governance Quality Rules box — its content is that box (DV-199).
+        expect(compiled.querySelector("#people-details")).toBeNull();
+        expect(compiled.querySelector("#gov-quality")).toBeNull();
+        // DET-50: the nav's three entries, in the legacy order — neither the
+        // description nor the chart is one.
+        const nav = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) => [
+            normalize(link.textContent),
+            link.getAttribute("href"),
+        ]);
+        expect(nav).toEqual([
+            ["Non-compliant", "/#related-non-compliants"],
+            ["Compliant", "/#related-compliants"],
+            ["Properties", "/#properties-details"],
+        ]);
+        // DET-51: the page's one read is the verdicts door — never the App
+        // Search wire the legacy rode (ADR 071 R5), and no rule box either.
+        httpMock.expectNone("/api/atlas/v2/search/basic");
+        httpMock.expectNone("/validate-entity/");
+        httpMock.expectNone(VERDICTS_URL);
+        httpMock.verify();
+    });
+
+    it("counts the two verdict sets and the properties in the stats bar (DET-52)", () => {
+        const { fixture, compiled, httpMock } = setup("gv-1");
+        arriveRule(fixture, httpMock, m4iGovRule(), [
+            verdictRow("e-1", false),
+            verdictRow("e-2", true),
+            verdictRow("e-3", null),
+        ]);
+
+        const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map((item) => {
+            const heading = item.querySelector("p.heading a")!;
+            return [
+                normalize(heading.textContent) ?? "",
+                heading.getAttribute("href") ?? "",
+                normalize(item.querySelector("p.title")?.textContent) ?? "",
+            ];
+        });
+        expect(stats).toEqual([
+            ["Non-compliant", "#related-non-compliants", "1"],
+            ["Compliant", "#related-compliants", "1"],
+            // The one property the table shows (DET-24's Properties rule).
+            ["Properties", "#properties-details", "1"],
+        ]);
+    });
+
+    it("shows the two boxes' cards in door order (DET-53)", () => {
+        const { fixture, compiled, httpMock } = setup("gv-1");
+        arriveRule(fixture, httpMock, m4iGovRule(), [
+            verdictRow("e-1", false),
+            verdictRow("e-2", true),
+            verdictRow("e-3", false),
+        ]);
+
+        const titles = (anchor: string) =>
+            [...compiled.querySelectorAll<HTMLElement>(`#${anchor} aurelius-atlas-ui-entity-card .title.is-4 a`)].map(
+                (link) => normalize(link.textContent),
+            );
+        // The non-compliant box carries both refused entities in door order;
+        // the third's card never answered here, so only its seed shows.
+        expect(titles("related-non-compliants")).toEqual(["raw_logs"]);
+        expect(titles("related-compliants")).toEqual(["hourly_index"]);
+        // The count line carries the seed, ahead of the answered cards (DET-17).
+        expect(
+            normalize(compiled.querySelector("#related-non-compliants a.aurelius-card-section-reset")?.textContent),
+        ).toBe("2 result(s)");
+        // DET-53: the box's funnel asks the four groups of the row (DV-201):
+        // every one with a value among the cards shows, in the configured
+        // order — a group with no row leaves the popover (VCF-12).
+        compiled.querySelector<HTMLButtonElement>("#related-non-compliants .aurelius-card-section-funnel")!.click();
+        fixture.detectChanges();
+        const groups = [
+            ...compiled.querySelectorAll<HTMLElement>("#related-non-compliants .dropdown-menu .menu-label"),
+        ].map((label) => normalize(label.textContent));
+        expect(groups).toEqual(["Type Name", "Data Domain", "Data Entity", "Name"]);
+    });
+
+    it("draws the pie at the score and the legend in the legacy order (DET-54, DET-51)", () => {
+        const { fixture, compiled, httpMock } = setup("gv-1");
+        arriveRule(fixture, httpMock, m4iGovRule(), [
+            verdictRow("e-1", false),
+            verdictRow("e-2", true),
+            verdictRow("e-3", true),
+        ]);
+
+        // 2 of 3 judged pass: the legacy's formula, and size 8 (DET-54).
+        const pie = pieOf(fixture)!;
+        expect(pie.value()).toBeCloseTo(200 / 3);
+        expect(pie.size()).toBe(8);
+        // The legend: non-compliant first with its red swatch, compliant second
+        // (DET-54's order; the swatches' colours are the sheet's, the legacy's
+        // hsl pair — the pie's own layers carry the same two).
+        const rows = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-legend-row")];
+        expect(rows.map((row) => normalize(row.textContent))).toEqual(["Non-compliant", "Compliant"]);
+        expect(rows.map((row) => row.querySelector(".aurelius-details-legend-swatch")!.className)).toEqual([
+            "aurelius-details-legend-swatch aurelius-details-legend-non-compliant",
+            "aurelius-details-legend-swatch aurelius-details-legend-compliant",
+        ]);
+    });
+
+    it("keeps the page quiet and empty when the verdict read fails (DET-55)", () => {
+        const { fixture, compiled, httpMock } = setup("gv-1");
+        arriveRule(fixture, httpMock, m4iGovRule(), [], {}, true);
+
+        // DET-49's posture: both boxes stand at zero, no alert, no retry.
+        expect(
+            normalize(compiled.querySelector("#related-non-compliants a.aurelius-card-section-reset")?.textContent),
+        ).toBe("0 result(s)");
+        expect(
+            normalize(compiled.querySelector("#related-compliants a.aurelius-card-section-reset")?.textContent),
+        ).toBe("0 result(s)");
+        expect(compiled.querySelectorAll("#related-non-compliants aurelius-atlas-ui-entity-card")).toHaveLength(0);
+        expect(compiled.querySelectorAll("#related-compliants aurelius-atlas-ui-entity-card")).toHaveLength(0);
+        expect(pieOf(fixture)!.value()).toBe(0);
+        const counts = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item p.title")].map(
+            (title) => normalize(title.textContent),
+        );
+        expect(counts).toEqual(["0", "0", "1"]);
+        httpMock.expectNone("/api/aurelius/v1/search");
+        httpMock.verify();
+    });
+
+    it("scores a rule judging nothing at 0, the legacy's NaN painted no arc (DET-51)", () => {
+        const { fixture, compiled, httpMock } = setup("gv-1");
+        arriveRule(fixture, httpMock, m4iGovRule(), []);
+
+        expect(pieOf(fixture)!.value()).toBe(0);
+        expect(compiled.querySelectorAll("#related-non-compliants aurelius-atlas-ui-entity-card")).toHaveLength(0);
+        expect(compiled.querySelectorAll("#related-compliants aurelius-atlas-ui-entity-card")).toHaveLength(0);
+        httpMock.expectNone("/api/aurelius/v1/search");
+        httpMock.verify();
+    });
+
+    it("the save re-read re-asks the door and re-seeds the boxes (DET-51, DD-327)", () => {
+        const { fixture, compiled, httpMock } = setup("gv-1");
+        arriveRule(fixture, httpMock);
+
+        // The editor's save tick: the screen re-reads the entity (the door's
+        // view, cached-evicted — DD-605), and the rule page asks the verdicts
+        // door again — the sections store's rule for every arrival.
+        TestBed.inject(EntityWritten).notify("gv-1", "saved");
+        fixture.detectChanges();
+        httpMock
+            .expectOne((request) => request.url.startsWith(VIEW_URL))
+            .flush(
+                m4iGovRule({
+                    displayText: "Name filled",
+                    attributes: { ...m4iGovRule().attributes, name: "Name filled" },
+                }) as unknown as Record<string, unknown>,
+            );
+        fixture.detectChanges();
+        settleTypeDefs(httpMock);
+
+        httpMock.expectOne(VERDICTS_URL).flush({ verdicts: [verdictRow("e-9", true)] });
+        fixture.detectChanges(); // the new rows re-seed, the new chunk fires
+        for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
+            request.flush(doorAnswer([doorCard("e-9", "m4i_dataset", "renamed")]));
+        }
+        fixture.detectChanges();
+
+        expect(pieOf(fixture)!.value()).toBe(100);
+        expect(
+            [
+                ...compiled.querySelectorAll<HTMLElement>(
+                    "#related-compliants aurelius-atlas-ui-entity-card .title.is-4 a",
+                ),
+            ].map((link) => normalize(link.textContent)),
+        ).toEqual(["renamed"]);
+        httpMock.verify();
+    });
+
+    it("no other page asks the verdicts door (DET-51's gate)", () => {
+        const { fixture, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        httpMock.expectNone(VERDICTS_URL);
+        httpMock.verify();
+    });
+});
+
 /**
  * Deliver the guid change's read: the first request already arrived via
  * {@link arrive}; this flushes the second one.

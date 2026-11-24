@@ -193,6 +193,14 @@ class EntityDocuments(Protocol):
         """
         ...
 
+    async def verdicts_by_rule(self, rule_guid: str) -> list[StoredVerdict]:
+        """The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
+
+        The same paged read as ``verdicts_by_entity``, filtered over ``guid``; a rule with no verdict
+        documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).
+        """
+        ...
+
     async def write(
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],

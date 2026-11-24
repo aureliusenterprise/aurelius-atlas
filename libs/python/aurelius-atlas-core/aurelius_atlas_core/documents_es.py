@@ -764,6 +764,28 @@ class ElasticsearchEntityDocuments:
                 return grouped
             after = hits[-1]["sort"]
 
+    async def verdicts_by_rule(self, rule_guid: str) -> list[StoredVerdict]:
+        """Page through one rule's verdict documents in document id order (ASG-09, DD-845).
+
+        ``verdicts_by_entity``'s read with the filter moved to ``guid``: one terms filter, sorted by ``id``
+        with ``search_after``, sources kept (ASG-03). A rule with no verdict documents answers the empty list.
+        """
+        found: list[StoredVerdict] = []
+        after: list[Any] | None = None
+        while True:
+            response = await self._client.search(
+                index=self._verdicts,
+                size=REFERRING_PAGE,
+                query=es_clauses.terms("guid", [rule_guid]),
+                sort=[{"id": "asc"}],
+                search_after=after,
+            )
+            hits = response["hits"]["hits"]
+            found += [StoredVerdict.model_validate(hit["_source"]) for hit in hits]
+            if len(hits) < REFERRING_PAGE:
+                return found
+            after = hits[-1]["sort"]
+
     async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments; and the index
         self,
         *,
