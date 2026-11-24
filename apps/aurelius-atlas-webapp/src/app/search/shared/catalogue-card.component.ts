@@ -122,14 +122,15 @@ const PERSON_ATTRIBUTE = "m4i_person";
                         />
                     </div>
                 }
-                @if (showScores() && scoreRows().length > 0) {
-                    <!-- The score rows (DET-60, 7.25c): the legacy card's
-                             showDataQuality block — the same five-dimension
-                             list the details box draws, above the
-                             description. A card with no rows prints no
-                             block and no placeholder (DET-63's card half).
-                             The mount-site switch (DET-61, DV-202): a
-                             results row never asks for it. -->
+                @if (scoreRows().length > 0) {
+                    <!-- The score rows (DET-60 as amended by 7.25d): the
+                             legacy card's showDataQuality block — the same
+                             scored-dimension list the details box draws,
+                             above the description. A card with no rows
+                             prints no block and no placeholder (DET-63's
+                             card half, DET-64's count gate). Both screens
+                             print it (DET-61 as amended, DD-860): the data
+                             decides, the screen does not. -->
                     <aurelius-atlas-ui-quality-dimension-list class="aurelius-card-scores" [dimensions]="scoreRows()" />
                 }
                 @if (description()) {
@@ -165,14 +166,6 @@ export class CatalogueCard {
 
     /** Emits the clicked card's, crumb's, or person's guid — the screen routes (DD-154). */
     readonly cardClicked = output<string>();
-
-    /**
-     * Whether the card prints its score rows (DET-60, DET-61, DD-855).
-     * The mount site decides, as the legacy's own `SHOW_DATA_QUALITY`
-     * token did — off everywhere, on only in a details section — and the
-     * card reads no server setting (DV-202).
-     */
-    readonly showScores = input(false);
 
     /** The flat row's label — the dictionary's own derived-people name, "People" / "Personen". */
     private static readonly peopleLabel = $localize`:@@derivedperson:People`;
@@ -243,7 +236,7 @@ export class CatalogueCard {
 
     /**
      * The score rows (DET-60, DET-63): the card's own score rows (AVS-01)
-     * in DET-56's five-row order — a partial set prints its held dimensions
+     * in DET-56's dimension order — a partial set prints its scored dimensions
      * only. The legacy's source gate reads the same here as on the box
      * (DET-63): a sourceless card yields the empty list no block renders
      * for, and never a placeholder (DET-60's card half).

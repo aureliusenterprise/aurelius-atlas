@@ -1,4 +1,4 @@
-"""E2E: the 7.25c data-quality scores — the box, the stat, the sort, the card.
+"""E2E: the 7.25c/7.25d data-quality scores — the box, the stat, the sort, the card.
 
 The score source is the scanner's: 12.2 writes one ``m4i_dq_score`` per rule and
 dataset, and 14.5's worker round rolls those scores up to the fields, their data
@@ -9,9 +9,10 @@ the roll-up is the thing under test, not the scanner — and rides the served
 stack: browser -> nginx -> server. It opens a scored dataset, reads the score
 box's rows and the stats bar's percent (DET-56, DET-58), sorts the Fields box by
 Completeness (DET-59), and reads the score block on a card of that box
-(DET-60); a second, un-scored dataset answers the placeholder and the word
-(DET-56, DET-58, DET-63), and the same scored dataset's results row prints no
-score block at all (DET-61). The totals land through the worker's round, so the
+(DET-60) and, since 7.25d, on the results row too (DET-61 as amended); every
+score surface prints only the dimensions that have rules, never a 0-count row
+(DET-64). A second, un-scored dataset answers the placeholder and the word
+(DET-56, DET-58, DET-63). The totals land through the worker's round, so the
 wait is on the door's card, not the seed's answer (the ASG-06 idiom);
 self-cleaned by the shared m4i purge, scores first (DD-223).
 """
@@ -225,8 +226,8 @@ def _seed_score_source(
 def _score_box_and_stat(page: Page, *, scored: bool, run: str) -> None:
     """The box's rows (or rest) and the stats bar's value (or word), with the nav entry (DET-56, DET-58).
 
-    On the scored dataset: the five dimension rows in the fixed order, the
-    held 0-count rows printed like the rest (DET-63), UIC-37's pies, the
+    On the scored dataset: only the dimension that has rules (DET-64 leaves
+    the four 0-count dimensions off the box), UIC-37's pie, the
     stats bar's overall percent after the consumers, and the side
     navigation's entry beside the governance box's. On the twin: the
     placeholder, no rows, and the word.
@@ -235,14 +236,8 @@ def _score_box_and_stat(page: Page, *, scored: bool, run: str) -> None:
     expect(box).to_be_visible()
     expect(box.locator("h2")).to_have_text("Data Quality")
     if scored:
-        assert _dimension_texts(box) == [
-            "0% Accuracy (0)",
-            "70% Completeness (2)",
-            "0% Timeliness (0)",
-            "0% Uniqueness (0)",
-            "0% Validity (0)",
-        ]
-        expect(box.locator("aurelius-atlas-ui-data-quality-pie")).to_have_count(5)
+        assert _dimension_texts(box) == ["70% Completeness (2)"]
+        expect(box.locator("aurelius-atlas-ui-data-quality-pie")).to_have_count(1)
         value = "70%"
     else:
         expect(box.locator("p.aurelius-quality-not-available")).to_have_text("No data quality results available")
@@ -278,21 +273,16 @@ def _drives_the_score_sort(page: Page, run: str) -> None:
     fields_box.locator("button.aurelius-card-section-direction").click()
     expect(titles.nth(0)).to_have_text(f"zz{run}field2")
     expect(titles.nth(1)).to_have_text(f"zz{run}field")
-    # DET-60: the block of the card now on top — the 0.9 field's own roll-up.
-    assert _dimension_texts(cards.nth(0).locator(".aurelius-card-scores")) == [
-        "0% Accuracy (0)",
-        "90% Completeness (1)",
-        "0% Timeliness (0)",
-        "0% Uniqueness (0)",
-        "0% Validity (0)",
-    ]
+    # DET-60 as amended, DET-64: the block of the card now on top — the 0.9
+    # field's own roll-up, with only the dimension that has rules.
+    assert _dimension_texts(cards.nth(0).locator(".aurelius-card-scores")) == ["90% Completeness (1)"]
 
 
 # impact=major, likelihood=high (the score surfaces are new furniture with the
 # roll-up's worker timing under them; the only proof of DET-56/58/59/60/61 on
 # real data)
 @pytest.mark.high
-@pytest.mark.covers(rules=["DET-56", "DET-58", "DET-59", "DET-60", "DET-61"])
+@pytest.mark.covers(rules=["DET-56", "DET-58", "DET-59", "DET-60", "DET-61", "DET-64"])
 def test__the_dataset_page_draws_the_data_quality_scores(
     authenticated: Page, root_url: str, fresh_user_token: Callable[[], str]
 ) -> None:
@@ -306,9 +296,11 @@ def test__the_dataset_page_draws_the_data_quality_scores(
     five-row box in the fixed order with the held 0-count rows (DET-56), the
     stats bar's percent and its nav entry in the legacy place (DET-58), the
     Fields box sorted by Completeness putting the 0.9 field first (DET-59), and
-    the score block on each card of that box (DET-60). The un-scored twin
-    dataset answers the placeholder and the word (DET-56, DET-58, DET-63), and
-    the scored one's results row prints no score block (DET-61). Self-cleaned;
+    the score block on each card of that box (DET-60 as amended) — every one of
+    them the scored dimensions only, never a 0-count row (DET-64). The
+    un-scored twin dataset answers the placeholder and the word (DET-56,
+    DET-58, DET-63), and the scored one's results row prints the same block it
+    carries in a details section (DET-61 as amended). Self-cleaned;
     no shared service restarts (DD-223).
     """
     run = secrets.token_hex(4)
@@ -349,15 +341,18 @@ def test__the_dataset_page_draws_the_data_quality_scores(
         # DET-59/DET-60: the Fields box's dimension sorts and the cards' blocks.
         _drives_the_score_sort(authenticated, run)
 
-        # DET-61: the same scored dataset as a results row prints no score
-        # block at all — the mount site decides, whatever the scores.
+        # DET-61 as amended (DD-860): the same scored dataset as a results row
+        # prints its block — the data decides, not the mount site — and DET-64
+        # keeps it to the dimension that has rules.
         authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={quote(f'zz{run}warehouse')}"))
         rows = authenticated.locator(".result-row")
         # The fresh seeds search asynchronously (the store's refresh lags the
         # seed answer), so the row count waits like the totals above do.
         expect(rows).to_have_count(1, timeout=30_000)
         expect(rows.first).to_contain_text(f"zz{run}warehouse")
-        expect(rows.locator(".aurelius-card-scores")).to_have_count(0)
+        block = rows.first.locator(".aurelius-card-scores")
+        expect(block).to_be_visible()
+        assert _dimension_texts(block) == ["70% Completeness (2)"]
 
         # DET-56/DET-58/DET-63, the negative half: the un-scored twin answers
         # the placeholder and the word — no rows, no percent.

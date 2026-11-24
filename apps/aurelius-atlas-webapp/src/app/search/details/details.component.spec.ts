@@ -1203,7 +1203,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         ]);
     });
 
-    it("a score view draws the box's five dimension rows in the fixed order (DET-56)", () => {
+    it("a score view draws the box's scored dimension rows in the fixed order (DET-56, DET-64)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(
             fixture,
@@ -1224,12 +1224,13 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         const box = compiled.querySelector("#data-quality");
         expect(box).toBeTruthy();
         expect(normalize(box?.querySelector("h2")?.textContent)).toBe("Data Quality");
-        // The five dimension rows in the fixed order, `overall` left out:
-        // each the pie, the percent, the dimension word, the count.
+        // The scored dimensions in the fixed order, `overall` left out:
+        // each the pie, the percent, the dimension word, the count. DET-64's
+        // gate: the roll-up counts completeness 0, so the legacy's own truthy
+        // count gate prints no row for it (LAS-12's 0-count dimensions).
         const rows = [...(box?.querySelectorAll(".quality-dimension") ?? [])];
         expect(rows.map((row) => normalize(row.textContent))).toEqual([
             "75% Accuracy (1)",
-            "25% Completeness (0)",
             "40% Timeliness (1)",
             "50% Validity (2)",
         ]);
