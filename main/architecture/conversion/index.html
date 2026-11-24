@@ -7735,6 +7735,13 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
+<td>7.25c</td>
+<td>Data-quality scores on the seven catalogue layouts</td>
+<td>The score half of DD-369's hold-out returns: the <code>#data-quality</code> box with its five dimension rows over the view's <code>quality</code> (DET-56, DET-57), the stats-bar percent with the legacy's <code>Unavailable</code> word and its nav entry (DET-58), the ten sections' dimension sorts with the label tie-break (DET-59), and the score list on section cards with its off-switch on results (DET-60, DET-61). The rules box keeps DET-21's pair (DV-205); the quickview gets no addon (DV-203).</td>
+<td>Aurelius <code>details/**</code> (<code>data-quality-list</code>, the seven score pages), <code>components/cards/**</code> (<code>SHOW_DATA_QUALITY</code>)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>7.26</td>
 <td>HTTP retry: the dead-connection resend</td>
 <td>The browser resends an idempotent call once when its connection dies rather than its answer (APC-12/13, DD-449, DV-145): the editor-drawer field race (uvicorn's 5 s keep-alive close against the dev proxy's pooled socket) becomes invisible, and proxy restarts with it</td>

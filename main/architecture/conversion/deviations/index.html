@@ -8328,6 +8328,38 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>There is no App Search engine to ask (ADR 008), and the verdicts door is the only view-family door that reads the verdict index (ADR 071 R2). One ask keeps the screen at its one door round, the rows it returns are every verdict of the rule, and the engine's page metadata made the legacy count stale between its two asks. The four groups are what Aurelius' card fields carry (DV-199's posture).</td>
 <td>7.25b</td>
 </tr>
+<tr>
+<td>DV-202</td>
+<td>Webapp</td>
+<td>The legacy details card prints its data-quality list under a boolean from an injection token (<code>SHOW_DATA_QUALITY</code>, default true everywhere but the results page, the one component providing <code>useValue: false</code>): the token's default reaches every details box's card.</td>
+<td>The shared card's score list is a mount-site input (<code>CatalogueCard.showScores</code>, off by default): the details sections pass true, the results screen passes nothing (DET-60, DET-61). The card reads no setting of its own.</td>
+<td>Aurelius has no injection-token idiom for the shared card — one component serves both screens (VCF-05) — and a default-on token needs a provider per screen. DET-61's rule is about the screen, not the data, so a plain input is smaller and says what it means.</td>
+<td>7.25c</td>
+</tr>
+<tr>
+<td>DV-203</td>
+<td>Webapp</td>
+<td>Roadmap 7.25's hold-out names a quickview quality addon; the legacy quickview panel (<code>libs/components/quickview</code>) draws no data-quality markup of any kind over any engine — checked across its Browse, Selection and View tabs and the modelview2 panels.</td>
+<td>The increment draws no quality addon in the lineage quickview panel or the Model Browser tab. The score surfaces are the details box, stat, nav entry, sorts, and section cards alone (DET-56..DET-61).</td>
+<td>An addon without a legacy source is an invented feature: parity reads expected behaviour from the legacy screens (ADR 052), and where the legacy draws nothing nothing is ported. The roadmap line predates the audit of those templates; this entry closes it.</td>
+<td>7.25c</td>
+</tr>
+<tr>
+<td>DV-204</td>
+<td>Webapp</td>
+<td>The legacy reads scores through App Search: the opened page's document carries <code>dqscore_*</code>/<code>dqscorecnt_*</code> (the result-fields ask of <code>search-result.service.ts</code> names them), and every details card asks its own engine for its document — one request per card — to print its quality list.</td>
+<td>The screen reads the rows the doors already answer: the opened view's <code>quality</code> for the box and the stat, the section cards' own <code>quality</code> for their lists and for the browser-side sorts (DET-59, DET-60, DET-62).</td>
+<td>The view family carries the roll-up on the card (AVS-01, ASQ-04/ASQ-05) and ADR 064 R1 keeps a screen at one door round. A per-card ask would repeat the request storm the verdict join already replaced (DV-198) for rows the card already holds.</td>
+<td>7.25c</td>
+</tr>
+<tr>
+<td>DV-205</td>
+<td>Webapp</td>
+<td>The legacy Data Quality Rules box sorts by <code>name</code>, <code>dataqualityruledimension</code> and <code>dqscore</code>: the dimension and the rule's own score ride its <code>atlas-dev-quality</code> result documents (ASQ-02's table), and the engine answers all three.</td>
+<td>The box keeps DET-21's Relevance/Name pair. The rule's dimension is an attribute no card carries (DET-46's facets ride the box's own rule read, DV-199), and the roll-up writes totals only on fields, data attributes and their breadcrumbs (ASQ-04, ASQ-05), never on a rule.</td>
+<td>The card rows DET-59 sorts are the honest sortable set (AVS-01). A dimension sort would need the rule attribute on every rule card — the wire change 7.25a declined for this box (DD-842) — or a per-card read (DV-204). The legacy's rule <code>dqscore</code> was its engine's result row, not a roll-up the store holds.</td>
+<td>7.25c</td>
+</tr>
 </tbody>
 </table>
 
