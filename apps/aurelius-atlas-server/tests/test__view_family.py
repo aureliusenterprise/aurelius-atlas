@@ -5,17 +5,22 @@ on entities written through the store until 2.4 creates them over REST (DD-051).
 shape (ADR 064): the last test reads one entity through both doors and compares the card fields.
 """
 
+import contextlib
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.app_search_document import StoredVerdict
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.relationship_store import RelationshipStore
+from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_core.testing.entity_samples import CLASSIFICATION_TYPES, SAMPLE_TYPES, sample_entity
 from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelationship
 from aurelius_atlas_server import ServerSettings, create_app
+from aurelius_atlas_server.routes import view_entity
 from aurelius_atlas_store_es.testing.fake import FakeClient
+from base_models import base_models
 from fake_issuer import FakeIssuer
 from fastapi import FastAPI
 
@@ -23,6 +28,7 @@ S = "aurelius_atlas_server.routes.view_search"
 R = "aurelius_atlas_server.routes.view_entity"
 SEARCH = "/api/aurelius/v1/search"
 VIEW = "/api/aurelius/v1/entity/guid"
+DOOR = "/api/aurelius/v1/entity"
 
 DB, TABLE = (
     "11111111-1111-4111-8111-111111111111",
@@ -306,6 +312,107 @@ async def test__both_doors_answer_the_joined_governance_verdicts(seeded: httpx.A
     assert card["verdicts"] == rows  # the same join on both doors (VDR-13)
     other = (await seeded.get(f"{VIEW}/{DB}")).json()
     assert other["verdicts"] == []  # an unjudged entity answers the field empty (AVS-05)
+
+
+FIELD, DATASET = (
+    "66666666-6666-4666-8666-666666666666",
+    "88888888-8888-4888-8888-888888888888",
+)
+SCORES = ("55555555-5555-4555-8555-555555555555-a", "55555555-5555-4555-8555-555555555555-b")
+RULES = ("99999999-9999-4999-8999-999999999999", "33333333-3333-4333-8333-333333333333")
+"""A field, a dataset, the GUIDs of two scores naming the field, and of their rules (VDR-16)."""
+
+
+def _score(guid: str, rule: str, dimension: str, value: float) -> StoredEntity:
+    """A stored score entity (ASQ-02) whose result names :data:`FIELD`."""
+    return StoredEntity(
+        guid=guid,
+        type_name="m4i_dq_score",
+        quality_result=StoredQualityResult(
+            qualityguid=rule,
+            name=f"Rule {rule[:4]}",
+            dataqualityruledimension=dimension,
+            fieldguid=[FIELD],
+            dqscore=value,
+        ),
+    )
+
+
+@contextlib.asynccontextmanager
+async def m4i_app(
+    settings: ServerSettings, headers: dict[str, str], tmp_path: Path, fake_es: FakeClient
+) -> AsyncIterator[tuple[httpx.AsyncClient, FastAPI]]:
+    """A started server that knows the m4i types (VDR-16's field and score), on the fake store."""
+    _ = fake_es
+    app = create_app(settings.model_copy(update={"models_dir": base_models(tmp_path), "m4i_models_enabled": True}))
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="https://aurelius-atlas", headers=headers) as client:
+            yield client, app
+
+
+@pytest.mark.covers(f"{R}.read", f"{R}.write", rules=["VDR-16", "AVS-13"])
+async def test__the_read_door_joins_a_field_s_rule_scores_and_no_other_type_pays_the_read(
+    settings: ServerSettings,
+    auth_headers: dict[str, str],
+    issuer: FakeIssuer,
+    fake_es: FakeClient,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The field view carries its rows, the dataset view answers none without a documents read (VDR-16, DD-864).
+
+    The scores stand in for the quality worker's round: the door joins whatever the store holds, in score GUID
+    order (ASQ-09). The mutation door's answer carries them only through its re-read, and never echoes what the
+    request sent (VDR-13's posture).
+    """
+    async with m4i_app(settings, auth_headers, tmp_path, fake_es) as (client, app):
+        store: EntityStore = app.state.entity_store
+        registry = store.registry
+        await store.write(
+            [
+                EntityChange(sample_entity(registry, "m4i_field", FIELD, {"qualifiedName": "f@x", "name": "F"})),
+                EntityChange(sample_entity(registry, "m4i_dataset", DATASET, {"qualifiedName": "s@x", "name": "S"})),
+            ]
+        )
+        await store.documents.write([(_score(guid, rule, dimension, value), None) for guid, rule, dimension, value in [
+            (SCORES[0], RULES[0], "Accuracy", 0.9),
+            (SCORES[1], RULES[1], "Completeness", 0.4),
+        ]])  # fmt: skip
+        refused = await client.get(f"{VIEW}/{FIELD}", headers=as_roles(issuer, "watcher"))
+        assert (refused.status_code, refused.json()["errorCode"]) == (403, "AURELIUS-403-00-004")
+
+        view = (await client.get(f"{VIEW}/{FIELD}")).json()
+
+        assert view["ruleScores"] == [
+            {"rule": RULES[0], "name": f"Rule {RULES[0][:4]}", "dimension": "Accuracy", "score": 0.9},
+            {"rule": RULES[1], "name": f"Rule {RULES[1][:4]}", "dimension": "Completeness", "score": 0.4},
+        ]  # ASQ-09's score GUID order, unchanged (AVS-13)
+
+        calls: list[str] = []
+        answer = store.documents.results_by_field
+
+        async def counted(field_guid: str) -> list[StoredQualityResult]:
+            calls.append(field_guid)
+            return await answer(field_guid)
+
+        monkeypatch.setattr(store.documents, "results_by_field", counted)
+        dataset = (await client.get(f"{VIEW}/{DATASET}")).json()
+        assert dataset["ruleScores"] == []
+        assert calls == []  # the door's type gate: no documents read for a dataset (VDR-16, DD-864)
+        again = (await client.get(f"{VIEW}/{FIELD}")).json()
+        assert [row["rule"] for row in again["ruleScores"]] == [RULES[0], RULES[1]]
+        assert calls == [FIELD]  # the field pays it, once
+
+        async def rounds_owed(timeout_seconds: float) -> bool:  # noqa: ARG001 - as ASU-08's test stands in for the rounds
+            return True
+
+        monkeypatch.setattr(view_entity, "derive_written", rounds_owed)
+        saved = await client.post(DOOR, json={**view, "ruleScores": [{"rule": "r-lie", "score": 1.0}]})
+
+        assert saved.status_code == 200, saved.text
+        assert [row["rule"] for row in saved.json()["ruleScores"]] == [RULES[0], RULES[1]]
+        # the mutation answer is the re-read's join, not the request's rows (VDR-13's posture)
 
 
 RULE_VERDICTS = "/api/aurelius/v1/rule/verdicts"

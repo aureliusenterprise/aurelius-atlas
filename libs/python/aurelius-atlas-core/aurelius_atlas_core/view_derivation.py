@@ -22,6 +22,7 @@ from aurelius_atlas_model.views import (
     EntityRelation,
     EntityView,
     RelationEntity,
+    RuleScore,
 )
 from aurelius_atlas_typesystem.entity_type import EntityType
 
@@ -30,7 +31,12 @@ from aurelius_atlas_core.entity_store import WriteStore
 from aurelius_atlas_core.graph_helper import collection_elements, other_end, relationship_type_name
 from aurelius_atlas_core.search_fields import own_classifications
 from aurelius_atlas_core.stored_classification import StoredClassification
-from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity, StoredQualityTotals
+from aurelius_atlas_core.stored_entity import (
+    StoredAppSearch,
+    StoredEntity,
+    StoredQualityResult,
+    StoredQualityTotals,
+)
 
 QUALITY_DIMENSIONS = ("accuracy", "completeness", "timeliness", "uniqueness", "validity", "overall")
 """The quality entries a card carries, in this order (AVS-01, LAS-12)."""
@@ -53,13 +59,14 @@ def card_of(view: EntityView) -> EntityCard:
     return EntityCard.of(view)
 
 
-def view_of(
+def view_of(  # noqa: PLR0913 - the door's joined reads; each a keyword
     stored: StoredEntity,
     entity_type: EntityType,
     *,
     ends: RelationEnds | None = None,
     propagated: Propagations | None = None,
     verdicts: Sequence[StoredVerdict] | None = None,
+    rule_scores: Sequence[StoredQualityResult] | None = None,
 ) -> EntityView:
     """The view of one stored entity: its fields, its document's derived fields, and its sections (AVS-01, AVS-04).
 
@@ -69,7 +76,9 @@ def view_of(
     document's stored pairs only (AVS-08). ``propagated`` carries the propagated classifications and their
     source entities the door read; without them the view answers none (VDR-05, DD-835). ``verdicts`` carries
     the entity's stored governance verdicts the door read; the card keeps the refused ones (AVS-11, DD-838),
-    and a door that answers none leaves the field empty.
+    and a door that answers none leaves the field empty. ``rule_scores`` carries the stored quality results
+    the door read for the entity, in the order the read answered them; they are the view's own rows and never
+    reach a card (AVS-13, VDR-16, DD-863).
     """
     document = stored.app_search
     stale = bool(document.stale) if document else awaits_document(stored)
@@ -100,6 +109,7 @@ def view_of(
         "business_metadata": _business_metadata(stored, entity_type),
         "sections": _sections(document, ends),
         "propagated_classifications": _propagated(propagated),
+        "rule_scores": _rule_scores(rule_scores),
     }
     return EntityView.model_validate(fields)
 
@@ -193,6 +203,25 @@ def _verdicts(verdicts: Sequence[StoredVerdict] | None) -> list[CardVerdict]:
     return [
         CardVerdict(rule=verdict.guid, name=verdict.name, message=verdict.noncompliant_message)
         for verdict in refused[:VERDICT_LIMIT]
+    ]
+
+
+def _rule_scores(results: Sequence[StoredQualityResult] | None) -> list[RuleScore]:
+    """The view's rule score rows: the stored results in the order the read answered them (AVS-13, DD-863).
+
+    Each row carries the four fields of ASQ-02's result that the legacy box's ask named, and the order is
+    ASQ-09's — the store's score GUID order — unchanged and uncapped: a field's rules are its end, and the
+    screen pages them itself (DET-22). A door that read none answers the empty list, as the other joined
+    fields do (AVS-02).
+    """
+    return [
+        RuleScore(
+            rule=result.qualityguid,
+            name=result.name,
+            dimension=result.dataqualityruledimension,
+            score=result.dqscore,
+        )
+        for result in results or []
     ]
 
 

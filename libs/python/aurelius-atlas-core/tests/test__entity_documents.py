@@ -5,7 +5,12 @@ from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core import documents_es
-from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, StoredVerdict, verdict_mapping
+from aurelius_atlas_core.app_search_document import (
+    SCORE_TYPE,
+    VERDICT_FIELDS,
+    StoredVerdict,
+    verdict_mapping,
+)
 from aurelius_atlas_core.documents_es import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_documents import (
     EntityDocuments,
@@ -26,7 +31,7 @@ from aurelius_atlas_core.index_setup import (
 )
 from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
-from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
@@ -579,6 +584,82 @@ async def test__a_rule_s_verdicts_come_back_in_id_order_from_both_stores(
     assert await documents.verdicts_by_rule("r-404") == []  # a rule with no verdicts answers none
     assert await memory.verdicts_by_rule("r-1") == found
     assert await memory.verdicts_by_rule("r-404") == []
+
+
+def score(
+    guid: str,
+    rule_guid: str,
+    *field_guids: str,
+    value: float = 1.0,
+    state: EntityStatus = EntityStatus.ACTIVE,
+    hold_result: bool = True,
+) -> StoredEntity:
+    """A stored score entity (ASQ-02): its result names ``rule_guid`` and ``field_guids``, unless it holds none."""
+    return StoredEntity(
+        guid=guid,
+        type_name=SCORE_TYPE,
+        state=state,
+        quality_result=(
+            StoredQualityResult(
+                qualityguid=rule_guid,
+                name=rule_guid.upper(),
+                dataqualityruledimension="Accuracy",
+                fieldguid=list(field_guids),
+                dqscore=value,
+            )
+            if hold_result
+            else None
+        ),
+    )
+
+
+@pytest.mark.covers(
+    f"{E}.results_by_field",
+    "aurelius_atlas_core.testing.memory.MemoryEntityDocuments.results_by_field",
+    rules=["ASQ-09"],
+)
+async def test__a_field_s_results_come_back_in_score_order_from_both_stores(
+    documents: ElasticsearchEntityDocuments, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One paged read over ``qualityResult.fieldguid``; memory answers the same (ASQ-09, DD-862).
+
+    The scores page in ``REFERRING_PAGE``-sized pages like ``scores()`` does, so a page size of 1 proves the
+    paging. An inactive score, a score naming another field, and a score holding no result answer no row, and
+    two fields' rows never mix.
+    """
+    monkeypatch.setattr(documents_es, "REFERRING_PAGE", 1)
+    held = [
+        score("s-1", "r-2", "f-a", value=0.5),
+        score("s-2", "r-1", "f-a", "f-b", value=0.75),
+        score("s-3", "r-3", "f-b", value=1.0),
+        score("s-4", "r-4", "f-a", state=EntityStatus.DELETED),  # the scanner deleted it
+        score("s-5", "r-5", "f-a", hold_result=False),  # a score that never scored anything
+        entity("e-1"),  # not a score at all
+    ]
+    await documents.write([(item, None) for item in held])
+    memory = MemoryEntityDocuments()
+    await memory.write([(item, None) for item in held])
+    requests: list[dict[str, Any]] = []
+    answer = fake.search
+
+    async def recorded(**request: Any) -> dict[str, Any]:  # noqa: ANN401 - Elasticsearch's keyword arguments
+        requests.append(request)
+        return await answer(**request)
+
+    monkeypatch.setattr(fake, "search", recorded)
+
+    found = await documents.results_by_field("f-a")
+    paged = len(requests)
+
+    assert [(item.qualityguid, item.dqscore) for item in found] == [("r-2", 0.5), ("r-1", 0.75)]  # score GUID order
+    assert paged > 1  # the two rows came back in REFERRING_PAGE-sized pages
+    assert [(item.qualityguid, item.dqscore) for item in await documents.results_by_field("f-b")] == [
+        ("r-1", 0.75),
+        ("r-3", 1.0),
+    ]  # the fields' rows never mix
+    assert await documents.results_by_field("f-nope") == []  # a field no score names answers none
+    assert await memory.results_by_field("f-a") == found
+    assert await memory.results_by_field("f-nope") == []
 
 
 @pytest.mark.covers(f"{E}.prepare", rules=["IDX-02"])

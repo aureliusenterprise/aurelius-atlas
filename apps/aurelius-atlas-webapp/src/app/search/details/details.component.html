@@ -302,9 +302,13 @@
                                 <!-- DET-60 as amended by 7.25d (DD-860): the
                                  score block is the card's own rule, not a
                                  mount-site switch — the section card and the
-                                 results row print it the same way. -->
+                                 results row print it the same way. DET-65
+                                 (7.25e, DD-865): the store already joined the
+                                 field's rule score row to the card by GUID —
+                                 the card prints it in DET-60's place. -->
                                 <aurelius-atlas-webapp-catalogue-card
                                     [card]="card.card"
+                                    [ruleScore]="card.ruleScore"
                                     [pageGuid]="guid()"
                                     (cardClicked)="onCardClick($event)"
                                 />

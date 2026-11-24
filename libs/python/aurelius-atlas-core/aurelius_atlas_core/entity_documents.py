@@ -25,7 +25,7 @@ from aurelius_atlas_core.search_query import (
     SearchQuery,
 )
 from aurelius_atlas_core.stored_classification import StoredClassification
-from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import DocumentVersion
@@ -169,6 +169,15 @@ class EntityDocuments(Protocol):
 
     async def quality_holders(self) -> list[VersionedEntity]:
         """Every entity holding a quality result or score totals, by GUID (ASQ-07)."""
+        ...
+
+    async def results_by_field(self, field_guid: str) -> list[StoredQualityResult]:
+        """The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
+
+        The same paged read ``scores()`` runs, filtered over ``qualityResult.fieldguid`` (ASQ-03's keyword);
+        a score holding no result answers no row, and a field no score names answers the empty list. The read
+        door joins these rows into a field's view (VDR-16).
+        """
         ...
 
     async def governance_rules(self) -> list[VersionedEntity]:

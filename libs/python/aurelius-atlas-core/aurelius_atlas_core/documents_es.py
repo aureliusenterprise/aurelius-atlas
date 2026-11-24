@@ -86,7 +86,7 @@ from aurelius_atlas_core.search_query import (
     SearchQuery,
 )
 from aurelius_atlas_core.stored_classification import StoredClassification
-from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, DocumentVersion, ensure_index
@@ -647,6 +647,38 @@ class ElasticsearchEntityDocuments:
             es_clauses.exists(f"{QUALITY_TOTALS_FIELD}.overall.count"),
         ]
         return await self._paged(es_clauses.should(held))
+
+    async def results_by_field(self, field_guid: str) -> list[StoredQualityResult]:
+        """Page through the active scores naming this field, keeping their results (ASQ-09, DD-862).
+
+        ``scores()``'s read with one more filter — ``qualityResult.fieldguid`` is a keyword (ASQ-03) — sorted
+        by ``guid`` with ``search_after``. A score holding no result answers no row, as spec'd; the field's
+        results never mix with another field's because the terms filter names one GUID.
+        """
+        named = [
+            es_clauses.term("state", ACTIVE),
+            es_clauses.term("typeName", SCORE_TYPE),
+            es_clauses.terms(f"{QUALITY_RESULT_FIELD}.fieldguid", [field_guid]),
+        ]
+        found: list[StoredQualityResult] = []
+        after: list[Any] | None = None
+        while True:
+            response = await self._client.search(
+                index=self._entities,
+                size=REFERRING_PAGE,
+                query=es_clauses.filter_(named),
+                sort=[{"guid": "asc"}],
+                search_after=after,
+            )
+            hits = response["hits"]["hits"]
+            found += [
+                result
+                for hit in hits
+                if (result := StoredEntity.model_validate(hit["_source"]).quality_result) is not None
+            ]
+            if len(hits) < REFERRING_PAGE:
+                return found
+            after = hits[-1]["sort"]
 
     async def governance_rules(self) -> list[VersionedEntity]:
         """Page through the active governance rule entities (ASG-03): writes refresh (ENS-11)."""

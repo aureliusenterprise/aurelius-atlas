@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import type { EntityCard } from "aurelius-atlas-data-access";
+import type { EntityCard, RuleScore } from "aurelius-atlas-data-access";
 
 import { CatalogueCard } from "./catalogue-card.component";
 
@@ -21,13 +21,19 @@ import { CatalogueCard } from "./catalogue-card.component";
 /** A minimal host: the part under test with one card input. */
 @Component({
     template: `
-        <aurelius-atlas-webapp-catalogue-card [card]="card" [pageGuid]="pageGuid" (cardClicked)="last = $event" />
+        <aurelius-atlas-webapp-catalogue-card
+            [card]="card"
+            [ruleScore]="ruleScore"
+            [pageGuid]="pageGuid"
+            (cardClicked)="last = $event"
+        />
     `,
     imports: [CatalogueCard],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class Host {
     card: EntityCard = CARD;
+    ruleScore: RuleScore | undefined = undefined;
     pageGuid: string | undefined = undefined;
     last: string | null = null;
 }
@@ -70,10 +76,12 @@ const CARD: EntityCard = {
 function mount(
     card: EntityCard,
     pageGuid?: string,
+    ruleScore?: RuleScore,
 ): { fixture: ReturnType<typeof TestBed.createComponent<Host>>; host: Host } {
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.card = card;
     fixture.componentInstance.pageGuid = pageGuid;
+    fixture.componentInstance.ruleScore = ruleScore;
     fixture.detectChanges();
     return { fixture, host: fixture.componentInstance };
 }
@@ -453,6 +461,91 @@ describe("The shared rich card (VCF-01, VCF-06, VCF-19, VCF-20)", () => {
             // rules, separate places, both printed.
             expect(fixture.nativeElement.querySelectorAll(".aurelius-card-scores .quality-dimension")).toHaveLength(3);
             expect(column.querySelector(".aurelius-card-scores")).toBeNull();
+        });
+    });
+
+    describe("the rule card's own score row (DET-65, AVS-13, DD-866)", () => {
+        /** One of the field's rule score rows (AVS-13): a rule card's own score. */
+        function score(dimension: string, score: number): RuleScore {
+            return { rule: "r-1", name: "Not null", dimension, score };
+        }
+
+        /** DET-60's roll-up, so a test can prove the two never both print. */
+        const ROLL_UP: NonNullable<EntityCard["quality"]> = [
+            { dimension: "overall", score: 0.9, count: 5, total: 5 },
+            { dimension: "accuracy", score: 0.75, count: 1, total: 5 },
+            { dimension: "completeness", score: 0.25, count: 2, total: 5 },
+        ];
+
+        it("a rule card with a row prints pie, percent, dimension, no count (DET-65)", () => {
+            const { fixture } = mount(CARD, undefined, score("Accuracy", 0.892));
+            const rows = [...fixture.nativeElement.querySelectorAll(".aurelius-card-scores .quality-dimension")];
+            expect(rows).toHaveLength(1);
+            // The legacy rule card's shape: the percent at `percent: '1.0-1'`,
+            // the dimension lowercased, and the count the roll-up prints stays
+            // away (DET-65, DD-866).
+            expect(normalize(rows[0].textContent)).toBe("89.2% accuracy");
+            expect(rows[0].textContent).toContain("\u00a0");
+            expect(rows[0].textContent).not.toContain("(");
+            expect(rows[0].querySelector("aurelius-atlas-ui-data-quality-pie")).toBeTruthy();
+            // DET-60's place: after the trail and the chips, above the
+            // description and the people rows.
+            const content = [...fixture.nativeElement.querySelectorAll("[card-content] > *")];
+            const at = (selector: string) => content.indexOf(fixture.nativeElement.querySelector(selector));
+            expect(at(".aurelius-card-scores")).toBeGreaterThan(at(".aurelius-card-trail"));
+            expect(at(".aurelius-card-scores")).toBeGreaterThan(at(".field.is-grouped"));
+            expect(at(".aurelius-card-scores")).toBeLessThan(at(".aurelius-card-description"));
+            expect(at(".aurelius-card-scores")).toBeLessThan(at("aurelius-atlas-ui-people-box"));
+            // The join changes nothing else about the card (DET-65).
+            expect(normalize(fixture.nativeElement.querySelector(".title.is-4 a")?.textContent)).toBe(
+                "cost_centre_code",
+            );
+            expect(fixture.nativeElement.querySelector(".aurelius-card-description strong")?.textContent).toBe("code");
+        });
+
+        it("a rule card with no row prints no block and no placeholder (DET-65, DET-63's card half)", () => {
+            for (const ruleScore of [
+                undefined, // no row: the rule sits in a search result, another screen
+                score("accuracy", -1), // DET-63: a score that never renders
+                { rule: "r-1", name: "Not null", dimension: "accuracy", score: null as unknown as number },
+            ]) {
+                const { fixture } = mount(CARD, undefined, ruleScore);
+                expect(fixture.nativeElement.querySelector(".aurelius-card-scores")).toBeNull();
+                expect(fixture.nativeElement.querySelector(".aurelius-quality-not-available")).toBeNull();
+            }
+        });
+
+        it("a row and DET-60's roll-up never both print: the row wins (DET-65)", () => {
+            // ASQ-04 attaches totals to fields and above, so a rule entity's
+            // own roll-up is empty — but the card's rule holds either way: the
+            // joined row prints, the roll-up stays away.
+            const { fixture } = mount({ ...CARD, quality: ROLL_UP }, undefined, score("Completeness", 1));
+            const rows = [...fixture.nativeElement.querySelectorAll(".aurelius-card-scores .quality-dimension")];
+            expect(rows).toHaveLength(1);
+            expect(normalize(rows[0].textContent)).toBe("100% completeness");
+            // Without the row the same card prints the roll-up (DET-60).
+            const { fixture: rollUp } = mount({ ...CARD, quality: ROLL_UP });
+            expect(
+                [...rollUp.nativeElement.querySelectorAll(".aurelius-card-scores .quality-dimension")].map((row) =>
+                    normalize(row.textContent),
+                ),
+            ).toEqual(["75% Accuracy (1)", "25% Completeness (2)"]);
+        });
+
+        it("a row whose dimension word is empty prints no row (DET-65)", () => {
+            // Nothing names the line, so no line prints — DET-66's sort reads
+            // the same row the same way.
+            const { fixture } = mount(CARD, undefined, score("", 0.5));
+            expect(fixture.nativeElement.querySelector(".aurelius-card-scores")).toBeNull();
+        });
+
+        it("an un-scored rule card elsewhere prints nothing extra (DET-65, DV-207)", () => {
+            // A rule the scanner never scored keeps its card (DET-35's seed)
+            // and draws no row, on either screen.
+            const { fixture: results } = mount({ ...CARD, typeName: "m4i_data_quality" });
+            expect(results.nativeElement.querySelector(".aurelius-card-scores")).toBeNull();
+            const { fixture: section } = mount({ ...CARD, typeName: "m4i_data_quality" }, "field-1");
+            expect(section.nativeElement.querySelector(".aurelius-card-scores")).toBeNull();
         });
     });
 });

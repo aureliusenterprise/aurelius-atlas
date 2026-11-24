@@ -1276,6 +1276,172 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(normalize(scoreStat.querySelector("p.title")?.textContent)).toBe("75%");
     });
 
+    // The field page's Data Quality Rules box (DET-65, DET-66, DD-865): the
+    // screen hands the view's own rule score rows to the sections store, and
+    // the store joins them by GUID — no extra call, no poll, no client-side
+    // roll-up (DET-62's rule).
+    describe("the field rules box' score rows (DET-65, DET-66, DET-62)", () => {
+        /** The m4i field body (DET-16's row): the rules end, two scored rules. */
+        function m4iField(overrides: Partial<EntityView> = {}): EntityView {
+            return {
+                guid: "fl-1",
+                typeName: "m4i_field",
+                displayText: "chromosome_pos",
+                name: "chromosome_pos",
+                qualifiedName: "variants.chromosome_pos",
+                status: "ACTIVE",
+                stale: false,
+                attributes: { name: "chromosome_pos", qualifiedName: "variants.chromosome_pos" },
+                sections: sectionsOf({
+                    dataQuality: [
+                        endOf("r1", "m4i_data_quality", "Not null"),
+                        endOf("r2", "m4i_data_quality", "Range"),
+                    ],
+                }),
+                ...overrides,
+            };
+        }
+
+        /** The door answer for the box's two rules (DET-18). */
+        function rulesAnswer(): Record<string, unknown> {
+            return doorAnswer([
+                doorCard("r1", "m4i_data_quality", "Not null", { definition: "Never null." }),
+                doorCard("r2", "m4i_data_quality", "Range", { definition: "Inside the range." }),
+            ]);
+        }
+
+        /** One of the field view's rule score rows (AVS-13). */
+        function score(rule: string, dimension: string, value: number): Record<string, unknown> {
+            return { rule, name: `rule-${rule}`, dimension, score: value };
+        }
+
+        it("paints the view's rows on the matching cards without a second request (DET-65, DET-62)", () => {
+            const { fixture, compiled, httpMock } = setup("fl-1");
+            arriveSections(
+                fixture,
+                httpMock,
+                m4iField({
+                    ruleScores: [score("r1", "Accuracy", 0.892), score("r2", "Completeness", 1)] as never,
+                }),
+                rulesAnswer(),
+            );
+
+            // DET-65: one row per scored card — the percent at
+            // `percent: '1.0-1'`, the dimension lowercased, no count.
+            const rows = [...compiled.querySelectorAll("#related-rules .aurelius-card-scores .quality-dimension")];
+            expect(rows.map((row) => normalize(row.textContent))).toEqual(["89.2% accuracy", "100% completeness"]);
+            expect(rows.every((row) => row.querySelector("aurelius-atlas-ui-data-quality-pie"))).toBe(true);
+            // DET-66: the box's sort select holds its four options.
+            const sort = compiled.querySelector<HTMLSelectElement>("#related-rules select")!;
+            expect([...sort.options].map((option) => normalize(option.textContent))).toEqual([
+                "Relevance",
+                "Name",
+                "Dimension",
+                "Quality Score",
+            ]);
+            // DET-62: the rows ride the view — the render asks nothing beyond
+            // the read door's answer.
+            httpMock.expectNone("/api/aurelius/v1/search");
+            httpMock.verify();
+        });
+
+        it("an unscored rule keeps its card and prints no row (DET-65, DV-207)", () => {
+            const { fixture, compiled, httpMock } = setup("fl-1");
+            arriveSections(
+                fixture,
+                httpMock,
+                m4iField({ ruleScores: [score("r1", "Accuracy", 0.5)] as never }),
+                rulesAnswer(),
+            );
+
+            const boxes = [...compiled.querySelectorAll("#related-rules aurelius-atlas-webapp-catalogue-card")];
+            expect(boxes).toHaveLength(2); // DET-35's seed stands: r2 has no score
+            expect(boxes[0].querySelector(".aurelius-card-scores")).toBeTruthy();
+            expect(boxes[1].querySelector(".aurelius-card-scores")).toBeNull();
+            // DET-36/DD-867: the stat stays the section count, not the score rows.
+            const rulesStat = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].find(
+                (item) => item.querySelector("p.heading a")?.getAttribute("href") === "#related-rules",
+            )!;
+            expect(normalize(rulesStat.querySelector("p.title")?.textContent)).toBe("2");
+            httpMock.verify();
+        });
+
+        it("a dataset pays the rules rows nothing (DET-65)", () => {
+            const { fixture, compiled, httpMock } = setup("ds-1");
+            arriveSections(
+                fixture,
+                httpMock,
+                m4iDataset({ ruleScores: [score("r1", "Accuracy", 0.5)] as never }),
+                processAnswer(),
+            );
+
+            // DET-57's score box keeps its roll-up, and no box on a dataset
+            // page prints a rule score row: the read door joins none (VDR-16).
+            expect(compiled.querySelector("#data-quality .aurelius-card-scores")).toBeNull();
+            expect(compiled.querySelector(".aurelius-card-scores")).toBeNull();
+            httpMock.verify();
+        });
+
+        it("the score box, the stats bar, and the navigation keep their places (DET-56, DET-58, DET-36)", () => {
+            const { fixture, compiled, httpMock } = setup("fl-1");
+            arriveSections(
+                fixture,
+                httpMock,
+                m4iField({
+                    quality: [
+                        { dimension: "overall", score: 0.946, count: 2, total: 2 },
+                        { dimension: "accuracy", score: 0.892, count: 1, total: 2 },
+                        { dimension: "completeness", score: 1, count: 1, total: 2 },
+                    ],
+                    ruleScores: [score("r1", "Accuracy", 0.892)] as never,
+                }),
+                rulesAnswer(),
+            );
+
+            // DET-56/DET-57: the field's score box in its legacy place, its
+            // own roll-up rows unaffected by the rules box' joined rows.
+            const scoreBox = compiled.querySelector("#data-quality")!;
+            expect(
+                [...scoreBox.querySelectorAll(".quality-dimension")].map((row) => normalize(row.textContent)),
+            ).toEqual(["89.2% Accuracy (1)", "100% Completeness (1)"]);
+            // DET-36/DD-867: the stats bar keeps its place — Data Quality
+            // percent, then Data Quality Rules seed count.
+            const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map(
+                (item) => [
+                    normalize(item.querySelector("p.heading")?.textContent ?? ""),
+                    normalize(item.querySelector("p.title")?.textContent ?? ""),
+                ],
+            );
+            expect(stats).toEqual([
+                ["Data Attributes", "0"],
+                ["Child Fields", "0"],
+                ["Data Quality", "94.6%"],
+                ["Data Quality Rules", "2"],
+                ["Properties", "0"],
+            ]);
+            // DET-25: the navigation keeps its entries in legacy order.
+            const nav = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) =>
+                normalize(link.textContent),
+            );
+            expect(nav).toEqual([
+                "Description",
+                "Data Attributes",
+                "Child Fields",
+                "Data Quality",
+                "Data Quality Rules",
+                "Governance Quality Rules",
+                "Properties",
+            ]);
+            // DET-65: the score box and the rules card never compete — the
+            // card's own row prints in its box, and DET-60's roll-up stays
+            // away from the rules cards (a rule carries no totals, ASQ-04).
+            const rulesCards = [...compiled.querySelectorAll("#related-rules aurelius-atlas-webapp-catalogue-card")];
+            expect(rulesCards[0].querySelectorAll(".quality-dimension")).toHaveLength(1);
+            expect(rulesCards[1].querySelector(".aurelius-card-scores")).toBeNull();
+            httpMock.verify();
+        });
+    });
+
     it("a score render asks nothing beyond the read (DET-62)", () => {
         const { fixture, httpMock } = setup("m4i-1");
         arriveSections(

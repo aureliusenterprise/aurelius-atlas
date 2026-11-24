@@ -66,6 +66,21 @@ class RuleVerdict(AtlasModel):
     message: str = ""
 
 
+class RuleScore(AtlasModel):
+    """One quality result of an entity, as the read door joins it (AVS-13, DD-863).
+
+    ``rule`` is the rule GUID the score's result names, ``name`` its name, ``dimension`` its dimension word,
+    ``score`` the ``dqscore`` of ASQ-02's stored result — the four fields the legacy box's ``result_fields``
+    asked for. A field's rules scored on it answer one row each, in score GUID order (ASQ-09, VDR-16); these
+    are the rows the field page's rule cards print (DET-65).
+    """
+
+    rule: str
+    name: str = ""
+    dimension: str = ""
+    score: float = 0.0
+
+
 class RelationEntity(AtlasModel):
     """One related entity: its GUID and name, and its type and state where the reader read them (AVS-02, AVS-04).
 
@@ -155,8 +170,12 @@ class EntityView(EntityCard):
 
     ``attributes`` are the entity's own attribute values as the store holds them; ``sections`` merge the entity's
     own relationship ends with its document's stored pairs, each end listed once under its attribute (AVS-04).
+    ``ruleScores`` holds the quality results that reach the entity — the field page's rule scores — which only
+    the read door's join fills, for an ``m4i_field`` (AVS-13, VDR-16). Like ``sections`` it is the view's own:
+    a card never carries it (DD-581's pair).
     """
 
     attributes: dict[str, Any] = Field(default_factory=dict)
     business_metadata: dict[str, dict[str, Any]] | None = None
     sections: list[EntityRelation] = Field(default_factory=list)
+    rule_scores: list[RuleScore] = Field(default_factory=list)

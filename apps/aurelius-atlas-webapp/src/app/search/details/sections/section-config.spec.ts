@@ -618,7 +618,7 @@ describe("Section config (DET-16)", () => {
     it("marks the ten score-sorted sections and leaves the rest on DET-21's pair (DET-59)", () => {
         // DET-59's ten boxes ask the seven-option list; every other card
         // section keeps the pair (the governance box runs DET-45's own five
-        // in its own store, DV-205's rules box the pair).
+        // in its own store, and the field's rules box DET-66's four).
         const scoreSorted: [M4iLayoutType, string[]][] = [
             ["m4i_dataset", ["related-fields", "related-datasets"]],
             ["m4i_collection", ["related-datasets"]],
@@ -640,15 +640,29 @@ describe("Section config (DET-16)", () => {
 
         // DET-59's exceptions keep no flag (the default pair): the dataset's
         // Producers and Consumers, the system's Processes, the field's
-        // attributes and rules box, every box of the process page, the
-        // person's responsibilities box, the rule pages' verdict and Fields
-        // boxes, and the governance box's own five-option list.
+        // attributes box, every box of the process page, the person's
+        // responsibilities box, the rule pages' verdict and Fields boxes,
+        // and the governance box's own five-option list.
         expect(LAYOUTS.m4i_dataset.sections.find((s) => s.anchor === "related-producers")?.sorts).toBeUndefined();
         expect(LAYOUTS.m4i_dataset.sections.find((s) => s.anchor === "related-consumers")?.sorts).toBeUndefined();
         expect(LAYOUTS.m4i_system.sections.find((s) => s.anchor === "related-processes")?.sorts).toBeUndefined();
-        expect(LAYOUTS.m4i_field.sections.find((s) => s.anchor === "related-rules")?.sorts).toBeUndefined();
         expect(LAYOUTS.m4i_person.sections.find((s) => s.anchor === "governance-roles")?.sorts).toBeUndefined();
         expect(LAYOUTS.m4i_generic_process.sections.every((s) => s.sorts === undefined)).toBe(true);
+    });
+
+    it("marks the field's rules box as the one rules-sorted section (DET-66)", () => {
+        // DET-66's four-option list arrives through its own flag, and the
+        // field page's Data Quality Rules box is the only row that names it:
+        // DET-59's ten score boxes and DET-21's pair stay as they are, and
+        // the legacy box's own query is the only origin (DV-207, DD-867).
+        expect(LAYOUTS.m4i_field.sections.find((s) => s.anchor === "related-rules")?.sorts).toBe("rules");
+
+        const rulesSorted = Object.entries(LAYOUTS).flatMap(([name, layout]) =>
+            layout.sections
+                .filter((section) => section.sorts === "rules")
+                .map((section) => [name, section.anchor] as [string, string]),
+        );
+        expect(rulesSorted).toEqual([["m4i_field", "related-rules"]]);
     });
 
     it("derives the score rows and the stat's value from the view's rows (DET-56, DET-63, DET-64)", () => {

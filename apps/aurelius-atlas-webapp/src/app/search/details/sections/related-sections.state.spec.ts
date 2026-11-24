@@ -1,11 +1,11 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import type { EntityCard, EntityRelation, EntityView, RelationEntity } from "aurelius-atlas-data-access";
+import type { EntityCard, EntityRelation, EntityView, RelationEntity, RuleScore } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../../alerts/alerts.service";
 import { LAYOUTS } from "./section-config";
-import { CHUNK_SIZE, PAGE_SIZE, RelatedSectionsState } from "./related-sections.state";
+import { CHUNK_SIZE, PAGE_SIZE, type SectionCard, RelatedSectionsState } from "./related-sections.state";
 
 /**
  * The card-section store (DET-17..DET-22, DD-365/DD-368, VDR-03, VCF-02,
@@ -411,6 +411,207 @@ describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-444)", () => {
         expect(rules?.count).toBe(0);
         expect(store.countFor("related-rules")).toBe(0); // the stat reads its zero, in legacy place
         expect(searchRequests(httpMock)).toEqual([]); // a zero view sends nothing
+        httpMock.verify();
+    });
+});
+
+describe("The rules box' rule score rows (DET-65, DET-66, AVS-13, DD-865)", () => {
+    const FIELD_LAYOUT = LAYOUTS.m4i_field;
+
+    /** An opened `m4i_field` whose `dataQuality` end seeds the given rules. */
+    function openedField(seed: Record<string, unknown>[], ruleScores?: RuleScore[]): EntityView {
+        return {
+            guid: "field-1",
+            typeName: "m4i_field",
+            displayText: "field-1",
+            status: "ACTIVE",
+            stale: false,
+            attributes: { name: "field-1" },
+            sections: [ends("dataQuality", seed)],
+            ...(ruleScores === undefined ? {} : { ruleScores }),
+        };
+    }
+
+    function rule(guid: string, displayText: string): Record<string, unknown> {
+        return { guid, displayText, typeName: "m4i_data_quality", name: displayText };
+    }
+
+    /** One of the field view's rule score rows (AVS-13). */
+    function score(ruleGuid: string, dimension: string, score: number): RuleScore {
+        return { rule: ruleGuid, name: `rule-${ruleGuid}`, dimension, score };
+    }
+
+    /** The rules box view. */
+    function rules(store: RelatedSectionsState) {
+        return store.views().find((view) => view.anchor === "related-rules")!;
+    }
+
+    /** The seed entry's display text, for a door answer (DET-18). */
+    function displayOf(seed: readonly Record<string, unknown>[], guid: string): string {
+        return String(seed.find((entry) => entry["guid"] === guid)?.["displayText"] ?? guid);
+    }
+
+    /** Bring the field page up with its rules resolved to cards (the door's
+     * display texts, so the tests can assert on them — DET-18). */
+    function arriveRules(seed: Record<string, unknown>[], ruleScores: RuleScore[] = []) {
+        const { store, httpMock } = setup();
+        store.seed(openedField(seed, ruleScores), FIELD_LAYOUT, {}, ruleScores);
+        flushAll(httpMock, (guids) => guids.map((guid) => resolved(guid, displayOf(seed, guid))));
+        return { store, httpMock };
+    }
+
+    /** The field's row a store card carries, if any (DET-65, DD-865). */
+    function joined(card: SectionCard): RuleScore | undefined {
+        return card.kind === "card" ? card.ruleScore : undefined;
+    }
+
+    it("joins the view's rows to the box's cards by GUID (DET-65, DD-865)", () => {
+        const { store, httpMock } = arriveRules(
+            [rule("r1", "Not null"), rule("r2", "Range")],
+            [score("r2", "accuracy", 0.5), score("r1", "completeness", 0.75)],
+        );
+
+        // The join rides the card, in the view's row order for each GUID —
+        // r1 reads its own row and r2 reads its own, whatever order the
+        // rows arrived in.
+        const cards = rules(store).cards;
+        expect(cards.map((card) => card.guid)).toEqual(["r1", "r2"]);
+        expect(joined(cards[0])).toEqual(score("r1", "completeness", 0.75));
+        expect(joined(cards[1])).toEqual(score("r2", "accuracy", 0.5));
+
+        // DET-35's seed still decides the cards: a rule with no row keeps
+        // its card and carries no row (DV-207), and a row naming no card of
+        // the box draws nothing of its own.
+        const second = [rule("r1", "Not null"), rule("r3", "Unscored")];
+        store.seed(openedField(second, [score("r1", "accuracy", 0.5)]), FIELD_LAYOUT, {}, [
+            score("r1", "accuracy", 0.5),
+            score("r-elsewhere", "validity", 0.5),
+        ]);
+        flushAll(httpMock, (guids) => guids.map((guid) => resolved(guid, displayOf(second, guid))));
+        const after = rules(store).cards;
+        expect(after.map((card) => card.guid)).toEqual(["r1", "r3"]);
+        expect(joined(after[0])).toEqual(score("r1", "accuracy", 0.5));
+        expect(joined(after[1])).toBeUndefined();
+        httpMock.verify();
+    });
+
+    it("the box offers Relevance, Name, Dimension, Quality Score (DET-66)", () => {
+        const { store, httpMock } = arriveRules([rule("r1", "Not null")]);
+
+        expect(rules(store).sortOptions).toEqual([
+            { key: "relevance", label: "Relevance" },
+            { key: "name", label: "Name" },
+            { key: "dataqualityruledimension", label: "Dimension" },
+            { key: "dqscore", label: "Quality Score" },
+        ]);
+        httpMock.verify();
+    });
+
+    it("Dimension orders on the joined row, the card it cannot place last (DET-66)", () => {
+        const { store, httpMock } = arriveRules(
+            [rule("r1", "mid"), rule("r2", "high"), rule("r3", "none"), rule("r4", "low")],
+            [
+                score("r2", "uniqueness", 0.9),
+                score("r3", "accuracy", 0.1),
+                // A card whose row carries no dimension word cannot be placed
+                // either — DET-59's last place, like no row at all.
+                { rule: "r4", name: "rule-r4", dimension: "", score: 0.4 },
+            ],
+        );
+
+        store.setSort("related-rules", "dataqualityruledimension");
+        // The word decides (r3 accuracy, r2 uniqueness), and the two cards the
+        // field cannot place — no row, and the wordless row — land last, on
+        // their display texts ("low" before "mid").
+        expect(rules(store).cards.map((card) => card.displayText)).toEqual(["none", "high", "low", "mid"]);
+
+        // DET-66: a descending ask is DET-21's plain reversal.
+        store.toggleDirection("related-rules");
+        expect(rules(store).cards.map((card) => card.displayText)).toEqual(["mid", "low", "high", "none"]);
+        httpMock.verify();
+    });
+
+    it("Quality Score orders on the joined row's usable score (DET-66, DET-63)", () => {
+        const { store, httpMock } = arriveRules(
+            [rule("r1", "mid"), rule("r2", "high"), rule("r3", "none"), rule("r4", "broken")],
+            [
+                score("r1", "accuracy", 0.5),
+                score("r2", "accuracy", 0.9),
+                // DET-63's posture: a negative score never renders and never
+                // sorts — the card takes the last place like an absent row.
+                score("r4", "accuracy", -1),
+            ],
+        );
+
+        store.setSort("related-rules", "dqscore");
+        expect(rules(store).cards.map((card) => card.displayText)).toEqual(["mid", "high", "broken", "none"]);
+
+        // The same posture on the Dimension ask: the two placed cards tie on
+        // "accuracy" and fall to the label order, the two unplaceable follow
+        // theirs — and a descending ask is DET-21's plain reversal.
+        store.setSort("related-rules", "dataqualityruledimension");
+        expect(rules(store).cards.map((card) => card.guid)).toEqual(["r2", "r1", "r4", "r3"]);
+        store.toggleDirection("related-rules");
+        expect(rules(store).cards.map((card) => card.guid)).toEqual(["r3", "r4", "r1", "r2"]);
+        httpMock.verify();
+    });
+
+    it("a score tie falls back to the label order, then the raw name (DET-66, DET-59, DD-493)", () => {
+        const seed = [rule("r1", "zulu"), rule("r2", "alpha"), rule("r3", "Mike")];
+        const { store, httpMock } = arriveRules(seed, [
+            score("r1", "accuracy", 0.5),
+            score("r2", "accuracy", 0.5),
+            score("r3", "accuracy", 0.5),
+        ]);
+        store.setSort("related-rules", "dqscore");
+        // Same score everywhere: the display texts decide under the locale's
+        // case-insensitive collation (DD-493).
+        expect(rules(store).cards.map((card) => card.displayText)).toEqual(["alpha", "Mike", "zulu"]);
+        httpMock.verify();
+    });
+
+    it("the box's Relevance and Name keep DET-21's rules (DET-66)", () => {
+        const { store, httpMock } = arriveRules(
+            [rule("r2", "second"), rule("r1", "first")],
+            [score("r2", "accuracy", 0.1), score("r1", "accuracy", 0.9)],
+        );
+
+        // Relevance is the seed order, whatever the rows hold.
+        expect(rules(store).cards.map((card) => card.guid)).toEqual(["r2", "r1"]);
+        store.setSort("related-rules", "name");
+        expect(rules(store).cards.map((card) => card.displayText)).toEqual(["first", "second"]);
+        httpMock.verify();
+    });
+
+    it("no other box reads the rows: their lists and comparators stay (DET-66)", () => {
+        const { store, httpMock } = setup();
+        // The field layout's score-sorted Fields box beside the rules box.
+        const field: EntityView = {
+            guid: "field-1",
+            typeName: "m4i_field",
+            displayText: "field-1",
+            status: "ACTIVE",
+            stale: false,
+            attributes: { name: "field-1" },
+            sections: [ends("dataQuality", [rule("r1", "Not null")]), ends("childField", [related("f1", "column_a")])],
+        };
+        store.seed(field, FIELD_LAYOUT, {}, [score("f1", "validity", 0.2)]);
+        flushAll(httpMock);
+
+        // The rules box keeps its four-option list and its one row, and the
+        // Fields box keeps DET-59's seven and its own card rows (DET-59).
+        const fieldsView = store.views().find((view) => view.anchor === "related-fields")!;
+        expect(fieldsView.sortOptions.map((option) => option.key)).toEqual([
+            "relevance",
+            "name",
+            "dqscore_accuracy",
+            "dqscore_completeness",
+            "dqscore_timeliness",
+            "dqscore_uniqueness",
+            "dqscore_validity",
+        ]);
+        const fieldsCard = fieldsView.cards[0];
+        expect(joined(fieldsCard)).toBeUndefined();
         httpMock.verify();
     });
 });

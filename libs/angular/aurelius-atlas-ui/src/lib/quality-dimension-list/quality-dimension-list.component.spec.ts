@@ -51,6 +51,16 @@ describe("QualityDimensionList", () => {
         expect(pie.getAttribute("title")).toBe("75%");
     });
 
+    it("prints no count when showCount is off, the rule card's shape (DD-866, DET-65)", async () => {
+        const el = await setup([{ dimension: "accuracy", score: 0.92, count: 34 }]);
+        fixture.componentRef.setInput("showCount", false);
+        fixture.detectChanges();
+
+        // The legacy rule card printed the pie, the percent and the word only;
+        // the text keeps the legacy's exact separators.
+        expect(el.querySelector(".quality-score")?.textContent).toBe("92%\u00a0accuracy");
+    });
+
     it("shows the placeholder for the empty list (UIC-37)", async () => {
         const el = await setup([]);
 

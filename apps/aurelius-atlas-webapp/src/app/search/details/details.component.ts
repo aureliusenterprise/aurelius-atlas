@@ -232,12 +232,19 @@ export class Details {
         // The rule page's verdict boxes seed from the verdict rows (DD-848):
         // the read effect below hands the screen its rows, and every arrival
         // re-seeds — the sections store's rule for a new view. The two
-        // computeds keep the effect awake across the read (DET-51).
+        // computeds keep the effect awake across the read (DET-51). The field
+        // page's rules box gets the view's own rule score rows the same way
+        // (DET-65, DET-66, DD-865): no request, the view already carries them.
         effect(() => {
-            this.sections.seed(this.entity(), this.layoutState.layout(), {
-                "related-non-compliants": this.ruleVerdicts.nonCompliantGuids(),
-                "related-compliants": this.ruleVerdicts.compliantGuids(),
-            });
+            this.sections.seed(
+                this.entity(),
+                this.layoutState.layout(),
+                {
+                    "related-non-compliants": this.ruleVerdicts.nonCompliantGuids(),
+                    "related-compliants": this.ruleVerdicts.compliantGuids(),
+                },
+                this.entity()?.ruleScores ?? [],
+            );
         });
         // The rule box follows the entity (DET-42): every arrival re-reads,
         // the save re-read among them — the sections store's rule. Every

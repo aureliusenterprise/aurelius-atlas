@@ -15,7 +15,7 @@
                         ></aurelius-atlas-ui-data-quality-pie>
                     </span>
                     <span class="quality-score"
-                        >{{ row.score | percent: "1.0-1" }}&nbsp;{{ row.dimension }}&nbsp;({{ row.count }})</span
+                        >{{ row.score | percent: "1.0-1" }}&nbsp;{{ row.dimension }}{{ countText(row) }}</span
                     >
                 </p>
             </div>
