@@ -1,7 +1,7 @@
 # 7.25c The data-quality scores: the box, the stat, the sorts, and the card
 
 - **Status:** in review
-- **Pull request:** –
+- **Pull request:** [#460](https://github.com/aureliusenterprise/aurelius-atlas/pull/460)
 - **Records:** DET-56..DET-63 new; DV-202..DV-205 new; DD-851..DD-856;
   relies on 7.24 (UIC-36/UIC-37/UIC-39, DET-35/DET-36, DD-444/DD-447), 7.21a
   (DET-17..DET-27's chrome, stats bar, and nav, UIC-24/UIC-27, DD-365..DD-371),
