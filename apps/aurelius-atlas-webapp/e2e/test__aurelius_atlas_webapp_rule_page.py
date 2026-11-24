@@ -111,8 +111,8 @@ def _seed_verdict_rules(page: Page, root_url: str, token: str, data_type: str, r
     return pass_guid, refuse_guid, names["named"], names["described"]
 
 
-# impact=major, likelihood=medium (a young page whose verdicts land through the worker's round)
-@pytest.mark.medium
+# impact=major, likelihood=high (a young page, churn on its verdicts path; the only proof of DET-50..DET-54)
+@pytest.mark.high
 @pytest.mark.covers(rules=["DET-50", "DET-51", "DET-52", "DET-53", "DET-54", "VDR-15"])
 def test__the_rule_page_draws_the_chart_and_the_two_verdict_boxes(
     authenticated: Page, root_url: str, fresh_user_token: Callable[[], str]
