@@ -31,6 +31,7 @@ def m4i(type_name: str, key: str, values: dict[str, object] | None = None) -> At
     )
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.documents_es.ElasticsearchEntityDocuments.verdicts_by_rule",
     "aurelius_atlas_core.view_rule.ViewRuleEngine.verdicts",
