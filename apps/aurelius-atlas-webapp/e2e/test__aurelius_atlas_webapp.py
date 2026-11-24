@@ -2916,12 +2916,20 @@ def _wait_gov_rules_searched(page: Page, root_url: str, token: str, names: list[
         time.sleep(1)
 
 
-_AT_LEAST_TEN = re.compile(r"^(?:1[0-9]|[2-9][0-9]|[1-9][0-9]{2,}) result\(s\)$")
-"""The count line of a box holding ten rows or more: the corpus's ACTIVE rules
-plus this run's three, never pinned to a store-dependent number (DD-223)."""
+def _result_count(count_line: Locator) -> int:
+    """The number the box's count line draws (DET-44): ``"N result(s)"`` becomes ``N``.
+
+    The unfiltered count is the store's — the corpus's ACTIVE rules of the opened
+    type plus this run's — so the scenario reads it instead of pinning it
+    (DD-223): a corpus rule edit moves it, and counting those rows is not this
+    test's business.
+    """
+    match = re.search(r"\d+", count_line.inner_text())
+    assert match is not None, f"the count line is not a result count: {count_line.inner_text()!r}"
+    return int(match.group())
 
 
-def _drives_the_quality_rules_chrome(box: Locator, run: str, rule_names: list[str]) -> None:
+def _drives_the_quality_rules_chrome(box: Locator, run: str, rule_names: list[str], total: int) -> None:
     """Drive the box's chrome on the run's three rules (DET-44..DET-47).
 
     The keyword narrows the section to this run's rules, the verdict icons
@@ -2974,10 +2982,10 @@ def _drives_the_quality_rules_chrome(box: Locator, run: str, rule_names: list[st
     expect(count_line).to_have_text("2 result(s)")
 
     # DET-44: the count line is the reset — keyword, tick, sort and direction
-    # return to their defaults and the section repaginates to nine.
+    # return to their defaults and the box shows its full page again.
     count_line.click()
     expect(search).to_have_value("")
-    expect(count_line).to_have_text(_AT_LEAST_TEN)
+    expect(count_line).to_have_text(f"{total} result(s)")
     expect(box.locator("select")).to_have_value("relevance")
     expect(funnel).to_have_class(re.compile(r"^(?!.*\bis-primary\b).*$"))
 
@@ -3091,12 +3099,16 @@ def test__the_dataset_page_turns_the_quality_rules_section(
         assert nav_labels[-1] == "Properties"
 
         # DET-44/DET-47: the count line draws the rows the read holds — the
-        # demo's ACTIVE dataset rules beside this run's three, more than one
-        # page — and the grid shows nine at a time (DET-22's page rule).
-        expect(box.locator("h6.aurelius-card-section-count a")).to_have_text(_AT_LEAST_TEN)
-        expect(box.locator("aurelius-atlas-ui-entity-card")).to_have_count(9)
+        # demo's ACTIVE dataset rules beside this run's three. The total is the
+        # store's, so it is read not pinned (DD-223); the grid shows its first
+        # nine (DET-22's page rule). DET-47's page growth by nine rides the unit
+        # suite, so this scenario never needs more than a page of corpus rows.
+        count_line = box.locator("h6.aurelius-card-section-count a")
+        total = _result_count(count_line)
+        assert total >= len(rule_names), f"the read lost this run's rules: {total} rows"
+        expect(box.locator("aurelius-atlas-ui-entity-card")).to_have_count(min(9, total))
 
-        _drives_the_quality_rules_chrome(box, run, rule_names)
+        _drives_the_quality_rules_chrome(box, run, rule_names, total)
 
         # DET-48: the nav entry jumps to the box — the address names the
         # anchor and the screen stays on the entity (DET-25's rule). The side
