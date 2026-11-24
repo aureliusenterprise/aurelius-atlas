@@ -667,24 +667,27 @@ def _seed_entities(page: Page, root_url: str, token: str, type_name: str, names:
     return response.json()["guidAssignments"]
 
 
-def _purge_type(page: Page, root_url: str, token: str, type_name: str) -> None:
+def _purge_type(page: Page, root_url: str, token: str | Callable[[], str], type_name: str) -> None:
     """Delete every entity of a type (the shared stack's determinism fix).
 
     The dev stack is never cleaned between runs, and the explore search is a
     type-only first page (limit 10): glossaries from earlier runs fill it and
     push this run's seed off page 1. A type-scoped purge — list by type,
-    delete by guid — makes a type-filtered assertion deterministic.
+    delete by guid — makes a type-filtered assertion deterministic. A caller
+    whose purge outlives the 60s dev token (a type with many stale entities)
+    hands in the ``fresh_user_token`` factory; it is passed on to the deletes.
     """
+    mint = token if callable(token) else (lambda: token)
     listing = page.request.post(
         urljoin(root_url, "/api/atlas/v2/search/basic"),
         data=json.dumps({"typeName": type_name, "limit": 1000, "offset": 0, "excludeDeletedEntities": True}),
-        headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+        headers={"content-type": "application/json", "authorization": f"Bearer {mint()}"},
     )
 
     assert listing.status == 200, listing.text()
 
     for entity in listing.json().get("entities", []):
-        _delete_entity(page, root_url, token, entity["guid"])
+        _delete_entity(page, root_url, mint, entity["guid"])
 
 
 def _purge_and_drop_types(
@@ -1532,12 +1535,15 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
             )
             for item in authenticated.locator(".aurelius-details-stats .level-item").all()
         ]
+        # DET-58 (7.25c): the score stat joins the bar after Consumers — this
+        # dataset holds no scores, so its value is the word.
         assert stats == [
             ("fields", "1"),
             ("child datasets", "0"),
             ("lineage model", "available"),
             ("producers", "1"),
             ("consumers", "1"),
+            ("data quality", "unavailable"),
             ("properties", "0"),
         ]
         # LDG-32: the side navigation lists the link beside the stat (the
@@ -1690,11 +1696,17 @@ def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_
         )
         expect(rules_stat).to_have_count(1)
         expect(rules_stat.locator("p.title")).to_have_text("1")
+        # DET-58 (7.25c): the score stat in the legacy place, before the rules
+        # stat — this field holds no scores, so its value is the word.
+        score_stat = authenticated.locator(
+            ".aurelius-details-stats .level-item", has=authenticated.locator('p.heading a[href="#data-quality"]')
+        )
+        expect(score_stat.locator("p.title")).to_have_text("Unavailable")
         stats = [
             item.locator("p.heading a").inner_text().strip().casefold()
             for item in authenticated.locator(".aurelius-details-stats .level-item").all()
         ]
-        assert stats == ["data attributes", "child fields", "data quality rules", "properties"]
+        assert stats == ["data attributes", "child fields", "data quality", "data quality rules", "properties"]
 
         # DET-36: the side navigation gained the matching link.
         nav_link = authenticated.locator(".aurelius-details-nav .menu-list a", has_text="Data Quality Rules")
@@ -1776,21 +1788,24 @@ def test__no_match_shows_the_legacy_no_results_pair(authenticated: Page, root_ur
     expect(authenticated.locator(".result-row")).to_have_count(0)
 
 
-def _delete_entity(page: Page, root_url: str, token: str, guid: str) -> None:
+def _delete_entity(page: Page, root_url: str, token: str | Callable[[], str], guid: str) -> None:
     """Delete one entity by guid (the scenarios' self-cleaning, EDT-12).
 
     A just-seeded entity is still being written by the indexer worker when the
     scenario finishes, and the soft delete can land mid-write: the server
     answers 500 "changed by another write" (the store's version conflict).
     That resolves as soon as the worker's own write lands, so the delete
-    retries it a few times before failing.
+    retries it a few times before failing. The retry sleeps can outlive the
+    dev realm's 60s token, so a caller that spans minutes hands in the
+    ``fresh_user_token`` factory instead of one minted token.
     """
+    mint = token if callable(token) else (lambda: token)
     attempt = 0
     while True:
         deleted = page.request.delete(
             urljoin(root_url, "/api/atlas/v2/entity/bulk"),
             params={"guid": guid},
-            headers={"authorization": f"Bearer {token}"},
+            headers={"authorization": f"Bearer {mint()}"},
         )
 
         if deleted.status == 200 or "changed by another write" not in deleted.text() or attempt == 10:

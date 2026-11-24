@@ -970,4 +970,172 @@ describe("The section facet filters (VCF-09..VCF-14, VCF-18, DD-619/DD-620/DD-62
             httpMock.verify();
         });
     });
+
+    describe("score sorts (DET-59, DD-854)", () => {
+        /** A door card carrying score rows (AVS-01) — the card's own quality. */
+        function cardWithQuality(
+            guid: string,
+            displayText: string,
+            quality?: { dimension: string; score: number; count: number }[],
+        ): EntityCard {
+            return {
+                guid,
+                typeName: "m4i_data_attribute",
+                displayText,
+                status: "ACTIVE",
+                stale: false,
+                // `total` rides along unused — the sort reads the score.
+                ...(quality === undefined ? {} : { quality: quality.map((row) => ({ ...row, total: row.count })) }),
+            };
+        }
+
+        it("a score section offers the pair plus the five dimension sorts (DET-59)", () => {
+            // The attribute's Fields box is one of DET-59's ten.
+            const { store, httpMock } = setup();
+            store.seed(openedAttribute([related("f1", "one")]), LAYOUTS.m4i_data_attribute);
+            searchRequests(httpMock).forEach((request) => request.flush({ cards: [], facets: {}, total: 0 }));
+
+            expect(fields(store).sortOptions.map((option) => option.label)).toEqual([
+                "Relevance",
+                "Name",
+                "Accuracy",
+                "Completeness",
+                "Timeliness",
+                "Uniqueness",
+                "Validity",
+            ]);
+            httpMock.verify();
+        });
+
+        it("every other section keeps DET-21's pair (DET-59)", () => {
+            const { store, httpMock } = setup();
+            store.seed(opened([related("a1", "Alpha")]), LAYOUTS.m4i_data_entity);
+            flushAll(httpMock);
+
+            // The entity's Data Attributes box sorts on score, its Child
+            // Entities box too (both of DET-59's ten) — so the pair's
+            // exceptions come from the layouts DET-59 names: the dataset's
+            // Producers/Consumers and the system's Processes.
+            const views = store.views();
+            expect(views.find((view) => view.anchor === "related-attributes")?.sortOptions).toHaveLength(7);
+            expect(views.find((view) => view.anchor === "related-entities")?.sortOptions).toHaveLength(7);
+
+            store.seed(opened([related("a1", "Alpha")]), LAYOUTS.m4i_dataset);
+            const pair = store.views();
+            expect(pair.find((view) => view.anchor === "related-producers")?.sortOptions.map((o) => o.label)).toEqual([
+                "Relevance",
+                "Name",
+            ]);
+            expect(pair.find((view) => view.anchor === "related-consumers")?.sortOptions.map((o) => o.label)).toEqual([
+                "Relevance",
+                "Name",
+            ]);
+            httpMock.verify();
+        });
+
+        it("orders by a dimension's score, cards without the row last (DET-59)", () => {
+            const { store, httpMock } = setup();
+            store.seed(
+                openedAttribute([
+                    related("f1", "mid"),
+                    related("f2", "high"),
+                    related("f3", "none"),
+                    related("f4", "low"),
+                ]),
+                LAYOUTS.m4i_data_attribute,
+            );
+            flushAll(httpMock, (guids) =>
+                guids.map((guid) =>
+                    guid === "f1"
+                        ? cardWithQuality("f1", "mid", [{ dimension: "completeness", score: 0.5, count: 1 }])
+                        : guid === "f2"
+                          ? cardWithQuality("f2", "high", [{ dimension: "completeness", score: 0.9, count: 1 }])
+                          : guid === "f3"
+                            ? cardWithQuality("f3", "none") // no rows at all
+                            : cardWithQuality("f4", "low", [
+                                  { dimension: "completeness", score: 0.1, count: 1 },
+                                  // A row for a different dimension never counts.
+                                  { dimension: "accuracy", score: 1, count: 1 },
+                              ]),
+                ),
+            );
+
+            store.setSort("related-fields", "dqscore_completeness");
+            expect(fields(store).cards.map((card) => card.displayText)).toEqual(["low", "mid", "high", "none"]);
+
+            // DET-63: a row whose score never renders is no row — last place,
+            // and the three of them tie on their display text.
+            store.setSort("related-fields", "dqscore_accuracy");
+            expect(fields(store).cards.map((card) => card.displayText)).toEqual(["low", "high", "mid", "none"]);
+
+            // DET-59: descending is DET-21's plain reversal of the comparator.
+            store.toggleDirection("related-fields");
+            expect(fields(store).cards.map((card) => card.displayText)).toEqual(["none", "mid", "high", "low"]);
+            httpMock.verify();
+        });
+
+        it("a score tie breaks on the display text with the locale's collation (DET-59, DD-493)", () => {
+            const { store, httpMock } = setup();
+            store.seed(
+                openedAttribute([related("f1", "zulu"), related("f2", "alpha"), related("f3", "Mike")]),
+                LAYOUTS.m4i_data_attribute,
+            );
+            const same = [{ dimension: "validity", score: 0.5, count: 1 }];
+            // Same score everywhere, so the display texts decide — and "Mike"
+            // sorts between the lowercase words only under a case-insensitive
+            // collation, which is what localeCompare gives (DD-493).
+            flushAll(httpMock, () => [
+                cardWithQuality("f1", "zulu", same),
+                cardWithQuality("f2", "alpha", same),
+                cardWithQuality("f3", "Mike", same),
+            ]);
+            store.setSort("related-fields", "dqscore_validity");
+            expect(fields(store).cards.map((card) => card.displayText)).toEqual(["alpha", "Mike", "zulu"]);
+            httpMock.verify();
+        });
+
+        it("a display-text tie breaks on the raw name (DET-59, DD-493)", () => {
+            const { store, httpMock } = setup();
+            store.seed(openedAttribute([related("f1", "same"), related("f2", "same")]), LAYOUTS.m4i_data_attribute);
+            const same = [{ dimension: "validity", score: 0.5, count: 1 }];
+            flushAll(httpMock, () => [
+                { ...cardWithQuality("f1", "same", same), name: "zulu-attr" },
+                { ...cardWithQuality("f2", "same", same), name: "alpha-attr" },
+            ]);
+            store.setSort("related-fields", "dqscore_validity");
+            expect(
+                store
+                    .views()
+                    .find((view) => view.anchor === "related-fields")
+                    ?.cards.map((card) => card.guid),
+            ).toEqual(["f2", "f1"]);
+            httpMock.verify();
+        });
+
+        it("a score section's Relevance keeps the seed order (DET-59, DET-21)", () => {
+            const { store, httpMock } = setup();
+            store.seed(openedAttribute([related("f1", "second"), related("f2", "first")]), LAYOUTS.m4i_data_attribute);
+            flushAll(httpMock, (guids) =>
+                guids.map((guid) =>
+                    cardWithQuality(guid, `card-${guid}`, [
+                        { dimension: "accuracy", score: guid === "f1" ? 0.1 : 0.9, count: 1 },
+                    ]),
+                ),
+            );
+            expect(fields(store).cards.map((card) => card.guid)).toEqual(["f1", "f2"]);
+            httpMock.verify();
+        });
+
+        it("a score sort marks the funnel (VCF-08, DET-59)", () => {
+            const { store, httpMock } = arriveFields([related("f1", "one")], (guids) =>
+                guids.map((guid) =>
+                    cardWithQuality(guid, `card-${guid}`, [{ dimension: "accuracy", score: 0.5, count: 1 }]),
+                ),
+            );
+            expect(fields(store).filterActive).toBe(false);
+            store.setSort("related-fields", "dqscore_accuracy");
+            expect(fields(store).filterActive).toBe(true);
+            httpMock.verify();
+        });
+    });
 });
