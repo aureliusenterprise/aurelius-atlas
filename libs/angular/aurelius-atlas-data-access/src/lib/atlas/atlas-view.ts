@@ -28,6 +28,17 @@ export type CardQuality = {
 };
 
 /**
+ * One non-compliant governance verdict on a card (`CardVerdict`, AVS-11, DD-838): the rule it refuses,
+ * named, and the message. These are the rows the card's governance mark counts and lists (VCF-19); the
+ * compliant verdicts stay in their index (ASG-03).
+ */
+export type CardVerdict = {
+    rule: string;
+    name: string;
+    message: string;
+};
+
+/**
  * One related entity (`RelationEntity`, AVS-02, AVS-04).
  *
  * `breadcrumb` holds the trail its document stored, top down, so a propagation source's row can show where the
@@ -84,6 +95,11 @@ export type EntityCard = {
     breadcrumb?: CardBreadcrumb[];
     relations?: EntityRelation[];
     quality?: CardQuality[];
+    /**
+     * The refused governance verdicts the door joined (`CardVerdict`, AVS-11, VDR-13), in rule-name order
+     * and capped. The card's governance mark shows them (VCF-19); `governed` is the judged mark (AVS-01).
+     */
+    verdicts?: CardVerdict[];
     governed?: boolean | null;
     stale: boolean;
     /** Whether the entity holds any parent (RPS-06, DD-758). The card answers the

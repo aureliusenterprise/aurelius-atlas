@@ -2,6 +2,8 @@
     The governance-quality column (UIC-38): the warning icon with the count
     and a hover dropdown of rows; the green check when all is compliant;
     the spinner while the caller fetches — the legacy states, verbatim.
+    The row is the one message at body weight, and nothing under it
+    (DD-839): the legacy's second line stayed empty in every document.
 -->
 @if (loading()) {
     <span class="tag is-white aurelius-gov-quality-loading">
@@ -32,12 +34,15 @@
                             <div class="media-content">
                                 <div class="content">
                                     <h6 class="title is-6">{{ row.message }}</h6>
-                                    <p>{{ row.detail }}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                     @if (!$last) {
+                        <!-- The legacy's class, kept. Bulma 1 renamed the
+                             divider class, so this one carries no rule of its
+                             own: the component's styles give it the legacy's
+                             thin line and small margin (DD-839). -->
                         <hr class="dropdown-separator" />
                     }
                 }

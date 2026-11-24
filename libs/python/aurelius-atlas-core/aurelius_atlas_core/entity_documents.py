@@ -185,6 +185,14 @@ class EntityDocuments(Protocol):
         """Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534)."""
         ...
 
+    async def verdicts_by_entity(self, entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]:
+        """The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+
+        Each group is in document id order, and an entity with no verdicts has no key. The doors answer a
+        card's ``verdicts`` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
+        """
+        ...
+
     async def write(
         self,
         items: Sequence[tuple[StoredEntity, DocumentVersion | None]],

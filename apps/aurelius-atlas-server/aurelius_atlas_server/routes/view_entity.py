@@ -53,7 +53,9 @@ async def _live_view(store: Store, guid: str) -> EntityView | None:
         raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, f"the type {found.entity.type_name} of entity {guid}")
     ends = await read_ends(store, found.entity, entity_type)  # VDR-02, DD-604: one batched read of the entity's ends
     propagated = await read_propagations(store, found.entity)  # VDR-05, DD-835: and one of the tags' sources
-    return view_of(found.entity, entity_type, ends=ends, propagated=propagated)
+    # The entity's refused verdicts ride the view, one read of the verdicts index (VDR-13, DD-838).
+    verdicts = (await store.documents.verdicts_by_entity([guid])).get(guid)
+    return view_of(found.entity, entity_type, ends=ends, propagated=propagated, verdicts=verdicts)
 
 
 @VIEW_ENTITY.post("/entity", responses=VIEW_RESULT, **VIEW_BODY)

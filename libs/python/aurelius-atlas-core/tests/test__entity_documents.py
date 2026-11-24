@@ -1,4 +1,4 @@
-"""``ElasticsearchEntityDocuments`` (ENS-01, ENS-04, ENS-05, ENS-07, ENS-08, ENS-09) on the fake client."""
+"""``ElasticsearchEntityDocuments`` (ENS-01, ENS-04, ENS-05, ENS-07, ENS-08, ENS-09, ASG-08) on the fake client."""
 
 from decimal import Decimal
 from typing import Any, cast
@@ -483,6 +483,61 @@ def test__a_verdict_s_document_is_the_legacy_document_s_fields() -> None:
     )
 
     assert set(verdict.to_json()) == set(VERDICT_FIELDS)
+
+
+def verdict(entity_guid: str, rule_guid: str, *, compliant: str = "0", message: str = "") -> StoredVerdict:
+    """One stored verdict of ``entity_guid`` by the rule ``rule_guid``."""
+    return StoredVerdict(
+        id=f"{entity_guid}--{rule_guid}",
+        entity_guid=entity_guid,
+        guid=rule_guid,
+        name=rule_guid.upper(),
+        compliant=compliant,
+        noncompliant_message=message,
+    )
+
+
+@pytest.mark.covers(
+    f"{E}.verdicts_by_entity",
+    "aurelius_atlas_core.testing.memory.MemoryEntityDocuments.verdicts_by_entity",
+    rules=["ASG-08"],
+)
+async def test__verdicts_are_grouped_by_entity_in_id_order_and_an_empty_request_costs_nothing(
+    documents: ElasticsearchEntityDocuments, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One paged terms read grouped by entity; none asked costs no search; memory answers the same (ASG-08, DD-838).
+
+    The page is read in ``REFERRING_PAGE``-sized pages like ``_verdict_ids`` does, so a small page size proves the
+    paging; compliant and refused verdicts both ride back — the derivation leaves the passed ones out (AVS-11).
+    """
+    monkeypatch.setattr(documents_es, "REFERRING_PAGE", 1)
+    held = {
+        "a": [verdict("a", "r-2", message="A fails two"), verdict("a", "r-1", compliant="1")],
+        "b": [verdict("b", "r-1", message="B fails one")],
+    }
+    await documents.replace_verdicts(held)
+    memory = MemoryEntityDocuments()
+    await memory.replace_verdicts(held)
+    requests: list[dict[str, Any]] = []
+    answer = fake.search
+
+    async def recorded(**request: Any) -> dict[str, Any]:  # noqa: ANN401 - Elasticsearch's keyword arguments
+        requests.append(request)
+        return await answer(**request)
+
+    monkeypatch.setattr(fake, "search", recorded)
+
+    grouped = await documents.verdicts_by_entity(["a", "b", "c"])
+    paged = len(requests)
+
+    assert {guid: [item.id for item in found] for guid, found in grouped.items()} == {
+        "a": ["a--r-1", "a--r-2"],  # the global id sort keeps each entity's group in id order
+        "b": ["b--r-1"],
+    }  # c holds no verdict documents, so it answers no key
+    assert paged > 1  # the three verdicts came back in REFERRING_PAGE-sized pages
+    assert await documents.verdicts_by_entity([]) == {}
+    assert len(requests) == paged  # an empty request never reached the store
+    assert await memory.verdicts_by_entity(["a", "b", "c"]) == grouped
 
 
 @pytest.mark.covers(f"{E}.prepare", rules=["IDX-02"])

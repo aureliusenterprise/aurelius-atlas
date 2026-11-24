@@ -78,7 +78,7 @@ function mount(
     return { fixture, host: fixture.componentInstance };
 }
 
-describe("The shared rich card (VCF-01, VCF-06)", () => {
+describe("The shared rich card (VCF-01, VCF-06, VCF-19, VCF-20)", () => {
     it("renders the title, the badge, and their click emits the guid (VCF-01)", () => {
         const { fixture, host } = mount(CARD);
         const title = fixture.nativeElement.querySelector(".title.is-4 a");
@@ -290,5 +290,57 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
         const { fixture } = mount({ ...CARD, typeName: "spark_application", typeAlias: undefined });
         const badge = fixture.nativeElement.querySelector("aurelius-atlas-ui-type-name");
         expect(normalize(badge?.textContent)).toContain("spark_application");
+    });
+
+    it("a judged card draws the governance mark from the door's joined verdicts (VCF-19, AVS-11)", () => {
+        // 16.5h: the door joins the refusals (VDR-13) and the card paints the
+        // mark with them — no fetch, no loading state (DD-838, DV-198).
+        const { fixture } = mount({
+            ...CARD,
+            governed: true,
+            verdicts: [
+                { rule: "r-a", name: "Alpha rule", message: "the record does not carry the attribute" },
+                { rule: "r-z", name: "Zeta rule", message: "the attribute holds no value to show" },
+            ],
+        });
+        // The quality column opened (VCF-01 as amended) and the mark bottom-right.
+        const column = fixture.nativeElement.querySelector(".quality");
+        expect(column).toBeTruthy();
+        const trigger = column.querySelector(".aurelius-gov-quality-trigger");
+        expect(normalize(trigger?.textContent)).toBe("2x"); // the count, UIC-38's trigger
+        // The dropdown rows, in the card's order: each its one message
+        // and nothing under it (DD-839 keeps the rule name for the box).
+        const rows = [...column.querySelectorAll(".dropdown-item")];
+        expect(rows.map((row: Element) => normalize(row.querySelector("h6")?.textContent))).toEqual([
+            "the record does not carry the attribute",
+            "the attribute holds no value to show",
+        ]);
+        expect(column.querySelectorAll(".dropdown-item p")).toHaveLength(0);
+        // Nothing else on the card moved (VCF-21): trail, chips, description, people.
+        expect(fixture.nativeElement.querySelectorAll(".aurelius-card-trail li")).toHaveLength(3);
+        expect(fixture.nativeElement.querySelectorAll("aurelius-atlas-ui-classification-chip")).toHaveLength(1);
+        expect(fixture.nativeElement.querySelector(".aurelius-card-description strong")?.textContent).toBe("code");
+        expect(fixture.nativeElement.querySelectorAll(".aurelius-people-row")).toHaveLength(1);
+    });
+
+    it("a judged card with no refusal draws the success check (VCF-20, UIC-38)", () => {
+        const { fixture } = mount({ ...CARD, governed: true, verdicts: [] });
+        expect(fixture.nativeElement.querySelector(".quality .aurelius-gov-quality-success")).toBeTruthy();
+        expect(fixture.nativeElement.querySelector(".quality .aurelius-gov-quality-trigger")).toBeNull();
+    });
+
+    it("an unjudged card draws no mark and no quality column at all (VCF-20, DD-840, DV-198)", () => {
+        // The legacy drew its green check for every card; an entity whose
+        // type has no governance rules is unjudged, not compliant, so the
+        // column stays shut whatever the verdicts field holds.
+        for (const governed of [false, null, undefined]) {
+            const { fixture } = mount({
+                ...CARD,
+                governed,
+                verdicts: [{ rule: "r-a", name: "Alpha rule", message: "the record does not carry the attribute" }],
+            });
+            expect(fixture.nativeElement.querySelector(".quality")).toBeNull();
+            expect(fixture.nativeElement.querySelector("aurelius-atlas-ui-gov-quality-list")).toBeNull();
+        }
     });
 });

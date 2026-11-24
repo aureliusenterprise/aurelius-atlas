@@ -1,4 +1,4 @@
-"""The view family's two doors over HTTP (AVR-01, AVR-02, AVR-08, AVR-10, AVR-13).
+"""The view family's two doors over HTTP (AVR-01, AVR-02, AVR-08, AVR-10, AVR-13, VDR-13).
 
 The search door of ``POST /api/aurelius/v1/search`` and the read door of ``GET /api/aurelius/v1/entity/guid/{guid}``,
 on entities written through the store until 2.4 creates them over REST (DD-051). Both answer the same view
@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 
 import httpx2 as httpx
 import pytest
+from aurelius_atlas_core.app_search_document import StoredVerdict
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.testing.entity_samples import CLASSIFICATION_TYPES, SAMPLE_TYPES, sample_entity
@@ -259,6 +260,52 @@ async def test__the_read_door_answers_a_propagated_tag_with_the_entity_it_came_f
     assert card["propagatedClassifications"] == [
         {"typeName": "c_pii", "entities": [{"guid": a, "name": "A", "typeName": "p_data", "status": "ACTIVE"}]}
     ]
+
+
+@pytest.mark.covers(f"{S}.search", f"{R}.read", rules=["VDR-13", "AVS-11"])
+async def test__both_doors_answer_the_joined_governance_verdicts(seeded: httpx.AsyncClient, app: FastAPI) -> None:
+    """The refused verdicts ride both doors' answers, read from the verdicts index (VDR-13, AVS-11, DD-838).
+
+    The worker's write of the verdict documents stands in for the round here: the doors join whatever the index
+    holds, sorted by rule name with the compliant verdict left out. The webapp's mark (16.5h's card) reads it
+    from the same field.
+    """
+    store: EntityStore = app.state.entity_store
+    await store.documents.replace_verdicts(
+        {
+            TABLE: [
+                StoredVerdict(
+                    id=f"{TABLE}--r-z",
+                    entity_guid=TABLE,
+                    guid="r-z",
+                    name="Zeta",
+                    compliant="0",
+                    noncompliant_message="the attribute holds no value to show",
+                ),
+                StoredVerdict(
+                    id=f"{TABLE}--r-a",
+                    entity_guid=TABLE,
+                    guid="r-a",
+                    name="Alpha",
+                    compliant="0",
+                    noncompliant_message="the record does not carry the attribute",
+                ),
+                StoredVerdict(id=f"{TABLE}--r-p", entity_guid=TABLE, guid="r-p", name="Passes", compliant="1"),
+            ]
+        }
+    )
+    rows = [
+        {"rule": "r-a", "name": "Alpha", "message": "the record does not carry the attribute"},
+        {"rule": "r-z", "name": "Zeta", "message": "the attribute holds no value to show"},
+    ]
+
+    view = (await seeded.get(f"{VIEW}/{TABLE}")).json()
+    card = (await seeded.post(SEARCH, json={"query": "orders"})).json()["cards"][0]
+
+    assert view["verdicts"] == rows
+    assert card["verdicts"] == rows  # the same join on both doors (VDR-13)
+    other = (await seeded.get(f"{VIEW}/{DB}")).json()
+    assert other["verdicts"] == []  # an unjudged entity answers the field empty (AVS-05)
 
 
 @pytest.mark.covers(f"{S}.search", f"{R}.read", rules=["AVR-08", "AVR-10", "MMS-09"])

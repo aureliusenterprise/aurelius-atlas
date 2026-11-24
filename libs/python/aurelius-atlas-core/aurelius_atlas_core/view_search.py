@@ -41,8 +41,10 @@ from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.view_derivation import (
     QUALITY_DIMENSIONS,
     Propagations,
+    StoredVerdict,
     card_of,
     read_page_propagations,
+    read_page_verdicts,
     view_of,
 )
 
@@ -394,10 +396,14 @@ class ViewSearchEngine:
             feed = aggregations.get(_FEED, aggregations.get("typeName#0", {})).get("buckets", [])
             facets[SERVICE_TYPE] = _service_types(self._registry, feed)[: request.facets[SERVICE_TYPE].size]
         entities = [_stored(hit["_source"]) for hit in hits["hits"]]
-        # The page's propagated tags ride its cards, two reads for the whole page (VDR-12, DD-836).
-        read = await read_page_propagations(self._store, entities) if self._store is not None else {}
+        # The page's propagated tags and refused verdicts ride its cards, one batched read each (VDR-12, VDR-13).
+        propagated = await read_page_propagations(self._store, entities) if self._store is not None else {}
+        verdicts = await read_page_verdicts(self._store, entities) if self._store is not None else {}
         return {
-            "cards": [_card(entity, self._registry, read.get(entity.guid)).to_json() for entity in entities],
+            "cards": [
+                _card(entity, self._registry, propagated.get(entity.guid), verdicts.get(entity.guid)).to_json()
+                for entity in entities
+            ],
             "facets": facets,
             "total": int(hits["total"]["value"]),
         }
@@ -461,16 +467,22 @@ def _stored(source: Mapping[str, Any]) -> StoredEntity:
     return StoredEntity.model_validate(source)
 
 
-def _card(stored: StoredEntity, registry: TypeRegistry, propagated: Propagations | None = None) -> EntityCard:
+def _card(
+    stored: StoredEntity,
+    registry: TypeRegistry,
+    propagated: Propagations | None = None,
+    verdicts: Sequence[StoredVerdict] | None = None,
+) -> EntityCard:
     """One hit's card: the view of its stored document, projected (AVR-08); its type names the attributes.
 
     ``propagated`` carries the tags the page's batched read found for this entity; without them the card
-    answers none, as a door without a store does (VDR-12, DD-836).
+    answers none, as a door without a store does (VDR-12, DD-836). ``verdicts`` carries the entity's stored
+    verdicts the same read found; the card keeps the refused rows (AVS-11, VDR-13).
     """
     entity_type = registry.entity_type(stored.type_name)
     if entity_type is None:  # pragma: no cover - the store only holds entities of known types
         raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, f"the type {stored.type_name} of entity {stored.guid}")
-    return card_of(view_of(stored, entity_type, propagated=propagated))
+    return card_of(view_of(stored, entity_type, propagated=propagated, verdicts=verdicts))
 
 
 def _answered_facets(facets: Mapping[str, Facet], aggregations: Mapping[str, Any]) -> dict[str, list[Any]]:

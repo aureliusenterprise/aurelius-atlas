@@ -18,12 +18,17 @@ FROM dhi.io/nginx:1.30-alpine3.24-dev AS otel-builder
 # mount carries apk's index + package tarballs across builds (plain `apk add`,
 # not --no-cache: the flag is what discards them; a cold pass is ~300 MB of
 # downloads).
+# !python3-ndbm: python-3.14 (the base image ships r4) pulls python3-ndbm as a
+# dependency, and the only build in v3.24/main is r2, which re-ships the _dbm
+# extension r4 already owns — apk aborts on the file collision (dhi repushed
+# the tag with r4 past alpine's split package). Excluding it keeps the base
+# image's working module: `import dbm` still resolves, and the layer installs.
 RUN --mount=type=cache,id=webapp-otel-apk,target=/var/cache/apk \
     NGINX_VER=$(nginx -v 2>&1 | sed 's|.*/||') \
     && apk add \
     c-ares-dev cmake g++ gcc \
     git grpc-dev make "nginx-stable-mod-dev~$NGINX_VER" \
-    ninja openssl-dev protobuf-dev python-3.14 \
+    ninja openssl-dev protobuf-dev python-3.14 !python3-ndbm \
     re2-dev zlib-dev
 
 # Configure the exact source tree of the running binary — the image's own

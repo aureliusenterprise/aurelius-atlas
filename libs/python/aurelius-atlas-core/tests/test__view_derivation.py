@@ -1,4 +1,4 @@
-"""The shared derivation of the card and the view, from the entity document alone (AVS-02..04, AVS-06, AVS-08, VDR-02).
+"""The shared derivation of the card and the view (AVS-02..04, AVS-06, AVS-08, AVS-11, VDR-02, VDR-13).
 
 Every ``view_of`` test hands it a ``StoredEntity`` and an ``EntityType`` and nothing else: no store, no client, no
 other entity (AVS-08). Some documents come from the real indexer (the fixture of 14.3) so the derived fields
@@ -8,11 +8,12 @@ of 16.5b passes it the entity's own edges, keyed by relationship attribute (VDR-
 """
 
 import asyncio
+from collections.abc import Sequence
 from typing import Any
 
 import pytest
 from aurelius_atlas_core.app_search_answer import AppSearchEngine
-from aurelius_atlas_core.app_search_document import own_document
+from aurelius_atlas_core.app_search_document import StoredVerdict, own_document
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
@@ -27,9 +28,11 @@ from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_core.view_derivation import (
     QUALITY_DIMENSIONS,
+    VERDICT_LIMIT,
     card_of,
     read_ends,
     read_page_propagations,
+    read_page_verdicts,
     read_propagations,
     view_of,
 )
@@ -552,6 +555,53 @@ def test__a_view_holds_its_propagated_classifications_with_their_sources() -> No
     assert card_of(view).propagated_classifications == view.propagated_classifications
 
 
+def _refused(rule_guid: str, name: str, message: str, *, entity_guid: str = "g", compliant: str = "0") -> StoredVerdict:
+    """A stored verdict of the rule ``rule_guid``, as the worker writes it (ASG-03)."""
+    return StoredVerdict(
+        id=f"{entity_guid}--{rule_guid}",
+        entity_guid=entity_guid,
+        guid=rule_guid,
+        name=name,
+        compliant=compliant,
+        noncompliant_message=message if compliant == "0" else "",
+        dataqualityruledimension="completeness",
+    )
+
+
+@pytest.mark.covers(f"{V}.view_of", f"{V}._verdicts", f"{V}.card_of", rules=["AVS-11"])
+def test__a_view_keeps_only_the_refused_verdicts_sorted_and_capped(m4i: TypeRegistry) -> None:
+    """The refused verdicts only, ``{rule, name, message}``, by rule name then GUID, capped at 100 (AVS-11, DD-839).
+
+    The compliant verdicts are left out as the legacy card's fetch did; the cap is the legacy card's page size;
+    the card carries exactly what the view derived (DD-838).
+    """
+    entity_type = type_of(m4i, "m4i_data_entity")
+    stored = hand("m4i_data_entity", entity_type, qualifiedName="a", name="A")
+    passed = _refused("r-pass", "Passes", "", compliant="1")
+    verdicts = [
+        _refused("r-zed", "Zeta rule", "the attribute holds no value to show"),
+        _refused("r-abe", "Alpha rule", "the record does not carry the attribute"),
+        passed,
+    ]
+
+    view = view_of(stored, entity_type, verdicts=verdicts)
+
+    assert [(row.rule, row.name, row.message) for row in view.verdicts] == [
+        ("r-abe", "Alpha rule", "the record does not carry the attribute"),
+        ("r-zed", "Zeta rule", "the attribute holds no value to show"),
+    ]  # sorted by rule name, the passed verdict left out (AVS-11)
+    assert view_of(stored, entity_type, verdicts=[passed]).verdicts == []
+    assert view_of(stored, entity_type).verdicts == []  # a door answering none leaves the field empty
+    crowded = view_of(
+        stored,
+        entity_type,
+        verdicts=[_refused(f"r-{number:03d}", f"Rule {number:03d}", "no value") for number in range(VERDICT_LIMIT + 1)],
+    )
+    assert len(crowded.verdicts) == VERDICT_LIMIT  # the legacy card's page size (DD-839)
+    assert crowded.verdicts[-1].rule == f"r-{VERDICT_LIMIT - 1:03d}"
+    assert card_of(view).verdicts == view.verdicts  # the card carries the view's rows (VDR-12's pattern)
+
+
 async def _propagation_store() -> tuple[EntityStore, dict[str, str]]:
     """A store of the sample types holding ``a -> p1 -> b``, with ``c_pii`` attached to ``a``.
 
@@ -613,6 +663,39 @@ async def test__read_page_propagations_answer_the_whole_page_in_one_each_read() 
         assert [(name, [e.guid for e in sources]) for name, sources in read[guid]] == [("c_pii", [guids["a"]])]
     # the source entity arrives with its document, so the page's card can draw its trail (DD-836)
     assert await store.get(guids["a"]) is not None
+
+
+@pytest.mark.covers(f"{V}.read_page_verdicts", rules=["VDR-13"])
+async def test__read_page_verdicts_answer_the_whole_page_in_one_read() -> None:
+    """One ``verdicts_by_entity`` read answers every entity of the page; none answers no key (VDR-13, DD-838).
+
+    The page is derived the way ``read_page_propagations`` derives its joins: the door hands it the stored
+    entities, and the documents contract answers the verdicts of all of them at once.
+    """
+    documents = MemoryEntityDocuments()
+    store = EntityStore(sample_registry(), documents)
+    await documents.replace_verdicts(
+        {
+            "a": [_refused("r-1", "Alpha rule", "no value", entity_guid="a")],
+            "b": [_refused("r-2", "Beta rule", "not carried", entity_guid="b", compliant="1")],
+        }
+    )
+    reads: list[list[str]] = []
+    answer = documents.verdicts_by_entity
+
+    async def recorded(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]:
+        reads.append(list(entity_guids))
+        return await answer(entity_guids)
+
+    documents.verdicts_by_entity = recorded  # counting the door's one read
+    page = [StoredEntity(guid=guid, type_name="s_table") for guid in ("a", "b", "c")]
+
+    read = await read_page_verdicts(store, page)
+
+    assert reads == [["a", "b", "c"]]  # one read for the whole page (VDR-13)
+    assert set(read) == {"a", "b"}  # c holds no verdict documents (ASG-08)
+    assert [item.guid for item in read["a"]] == ["r-1"]
+    assert [item.guid for item in read["b"]] == ["r-2"]  # the passed one rides too: AVS-11 leaves it out
 
 
 @pytest.mark.covers(f"{V}.read_propagations", rules=["VDR-05"])

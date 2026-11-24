@@ -18,8 +18,8 @@ export default meta;
 type Story = StoryObj<GovQualityList>;
 
 const nonCompliant: GovQualityRow[] = [
-    { message: "This entity is missing a kibanaSpace", detail: "attribute: completeness" },
-    { message: "The entity has no business owner", detail: "attribute: businessOwner" },
+    { message: "This entity is missing a kibanaSpace" },
+    { message: "The entity has no business owner" },
 ];
 
 /** The warning state: hover the count to open the rows. */

@@ -1,4 +1,4 @@
-import { FACET_GROUP_TITLES, LAYOUTS, layoutForTypeName } from "./section-config";
+import { FACET_GROUP_TITLES, type M4iLayoutType, LAYOUTS, layoutForTypeName, hasGovQualityBox } from "./section-config";
 
 /**
  * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33; 7.29's
@@ -37,15 +37,21 @@ describe("Section config (DET-16)", () => {
         expect(layoutForTypeName("")).toBeUndefined();
     });
 
-    it("keeps the table's section shape for each layout (DET-16)", () => {
+    it("keeps the table's section shape for each layout (DET-16, DET-48)", () => {
         // Every section: an anchor, a title, at least one seed key — the
         // renderer's whole input set; a blank would draw an empty chrome.
+        // The Governance Quality Rules box is the one exception (DD-841): it
+        // seeds from a rule search and a verdict call, not a relationship.
         for (const [name, layout] of Object.entries(LAYOUTS)) {
             expect(layout.sections.length, name).toBeGreaterThan(0);
             for (const section of layout.sections) {
                 expect(section.anchor, name).toMatch(/^[a-z-]+$/);
                 expect(section.title, name).not.toBe("");
-                expect(section.seedKeys.length, name).toBeGreaterThan(0);
+                if (section.kind !== "gov-quality") {
+                    expect(section.seedKeys.length, name).toBeGreaterThan(0);
+                } else {
+                    expect(section.seedKeys, name).toEqual([]);
+                }
             }
         }
     });
@@ -68,16 +74,21 @@ describe("Section config (DET-16)", () => {
         expect(LAYOUTS.m4i_generic_process.peopleBox).toBe(false);
     });
 
-    it("lists the spec table's anchors and seed keys, in order (DET-16)", () => {
+    it("lists the spec table's anchors and seed keys, in order (DET-16, DET-48)", () => {
         const shape = (name: keyof typeof LAYOUTS) =>
             LAYOUTS[name].sections.map((section) => [section.anchor, [...section.seedKeys]]);
 
-        expect(shape("m4i_data_domain")).toEqual([["related-entities", ["dataEntity"]]]);
+        // The box closes every legacy page's section list (DET-48) except the
+        // rule page's, which the legacy never drew one on (DV-199).
+        const box: [string, string[]] = ["gov-quality", []];
+
+        expect(shape("m4i_data_domain")).toEqual([["related-entities", ["dataEntity"]], box]);
         expect(shape("m4i_data_entity")).toEqual([
             ["related-attributes", ["attributes"]],
             ["related-entities", ["childEntity"]],
+            box,
         ]);
-        expect(shape("m4i_data_attribute")).toEqual([["related-fields", ["fields"]]]);
+        expect(shape("m4i_data_attribute")).toEqual([["related-fields", ["fields"]], box]);
         // DET-38 (7.27, DD-495): the rule's own page — the `fields` end the
         // editor writes seeds its Fields box.
         expect(shape("m4i_data_quality")).toEqual([["related-fields", ["fields"]]]);
@@ -87,6 +98,7 @@ describe("Section config (DET-16)", () => {
             ["related-attributes", ["attributes"]],
             ["related-fields", ["childField"]],
             ["related-rules", ["dataQuality"]],
+            box,
         ]);
         expect(shape("m4i_dataset")).toEqual([
             ["related-fields", ["fields"]],
@@ -95,18 +107,21 @@ describe("Section config (DET-16)", () => {
             // positions after Child Datasets.
             ["related-producers", ["outputFromProcesses"]],
             ["related-consumers", ["inputToProcesses"]],
+            box,
         ]);
-        expect(shape("m4i_collection")).toEqual([["related-datasets", ["datasets"]]]);
+        expect(shape("m4i_collection")).toEqual([["related-datasets", ["datasets"]], box]);
         expect(shape("m4i_system")).toEqual([
             ["related-collections", ["collections"]],
             ["related-systems", ["childSystem"]],
             ["related-processes", ["processes"]],
+            box,
         ]);
         // DET-33: the process row's three sections, the legacy order.
         expect(shape("m4i_generic_process")).toEqual([
             ["related-systems", ["system"]],
             ["related-inputs", ["inputs"]],
             ["related-outputs", ["outputs"]],
+            box,
         ]);
     });
 
@@ -122,42 +137,53 @@ describe("Section config (DET-16)", () => {
         // three role groups in the People box's order wherever 16.5e
         // carried the one flat group.
         const roles = ["domainLead", "businessOwner", "steward"];
-        expect(facetShape("m4i_data_domain")).toEqual([["related-entities", roles]]);
+        // DET-46 (7.25a): the box asked the two rule groups, in the legacy
+        // order (the dimension menu above the type menu).
+        const govFacets: [string, string[]] = ["gov-quality", ["dataqualityruledimension", "dataqualitytype"]];
+        expect(facetShape("m4i_data_domain")).toEqual([["related-entities", roles], govFacets]);
         expect(facetShape("m4i_data_entity")).toEqual([
             ["related-attributes", roles],
             ["related-entities", roles],
+            govFacets,
         ]);
         expect(facetShape("m4i_data_attribute")).toEqual([
             ["related-fields", ["m4i_system", "m4i_collection", "m4i_dataset"]],
+            govFacets,
         ]);
         expect(facetShape("m4i_field")).toEqual([
             ["related-attributes", ["m4i_data_domain", "m4i_data_entity", ...roles]],
             ["related-fields", ["m4i_system", "m4i_collection", "m4i_dataset"]],
             // The legacy asked the rule dimension; no card field carries it (DV-168).
             ["related-rules", []],
+            govFacets,
         ]);
+        // DV-199: the rule page never drew the box, so it asks no rule groups.
         expect(facetShape("m4i_data_quality")).toEqual([["related-fields", []]]);
         expect(facetShape("m4i_dataset")).toEqual([
             ["related-fields", roles],
             ["related-datasets", roles],
             ["related-producers", ["typeName", "m4i_system"]],
             ["related-consumers", ["typeName", "m4i_system"]],
+            govFacets,
         ]);
-        expect(facetShape("m4i_collection")).toEqual([["related-datasets", roles]]);
+        expect(facetShape("m4i_collection")).toEqual([["related-datasets", roles], govFacets]);
         expect(facetShape("m4i_system")).toEqual([
             ["related-collections", roles],
             ["related-systems", roles],
             ["related-processes", ["typeName", "m4i_system"]],
+            govFacets,
         ]);
         expect(facetShape("m4i_generic_process")).toEqual([
             ["related-systems", ["typeName", "m4i_system"]],
             ["related-inputs", ["typeName", "m4i_system", "m4i_collection"]],
             ["related-outputs", ["typeName", "m4i_system", "m4i_collection"]],
+            govFacets,
         ]);
         // DET-39: the person's roles box asked the type, the two chain
         // groups, and the raw Name (DD-619).
         expect(facetShape("m4i_person")).toEqual([
             ["governance-roles", ["typeName", "m4i_data_domain", "m4i_data_entity", "name"]],
+            govFacets,
         ]);
 
         // Every asked group carries a catalogue title (DD-622): the
@@ -191,10 +217,13 @@ describe("Section config (DET-16)", () => {
         expect(LAYOUTS.m4i_system.lineageAfter).toBeUndefined();
     });
 
-    it("keeps the stats and nav of 7.21c's rows in the legacy order (DET-32, DET-33, LDG-32)", () => {
+    it("keeps the stats and nav of 7.21c's rows in the legacy order (DET-32, DET-33, LDG-32, DET-48)", () => {
         const labels = (name: keyof typeof LAYOUTS) => LAYOUTS[name].stats.map((stat) => stat.anchor);
         const nav = (name: keyof typeof LAYOUTS) => LAYOUTS[name].nav.map((entry) => entry.anchor);
 
+        // DET-48 (7.25a): the box's nav entry closes each of the nine legacy
+        // pages' lists, before the properties; the box never had a stat, so
+        // the count line under the title carries its number instead.
         // LDG-32 (DD-383's hold-out returns): the lineage pair sits before
         // Producers on the dataset (the legacy bar, its no-Data-Entities
         // shape) and before Inputs on the process.
@@ -213,6 +242,7 @@ describe("Section config (DET-16)", () => {
             "lineage-model",
             "related-producers",
             "related-consumers",
+            "gov-quality",
             "properties-details",
         ]);
 
@@ -229,6 +259,7 @@ describe("Section config (DET-16)", () => {
             "lineage-model",
             "related-inputs",
             "related-outputs",
+            "gov-quality",
             "properties-details",
         ]);
 
@@ -246,6 +277,7 @@ describe("Section config (DET-16)", () => {
             "related-attributes",
             "related-fields",
             "related-rules",
+            "gov-quality",
             "properties-details",
         ]);
 
@@ -299,9 +331,6 @@ describe("Section config (DET-16)", () => {
             if (layout.lineageAfter !== undefined) {
                 rendered.add("lineage-model");
             }
-            if (layout.govQualityBox) {
-                rendered.add("gov-quality");
-            }
             for (const section of layout.sections) {
                 rendered.add(section.anchor);
             }
@@ -324,12 +353,14 @@ describe("Section config (DET-16)", () => {
         // DET-39: the table's only row without the description box.
         expect(person.descriptionBox).toBe(false);
         expect(person.peopleBox).toBe(false);
-        // DET-41: the one merged section, the five ends in the legacy order.
+        // DET-41: the one merged section, the five ends in the legacy order,
+        // then the box (DET-48).
         expect(person.sections.map((section) => [section.anchor, [...section.seedKeys]])).toEqual([
             [
                 "governance-roles",
                 ["domainLead", "businessOwnerEntity", "businessOwnerAttribute", "stewardEntity", "stewardAttribute"],
             ],
+            ["gov-quality", []],
         ]);
         // DET-40: four headed boxes, each stat counting its own end (or the
         // properties), every heading linking to its legacy target.
@@ -357,13 +388,13 @@ describe("Section config (DET-16)", () => {
             ],
             ["Other", [["Properties", "properties-details", { kind: "properties" }]]],
         ]);
-        // DET-42: the rule box, this row only. Every other row leaves both
-        // new flags out (absent means the 7.21a shape).
-        expect(person.govQualityBox).toBe(true);
+        // DET-42 (as amended by 7.25a): the box is the row's last section;
+        // the description and stats-group flags are still this row's only
+        // ones (absent means the 7.21a shape).
+        expect(person.sections.at(-1)?.kind).toBe("gov-quality");
         for (const [name, layout] of Object.entries(LAYOUTS)) {
             if (name !== "m4i_person") {
                 expect(layout.descriptionBox, name).toBeUndefined();
-                expect(layout.govQualityBox, name).toBeUndefined();
                 expect(layout.statsGroups, name).toBeUndefined();
             }
         }
@@ -373,5 +404,46 @@ describe("Section config (DET-16)", () => {
             "gov-quality",
             "properties-details",
         ]);
+    });
+
+    it("carries the Governance Quality Rules box last on the nine pages (DET-48, DD-841, DV-199)", () => {
+        // The nine legacy pages that drew the box carry it as their last
+        // section — the legacy templates seat its div directly above the
+        // properties block — and name it in the nav at the same place.
+        const withBox: M4iLayoutType[] = [
+            "m4i_data_domain",
+            "m4i_data_entity",
+            "m4i_data_attribute",
+            "m4i_field",
+            "m4i_dataset",
+            "m4i_collection",
+            "m4i_system",
+            "m4i_generic_process",
+            "m4i_person",
+        ];
+        for (const name of withBox) {
+            const layout = LAYOUTS[name];
+            expect(hasGovQualityBox(layout), name).toBe(true);
+            expect(layout.sections.at(-1)?.anchor, name).toBe("gov-quality");
+            // One box per page, and it carries the shared title.
+            expect(layout.sections.filter((section) => section.kind === "gov-quality")).toHaveLength(1);
+            expect(layout.sections.at(-1)?.title).toBe("Governance Quality Rules");
+            const anchors = layout.nav.map((entry) => entry.anchor);
+            expect(anchors.at(-2), name).toBe("gov-quality");
+            expect(anchors.at(-1), name).toBe("properties-details");
+            // The nav entry's label is the legacy page's own key's text.
+            expect(layout.nav.at(-2)?.label, name).toBe("Governance Quality Rules");
+            // The box never enters the stats bar (DET-48, the legacy's bar
+            // carried no heading for it).
+            expect(
+                layout.stats.map((stat) => stat.anchor),
+                name,
+            ).not.toContain("gov-quality");
+        }
+
+        // The rule's own page is the tenth layout and the only one without
+        // the box: the legacy drew no governance box there (DV-199).
+        expect(hasGovQualityBox(LAYOUTS.m4i_data_quality)).toBe(false);
+        expect(hasGovQualityBox(undefined)).toBe(false);
     });
 });
