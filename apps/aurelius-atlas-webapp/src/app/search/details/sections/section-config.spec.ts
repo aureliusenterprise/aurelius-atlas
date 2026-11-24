@@ -1,4 +1,15 @@
-import { FACET_GROUP_TITLES, type M4iLayoutType, LAYOUTS, layoutForTypeName, hasGovQualityBox } from "./section-config";
+import {
+    FACET_GROUP_TITLES,
+    type M4iLayoutType,
+    LAYOUTS,
+    layoutForTypeName,
+    hasGovQualityBox,
+    hasScoreSource,
+    overallRow,
+    qualityRows,
+    SCORE_ANCHOR,
+    scorePercent,
+} from "./section-config";
 
 /**
  * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33; 7.29's
@@ -41,16 +52,17 @@ describe("Section config (DET-16)", () => {
     it("keeps the table's section shape for each layout (DET-16, DET-48, DET-53)", () => {
         // Every section: an anchor, a title, at least one seed key — the
         // renderer's whole input set; a blank would draw an empty chrome.
-        // The two seedless kinds are the exceptions, each named by its own
-        // row: the Governance Quality Rules box (DD-841 — a rule search and
-        // a verdict call, not a relationship) and a verdict box (DD-848 —
+        // The three seedless kinds are the exceptions, each named by its
+        // own row: the Governance Quality Rules box (DD-841 — a rule search
+        // and a verdict call, not a relationship), the score box (DD-851 —
+        // the view's own rows, no seed at all), and a verdict box (DD-848 —
         // the screen hands the sections store the rule's verdict GUIDs).
         for (const [name, layout] of Object.entries(LAYOUTS)) {
             expect(layout.sections.length, name).toBeGreaterThan(0);
             for (const section of layout.sections) {
-                expect(section.anchor, name).toMatch(/^[a-z-]+$/);
+                expect(section.anchor, name).toMatch(/^[a-z0-9-]+$/);
                 expect(section.title, name).not.toBe("");
-                if (section.kind === "gov-quality") {
+                if (section.kind === "gov-quality" || section.kind === "score") {
                     expect(section.seedKeys, name).toEqual([]);
                 } else if (section.seedFrom === "verdicts") {
                     expect(section.seedKeys, name).toEqual([]);
@@ -84,16 +96,20 @@ describe("Section config (DET-16)", () => {
             LAYOUTS[name].sections.map((section) => [section.anchor, [...section.seedKeys]]);
 
         // The box closes every legacy page's section list (DET-48) except the
-        // rule page's, which the legacy never drew one on (DV-199).
+        // rule page's, which the legacy never drew one on (DV-199). The
+        // score box enters seven of them directly before it (DET-57); the
+        // field page seats it before the rules box instead.
         const box: [string, string[]] = ["gov-quality", []];
+        const score: [string, string[]] = [SCORE_ANCHOR, []];
 
-        expect(shape("m4i_data_domain")).toEqual([["related-entities", ["dataEntity"]], box]);
+        expect(shape("m4i_data_domain")).toEqual([["related-entities", ["dataEntity"]], score, box]);
         expect(shape("m4i_data_entity")).toEqual([
             ["related-attributes", ["attributes"]],
             ["related-entities", ["childEntity"]],
+            score,
             box,
         ]);
-        expect(shape("m4i_data_attribute")).toEqual([["related-fields", ["fields"]], box]);
+        expect(shape("m4i_data_attribute")).toEqual([["related-fields", ["fields"]], score, box]);
         // DET-38 (7.27, DD-495): the rule's own page — the `fields` end the
         // editor writes seeds its Fields box.
         expect(shape("m4i_data_quality")).toEqual([["related-fields", ["fields"]]]);
@@ -102,6 +118,9 @@ describe("Section config (DET-16)", () => {
         expect(shape("m4i_field")).toEqual([
             ["related-attributes", ["attributes"]],
             ["related-fields", ["childField"]],
+            // DET-57 (7.25c): the field template's own order — the score
+            // box before DET-35's rules box.
+            score,
             ["related-rules", ["dataQuality"]],
             box,
         ]);
@@ -112,13 +131,15 @@ describe("Section config (DET-16)", () => {
             // positions after Child Datasets.
             ["related-producers", ["outputFromProcesses"]],
             ["related-consumers", ["inputToProcesses"]],
+            score,
             box,
         ]);
-        expect(shape("m4i_collection")).toEqual([["related-datasets", ["datasets"]], box]);
+        expect(shape("m4i_collection")).toEqual([["related-datasets", ["datasets"]], score, box]);
         expect(shape("m4i_system")).toEqual([
             ["related-collections", ["collections"]],
             ["related-systems", ["childSystem"]],
             ["related-processes", ["processes"]],
+            score,
             box,
         ]);
         // DET-33: the process row's three sections, the legacy order.
@@ -145,19 +166,25 @@ describe("Section config (DET-16)", () => {
         // DET-46 (7.25a): the box asked the two rule groups, in the legacy
         // order (the dimension menu above the type menu).
         const govFacets: [string, string[]] = ["gov-quality", ["dataqualityruledimension", "dataqualitytype"]];
-        expect(facetShape("m4i_data_domain")).toEqual([["related-entities", roles], govFacets]);
+        // DET-57 (7.25c): the score box draws no chrome at all, so it asks
+        // no facets — the empty list, like the score anchor's name.
+        const scoreFacets: [string, string[]] = [SCORE_ANCHOR, []];
+        expect(facetShape("m4i_data_domain")).toEqual([["related-entities", roles], scoreFacets, govFacets]);
         expect(facetShape("m4i_data_entity")).toEqual([
             ["related-attributes", roles],
             ["related-entities", roles],
+            scoreFacets,
             govFacets,
         ]);
         expect(facetShape("m4i_data_attribute")).toEqual([
             ["related-fields", ["m4i_system", "m4i_collection", "m4i_dataset"]],
+            scoreFacets,
             govFacets,
         ]);
         expect(facetShape("m4i_field")).toEqual([
             ["related-attributes", ["m4i_data_domain", "m4i_data_entity", ...roles]],
             ["related-fields", ["m4i_system", "m4i_collection", "m4i_dataset"]],
+            scoreFacets,
             // The legacy asked the rule dimension; no card field carries it (DV-168).
             ["related-rules", []],
             govFacets,
@@ -169,13 +196,15 @@ describe("Section config (DET-16)", () => {
             ["related-datasets", roles],
             ["related-producers", ["typeName", "m4i_system"]],
             ["related-consumers", ["typeName", "m4i_system"]],
+            scoreFacets,
             govFacets,
         ]);
-        expect(facetShape("m4i_collection")).toEqual([["related-datasets", roles], govFacets]);
+        expect(facetShape("m4i_collection")).toEqual([["related-datasets", roles], scoreFacets, govFacets]);
         expect(facetShape("m4i_system")).toEqual([
             ["related-collections", roles],
             ["related-systems", roles],
             ["related-processes", ["typeName", "m4i_system"]],
+            scoreFacets,
             govFacets,
         ]);
         expect(facetShape("m4i_generic_process")).toEqual([
@@ -238,6 +267,8 @@ describe("Section config (DET-16)", () => {
             "lineage-model",
             "related-producers",
             "related-consumers",
+            // DET-58 (7.25c): the score stat in the legacy place.
+            SCORE_ANCHOR,
             "properties-details",
         ]);
         expect(nav("m4i_dataset")).toEqual([
@@ -247,6 +278,7 @@ describe("Section config (DET-16)", () => {
             "lineage-model",
             "related-producers",
             "related-consumers",
+            SCORE_ANCHOR,
             "gov-quality",
             "properties-details",
         ]);
@@ -268,12 +300,14 @@ describe("Section config (DET-16)", () => {
             "properties-details",
         ]);
 
-        // DET-36 (7.24): the rules stat returns in the legacy place — after
-        // Child Fields, before Properties — and the score stat stays out
-        // (DD-369: `data-quality` names it, and it is absent).
+        // DET-36 (7.24): the rules stat in the legacy place — and DET-58
+        // (7.25c) returns the score stat before it: after Child Fields,
+        // before the rules stat, before Properties. The nav carries the
+        // score entry before both rules links (the spec's own order).
         expect(labels("m4i_field")).toEqual([
             "related-attributes",
             "related-fields",
+            SCORE_ANCHOR,
             "related-rules",
             "properties-details",
         ]);
@@ -281,6 +315,7 @@ describe("Section config (DET-16)", () => {
             "description-details",
             "related-attributes",
             "related-fields",
+            SCORE_ANCHOR,
             "related-rules",
             "gov-quality",
             "properties-details",
@@ -307,12 +342,15 @@ describe("Section config (DET-16)", () => {
         expect(process?.unavailable).toBe("Unavailable");
 
         // Every other layout's stat keeps its count shape: no pair, no
-        // lineage kind.
+        // lineage kind — the score stat's one word (DET-58) excepted, which
+        // carries `unavailable` alone and no `available`.
         for (const layout of Object.values(LAYOUTS)) {
             for (const stat of layout.stats) {
                 if (stat.anchor !== "lineage-model") {
                     expect(stat.available, stat.anchor).toBeUndefined();
-                    expect(stat.unavailable, stat.anchor).toBeUndefined();
+                    if (stat.source.kind !== "score") {
+                        expect(stat.unavailable, stat.anchor).toBeUndefined();
+                    }
                 }
             }
         }
@@ -498,5 +536,149 @@ describe("Section config (DET-16)", () => {
             ["Compliant", "related-compliants"],
             ["Properties", "properties-details"],
         ]);
+    });
+
+    it("carries the score box, stat, and nav entry of the seven score layouts (DET-56..DET-58)", () => {
+        // The legacy's score pages, each with its box in its own place
+        // (DET-57), its stat in its own place (DET-58), and the matching
+        // nav entry — all keyed by the layout's own catalogue strings.
+        const scoreLayouts: [M4iLayoutType, string][] = [
+            ["m4i_dataset", "Consumers"],
+            ["m4i_collection", "Datasets"],
+            ["m4i_system", "Processes"],
+            ["m4i_field", "Child Fields"],
+            ["m4i_data_attribute", "Fields"],
+            ["m4i_data_entity", "Child Entities"],
+            ["m4i_data_domain", "Data Entities"],
+        ];
+        for (const [name, follows] of scoreLayouts) {
+            const layout = LAYOUTS[name];
+            const score = layout.sections.find((section) => section.kind === "score");
+            expect(score, name).toBeDefined();
+            expect(score?.anchor, name).toBe(SCORE_ANCHOR);
+            // DET-56: the layout's own title key's text.
+            expect(score?.title, name).toBe("Data Quality");
+            // DET-57: the box enters after the named box, and (except on
+            // the field page, whose rules box follows it) directly before
+            // the governance box.
+            const anchors = layout.sections.map((section) => section.anchor);
+            const boxAnchor = name === "m4i_field" ? "related-rules" : "gov-quality";
+            const titleOf = (anchor: string) => layout.sections.find((section) => section.anchor === anchor)?.title;
+            expect(titleOf(anchors[anchors.indexOf(SCORE_ANCHOR) - 1]), `${name} follows`).toBe(follows);
+            expect(anchors[anchors.indexOf(SCORE_ANCHOR) + 1], `${name} precedes`).toBe(boxAnchor);
+
+            // DET-58: the stat carries the score source kind, the box's
+            // anchor, the layout's own label, and its unavailable word.
+            const stat = layout.stats.find((entry) => entry.anchor === SCORE_ANCHOR);
+            expect(stat?.source, name).toEqual({ kind: "score" });
+            expect(stat?.label, name).toBe("Data Quality");
+            expect(stat?.unavailable, name).toBe("Unavailable");
+            expect(stat?.available, name).toBeUndefined();
+
+            // DET-58: the nav entry sits in the legacy place — on six
+            // layouts directly before the governance box's entry, on the
+            // field page before both rules entries.
+            const nav = layout.nav.map((entry) => entry.anchor);
+            const navIndex = nav.indexOf(SCORE_ANCHOR);
+            expect(nav[navIndex + 1], `${name} nav`).toBe(name === "m4i_field" ? "related-rules" : "gov-quality");
+        }
+
+        // The collection page's odd word key (DET-58): its template names
+        // `...dataQualityUnavailable` for the fallback.
+        expect(LAYOUTS.m4i_collection.stats.find((s) => s.anchor === SCORE_ANCHOR)?.unavailable).toBe("Unavailable");
+    });
+
+    it("keeps the score box off the process, person, and the two rule layouts (DET-56)", () => {
+        // The legacy drew the score page on seven layouts only; the rest
+        // gain no box, stat, or entry.
+        const withoutScore: M4iLayoutType[] = [
+            "m4i_generic_process",
+            "m4i_person",
+            "m4i_data_quality",
+            "m4i_gov_data_quality",
+        ];
+        for (const name of withoutScore) {
+            const layout = LAYOUTS[name];
+            expect(
+                layout.sections.filter((section) => section.kind === "score"),
+                name,
+            ).toHaveLength(0);
+            expect(
+                layout.stats.some((stat) => stat.source.kind === "score"),
+                name,
+            ).toBe(false);
+            expect(
+                layout.nav.some((entry) => entry.anchor === SCORE_ANCHOR),
+                name,
+            ).toBe(false);
+        }
+    });
+
+    it("marks the ten score-sorted sections and leaves the rest on DET-21's pair (DET-59)", () => {
+        // DET-59's ten boxes ask the seven-option list; every other card
+        // section keeps the pair (the governance box runs DET-45's own five
+        // in its own store, DV-205's rules box the pair).
+        const scoreSorted: [M4iLayoutType, string[]][] = [
+            ["m4i_dataset", ["related-fields", "related-datasets"]],
+            ["m4i_collection", ["related-datasets"]],
+            ["m4i_system", ["related-collections", "related-systems"]],
+            ["m4i_field", ["related-fields"]],
+            ["m4i_data_attribute", ["related-fields"]],
+            ["m4i_data_entity", ["related-attributes", "related-entities"]],
+            ["m4i_data_domain", ["related-entities"]],
+        ];
+        const marked = Object.entries(LAYOUTS).flatMap(([name, layout]) =>
+            layout.sections
+                .filter((section) => section.sorts === "score")
+                .map((section) => [name, section.anchor] as [string, string]),
+        );
+        const expected = scoreSorted.flatMap(([name, anchors]) =>
+            anchors.map((anchor) => [name, anchor] as [string, string]),
+        );
+        expect(marked.sort()).toEqual(expected.sort());
+
+        // DET-59's exceptions keep no flag (the default pair): the dataset's
+        // Producers and Consumers, the system's Processes, the field's
+        // attributes and rules box, every box of the process page, the
+        // person's responsibilities box, the rule pages' verdict and Fields
+        // boxes, and the governance box's own five-option list.
+        expect(LAYOUTS.m4i_dataset.sections.find((s) => s.anchor === "related-producers")?.sorts).toBeUndefined();
+        expect(LAYOUTS.m4i_dataset.sections.find((s) => s.anchor === "related-consumers")?.sorts).toBeUndefined();
+        expect(LAYOUTS.m4i_system.sections.find((s) => s.anchor === "related-processes")?.sorts).toBeUndefined();
+        expect(LAYOUTS.m4i_field.sections.find((s) => s.anchor === "related-rules")?.sorts).toBeUndefined();
+        expect(LAYOUTS.m4i_person.sections.find((s) => s.anchor === "governance-roles")?.sorts).toBeUndefined();
+        expect(LAYOUTS.m4i_generic_process.sections.every((s) => s.sorts === undefined)).toBe(true);
+    });
+
+    it("derives the score rows and the stat's value from the view's rows (DET-56, DET-63)", () => {
+        // DET-63's skip rule lives in one helper (DD-852): the five held
+        // dimensions in the fixed order, `overall` left out, a row whose
+        // score never renders skipped.
+        const rows = [
+            { dimension: "validity", score: 0.5, count: 2, total: 4 },
+            { dimension: "accuracy", score: 0.75, count: 1, total: 2 },
+            { dimension: "overall", score: 0.9, count: 5, total: 5 },
+            { dimension: "timeliness", score: null as unknown as number, count: 1, total: 1 },
+            { dimension: "uniqueness", score: -1, count: 1, total: 1 },
+            { dimension: "completeness", score: 0.25, count: 0, total: 1 },
+        ];
+        expect(qualityRows(rows).map((row) => [row.dimension, row.score, row.count])).toEqual([
+            ["Accuracy", 0.75, 1],
+            ["Completeness", 0.25, 0],
+            ["Validity", 0.5, 2],
+        ]);
+
+        // DET-58's source test: the `overall` row with a count above zero —
+        // 0 count, no row, and no quality at all are all sourceless.
+        expect(overallRow(rows)?.dimension).toBe("overall");
+        expect(hasScoreSource(rows)).toBe(true);
+        expect(hasScoreSource([{ dimension: "overall", score: 0.5, count: 0, total: 1 }])).toBe(false);
+        expect(hasScoreSource([{ dimension: "accuracy", score: 0.5, count: 1, total: 1 }])).toBe(false);
+        expect(hasScoreSource(undefined)).toBe(false);
+
+        // DET-58's percent: whole percents whole, at most one decimal.
+        expect(scorePercent(1)).toBe("100%");
+        expect(scorePercent(0.75)).toBe("75%");
+        expect(scorePercent(0.666)).toBe("66.6%");
     });
 });

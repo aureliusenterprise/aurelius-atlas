@@ -19,8 +19,10 @@ import {
     Markdown,
     PeopleBox,
     PropertiesItem,
+    QualityDimensionList,
     SectionStats,
     TypeName,
+    type QualityDimensionRow,
     type SectionStat,
 } from "aurelius-atlas-ui";
 
@@ -41,7 +43,14 @@ import { DetailsRuleVerdictsState } from "./sections/rule-verdicts.state";
 import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
-import { hasGovQualityBox, type StatDef } from "./sections/section-config";
+import {
+    DATA_QUALITY_NOT_AVAILABLE,
+    hasGovQualityBox,
+    hasScoreSource,
+    qualityRows,
+    scorePercent,
+    type StatDef,
+} from "./sections/section-config";
 import { peopleRowsOfSections } from "./shared/people";
 import { trailOf } from "../shared/trail";
 import { cardTypeAlias } from "../shared/type-alias";
@@ -84,6 +93,7 @@ import { cardTypeAlias } from "../shared/type-alias";
         PeopleBox,
         PropertiesItem,
         PropagatedChips,
+        QualityDimensionList,
         SectionStats,
         TypeName,
         RouterLink,
@@ -428,6 +438,10 @@ export class Details {
         for (const def of layout.sections) {
             if (def.kind === "gov-quality") {
                 drawn.push(this.govView());
+            } else if (def.kind === "score") {
+                // The box's title is the layout's own key (DET-56), so the
+                // config entry carries it; the rows ride the view (DD-852).
+                drawn.push({ ...this.scoreView(), anchor: def.anchor, title: def.title });
             } else {
                 const view = byAnchor.get(def.anchor);
                 if (view !== undefined) {
@@ -436,6 +450,22 @@ export class Details {
             }
         }
         return drawn;
+    });
+
+    /**
+     * The Data Quality score box (DET-56, DET-63, DD-852): the opened
+     * view's own score rows (AVS-01, AVS-08) in DET-56's five-row order,
+     * or the placeholder rows the UIC-37 list shows — no second read,
+     * the box rides DET-08's read exactly like the stats bar's counts.
+     */
+    protected readonly scoreView = computed<Omit<ScoreSectionView, "anchor" | "title">>(() => {
+        const entity = this.entity();
+        const scored = hasScoreSource(entity?.quality);
+        return {
+            kind: "score",
+            rows: scored ? qualityRows(entity?.quality) : [],
+            placeholder: scored ? "" : DATA_QUALITY_NOT_AVAILABLE,
+        };
     });
 
     /** The description box's title: the layout's own key, or the default's. */
@@ -486,10 +516,27 @@ export class Details {
         if (stat.source.kind === "lineage") {
             return this.lineageWord(stat);
         }
+        if (stat.source.kind === "score") {
+            return this.scoreWord(stat);
+        }
         if (stat.source.kind === "end") {
             return this.sections.endCount(stat.source.key);
         }
         return this.sections.countFor(stat.source.anchor);
+    }
+
+    /**
+     * The score stat's value (DET-58, DD-853): the opened view's `overall`
+     * score as the legacy's percent when its count is above zero, else the
+     * layout's own `unavailable` word — the legacy's two-state
+     * `noDataQuality` branch, never a zero (DET-63).
+     */
+    private scoreWord(stat: StatDef): string {
+        const overall = this.entity()?.quality?.find((row) => row.dimension === "overall");
+        if (overall !== undefined && overall.count > 0 && typeof overall.score === "number" && overall.score >= 0) {
+            return scorePercent(overall.score);
+        }
+        return stat.unavailable ?? "";
     }
 
     /**
@@ -702,8 +749,24 @@ export class Details {
 
 /**
  * One box of the layout's section list, as the template draws it (7.25a,
- * DET-48): a relationship-seeded card section, or the Governance Quality
- * Rules box. The chrome's fields ride both (DET-44), and the `kind` picks
- * the store a handler reaches (DD-841).
+ * DET-48; 7.25c, DD-851): a relationship-seeded card section, the
+ * Governance Quality Rules box, or the Data Quality score box. The
+ * chrome's fields ride the first two (DET-44), the `kind` picks the store
+ * a handler reaches (DD-841), and the score box has no handler at all —
+ * no keyword, sort, facet, page, or count line (DET-57).
  */
-type DetailsSectionView = SectionView | GovSectionView;
+type DetailsSectionView = SectionView | GovSectionView | ScoreSectionView;
+
+/**
+ * The Data Quality score box as the template draws it (DET-56, DD-852):
+ * the five dimension rows, or an empty list with the placeholder text.
+ * The title is the layout's own key — read from the layout's section
+ * entry by the template's own title binding.
+ */
+interface ScoreSectionView {
+    kind: "score";
+    anchor: string;
+    title: string;
+    rows: QualityDimensionRow[];
+    placeholder: string;
+}

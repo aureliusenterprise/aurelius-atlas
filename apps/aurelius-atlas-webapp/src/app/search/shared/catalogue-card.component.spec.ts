@@ -21,7 +21,12 @@ import { CatalogueCard } from "./catalogue-card.component";
 /** A minimal host: the part under test with one card input. */
 @Component({
     template: `
-        <aurelius-atlas-webapp-catalogue-card [card]="card" [pageGuid]="pageGuid" (cardClicked)="last = $event" />
+        <aurelius-atlas-webapp-catalogue-card
+            [card]="card"
+            [pageGuid]="pageGuid"
+            [showScores]="showScores"
+            (cardClicked)="last = $event"
+        />
     `,
     imports: [CatalogueCard],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,6 +34,7 @@ import { CatalogueCard } from "./catalogue-card.component";
 class Host {
     card: EntityCard = CARD;
     pageGuid: string | undefined = undefined;
+    showScores = false;
     last: string | null = null;
 }
 
@@ -70,10 +76,12 @@ const CARD: EntityCard = {
 function mount(
     card: EntityCard,
     pageGuid?: string,
+    showScores = false,
 ): { fixture: ReturnType<typeof TestBed.createComponent<Host>>; host: Host } {
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.card = card;
     fixture.componentInstance.pageGuid = pageGuid;
+    fixture.componentInstance.showScores = showScores;
     fixture.detectChanges();
     return { fixture, host: fixture.componentInstance };
 }
@@ -342,5 +350,106 @@ describe("The shared rich card (VCF-01, VCF-06, VCF-19, VCF-20)", () => {
             expect(fixture.nativeElement.querySelector(".quality")).toBeNull();
             expect(fixture.nativeElement.querySelector("aurelius-atlas-ui-gov-quality-list")).toBeNull();
         }
+    });
+
+    describe("the score block (DET-60, DET-61, DET-63)", () => {
+        /** Score rows as the door's roll-up writes them (AVS-01). */
+        const SCORES: NonNullable<EntityCard["quality"]> = [
+            { dimension: "overall", score: 0.9, count: 5, total: 5 },
+            { dimension: "timeliness", score: 0.4, count: 1, total: 5 },
+            { dimension: "validity", score: 0.5, count: 2, total: 5 },
+            { dimension: "accuracy", score: 0.75, count: 1, total: 5 },
+            { dimension: "completeness", score: 0.25, count: 0, total: 5 },
+        ];
+
+        it("a details card prints the score block after the chips, above the description (DET-60)", () => {
+            const { fixture } = mount({ ...CARD, quality: SCORES }, undefined, true);
+            const block = fixture.nativeElement.querySelector(".aurelius-card-scores");
+            expect(block).toBeTruthy();
+            // The same list the details box draws: fixed order, `overall`
+            // left out, a 0-count dimension still a row.
+            const rows = [...block.querySelectorAll(".quality-dimension")];
+            expect(rows.map((row: Element) => normalize(row.textContent))).toEqual([
+                "75% Accuracy (1)",
+                "25% Completeness (0)",
+                "40% Timeliness (1)",
+                "50% Validity (2)",
+            ]);
+            expect(block.querySelector("aurelius-atlas-ui-data-quality-pie")).toBeTruthy();
+            // The legacy place: after the trail and the chips, above the
+            // description and the people rows.
+            const content = [...fixture.nativeElement.querySelectorAll("[card-content] > *")];
+            const at = (selector: string) => content.indexOf(fixture.nativeElement.querySelector(selector));
+            expect(at(".aurelius-card-scores")).toBeGreaterThan(at(".aurelius-card-trail"));
+            expect(at(".aurelius-card-scores")).toBeGreaterThan(at(".field.is-grouped"));
+            expect(at(".aurelius-card-scores")).toBeLessThan(at(".aurelius-card-description"));
+            expect(at(".aurelius-card-scores")).toBeLessThan(at("aurelius-atlas-ui-people-box"));
+        });
+
+        it("a partial set prints only the dimensions it holds (DET-60)", () => {
+            const { fixture } = mount(
+                {
+                    ...CARD,
+                    quality: [
+                        { dimension: "overall", score: 0.5, count: 1, total: 2 },
+                        { dimension: "uniqueness", score: 0.5, count: 1, total: 2 },
+                    ],
+                },
+                undefined,
+                true,
+            );
+            const rows = [...fixture.nativeElement.querySelectorAll(".aurelius-card-scores .quality-dimension")];
+            expect(rows.map((row: Element) => normalize(row.textContent))).toEqual(["50% Uniqueness (1)"]);
+        });
+
+        it("a card with no score rows prints no block and no placeholder (DET-60, DET-63)", () => {
+            for (const quality of [
+                undefined, // no rows at all
+                [], // the empty answer
+                [{ dimension: "overall", score: 0, count: 0, total: 0 }], // sourceless: overall count 0
+                [{ dimension: "accuracy", score: -1, count: 1, total: 1 }], // DET-63: a score that never renders
+            ]) {
+                const { fixture } = mount({ ...CARD, quality }, undefined, true);
+                expect(fixture.nativeElement.querySelector(".aurelius-card-scores")).toBeNull();
+                // The card's `showPlaceholder` is off (DET-60): not even the
+                // placeholder text the details box prints.
+                expect(fixture.nativeElement.querySelector(".aurelius-quality-not-available")).toBeNull();
+                // The rest of the card is untouched.
+                expect(fixture.nativeElement.querySelector(".aurelius-card-description strong")?.textContent).toBe(
+                    "code",
+                );
+            }
+        });
+
+        it("the mount site decides: a results row never prints the block (DET-61, DV-202)", () => {
+            // The same scored card, mounted by the results screen — which
+            // leaves DET-61's switch off, as the legacy's SHOW_DATA_QUALITY
+            // did on its search page.
+            const { fixture } = mount({ ...CARD, quality: SCORES });
+            expect(fixture.nativeElement.querySelector(".aurelius-card-scores")).toBeNull();
+            // The read is the same card either way: the card reads no setting
+            // of its own, only what the mount site asks for.
+            expect(fixture.nativeElement.querySelector(".aurelius-card-description")).toBeTruthy();
+        });
+
+        it("a card carrying both prints both, in their own corners (DET-61)", () => {
+            const { fixture } = mount(
+                {
+                    ...CARD,
+                    quality: SCORES,
+                    governed: true,
+                    verdicts: [{ rule: "r-a", name: "Alpha rule", message: "the attribute holds no value" }],
+                },
+                undefined,
+                true,
+            );
+            // The governance mark keeps its quality column (VCF-19, UIC-38)…
+            const column = fixture.nativeElement.querySelector(".quality");
+            expect(normalize(column.querySelector(".aurelius-gov-quality-trigger")?.textContent)).toBe("1x");
+            // …and the score list sits in the content blocks — separate
+            // rules, separate places, both printed.
+            expect(fixture.nativeElement.querySelectorAll(".aurelius-card-scores .quality-dimension")).toHaveLength(4);
+            expect(column.querySelector(".aurelius-card-scores")).toBeNull();
+        });
     });
 });

@@ -1165,10 +1165,15 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(stats).toEqual([
             ["Data Attributes", "#related-attributes", "2"],
             ["Child Entities", "#related-entities", "0"],
+            // DET-58 (7.25c): the score stat in the legacy place — the
+            // sourceless view (no `quality` rows on the fixture) shows the
+            // layout's `Unavailable` word, never a zero (DET-63).
+            ["Data Quality", "#data-quality", "Unavailable"],
             ["Properties", "#properties-details", "0"],
         ]);
-        // No Data Quality stat at all (DD-369: not a zero, nothing).
-        expect(stats.some(([label]) => label.includes("Quality"))).toBe(false);
+        // Still no Governance Quality Rules stat — the box carries no stat
+        // on this layout (DET-24's rule predates 7.25a, unchanged).
+        expect(stats.some(([label]) => label.includes("Governance"))).toBe(false);
     });
 
     it("the side navigation links each box by router URL and anchor (DET-25, DD-381)", () => {
@@ -1189,10 +1194,100 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             ["People", "/#people-details"],
             ["Data Attributes", "/#related-attributes"],
             ["Child Entities", "/#related-entities"],
+            // DET-58 (7.25c): the score link, in the legacy slot before the
+            // governance box's entry.
+            ["Data Quality", "/#data-quality"],
             // DET-48 (7.25a): the box's entry, in the legacy slot before the properties.
             ["Governance Quality Rules", "/#gov-quality"],
             ["Properties", "/#properties-details"],
         ]);
+    });
+
+    it("a score view draws the box's five dimension rows in the fixed order (DET-56)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({
+                quality: [
+                    { dimension: "overall", score: 0.9, count: 5, total: 5 },
+                    { dimension: "validity", score: 0.5, count: 2, total: 4 },
+                    { dimension: "accuracy", score: 0.75, count: 1, total: 2 },
+                    { dimension: "timeliness", score: 0.4, count: 1, total: 3 },
+                    { dimension: "completeness", score: 0.25, count: 0, total: 1 },
+                ],
+            }),
+        );
+
+        // DET-56: the box in the layout's place (DET-57 — after Child
+        // Entities), its title the layout's own key's text.
+        const box = compiled.querySelector("#data-quality");
+        expect(box).toBeTruthy();
+        expect(normalize(box?.querySelector("h2")?.textContent)).toBe("Data Quality");
+        // The five dimension rows in the fixed order, `overall` left out:
+        // each the pie, the percent, the dimension word, the count.
+        const rows = [...(box?.querySelectorAll(".quality-dimension") ?? [])];
+        expect(rows.map((row) => normalize(row.textContent))).toEqual([
+            "75% Accuracy (1)",
+            "25% Completeness (0)",
+            "40% Timeliness (1)",
+            "50% Validity (2)",
+        ]);
+        // Each row carries the UIC-36 pie.
+        expect(rows.every((row) => row.querySelector("aurelius-atlas-ui-data-quality-pie"))).toBe(true);
+    });
+
+    it("a sourceless view shows the score box's placeholder and no rows (DET-56, DET-63)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        // An `overall` row with count 0 is sourceless (DET-63).
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({
+                quality: [{ dimension: "overall", score: 0.5, count: 0, total: 1 }],
+            }),
+        );
+
+        const box = compiled.querySelector("#data-quality");
+        expect(box?.querySelector(".quality-dimension")).toBeNull();
+        expect(normalize(box?.querySelector(".aurelius-quality-not-available")?.textContent)).toBe(
+            "No data quality results available",
+        );
+    });
+
+    it("the score stat shows the overall percent, then the word at count 0 (DET-58)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({
+                quality: [
+                    { dimension: "overall", score: 0.75, count: 4, total: 4 },
+                    { dimension: "accuracy", score: 0.75, count: 4, total: 4 },
+                ],
+            }),
+        );
+
+        const scoreStat = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].find(
+            (item) => item.querySelector("p.heading a")?.getAttribute("href") === "#data-quality",
+        )!;
+        // DET-58: the percent to one decimal at most, never a count.
+        expect(normalize(scoreStat.querySelector("p.title")?.textContent)).toBe("75%");
+    });
+
+    it("a score render asks nothing beyond the read (DET-62)", () => {
+        const { fixture, httpMock } = setup("m4i-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({
+                quality: [{ dimension: "overall", score: 0.9, count: 5, total: 5 }],
+            }),
+        );
+        // DET-62: the box and the stat read the view already held — the
+        // render adds no call beyond the layout's own reads.
+        httpMock.expectNone("/api/aurelius/v1/search");
+        httpMock.verify();
     });
 
     it("a navigation item's click is a router navigation to its anchor (DET-25, DD-381)", () => {
@@ -1433,9 +1528,10 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         ]);
 
         // DET-32/LDG-32: the stats bar carries the counts in the legacy
-        // order (Data Quality stays out, DD-369) with the Lineage Model
-        // entry before Producers; its value reads the box's state, and the
-        // 204 arriveSections answered rests at "Unavailable".
+        // order with the Lineage Model entry before Producers; its value
+        // reads the box's state, and the 204 arriveSections answered rests
+        // at "Unavailable". DET-58 (7.25c): the score stat in its legacy
+        // slot after Consumers — the sourceless fixture shows the word.
         const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map((item) => {
             const heading = item.querySelector("p.heading a")!;
             return [
@@ -1450,12 +1546,14 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             ["Lineage Model", "#lineage-model", "Unavailable"],
             ["Producers", "#related-producers", "1"],
             ["Consumers", "#related-consumers", "1"],
+            ["Data Quality", "#data-quality", "Unavailable"],
             ["Properties", "#properties-details", "0"],
         ]);
 
         // DET-32/LDG-32: the side navigation carries the links in the
         // legacy positions, the lineage link between Child Datasets and
-        // Producers (DD-383's hold-out ended).
+        // Producers (DD-383's hold-out ended), and DET-58's score link
+        // before the governance box's.
         const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) =>
             normalize(link.textContent),
         );
@@ -1466,6 +1564,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             "Lineage Model",
             "Producers",
             "Consumers",
+            "Data Quality",
             "Governance Quality Rules",
             "Properties",
         ]);

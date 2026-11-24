@@ -5,7 +5,17 @@ import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-u
 import { AlertsService } from "../../../alerts/alerts.service";
 import { nameDisplay } from "../../meta/type-display";
 import { sectionEnds, type SectionEnd } from "../shared/people";
-import { FACET_GROUP_TITLES, type FacetGroupKey, type SectionDef, type TypeLayout } from "./section-config";
+import {
+    dimensionScore,
+    FACET_GROUP_TITLES,
+    QUALITY_DIMENSIONS,
+    QUALITY_DIMENSION_LABELS,
+    qualitySortKey,
+    type FacetGroupKey,
+    type QualityDimension,
+    type SectionDef,
+    type TypeLayout,
+} from "./section-config";
 
 /** The resolve chunk size: one door request per chunk (DD-368, DD-615). */
 export const CHUNK_SIZE = 25;
@@ -119,6 +129,29 @@ const SORT_OPTIONS: CardSortOption[] = [
     // locales; the literal keeps that rendering.
     { key: "name", label: `Name` },
 ];
+
+/**
+ * The sort options one section offers (DET-21, DET-59, DD-854): DET-21's
+ * pair for a `"name"` section, the pair plus the five dimension sorts in
+ * the legacy order for a `"score"` section — the legacy `*-cards`
+ * component's `['name', 'dqscore_accuracy', …, 'dqscore_validity']` ask,
+ * with the legacy's `dqscore_<dimension>` option values as the keys and
+ * the `dqscore_<dimension>` catalogue keys as the labels.
+ * @param def the section's config
+ * @returns the select's options, in order
+ */
+function sortOptionsOf(def: SectionDef): CardSortOption[] {
+    if (def.sorts !== "score") {
+        return [...SORT_OPTIONS];
+    }
+    return [
+        ...SORT_OPTIONS,
+        ...QUALITY_DIMENSIONS.map((dimension) => ({
+            key: qualitySortKey(dimension),
+            label: QUALITY_DIMENSION_LABELS[dimension],
+        })),
+    ];
+}
 
 /** The default sort key (DET-21: Relevance, the seed order). */
 const DEFAULT_SORT = "relevance";
@@ -508,24 +541,85 @@ export class RelatedSectionsState {
             allLoaded: sorted.length <= record.shown,
             query: record.text,
             sort: record.sort,
-            sortOptions: SORT_OPTIONS,
+            sortOptions: sortOptionsOf(record.def),
             descending: record.descending,
             cards: sorted.slice(0, record.shown),
         };
     }
 
     /**
-     * The filtered cards in sort order (DET-21): Relevance keeps the seed
-     * order, Name compares the display texts; the direction reverses.
+     * The filtered cards in sort order (DET-21, DET-59): Relevance keeps
+     * the seed order, Name compares the display texts, and a score section
+     * orders on the sorted dimension's row (ascending, cards without that
+     * row last — the door's own missing-last rule); the direction reverses.
      * @param cards the filtered cards
      * @param record the section's record
      * @returns the sorted cards
      */
     private sorted(cards: SectionCard[], record: SectionRecord): SectionCard[] {
-        const sorted =
-            record.sort === "name" ? [...cards].sort((a, b) => a.displayText.localeCompare(b.displayText)) : [...cards];
+        const sorted = [...cards];
+        const dimension = scoreSectionDimension(record);
+        if (dimension !== undefined) {
+            sorted.sort((a, b) => compareByScore(a, b, dimension));
+        } else if (record.sort === "name") {
+            sorted.sort((a, b) => a.displayText.localeCompare(b.displayText));
+        }
         return record.descending ? sorted.reverse() : sorted;
     }
+}
+
+/**
+ * The dimension a section is sorting on (DET-59), or `undefined` for
+ * Relevance, Name, and any sort key a non-score section does not offer.
+ * @param record the section's record
+ */
+function scoreSectionDimension(record: SectionRecord): QualityDimension | undefined {
+    if (record.def.sorts !== "score") {
+        return undefined;
+    }
+    return QUALITY_DIMENSIONS.find((dimension) => qualitySortKey(dimension) === record.sort);
+}
+
+/**
+ * The two cards' order on one score dimension (DET-59): the lower score
+ * first — the legacy engine's ascending ask — with a card that holds no
+ * usable row for the dimension last (DET-63's last place). Cards the
+ * dimension cannot separate fall back to the webapp's label-sort
+ * convention (DD-493): the localised display text, then the raw name.
+ * @param a the first card
+ * @param b the second card
+ * @param dimension the sorted dimension
+ * @returns the comparator's result
+ */
+function compareByScore(a: SectionCard, b: SectionCard, dimension: QualityDimension): number {
+    const scoreA = dimensionScore(a.kind === "card" ? a.card.quality : undefined, dimension);
+    const scoreB = dimensionScore(b.kind === "card" ? b.card.quality : undefined, dimension);
+    if (scoreA === undefined && scoreB === undefined) {
+        return compareByLabel(a, b);
+    }
+    if (scoreA === undefined) {
+        return 1;
+    }
+    if (scoreB === undefined) {
+        return -1;
+    }
+    return scoreA - scoreB || compareByLabel(a, b);
+}
+
+/**
+ * The label tie-break (DET-59, DD-493): the display text with the locale's
+ * collation, then the raw name the card carries.
+ * @param a the first card
+ * @param b the second card
+ */
+function compareByLabel(a: SectionCard, b: SectionCard): number {
+    const byText = a.displayText.localeCompare(b.displayText);
+    if (byText !== 0) {
+        return byText;
+    }
+    const nameA = a.kind === "card" ? (a.card.name ?? "") : "";
+    const nameB = b.kind === "card" ? (b.card.name ?? "") : "";
+    return nameA.localeCompare(nameB);
 }
 
 /**

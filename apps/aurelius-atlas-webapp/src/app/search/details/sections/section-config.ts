@@ -25,7 +25,18 @@
  * card section like the others — the same chrome, the same position rules —
  * but it seeds from its own reads, so it is marked and its own store draws
  * it (DD-841).
+ *
+ * 7.25c adds the Data Quality score box (DET-56..DET-58, DD-851..DD-853):
+ * the `kind: "score"` entry of the seven catalogue pages that drew it, and
+ * the `sorts: "score"` flag of the ten card sections that sorted on the
+ * score fields (DET-59, DD-854). The score rows themselves ride the view
+ * and the cards (AVS-01) — the helpers at the foot of this file are the
+ * increment's only mapping (DD-852).
  */
+
+import { formatPercent } from "@angular/common";
+import type { CardQuality } from "aurelius-atlas-data-access";
+import type { QualityDimensionRow } from "aurelius-atlas-ui";
 
 /**
  * One facet group of a section's filter popover (VCF-09, VCF-10, DD-619).
@@ -69,13 +80,16 @@ export interface SectionDef {
      */
     readonly facets: readonly FacetGroupKey[];
     /**
-     * Which store draws the section (7.25a, DD-841). Absent means the
-     * relationship-seeded card section of DET-17..DET-22;
+     * Which store draws the section (7.25a, DD-841; 7.25c, DD-851). Absent
+     * means the relationship-seeded card section of DET-17..DET-22;
      * `"gov-quality"` is the Governance Quality Rules box, which draws
      * the same chrome over its own rows (its store seeds from a rule
-     * search and a verdict call, not an end).
+     * search and a verdict call, not an end); `"score"` is the Data
+     * Quality score box — no store at all: its rows are the opened view's
+     * own score rows and the screen draws the box with no keyword, sort,
+     * facet, page, or count line (DET-56, DET-57).
      */
-    readonly kind?: "gov-quality";
+    readonly kind?: "gov-quality" | "score";
     /**
      * Which seed fills the section (7.25b, DD-848). Absent means the
      * view's relationship ends (DET-17); `"verdicts"` is a rule page's
@@ -84,6 +98,13 @@ export interface SectionDef {
      * seed, and the box is the shared chrome in every other way (DET-53).
      */
     readonly seedFrom?: "verdicts";
+    /**
+     * Which sort options the box offers (DET-21, DET-59, DD-854). Absent
+     * means `"name"` — DET-21's Relevance/Name pair; `"score"` is the
+     * legacy score pages' ask: the pair plus the five dimension sorts over
+     * the cards' own score rows (the ten boxes DET-59 names).
+     */
+    readonly sorts?: "name" | "score";
 }
 
 /**
@@ -92,6 +113,39 @@ export interface SectionDef {
  * own view read this constant, so the string exists once.
  */
 export const GOV_QUALITY_TITLE = $localize`:@@search.details.components.governanceQualityCards.title:Governance Quality Rules`;
+
+/**
+ * The score box's anchor (DET-56, DET-57): the legacy `#data-quality` div,
+ * shared by the box, the stat's link, and the navigation entry — one
+ * string so the three can never disagree.
+ */
+export const SCORE_ANCHOR = "data-quality";
+
+/**
+ * The score box's row (DET-56/DET-57, DD-851): the shape stated once, the
+ * way `GOV_QUALITY_TITLE` states its title once. Each layout passes its
+ * own `...dataQuality` key, so the seven boxes differ only in the label.
+ */
+const scoreSection = (title: string): SectionDef => ({
+    anchor: SCORE_ANCHOR,
+    title,
+    seedKeys: [],
+    facets: [],
+    kind: "score",
+});
+
+/**
+ * The score stat (DET-58, DD-853): the shape stated once. Each layout
+ * passes its own `...dataQuality` and word keys — the collection page
+ * names a `...dataQualityUnavailable` of its own — so the seven stats
+ * differ only in their labels.
+ */
+const scoreStat = (label: string, unavailable: string): StatDef => ({
+    label,
+    anchor: SCORE_ANCHOR,
+    source: { kind: "score" },
+    unavailable,
+});
 
 /**
  * The facet group titles (DD-622): each reuses the Aurelius catalogue key
@@ -134,10 +188,17 @@ const ROLE_FACETS: readonly FacetGroupKey[] = ["domainLead", "businessOwner", "s
  * blank while the call is pending — the legacy's shape, never a count),
  * or one `relationshipAttributes` end's entry count (DET-40, DD-519: the
  * person bar counts its five responsibility ends on their own, while the
- * one merged section dedupes across them).
+ * one merged section dedupes across them). Since 7.25c it can also be the
+ * score stat (DET-58, DD-853): the opened view's `overall` score row as a
+ * percent, or the layout's `unavailable` word — a value like the lineage's,
+ * never a count.
  */
 export type StatSource =
-    { kind: "section"; anchor: string } | { kind: "properties" } | { kind: "lineage" } | { kind: "end"; key: string };
+    | { kind: "section"; anchor: string }
+    | { kind: "properties" }
+    | { kind: "lineage" }
+    | { kind: "end"; key: string }
+    | { kind: "score" };
 
 /** One heading of the stats bar, flat or grouped (DET-24, DET-40). */
 export interface StatDef {
@@ -264,7 +325,11 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.domain.entityCards.title:Data Entities`,
                 seedKeys: ["dataEntity"],
                 facets: ROLE_FACETS,
+                sorts: "score",
             },
+            // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
+            // place — after Data Entities, before the governance box.
+            scoreSection($localize`:@@search.details.domain.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -279,6 +344,11 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-entities",
                 source: { kind: "section", anchor: "related-entities" },
             },
+            // DET-58 (7.25c, DD-853): the score stat in the legacy place.
+            scoreStat(
+                $localize`:@@search.details.domain.dataQuality:Data Quality`,
+                $localize`:@@search.details.domain.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.domain.properties:Properties`,
                 anchor: "properties-details",
@@ -296,6 +366,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.domain.dataEntities:Data Entities`,
                 anchor: "related-entities",
             },
+            { label: $localize`:@@search.details.domain.dataQuality:Data Quality`, anchor: SCORE_ANCHOR },
             {
                 label: $localize`:@@search.details.domain.governanceQualityRules:Governance Quality Rules`,
                 anchor: "gov-quality",
@@ -313,13 +384,18 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.entity.attributesCards.title:Data Attributes`,
                 seedKeys: ["attributes"],
                 facets: ROLE_FACETS,
+                sorts: "score",
             },
             {
                 anchor: "related-entities",
                 title: $localize`:@@search.details.entity.entitiesCards.title:Child Entities`,
                 seedKeys: ["childEntity"],
                 facets: ROLE_FACETS,
+                sorts: "score",
             },
+            // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
+            // place — after Child Entities, before the governance box.
+            scoreSection($localize`:@@search.details.entity.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -339,6 +415,11 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-entities",
                 source: { kind: "section", anchor: "related-entities" },
             },
+            // DET-58 (7.25c, DD-853): the score stat in the legacy place.
+            scoreStat(
+                $localize`:@@search.details.entity.dataQuality:Data Quality`,
+                $localize`:@@search.details.entity.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.entity.properties:Properties`,
                 anchor: "properties-details",
@@ -360,6 +441,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.entity.childEntities:Child Entities`,
                 anchor: "related-entities",
             },
+            { label: $localize`:@@search.details.entity.dataQuality:Data Quality`, anchor: SCORE_ANCHOR },
             {
                 label: $localize`:@@search.details.entity.governanceQualityRules:Governance Quality Rules`,
                 anchor: "gov-quality",
@@ -377,7 +459,11 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.attribute.fieldsCards.title:Fields`,
                 seedKeys: ["fields"],
                 facets: ["m4i_system", "m4i_collection", "m4i_dataset"],
+                sorts: "score",
             },
+            // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
+            // place — after Fields, before the governance box.
+            scoreSection($localize`:@@search.details.attribute.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -392,6 +478,11 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-fields",
                 source: { kind: "section", anchor: "related-fields" },
             },
+            // DET-58 (7.25c, DD-853): the score stat in the legacy place.
+            scoreStat(
+                $localize`:@@search.details.attribute.dataQuality:Data Quality`,
+                $localize`:@@search.details.attribute.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.attribute.properties:Properties`,
                 anchor: "properties-details",
@@ -406,6 +497,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             { label: $localize`:@@search.details.attribute.people:People`, anchor: "people-details" },
             { label: $localize`:@@search.details.attribute.fields:Fields`, anchor: "related-fields" },
+            { label: $localize`:@@search.details.attribute.dataQuality:Data Quality`, anchor: SCORE_ANCHOR },
             {
                 label: $localize`:@@search.details.attribute.governanceQualityRules:Governance Quality Rules`,
                 anchor: "gov-quality",
@@ -431,11 +523,17 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.field.fieldsCards.title:Child Fields`,
                 seedKeys: ["childField"],
                 facets: ["m4i_system", "m4i_collection", "m4i_dataset"],
+                sorts: "score",
             },
+            // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
+            // place — after Child Fields and before the rules box, the
+            // field template's own order (`#data-quality`, then
+            // `#related-rules`). DD-369's hold-out ends here: the score
+            // rows are the view's own `quality` (AVS-01, 14.5 ASQ-04/05).
+            scoreSection($localize`:@@search.details.field.dataQuality:Data Quality`),
             // DET-35 (7.24): the field's own `dataQuality` relationship end seeds
             // the rules box (DD-444). The legacy read the App Search
-            // `data_quality` index instead; the score box (`#data-quality`)
-            // stays out with its `dqscore_*` source, per DD-369.
+            // `data_quality` index instead.
             {
                 anchor: "related-rules",
                 title: $localize`:@@search.details.field.dataQualityCards.title:Data Quality Rules`,
@@ -463,10 +561,15 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-fields",
                 source: { kind: "section", anchor: "related-fields" },
             },
+            // DET-58 (7.25c, DD-853): the score stat in the legacy place,
+            // before the rules stat.
+            scoreStat(
+                $localize`:@@search.details.field.dataQuality:Data Quality`,
+                $localize`:@@search.details.field.unavailable:Unavailable`,
+            ),
             // DET-36 (7.24): the rules stat in the legacy place. The legacy
             // showed its `dqscorecnt_overall` here; the value is now the
-            // DET-24 section count (DD-444). The score stat
-            // (`search.details.field.dataQuality`) stays out per DD-369.
+            // DET-24 section count (DD-444).
             {
                 label: $localize`:@@search.details.field.dataQualityRules:Data Quality Rules`,
                 anchor: "related-rules",
@@ -486,6 +589,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-attributes",
             },
             { label: $localize`:@@search.details.field.childFields:Child Fields`, anchor: "related-fields" },
+            // DET-58 (7.25c): the score link in the legacy nav place — after
+            // Child Fields, and the field page places it before the two
+            // rules links (the template's own order).
+            { label: $localize`:@@search.details.field.dataQuality:Data Quality`, anchor: SCORE_ANCHOR },
             { label: $localize`:@@search.details.field.dataQualityRules:Data Quality Rules`, anchor: "related-rules" },
             {
                 label: $localize`:@@search.details.field.governanceQualityRules:Governance Quality Rules`,
@@ -614,12 +721,14 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.dataset.fieldsCards.title:Fields`,
                 seedKeys: ["fields"],
                 facets: ROLE_FACETS,
+                sorts: "score",
             },
             {
                 anchor: "related-datasets",
                 title: $localize`:@@search.details.dataset.datasetsCards.title:Child Datasets`,
                 seedKeys: ["childDataset"],
                 facets: ROLE_FACETS,
+                sorts: "score",
             },
             // LDG-09: the Lineage Model box sits after Child Datasets and
             // before Producers (dataset-details.component.html L115) — the
@@ -641,6 +750,9 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 seedKeys: ["inputToProcesses"],
                 facets: ["typeName", "m4i_system"],
             },
+            // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
+            // place — after Consumers, before the governance box.
+            scoreSection($localize`:@@search.details.dataset.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -662,7 +774,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // LDG-32 (DD-383's hold-out returns): the lineage entry reads
             // the page's fetch state (DD-400), in the legacy slot before
-            // Producers. Data Quality stays out (DD-369).
+            // Producers.
             {
                 label: $localize`:@@search.details.dataset.lineageModel:Lineage Model`,
                 anchor: "lineage-model",
@@ -680,6 +792,11 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-consumers",
                 source: { kind: "section", anchor: "related-consumers" },
             },
+            // DET-58 (7.25c, DD-853): the score stat in the legacy place.
+            scoreStat(
+                $localize`:@@search.details.dataset.dataQuality:Data Quality`,
+                $localize`:@@search.details.dataset.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.dataset.properties:Properties`,
                 anchor: "properties-details",
@@ -708,6 +825,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.dataset.consumers:Consumers`,
                 anchor: "related-consumers",
             },
+            { label: $localize`:@@search.details.dataset.dataQuality:Data Quality`, anchor: SCORE_ANCHOR },
             {
                 label: $localize`:@@search.details.dataset.governanceQualityRules:Governance Quality Rules`,
                 anchor: "gov-quality",
@@ -728,7 +846,11 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.collection.datasetsCards.title:Datasets`,
                 seedKeys: ["datasets"],
                 facets: ROLE_FACETS,
+                sorts: "score",
             },
+            // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
+            // place — after Datasets, before the governance box.
+            scoreSection($localize`:@@search.details.collection.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -743,6 +865,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-datasets",
                 source: { kind: "section", anchor: "related-datasets" },
             },
+            // DET-58 (7.25c, DD-853): the score stat in the legacy place.
+            // The collection page's template names its own word key —
+            // `...dataQualityUnavailable`, not the plain `...unavailable`.
+            scoreStat(
+                $localize`:@@search.details.collection.dataQuality:Data Quality`,
+                $localize`:@@search.details.collection.dataQualityUnavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.collection.properties:Properties`,
                 anchor: "properties-details",
@@ -756,6 +885,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "description-details",
             },
             { label: $localize`:@@search.details.collection.datasets:Datasets`, anchor: "related-datasets" },
+            { label: $localize`:@@search.details.collection.dataQuality:Data Quality`, anchor: SCORE_ANCHOR },
             {
                 label: $localize`:@@search.details.collection.governanceQualityRules:Governance Quality Rules`,
                 anchor: "gov-quality",
@@ -773,12 +903,14 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.system.collectionsCards.title:Collections`,
                 seedKeys: ["collections"],
                 facets: ROLE_FACETS,
+                sorts: "score",
             },
             {
                 anchor: "related-systems",
                 title: $localize`:@@search.details.system.systemsCards.title:Subsystems`,
                 seedKeys: ["childSystem"],
                 facets: ROLE_FACETS,
+                sorts: "score",
             },
             {
                 anchor: "related-processes",
@@ -786,6 +918,9 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 seedKeys: ["processes"],
                 facets: ["typeName", "m4i_system"],
             },
+            // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
+            // place — after Processes, before the governance box.
+            scoreSection($localize`:@@search.details.system.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -795,14 +930,21 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
         ],
         // The legacy systems/processes stats read the systems' governance
-        // scores; with no DQ source both stats stay out (DD-369) and the bar
-        // keeps Collections and Properties.
+        // scores, which the bar never shows; the bar stays Collections,
+        // Data Quality, Properties (DET-58's place, the legacy's).
         stats: [
             {
                 label: $localize`:@@search.details.system.collections:Collections`,
                 anchor: "related-collections",
                 source: { kind: "section", anchor: "related-collections" },
             },
+            // DET-58 (7.25c, DD-853): the score stat in the legacy place —
+            // the bar holds it after Collections, even though the box list
+            // keeps Subsystems and Processes before the score box.
+            scoreStat(
+                $localize`:@@search.details.system.dataQuality:Data Quality`,
+                $localize`:@@search.details.system.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.system.properties:Properties`,
                 anchor: "properties-details",
@@ -815,6 +957,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             { label: $localize`:@@search.details.system.collections:Collections`, anchor: "related-collections" },
             { label: $localize`:@@search.details.system.subSystems:Subsystems`, anchor: "related-systems" },
             { label: $localize`:@@search.details.system.processes:Processes`, anchor: "related-processes" },
+            { label: $localize`:@@search.details.system.dataQuality:Data Quality`, anchor: SCORE_ANCHOR },
             {
                 label: $localize`:@@search.details.system.governanceQualityRules:Governance Quality Rules`,
                 anchor: "gov-quality",
@@ -1033,4 +1176,120 @@ export function layoutForTypeName(typeName: string): TypeLayout | undefined {
  */
 export function hasGovQualityBox(layout: TypeLayout | undefined): boolean {
     return layout?.sections.some((section) => section.kind === "gov-quality") ?? false;
+}
+
+/**
+ * The score box's placeholder — `search.components.dataqualitylist.notAvailable`,
+ * the legacy list's own `notAvailable` branch (DET-56, DET-63). The card
+ * never shows it (DET-60): UIC-37's empty-string rule.
+ */
+export const DATA_QUALITY_NOT_AVAILABLE = $localize`:@@search.components.dataqualitylist.notAvailable:No data quality results available`;
+
+/**
+ * The five score dimensions in the legacy's fixed row order (DET-56,
+ * DET-59): the legacy `data-quality-list` template's five blocks, and the
+ * five sort options DET-59 adds — never `overall`, which only the stat
+ * reads (DET-58).
+ */
+export const QUALITY_DIMENSIONS = ["accuracy", "completeness", "timeliness", "uniqueness", "validity"] as const;
+
+/** One of the five score dimensions (the `overall` row is no dimension). */
+export type QualityDimension = (typeof QUALITY_DIMENSIONS)[number];
+
+/**
+ * The dimension words (DET-56, DET-59): the `dqscore_<dimension>` catalogue
+ * keys both catalogues carry — the legacy menu labels, titlecased raw by
+ * its `sorting.component` (the same posture DET-21's Name literal takes).
+ */
+export const QUALITY_DIMENSION_LABELS: Readonly<Record<QualityDimension, string>> = {
+    accuracy: $localize`:@@dqscore_accuracy:Accuracy`,
+    completeness: $localize`:@@dqscore_completeness:Completeness`,
+    timeliness: $localize`:@@dqscore_timeliness:Timeliness`,
+    uniqueness: $localize`:@@dqscore_uniqueness:Uniqueness`,
+    validity: $localize`:@@dqscore_validity:Validity`,
+};
+
+/**
+ * The score sort key of one dimension (DET-59): the legacy option value,
+ * `dqscore_<dimension>`, which the sections store recognises (DD-854).
+ * @param dimension the dimension
+ * @returns the sort option's key
+ */
+export function qualitySortKey(dimension: QualityDimension): string {
+    return `dqscore_${dimension}`;
+}
+
+/**
+ * Whether a score row can render or sort (DET-63): a held row carries a
+ * usable score — `null`, `undefined`, and a negative score never do, the
+ * same quiet posture DET-49 takes for a broken verdict.
+ * @param row the door's score row
+ */
+function usableScore(row: CardQuality | undefined): row is CardQuality {
+    return row !== undefined && typeof row.score === "number" && row.score >= 0;
+}
+
+/**
+ * The `overall` row of a card's or a view's score rows (DET-58, DET-63),
+ * or `undefined` when it holds none.
+ * @param quality the AVS-01 score rows, or absent
+ */
+export function overallRow(quality: CardQuality[] | undefined): CardQuality | undefined {
+    return quality?.find((row) => row.dimension === "overall");
+}
+
+/**
+ * Whether the score source stands (DET-63): the `overall` row, with a
+ * count above zero — the legacy's own gate on `dqscorecnt_overall`. The
+ * box, the stat, and the card's block all ask this one question, so the
+ * four surfaces cannot disagree about "sourceless".
+ * @param quality the AVS-01 score rows, or absent
+ */
+export function hasScoreSource(quality: CardQuality[] | undefined): boolean {
+    return (overallRow(quality)?.count ?? 0) > 0;
+}
+
+/**
+ * The five dimension rows as UIC-37 draws them (DET-56, DET-60, DD-852):
+ * the held dimensions in the fixed order, `overall` left out, a row whose
+ * score never renders skipped (DET-63). The gate on the source is the
+ * caller's — a card prints its partial set (DET-60), the box shows the
+ * placeholder (DET-56). A 0-count dimension stays: it is a held row of
+ * the roll-up, and the legacy prints it (DET-63).
+ * @param quality the AVS-01 score rows, or absent
+ * @returns the rows in DET-56's order
+ */
+export function qualityRows(quality: CardQuality[] | undefined): QualityDimensionRow[] {
+    const rows: QualityDimensionRow[] = [];
+    for (const dimension of QUALITY_DIMENSIONS) {
+        const row = quality?.find((entry) => entry.dimension === dimension);
+        if (usableScore(row)) {
+            rows.push({ dimension: QUALITY_DIMENSION_LABELS[dimension], score: row.score, count: row.count });
+        }
+    }
+    return rows;
+}
+
+/**
+ * One dimension's usable score on a card, for the score sort (DET-59,
+ * DET-63): the card's row for the dimension, or `undefined` when it holds
+ * none or the score never renders — the sort's last place.
+ * @param quality the card's AVS-01 score rows, or absent
+ * @param dimension the sorted dimension
+ */
+export function dimensionScore(quality: CardQuality[] | undefined, dimension: QualityDimension): number | undefined {
+    const row = quality?.find((entry) => entry.dimension === dimension);
+    return usableScore(row) ? row.score : undefined;
+}
+
+/**
+ * The stat's percent value (DET-58, DD-853): exactly the legacy's
+ * `| percent: '1.0-1'` — whole percents whole, at most one decimal — so it
+ * renders like every other percent on the screen. Angular's
+ * `formatPercent` is the pipe's own function.
+ * @param score the `overall` row's 0..1 score
+ * @returns the percent string in the active locale
+ */
+export function scorePercent(score: number): string {
+    return formatPercent(score, $localize.locale || "en-US", "1.0-1");
 }

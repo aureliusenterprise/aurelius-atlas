@@ -227,84 +227,105 @@
          mounts); the loading row stays the plain ui card's (DET-18). -->
 @if (layout()) {
     @for (view of sectionViews(); track view.anchor) {
-        <div [id]="view.anchor" class="box aurelius-details-section">
-            <aurelius-atlas-ui-details-card-section
-                [title]="view.title"
-                [count]="view.count"
-                [sortOptions]="view.sortOptions"
-                [sort]="view.sort"
-                [sortDescending]="view.descending"
-                [query]="view.query"
-                [placeholder]="searchPlaceholder"
-                [resultWord]="resultWord"
-                [filtered]="view.filtered"
-                [filteredCount]="view.countShown"
-                [loading]="view.loading"
-                [allLoaded]="view.allLoaded"
-                [loadLabel]="loadLabel"
-                [facets]="view.facets"
-                [filterActive]="view.filterActive"
-                [filterLabel]="filterLabel"
-                [notAvailableLabel]="notAvailableLabel"
-                [showMoreLabel]="showMoreLabel"
-                [showLessLabel]="showLessLabel"
-                (resetRequested)="onSectionReset(view)"
-                (facetToggled)="onSectionFacetToggled(view, $event)"
-                (sortDirectionToggled)="onSectionDirection(view)"
-                (queryChange)="onSectionText(view, $event)"
-                (querySubmitted)="onSectionQuery(view, $event)"
-                (sortChange)="onSectionSort(view, $event)"
-                (nextPage)="onSectionPage(view)"
-            >
-                @if (view.kind === "gov-quality") {
-                    <!-- The Governance Quality Rules box (DET-42 as amended
+        @if (view.kind === "score") {
+            <!-- The Data Quality score box (DET-56, DET-57, DD-851): the
+                     legacy's plain box — the page's own title over the
+                     UIC-37 dimension list, no keyword, sort, funnel, page,
+                     or count line. The list carries its own placeholder
+                     when the view holds no score source (DET-63). -->
+            <div [id]="view.anchor" class="box aurelius-details-score">
+                <h2 class="title is-3">{{ view.title }}</h2>
+                <aurelius-atlas-ui-quality-dimension-list [dimensions]="view.rows" [notAvailable]="view.placeholder" />
+            </div>
+        } @else {
+            <div [id]="view.anchor" class="box aurelius-details-section">
+                <aurelius-atlas-ui-details-card-section
+                    [title]="view.title"
+                    [count]="view.count"
+                    [sortOptions]="view.sortOptions"
+                    [sort]="view.sort"
+                    [sortDescending]="view.descending"
+                    [query]="view.query"
+                    [placeholder]="searchPlaceholder"
+                    [resultWord]="resultWord"
+                    [filtered]="view.filtered"
+                    [filteredCount]="view.countShown"
+                    [loading]="view.loading"
+                    [allLoaded]="view.allLoaded"
+                    [loadLabel]="loadLabel"
+                    [facets]="view.facets"
+                    [filterActive]="view.filterActive"
+                    [filterLabel]="filterLabel"
+                    [notAvailableLabel]="notAvailableLabel"
+                    [showMoreLabel]="showMoreLabel"
+                    [showLessLabel]="showLessLabel"
+                    (resetRequested)="onSectionReset(view)"
+                    (facetToggled)="onSectionFacetToggled(view, $event)"
+                    (sortDirectionToggled)="onSectionDirection(view)"
+                    (queryChange)="onSectionText(view, $event)"
+                    (querySubmitted)="onSectionQuery(view, $event)"
+                    (sortChange)="onSectionSort(view, $event)"
+                    (nextPage)="onSectionPage(view)"
+                >
+                    @if (view.kind === "gov-quality") {
+                        <!-- The Governance Quality Rules box (DET-42 as amended
                              by 7.25a, DET-44..DET-47): the chrome above, the
                              box's own rule cards below — the same card the
                              person page drew, projected into the chrome's
                              grid (DD-841). A rule title opens the rule. -->
-                    <aurelius-atlas-webapp-gov-quality-cards [rows]="view.rows" (ruleClicked)="onCardClick($event)" />
-                }
-                @for (card of view.kind === "related" ? view.cards : []; track card.guid) {
-                    <!-- The column rides Bulma's sizing helpers: three
+                        <aurelius-atlas-webapp-gov-quality-cards
+                            [rows]="view.rows"
+                            (ruleClicked)="onCardClick($event)"
+                        />
+                    }
+                    @for (card of view.kind === "related" ? view.cards : []; track card.guid) {
+                        <!-- The column rides Bulma's sizing helpers: three
                              across on a desktop at most, two on a tablet,
                              one full-width on a phone (DET-22, DD-377 —
                              a bare column grows to share one row, which
                              squeezed six cards side by side). -->
-                    <div class="column is-half-tablet is-one-third-desktop">
-                        @if (card.kind === "loading") {
-                            <!-- DET-18: the loading row — `search.details
+                        <div class="column is-half-tablet is-one-third-desktop">
+                            @if (card.kind === "loading") {
+                                <!-- DET-18: the loading row — `search.details
                                      .loading` at the seed's display text.
                                      No name input: the interpolation
                                      already happened in loadingText(). -->
-                            <aurelius-atlas-ui-entity-card
-                                [guid]="card.guid"
-                                [loading]="true"
-                                [loadingLabel]="loadingText(card.displayText)"
-                            />
-                        } @else {
-                            <!-- The shared rich card (VCF-05, DD-616): the
+                                <aurelius-atlas-ui-entity-card
+                                    [guid]="card.guid"
+                                    [loading]="true"
+                                    [loadingLabel]="loadingText(card.displayText)"
+                                />
+                            } @else {
+                                <!-- The shared rich card (VCF-05, DD-616): the
                                  same component the results row mounts —
                                  trail, chips, description, flat people. -->
-                            <aurelius-atlas-webapp-catalogue-card
-                                [card]="card.card"
-                                [pageGuid]="guid()"
-                                (cardClicked)="onCardClick($event)"
-                            />
-                        }
-                    </div>
-                }
-            </aurelius-atlas-ui-details-card-section>
-        </div>
-        <!-- The Lineage Model box (LDG-09, DD-388): the legacy dataset and
+                                <!-- DET-60/DET-61 (7.25c, DD-855): a details
+                                 section's card prints its score rows —
+                                 the mount-site switch, the legacy's
+                                 SHOW_DATA_QUALITY, off on the results
+                                 screen (DV-202). -->
+                                <aurelius-atlas-webapp-catalogue-card
+                                    [card]="card.card"
+                                    [pageGuid]="guid()"
+                                    [showScores]="true"
+                                    (cardClicked)="onCardClick($event)"
+                                />
+                            }
+                        </div>
+                    }
+                </aurelius-atlas-ui-details-card-section>
+            </div>
+            <!-- The Lineage Model box (LDG-09, DD-388): the legacy dataset and
              process pages place the #lineage-model div between two card
              boxes — after Child Datasets / after Systems — and the layout
              row names that anchor (TypeLayout.lineageAfter). Not a card
              section: the box owns its own fetch (7.22a's client) and its
              three states (LDG-10). Its nav entry and stat wait for 7.22d. -->
-        @if (layout()?.lineageAfter === view.anchor) {
-            <section id="lineage-model" class="box aurelius-details-lineage">
-                <aurelius-atlas-webapp-lineage-model [guid]="guid()" />
-            </section>
+            @if (layout()?.lineageAfter === view.anchor) {
+                <section id="lineage-model" class="box aurelius-details-lineage">
+                    <aurelius-atlas-webapp-lineage-model [guid]="guid()" />
+                </section>
+            }
         }
     }
 }
