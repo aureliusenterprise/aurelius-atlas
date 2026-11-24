@@ -122,6 +122,32 @@ export const GOV_QUALITY_TITLE = $localize`:@@search.details.components.governan
 export const SCORE_ANCHOR = "data-quality";
 
 /**
+ * The score box's row (DET-56/DET-57, DD-851): the shape stated once, the
+ * way `GOV_QUALITY_TITLE` states its title once. Each layout passes its
+ * own `...dataQuality` key, so the seven boxes differ only in the label.
+ */
+const scoreSection = (title: string): SectionDef => ({
+    anchor: SCORE_ANCHOR,
+    title,
+    seedKeys: [],
+    facets: [],
+    kind: "score",
+});
+
+/**
+ * The score stat (DET-58, DD-853): the shape stated once. Each layout
+ * passes its own `...dataQuality` and word keys — the collection page
+ * names a `...dataQualityUnavailable` of its own — so the seven stats
+ * differ only in their labels.
+ */
+const scoreStat = (label: string, unavailable: string): StatDef => ({
+    label,
+    anchor: SCORE_ANCHOR,
+    source: { kind: "score" },
+    unavailable,
+});
+
+/**
  * The facet group titles (DD-622): each reuses the Aurelius catalogue key
  * the legacy menu label carried — the dictionary keys every locale already
  * carries (SHL-08), the three role groups the People box's own keys
@@ -303,13 +329,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
             // place — after Data Entities, before the governance box.
-            {
-                anchor: SCORE_ANCHOR,
-                title: $localize`:@@search.details.domain.dataQuality:Data Quality`,
-                seedKeys: [],
-                facets: [],
-                kind: "score",
-            },
+            scoreSection($localize`:@@search.details.domain.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -325,12 +345,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 source: { kind: "section", anchor: "related-entities" },
             },
             // DET-58 (7.25c, DD-853): the score stat in the legacy place.
-            {
-                label: $localize`:@@search.details.domain.dataQuality:Data Quality`,
-                anchor: SCORE_ANCHOR,
-                source: { kind: "score" },
-                unavailable: $localize`:@@search.details.domain.unavailable:Unavailable`,
-            },
+            scoreStat(
+                $localize`:@@search.details.domain.dataQuality:Data Quality`,
+                $localize`:@@search.details.domain.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.domain.properties:Properties`,
                 anchor: "properties-details",
@@ -377,13 +395,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
             // place — after Child Entities, before the governance box.
-            {
-                anchor: SCORE_ANCHOR,
-                title: $localize`:@@search.details.entity.dataQuality:Data Quality`,
-                seedKeys: [],
-                facets: [],
-                kind: "score",
-            },
+            scoreSection($localize`:@@search.details.entity.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -404,12 +416,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 source: { kind: "section", anchor: "related-entities" },
             },
             // DET-58 (7.25c, DD-853): the score stat in the legacy place.
-            {
-                label: $localize`:@@search.details.entity.dataQuality:Data Quality`,
-                anchor: SCORE_ANCHOR,
-                source: { kind: "score" },
-                unavailable: $localize`:@@search.details.entity.unavailable:Unavailable`,
-            },
+            scoreStat(
+                $localize`:@@search.details.entity.dataQuality:Data Quality`,
+                $localize`:@@search.details.entity.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.entity.properties:Properties`,
                 anchor: "properties-details",
@@ -453,13 +463,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
             // place — after Fields, before the governance box.
-            {
-                anchor: SCORE_ANCHOR,
-                title: $localize`:@@search.details.attribute.dataQuality:Data Quality`,
-                seedKeys: [],
-                facets: [],
-                kind: "score",
-            },
+            scoreSection($localize`:@@search.details.attribute.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -475,12 +479,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 source: { kind: "section", anchor: "related-fields" },
             },
             // DET-58 (7.25c, DD-853): the score stat in the legacy place.
-            {
-                label: $localize`:@@search.details.attribute.dataQuality:Data Quality`,
-                anchor: SCORE_ANCHOR,
-                source: { kind: "score" },
-                unavailable: $localize`:@@search.details.attribute.unavailable:Unavailable`,
-            },
+            scoreStat(
+                $localize`:@@search.details.attribute.dataQuality:Data Quality`,
+                $localize`:@@search.details.attribute.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.attribute.properties:Properties`,
                 anchor: "properties-details",
@@ -528,13 +530,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             // field template's own order (`#data-quality`, then
             // `#related-rules`). DD-369's hold-out ends here: the score
             // rows are the view's own `quality` (AVS-01, 14.5 ASQ-04/05).
-            {
-                anchor: SCORE_ANCHOR,
-                title: $localize`:@@search.details.field.dataQuality:Data Quality`,
-                seedKeys: [],
-                facets: [],
-                kind: "score",
-            },
+            scoreSection($localize`:@@search.details.field.dataQuality:Data Quality`),
             // DET-35 (7.24): the field's own `dataQuality` relationship end seeds
             // the rules box (DD-444). The legacy read the App Search
             // `data_quality` index instead.
@@ -567,12 +563,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // DET-58 (7.25c, DD-853): the score stat in the legacy place,
             // before the rules stat.
-            {
-                label: $localize`:@@search.details.field.dataQuality:Data Quality`,
-                anchor: SCORE_ANCHOR,
-                source: { kind: "score" },
-                unavailable: $localize`:@@search.details.field.unavailable:Unavailable`,
-            },
+            scoreStat(
+                $localize`:@@search.details.field.dataQuality:Data Quality`,
+                $localize`:@@search.details.field.unavailable:Unavailable`,
+            ),
             // DET-36 (7.24): the rules stat in the legacy place. The legacy
             // showed its `dqscorecnt_overall` here; the value is now the
             // DET-24 section count (DD-444).
@@ -758,13 +752,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
             // place — after Consumers, before the governance box.
-            {
-                anchor: SCORE_ANCHOR,
-                title: $localize`:@@search.details.dataset.dataQuality:Data Quality`,
-                seedKeys: [],
-                facets: [],
-                kind: "score",
-            },
+            scoreSection($localize`:@@search.details.dataset.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -805,12 +793,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 source: { kind: "section", anchor: "related-consumers" },
             },
             // DET-58 (7.25c, DD-853): the score stat in the legacy place.
-            {
-                label: $localize`:@@search.details.dataset.dataQuality:Data Quality`,
-                anchor: SCORE_ANCHOR,
-                source: { kind: "score" },
-                unavailable: $localize`:@@search.details.dataset.unavailable:Unavailable`,
-            },
+            scoreStat(
+                $localize`:@@search.details.dataset.dataQuality:Data Quality`,
+                $localize`:@@search.details.dataset.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.dataset.properties:Properties`,
                 anchor: "properties-details",
@@ -864,13 +850,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
             // place — after Datasets, before the governance box.
-            {
-                anchor: SCORE_ANCHOR,
-                title: $localize`:@@search.details.collection.dataQuality:Data Quality`,
-                seedKeys: [],
-                facets: [],
-                kind: "score",
-            },
+            scoreSection($localize`:@@search.details.collection.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -888,12 +868,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             // DET-58 (7.25c, DD-853): the score stat in the legacy place.
             // The collection page's template names its own word key —
             // `...dataQualityUnavailable`, not the plain `...unavailable`.
-            {
-                label: $localize`:@@search.details.collection.dataQuality:Data Quality`,
-                anchor: SCORE_ANCHOR,
-                source: { kind: "score" },
-                unavailable: $localize`:@@search.details.collection.dataQualityUnavailable:Unavailable`,
-            },
+            scoreStat(
+                $localize`:@@search.details.collection.dataQuality:Data Quality`,
+                $localize`:@@search.details.collection.dataQualityUnavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.collection.properties:Properties`,
                 anchor: "properties-details",
@@ -942,13 +920,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // DET-56/DET-57 (7.25c, DD-851): the score box in the legacy
             // place — after Processes, before the governance box.
-            {
-                anchor: SCORE_ANCHOR,
-                title: $localize`:@@search.details.system.dataQuality:Data Quality`,
-                seedKeys: [],
-                facets: [],
-                kind: "score",
-            },
+            scoreSection($localize`:@@search.details.system.dataQuality:Data Quality`),
             {
                 anchor: "gov-quality",
                 title: GOV_QUALITY_TITLE,
@@ -969,12 +941,10 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             // DET-58 (7.25c, DD-853): the score stat in the legacy place —
             // the bar holds it after Collections, even though the box list
             // keeps Subsystems and Processes before the score box.
-            {
-                label: $localize`:@@search.details.system.dataQuality:Data Quality`,
-                anchor: SCORE_ANCHOR,
-                source: { kind: "score" },
-                unavailable: $localize`:@@search.details.system.unavailable:Unavailable`,
-            },
+            scoreStat(
+                $localize`:@@search.details.system.dataQuality:Data Quality`,
+                $localize`:@@search.details.system.unavailable:Unavailable`,
+            ),
             {
                 label: $localize`:@@search.details.system.properties:Properties`,
                 anchor: "properties-details",

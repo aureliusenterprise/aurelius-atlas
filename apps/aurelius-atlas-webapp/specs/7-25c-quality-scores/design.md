@@ -246,3 +246,46 @@ DET-19's "no quality column" and DET-24's "no Quality stat" — are updated, not
 deleted: DET-19's assertion survives about the quality _column_, and DET-24's
 about a sourceless layout (the process page keeps it), so the increment closes
 DD-369 without losing either guard.
+
+## DD-857. The score box and stat shapes are factories, keyed per layout
+
+- **Status:** Proposed
+- **Increment:** 7.25c
+- **Date:** 2026-11-24
+- **Supersedes:** –
+
+**Decision.** `section-config.ts` gains two module-private helpers:
+`scoreSection(title)` returns the score box's `SectionDef` (the
+`SCORE_ANCHOR` anchor, empty `seedKeys` and `facets`, `kind: "score"`), and
+`scoreStat(label, unavailable)` returns the score stat's `StatDef` (the same
+anchor, `source: { kind: "score" }`). Each of the seven layouts calls the two
+with its own `$localize` strings — the per-layout `...dataQuality` key and its
+word key — and the config spec's structural pins are unchanged because the
+helpers return exactly the objects DD-851 and DD-853 described. No localize key
+is added, removed, or renamed.
+
+**Why.** The SonarCloud gate flagged the seven literal score sections and seven
+literal score stats as duplicated new code (116 lines, 7.7% of the new code
+against a 3% cap): Sonar normalizes the `$localize` tag literals to string
+tokens, so the seven shapes look identical to it. The house answer for a shape
+the seven layouts share is to state it once — the way 7.25a's
+`GOV_QUALITY_TITLE` states the governance box's title once — and let each call
+site pass only what truly differs, which is the label. The nav one-liners stay
+inline: a single line falls under Sonar's duplication threshold, and folding it
+would trade a readable table row for a call with two arguments.
+
+**Considered alternatives.**
+
+- _A `score: true` flag on the layout, with the component building the box._
+  Rejected — it moves the legacy ordering (DD-851's whole point) out of the
+  config table the spec pins, and the labels would need a seventh lookup.
+- _A `// NOSONAR` comment on the blocks._ Rejected — the duplication is real;
+  the factories remove it rather than hide it, and match the file's idiom.
+- _One shared literal string per key, indexed by layout name._ Rejected —
+  `$localize` tag literals must stay statically visible for extraction, and
+  the per-layout keys are what the legacy's templates carried.
+
+**Consequences.** The config spec keeps asserting `toEqual` shapes — the
+factories are invisible to it. `messages.xlf` and the locale files do not
+change, so the i18n completeness spec (SHL-08) holds. Future score-shaped
+boxes reuse `scoreSection` rather than a fifteenth literal.
