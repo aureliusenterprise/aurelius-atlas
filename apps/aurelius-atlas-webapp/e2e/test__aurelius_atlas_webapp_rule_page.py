@@ -19,7 +19,7 @@ from urllib.parse import urljoin
 
 import pytest
 from conftest import _goto_app
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Locator, Page, expect
 from test__aurelius_atlas_webapp import (
     _delete_entity,
     _purge_and_drop_types,
@@ -54,9 +54,14 @@ def _wait_rule_verdicts(
         time.sleep(2)
 
 
-def _rule_stat(page: Page, index: int) -> str:
-    """The rule page's flat stats count by position (DET-50 pins the order)."""
-    return page.locator(".aurelius-details-stats .level-item").nth(index).locator("p.title").inner_text().strip()
+def _rule_stat(page: Page, index: int) -> Locator:
+    """The rule page's flat stats count by position (DET-50 pins the order).
+
+    A retrying locator, never a one-shot read: the number arrives when the
+    verdicts door answers, after the page title (the stats render 0 until
+    then, like the boxes below).
+    """
+    return page.locator(".aurelius-details-stats .level-item").nth(index).locator("p.title")
 
 
 def _seed_run_type(page: Page, root_url: str, token: str, type_name: str) -> None:
@@ -158,9 +163,11 @@ def test__the_rule_page_draws_the_chart_and_the_two_verdict_boxes(
         # DET-52: the three stats in the legacy order — one refusal, no pass,
         # and the Properties stat counting the rendered property rows as every
         # other layout does (DET-24): the number itself is not this page's rule.
-        assert _rule_stat(authenticated, 0) == "1"
-        assert _rule_stat(authenticated, 1) == "0"
-        assert _rule_stat(authenticated, 2).isdigit()
+        expect(_rule_stat(authenticated, 0)).to_have_text("1")
+        expect(_rule_stat(authenticated, 1)).to_have_text("0")
+        expect(authenticated.locator(".aurelius-details-stats .level-item").nth(2).locator("p.title")).to_have_text(
+            re.compile(r"\d+")
+        )
 
         # DET-54: the chart box between the stats and the boxes — the pie at score 0.
         _rule_chart(authenticated, "0%")
@@ -190,8 +197,8 @@ def test__the_rule_page_draws_the_chart_and_the_two_verdict_boxes(
         # 0 / 1 and a full pie, the card in the right box.
         _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{pass_guid}"))
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(passed_rule)
-        assert _rule_stat(authenticated, 0) == "0"
-        assert _rule_stat(authenticated, 1) == "1"
+        expect(_rule_stat(authenticated, 0)).to_have_text("0")
+        expect(_rule_stat(authenticated, 1)).to_have_text("1")
         _rule_chart(authenticated, "100%")
         expect(authenticated.locator("#related-non-compliants")).to_contain_text("0 result(s)")
         expect(authenticated.locator("#related-compliants").locator(".title.is-4 a")).to_have_text([name])
