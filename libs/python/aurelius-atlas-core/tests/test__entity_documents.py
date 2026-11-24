@@ -540,6 +540,47 @@ async def test__verdicts_are_grouped_by_entity_in_id_order_and_an_empty_request_
     assert await memory.verdicts_by_entity(["a", "b", "c"]) == grouped
 
 
+@pytest.mark.covers(
+    f"{E}.verdicts_by_rule",
+    "aurelius_atlas_core.testing.memory.MemoryEntityDocuments.verdicts_by_rule",
+    rules=["ASG-09"],
+)
+async def test__a_rule_s_verdicts_come_back_in_id_order_from_both_stores(
+    documents: ElasticsearchEntityDocuments, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One paged terms read over the rule GUID; memory answers the same (ASG-09, DD-845).
+
+    The page is read in ``REFERRING_PAGE``-sized pages like the read by entity does, so a small page size
+    proves the paging; compliant and refused verdicts both ride back — the screen splits them (DET-51).
+    """
+    monkeypatch.setattr(documents_es, "REFERRING_PAGE", 1)
+    held = {
+        "a": [verdict("a", "r-1", message="A fails one"), verdict("b", "r-1", compliant="1")],
+        "c": [verdict("c", "r-2", message="C fails two")],
+    }
+    await documents.replace_verdicts(held)
+    memory = MemoryEntityDocuments()
+    await memory.replace_verdicts(held)
+    requests: list[dict[str, Any]] = []
+    answer = fake.search
+
+    async def recorded(**request: Any) -> dict[str, Any]:  # noqa: ANN401 - Elasticsearch's keyword arguments
+        requests.append(request)
+        return await answer(**request)
+
+    monkeypatch.setattr(fake, "search", recorded)
+
+    found = await documents.verdicts_by_rule("r-1")
+    paged = len(requests)
+
+    assert [item.id for item in found] == ["a--r-1", "b--r-1"]  # id order, the rule's two verdicts only
+    assert {item.entity_guid for item in found} == {"a", "b"}
+    assert paged > 1  # the two verdicts came back in REFERRING_PAGE-sized pages
+    assert await documents.verdicts_by_rule("r-404") == []  # a rule with no verdicts answers none
+    assert await memory.verdicts_by_rule("r-1") == found
+    assert await memory.verdicts_by_rule("r-404") == []
+
+
 @pytest.mark.covers(f"{E}.prepare", rules=["IDX-02"])
 async def test__every_index_expands_its_replicas_to_the_cluster(fake: FakeClient) -> None:
     """At most one replica, none on a single node, for each index; one made before gets it at the next start."""

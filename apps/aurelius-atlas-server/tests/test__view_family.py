@@ -308,6 +308,90 @@ async def test__both_doors_answer_the_joined_governance_verdicts(seeded: httpx.A
     assert other["verdicts"] == []  # an unjudged entity answers the field empty (AVS-05)
 
 
+RULE_VERDICTS = "/api/aurelius/v1/rule/verdicts"
+RULE = "77777777-7777-4777-8777-777777777777"
+"""The verdicts door's URL and the GUID of a rule nothing on the store seeds (VDR-14)."""
+
+
+@pytest.mark.covers("aurelius_atlas_server.routes.view_rule.rule_verdicts", rules=["VDR-14", "AVS-12"])
+async def test__the_verdicts_door_needs_the_read_role(
+    seeded: httpx.AsyncClient, anonymous: httpx.AsyncClient, issuer: FakeIssuer
+) -> None:
+    """Anonymous 401; without the role the family's 403; with it the rows (VDR-14, AVR-01's posture)."""
+    assert (await seeded.post(RULE_VERDICTS, json={"rule": RULE})).status_code == 200
+
+    anonymous_answer = await anonymous.post(RULE_VERDICTS, json={"rule": RULE})
+    assert anonymous_answer.status_code == 401
+
+    refused = await seeded.post(RULE_VERDICTS, json={"rule": RULE}, headers=as_roles(issuer, "watcher"))
+    assert refused.status_code == 403
+    assert refused.json()["errorCode"] == "AURELIUS-403-00-004"
+
+
+@pytest.mark.covers("aurelius_atlas_server.routes.view_rule.rule_verdicts", rules=["VDR-14"])
+async def test__the_verdicts_door_refuses_every_body_it_cannot_answer(seeded: httpx.AsyncClient) -> None:
+    """The door's refusals in its shape, one message each — no verdict read for a refused body (VDR-14, AVR-13)."""
+    for body, message in [
+        ({}, "The body must name a rule GUID"),
+        ({"rule": "not-a-guid"}, "rule must be a GUID"),
+    ]:
+        refused = await seeded.post(RULE_VERDICTS, json=body)
+        assert refused.status_code == 400, refused.text
+        assert refused.json()["messages"] == [message]
+
+    bodyless = await seeded.post(RULE_VERDICTS, json=[], headers={"Content-Type": "application/json"})
+    assert (bodyless.status_code, bodyless.json()["errorCode"]) == (400, "AURELIUS-400-00-001")
+
+
+@pytest.mark.covers("aurelius_atlas_server.routes.view_rule.rule_verdicts", rules=["VDR-14", "AVS-12", "ASG-09"])
+async def test__the_verdicts_door_answers_a_rule_s_rows_and_nothing_else(
+    seeded: httpx.AsyncClient, app: FastAPI
+) -> None:
+    """One call answers both verdict sets the legacy asked in two (DV-201): rows in id order, null verdict, empty.
+
+    The worker's write of the verdict documents stands in for the round here (ASG-06), as the verdicts join of
+    the other doors does; the door never reads the rule's entity (VDR-14, ADR 071 R2), so an unheld GUID and a
+    GUID of anything at all answer the empty list.
+    """
+    store: EntityStore = app.state.entity_store
+    await store.documents.replace_verdicts(
+        {
+            TABLE: [
+                StoredVerdict(
+                    id=f"{TABLE}--{RULE}",
+                    entity_guid=TABLE,
+                    guid=RULE,
+                    name="Name present",
+                    compliant="0",
+                    noncompliant_message="the record does not carry the attribute",
+                ),
+            ],
+            DB: [
+                StoredVerdict(id=f"{DB}--{RULE}", entity_guid=DB, guid=RULE, name="Name present", compliant="1"),
+                StoredVerdict(id="nil-hold", entity_guid=NIL, guid=RULE, name="Name present", compliant=""),
+            ],
+        }
+    )
+
+    answer = await seeded.post(RULE_VERDICTS, json={"rule": RULE})
+    assert answer.status_code == 200, answer.text
+    assert answer.json() == {
+        "verdicts": [
+            {"entity": DB, "compliant": True, "name": "Name present", "message": ""},
+            {
+                "entity": TABLE,
+                "compliant": False,
+                "name": "Name present",
+                "message": "the record does not carry the attribute",
+            },
+            {"entity": NIL, "compliant": None, "name": "Name present", "message": ""},
+        ]
+    }  # document id order (ASG-09); the verdict holding neither "1" nor "0" answers null (AVS-12)
+
+    absent = await seeded.post(RULE_VERDICTS, json={"rule": "88888888-8888-4888-8888-888888888888"})
+    assert absent.json() == {"verdicts": []}  # the door names no rule and reads no entity (VDR-14)
+
+
 @pytest.mark.covers(f"{S}.search", f"{R}.read", rules=["AVR-08", "AVR-10", "MMS-09"])
 async def test__both_doors_answer_the_same_card_fields(seeded: httpx.AsyncClient) -> None:
     """The card from the search door and the view from the read door hold the same shared fields (AVR-08, AVR-10)."""

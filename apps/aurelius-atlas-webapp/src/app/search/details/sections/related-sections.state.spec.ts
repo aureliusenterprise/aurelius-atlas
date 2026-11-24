@@ -837,4 +837,137 @@ describe("The section facet filters (VCF-09..VCF-14, VCF-18, DD-619/DD-620/DD-62
         searchRequests(httpMock).forEach((request) => request.flush({ cards: [], facets: {}, total: 0 }));
         httpMock.verify();
     });
+
+    // 7.25b (DET-53, DD-848): the governance rule's two verdict boxes ride
+    // this store — the screen hands it the verdict GUIDs per anchor and
+    // every rule below (chunked resolve, page of nine, failed chunk,
+    // deleted guid) is this store's unchanged.
+    describe("the verdict boxes of the rule page (DET-53, DD-848)", () => {
+        /** The rule's own layout — the two verdict boxes, no ends. */
+        const RULE_LAYOUT = LAYOUTS.m4i_gov_data_quality;
+
+        /** The opened rule: no sections, since its boxes seed from verdicts. */
+        const openedRule = (): EntityView => ({
+            guid: "rule-1",
+            typeName: "m4i_gov_data_quality",
+            displayText: "Name filled",
+            status: "ACTIVE",
+            stale: false,
+            attributes: { name: "Name filled" },
+        });
+
+        /** The verdict GUIDs of both boxes, in door order. */
+        const verdictGuids = (nonCompliant: readonly string[], compliant: readonly string[]) => ({
+            "related-non-compliants": nonCompliant,
+            "related-compliants": compliant,
+        });
+
+        it("seeds the two anchors from the screen's GUIDs, in door order (DET-53)", () => {
+            const { store, httpMock } = setup();
+            store.seed(openedRule(), RULE_LAYOUT, verdictGuids(["e-1", "e-2"], ["e-3"]));
+
+            const nonCompliant = store.views().find((view) => view.anchor === "related-non-compliants");
+            expect(nonCompliant?.count).toBe(2);
+            expect(nonCompliant?.cards.map((card) => card.guid)).toEqual(["e-1", "e-2"]);
+            expect(store.countFor("related-non-compliants")).toBe(2); // DET-52's stat
+            const compliant = store.views().find((view) => view.anchor === "related-compliants");
+            expect(compliant?.count).toBe(1);
+            // The display text starts as the guid and the card replaces it.
+            expect(nonCompliant?.cards.map((card) => card.displayText)).toEqual(["e-1", "e-2"]);
+            flushAll(httpMock, (guids) => guids.map((guid) => resolved(guid, `ds-${guid}`)));
+            expect(
+                store
+                    .views()
+                    .find((view) => view.anchor === "related-non-compliants")
+                    ?.cards.map((card) => card.displayText),
+            ).toEqual(["ds-e-1", "ds-e-2"]);
+            httpMock.verify();
+        });
+
+        it("seeds a verdict box empty when the screen names no GUIDs for it (DET-53)", () => {
+            const { store, httpMock } = setup();
+            store.seed(openedRule(), RULE_LAYOUT, verdictGuids([], ["e-3"]));
+
+            expect(store.countFor("related-non-compliants")).toBe(0);
+            expect(store.views().find((view) => view.anchor === "related-non-compliants")?.cards).toEqual([]);
+            // Only the compliant box travels.
+            const requests = searchRequests(httpMock);
+            expect(requests).toHaveLength(1);
+            expect(filteredGuids(requests[0])).toEqual(["e-3"]);
+            flushAll(httpMock);
+            httpMock.verify();
+        });
+
+        it("resolves the verdict GUIDs in chunks of at most 25 (DET-53, DET-18)", () => {
+            const { store, httpMock } = setup();
+            const guids = Array.from({ length: CHUNK_SIZE + 3 }, (_, index) => `e-${index}`);
+            store.seed(openedRule(), RULE_LAYOUT, verdictGuids(guids, []));
+
+            const requests = searchRequests(httpMock);
+            expect(requests).toHaveLength(2); // 28 guids travel as 25 + 3
+            expect(filteredGuids(requests[0])).toHaveLength(CHUNK_SIZE);
+            expect(filteredGuids(requests[1])).toHaveLength(3);
+            flushAll(httpMock);
+            expect(store.countFor("related-non-compliants")).toBe(CHUNK_SIZE + 3);
+            httpMock.verify();
+        });
+
+        it("drops a verdict box's duplicate GUID once (DET-53)", () => {
+            const { store, httpMock } = setup();
+            // One entity judged twice by a re-run leaves one card, as every
+            // seed rule does (DET-17's dedupe).
+            store.seed(openedRule(), RULE_LAYOUT, verdictGuids(["e-1", "e-1", "e-2"], []));
+
+            expect(store.countFor("related-non-compliants")).toBe(2);
+            const requests = searchRequests(httpMock);
+            expect(requests).toHaveLength(1);
+            expect(filteredGuids(requests[0])).toEqual(["e-1", "e-2"]);
+            flushAll(httpMock);
+            httpMock.verify();
+        });
+
+        it("a failed verdict chunk drops its cards with one alert and keeps the count (DET-53, DET-18)", () => {
+            const { store, httpMock } = setup();
+            const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+            store.seed(openedRule(), RULE_LAYOUT, verdictGuids(["e-1", "e-2"], []));
+
+            searchRequests(httpMock)[0].flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
+
+            const view = store.views().find((section) => section.anchor === "related-non-compliants");
+            expect(view?.count).toBe(2); // the count keeps the dropped cards
+            expect(view?.cards).toHaveLength(0);
+            expect(view?.loading).toBe(false);
+            expect(add).toHaveBeenCalledTimes(1);
+            httpMock.expectNone(SEARCH_URL); // no retry loop
+        });
+
+        it("a verdict GUID the answer omits is a deleted entity: no card, the count keeps it (DET-53, DET-18)", () => {
+            const { store, httpMock } = setup();
+            const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+            store.seed(openedRule(), RULE_LAYOUT, verdictGuids(["e-1", "e-2"], []));
+
+            flushAll(httpMock, (guids) => guids.slice(0, 1).map((guid) => resolved(guid, `ds-${guid}`)));
+
+            const view = store.views().find((section) => section.anchor === "related-non-compliants");
+            expect(view?.count).toBe(2);
+            expect(view?.cards.map((card) => card.guid)).toEqual(["e-1"]);
+            expect(add).not.toHaveBeenCalled();
+            httpMock.verify();
+        });
+
+        it("pages the verdict cards at nine and extends on scroll (DET-53, DET-22)", () => {
+            const { store, httpMock } = setup();
+            const guids = Array.from({ length: PAGE_SIZE + 2 }, (_, index) => `e-${index}`);
+            store.seed(openedRule(), RULE_LAYOUT, verdictGuids(guids, []));
+            flushAll(httpMock);
+
+            const view = store.views().find((section) => section.anchor === "related-non-compliants");
+            expect(view?.cards).toHaveLength(PAGE_SIZE);
+            store.nextPage("related-non-compliants");
+            expect(store.views().find((section) => section.anchor === "related-non-compliants")?.cards).toHaveLength(
+                PAGE_SIZE + 2,
+            );
+            httpMock.verify();
+        });
+    });
 });

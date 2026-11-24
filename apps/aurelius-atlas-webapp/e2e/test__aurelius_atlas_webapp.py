@@ -2929,6 +2929,23 @@ def _result_count(count_line: Locator) -> int:
     return int(match.group())
 
 
+def _wait_result_count_at_least(count_line: Locator, minimum: int, *, timeout: float = 60) -> int:
+    """Read the box's count line until it holds at least ``minimum`` rows (bounded, DET-44).
+
+    The count rides the section's own search read, which answers after the page
+    title (the box holds 0 rows until it lands) — a one-shot read races it. The
+    wait replays the same read the screen rides, so the scenario still reads
+    the store's total instead of pinning it (DD-223).
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        total = _result_count(count_line)
+        if total >= minimum:
+            return total
+        assert time.monotonic() < deadline, f"the box's count line never grew past {total}: wanted at least {minimum}"
+        time.sleep(1)
+
+
 def _drives_the_quality_rules_chrome(box: Locator, run: str, rule_names: list[str], total: int) -> None:
     """Drive the box's chrome on the run's three rules (DET-44..DET-47).
 
@@ -3104,8 +3121,7 @@ def test__the_dataset_page_turns_the_quality_rules_section(
         # nine (DET-22's page rule). DET-47's page growth by nine rides the unit
         # suite, so this scenario never needs more than a page of corpus rows.
         count_line = box.locator("h6.aurelius-card-section-count a")
-        total = _result_count(count_line)
-        assert total >= len(rule_names), f"the read lost this run's rules: {total} rows"
+        total = _wait_result_count_at_least(count_line, len(rule_names))
         expect(box.locator("aurelius-atlas-ui-entity-card")).to_have_count(min(9, total))
 
         _drives_the_quality_rules_chrome(box, run, rule_names, total)

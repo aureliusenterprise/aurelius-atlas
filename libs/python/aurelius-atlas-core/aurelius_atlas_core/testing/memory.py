@@ -466,6 +466,17 @@ class MemoryEntityDocuments:
                 grouped.setdefault(verdict.entity_guid, []).append(verdict)
         return grouped
 
+    async def verdicts_by_rule(self, rule_guid: str) -> list[StoredVerdict]:
+        """The held verdicts of one rule, in id order (ASG-09, DD-845).
+
+        The same held dict filtered over the rule's GUID, sorted by verdict id as the Elasticsearch read sorts.
+        """
+        return [
+            self.verdicts[verdict_id]
+            for verdict_id in sorted(self.verdicts)
+            if self.verdicts[verdict_id].guid == rule_guid
+        ]
+
     def _all_versioned(self) -> list[VersionedEntity]:
         found = []
         for guid in sorted(self.entities):

@@ -76,6 +76,14 @@ export interface SectionDef {
      * search and a verdict call, not an end).
      */
     readonly kind?: "gov-quality";
+    /**
+     * Which seed fills the section (7.25b, DD-848). Absent means the
+     * view's relationship ends (DET-17); `"verdicts"` is a rule page's
+     * verdict box, seeded from the opened rule's stored verdicts of one
+     * verdict value — the screen hands the GUIDs to the sections store's
+     * seed, and the box is the shared chrome in every other way (DET-53).
+     */
+    readonly seedFrom?: "verdicts";
 }
 
 /**
@@ -204,6 +212,22 @@ export interface TypeLayout {
      * rows name it, every other layout leaves the box out entirely.
      */
     readonly lineageAfter?: string;
+    /**
+     * The Compliance Chart box (DET-54, DD-849), when the layout carries
+     * one: the rule page's score pie between the stats bar and its first
+     * card box, with the two-row legend beside it — the legacy's labels.
+     */
+    readonly complianceChart?: ComplianceChartDef;
+}
+
+/** The Compliance Chart box's strings (DET-54, DD-849): title and legend. */
+export interface ComplianceChartDef {
+    /** The box's title (the `complianceChart` key's text). */
+    readonly title: string;
+    /** The legend's first row — the red swatch's label. */
+    readonly nonCompliant: string;
+    /** The legend's second row — the green swatch's label. */
+    readonly compliant: string;
 }
 
 /** The layout key: one of the ten m4i catalogue types. */
@@ -213,6 +237,7 @@ export type M4iLayoutType =
     | "m4i_data_attribute"
     | "m4i_field"
     | "m4i_data_quality"
+    | "m4i_gov_data_quality"
     | "m4i_dataset"
     | "m4i_collection"
     | "m4i_system"
@@ -468,6 +493,76 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             { label: $localize`:@@search.details.field.properties:Properties`, anchor: "properties-details" },
         ],
+    },
+    // DET-50 (7.25b): the governance rule's own page. The legacy dispatches
+    // the name `m4i_gov_data_quality` to its governance-quality component,
+    // and nothing else carries that name, so the row is a direct hit. The
+    // legacy's top-to-bottom order (gov-quality-details.component.html):
+    // the description, the three stats, the Compliance Chart, the
+    // Non-compliant box, the Compliant box, the properties. The two card
+    // boxes seed from the rule's verdicts, not an end (DD-848), so they
+    // carry no seed key, and the box draws its rows through the sections
+    // store's seed (DET-53). The facet groups are the person box's four —
+    // the legacy asked the eight of `ENTITY_SEARCH_FACETS` that Aurelius'
+    // catalogue answers (DV-201). Nav in the legacy order: the two boxes,
+    // the properties (the description and chart are not nav entries).
+    m4i_gov_data_quality: {
+        descriptionTitle: $localize`:@@search.details.govQuality.description:Description`,
+        peopleBox: false,
+        peopleTitle: "",
+        sections: [
+            {
+                anchor: "related-non-compliants",
+                title: $localize`:@@search.details.govQuality.nonCompliantCards.title:Non-compliant`,
+                seedKeys: [],
+                seedFrom: "verdicts",
+                facets: ["typeName", "m4i_data_domain", "m4i_data_entity", "name"],
+            },
+            {
+                anchor: "related-compliants",
+                title: $localize`:@@search.details.govQuality.compliantCards.title:Compliant`,
+                seedKeys: [],
+                seedFrom: "verdicts",
+                facets: ["typeName", "m4i_data_domain", "m4i_data_entity", "name"],
+            },
+        ],
+        stats: [
+            {
+                label: $localize`:@@search.details.govQuality.nonCompliant:Non-compliant`,
+                anchor: "related-non-compliants",
+                source: { kind: "section", anchor: "related-non-compliants" },
+            },
+            {
+                label: $localize`:@@search.details.govQuality.compliant:Compliant`,
+                anchor: "related-compliants",
+                source: { kind: "section", anchor: "related-compliants" },
+            },
+            {
+                label: $localize`:@@search.details.govQuality.properties:Properties`,
+                anchor: "properties-details",
+                source: { kind: "properties" },
+            },
+        ],
+        propertiesTitle: $localize`:@@search.details.govQuality.properties:Properties`,
+        nav: [
+            {
+                label: $localize`:@@search.details.govQuality.nonCompliant:Non-compliant`,
+                anchor: "related-non-compliants",
+            },
+            {
+                label: $localize`:@@search.details.govQuality.compliant:Compliant`,
+                anchor: "related-compliants",
+            },
+            {
+                label: $localize`:@@search.details.govQuality.properties:Properties`,
+                anchor: "properties-details",
+            },
+        ],
+        complianceChart: {
+            title: $localize`:@@search.details.govQuality.complianceChart:Compliance Chart`,
+            nonCompliant: $localize`:@@search.details.govQuality.nonCompliant:Non-compliant`,
+            compliant: $localize`:@@search.details.govQuality.compliant:Compliant`,
+        },
     },
     // DET-38 (7.27, DD-495): the rule's own page. A rule is defined by the
     // fields it checks, so its page lists them the way every other page

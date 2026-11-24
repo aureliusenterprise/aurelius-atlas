@@ -2,13 +2,13 @@ import { FACET_GROUP_TITLES, type M4iLayoutType, LAYOUTS, layoutForTypeName, has
 
 /**
  * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33; 7.29's
- * person row, DET-39..DET-43): the ten layouts key for key the spec's
- * table — anchors, titles, seed keys, People box flag, stats, and nav. The
- * table itself is the fixture; these specs pin the dispatch's lookup and the
- * shapes one renderer depends on.
+ * person row, DET-39..DET-43; 7.25b's governance rule row, DET-50): the
+ * eleven layouts key for key the spec's table — anchors, titles, seed keys,
+ * People box flag, stats, and nav. The table itself is the fixture; these
+ * specs pin the dispatch's lookup and the shapes one renderer depends on.
  */
 describe("Section config (DET-16)", () => {
-    it("holds exactly the ten m4i layouts (DET-16, DET-33, DET-38, DET-39)", () => {
+    it("holds exactly the eleven m4i layouts (DET-16, DET-33, DET-38, DET-39, DET-50)", () => {
         expect(Object.keys(LAYOUTS).sort()).toEqual([
             "m4i_collection",
             "m4i_data_attribute",
@@ -18,12 +18,13 @@ describe("Section config (DET-16)", () => {
             "m4i_dataset",
             "m4i_field",
             "m4i_generic_process",
+            "m4i_gov_data_quality",
             "m4i_person",
             "m4i_system",
         ]);
     });
 
-    it("maps each of the ten names to its layout (DET-15, DET-16)", () => {
+    it("maps each of the eleven names to its layout (DET-15, DET-16)", () => {
         for (const name of Object.keys(LAYOUTS)) {
             expect(layoutForTypeName(name)).toBe(LAYOUTS[name as keyof typeof LAYOUTS]);
         }
@@ -37,20 +38,24 @@ describe("Section config (DET-16)", () => {
         expect(layoutForTypeName("")).toBeUndefined();
     });
 
-    it("keeps the table's section shape for each layout (DET-16, DET-48)", () => {
+    it("keeps the table's section shape for each layout (DET-16, DET-48, DET-53)", () => {
         // Every section: an anchor, a title, at least one seed key — the
         // renderer's whole input set; a blank would draw an empty chrome.
-        // The Governance Quality Rules box is the one exception (DD-841): it
-        // seeds from a rule search and a verdict call, not a relationship.
+        // The two seedless kinds are the exceptions, each named by its own
+        // row: the Governance Quality Rules box (DD-841 — a rule search and
+        // a verdict call, not a relationship) and a verdict box (DD-848 —
+        // the screen hands the sections store the rule's verdict GUIDs).
         for (const [name, layout] of Object.entries(LAYOUTS)) {
             expect(layout.sections.length, name).toBeGreaterThan(0);
             for (const section of layout.sections) {
                 expect(section.anchor, name).toMatch(/^[a-z-]+$/);
                 expect(section.title, name).not.toBe("");
-                if (section.kind !== "gov-quality") {
-                    expect(section.seedKeys.length, name).toBeGreaterThan(0);
-                } else {
+                if (section.kind === "gov-quality") {
                     expect(section.seedKeys, name).toEqual([]);
+                } else if (section.seedFrom === "verdicts") {
+                    expect(section.seedKeys, name).toEqual([]);
+                } else {
+                    expect(section.seedKeys.length, name).toBeGreaterThan(0);
                 }
             }
         }
@@ -441,9 +446,57 @@ describe("Section config (DET-16)", () => {
             ).not.toContain("gov-quality");
         }
 
-        // The rule's own page is the tenth layout and the only one without
-        // the box: the legacy drew no governance box there (DV-199).
+        // The rule's own page carries no governance box: the legacy drew
+        // none there (DV-199). The governance rule's page (7.25b) is the
+        // other one without it — its whole page is the governance content.
         expect(hasGovQualityBox(LAYOUTS.m4i_data_quality)).toBe(false);
+        expect(hasGovQualityBox(LAYOUTS.m4i_gov_data_quality)).toBe(false);
         expect(hasGovQualityBox(undefined)).toBe(false);
+    });
+
+    it("carries the governance rule row's shape (DET-50, DET-53, DET-54)", () => {
+        const rule = LAYOUTS.m4i_gov_data_quality;
+        // DET-50: the legacy page's content in the legacy order — the
+        // description (its own title), no People box, then the two verdict
+        // boxes and the properties.
+        expect(rule.peopleBox).toBe(false);
+        expect(rule.sections.map((section) => [section.anchor, section.seedFrom])).toEqual([
+            ["related-non-compliants", "verdicts"],
+            ["related-compliants", "verdicts"],
+        ]);
+        expect(rule.descriptionTitle).toBe("Description");
+        expect(rule.propertiesTitle).toBe("Properties");
+        // DET-53: the legacy's card titles, and the facet groups it asked
+        // that Aurelius counts — the person box's four (DV-201).
+        expect(rule.sections.map((section) => [section.title, [...section.facets]])).toEqual([
+            ["Non-compliant", ["typeName", "m4i_data_domain", "m4i_data_entity", "name"]],
+            ["Compliant", ["typeName", "m4i_data_domain", "m4i_data_entity", "name"]],
+        ]);
+        // DET-52: the three stats in the legacy order, the two verdict
+        // boxes counting their seeds and the properties their rows.
+        expect(rule.stats.map((stat) => [stat.label, stat.anchor, stat.source])).toEqual([
+            ["Non-compliant", "related-non-compliants", { kind: "section", anchor: "related-non-compliants" }],
+            ["Compliant", "related-compliants", { kind: "section", anchor: "related-compliants" }],
+            ["Properties", "properties-details", { kind: "properties" }],
+        ]);
+        // DET-54: the chart box rides the row — the title and legend the
+        // legacy showed, and only the rule row carries it.
+        expect(rule.complianceChart).toEqual({
+            title: "Compliance Chart",
+            nonCompliant: "Non-compliant",
+            compliant: "Compliant",
+        });
+        for (const [name, layout] of Object.entries(LAYOUTS)) {
+            if (name !== "m4i_gov_data_quality") {
+                expect(layout.complianceChart, name).toBeUndefined();
+            }
+        }
+        // DET-50: the nav's three entries, in the legacy order — neither
+        // the description nor the chart is one.
+        expect(rule.nav.map((entry) => [entry.label, entry.anchor])).toEqual([
+            ["Non-compliant", "related-non-compliants"],
+            ["Compliant", "related-compliants"],
+            ["Properties", "properties-details"],
+        ]);
     });
 });
