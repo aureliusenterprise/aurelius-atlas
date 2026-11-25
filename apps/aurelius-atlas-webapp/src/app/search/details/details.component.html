@@ -224,45 +224,15 @@
     }
 }
 
-<aurelius-atlas-ui-accordion id="properties-details" class="block" [expanded]="true">
-    <ng-container header>
-        <h2 class="title is-3 aurelius-details-properties-title">{{ propertiesTitle() }}</h2>
-    </ng-container>
-    <ng-container content>
-        <!-- The legacy `sortable-table-shell` swap (DET-11): with
-                     rows, the table; with none, its noData line in place of
-                     the whole table, headers included. Zero rows is every
-                     no-entity state (DET-02) and an entity whose attributes
-                     all ride the header, the box, or the blacklist. -->
-        @if (properties().length > 0) {
-            <table class="table is-fullwidth aurelius-details-properties">
-                <thead>
-                    <tr>
-                        <th i18n="@@search.details.components.properties.key">Key</th>
-                        <th i18n="@@search.details.components.properties.value">Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (property of properties(); track property.key) {
-                        <tr>
-                            <td>{{ property.key }}</td>
-                            <td>
-                                <aurelius-atlas-ui-properties-item
-                                    [value]="property.value"
-                                    (itemClicked)="onLinkClick($event)"
-                                />
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        } @else {
-            <p class="content has-text-centered aurelius-details-properties-empty">
-                <span><i i18n="@@components.sortableTableShell.noData">No data available</i></span>
-            </p>
-        }
-    </ng-container>
-</aurelius-atlas-ui-accordion>
+<!-- The properties accordion (DET-11): the entity's attributes as the legacy
+     table-or-noData swap, now one part (7.54). The part keeps its
+     #properties-details anchor and starts expanded; it re-emits a property link
+     for the screen to route. -->
+<aurelius-atlas-webapp-details-properties
+    [rows]="properties()"
+    [title]="propertiesTitle()"
+    (linkClicked)="onLinkClick($event)"
+/>
 
 <!-- The side navigation is the 7.16 shell (UIC-18): the sticky
              circular drop-up at the foot of the screen, its menu items
