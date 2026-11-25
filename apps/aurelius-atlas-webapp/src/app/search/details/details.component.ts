@@ -26,8 +26,8 @@ import {
     type SectionStat,
 } from "aurelius-atlas-ui";
 
-import { canWriteEntities } from "../editor/can-write-entities";
-import { EntityWritten } from "../editor/entity-written";
+import { canWriteEntities } from "../shared/can-write-entities";
+import { EntityWritten } from "../shared/entity-written";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { APP_CONFIG } from "../../tokens";
@@ -46,7 +46,7 @@ import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections
 import { DATA_QUALITY_NOT_AVAILABLE, hasGovQualityBox } from "./sections/layouts";
 import { hasScoreSource, qualityRows, scorePercent } from "../shared/quality-mapping";
 import type { StatDef } from "./sections/section.model";
-import { peopleRowsOfSections } from "./shared/people";
+import { peopleRowsOfSections } from "../shared/people";
 import { trailOf } from "../shared/trail";
 import { cardTypeAlias } from "../shared/type-alias";
 

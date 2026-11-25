@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Purity gate for the Aurelius Atlas webapp port (WBP-02, SHL-01, SHL-09, SHL-10, UIC-07).
+# Purity gate for the Aurelius Atlas webapp port (WBP-02, SHL-01, SHL-09, SHL-10, UIC-07; layers DD-869/DD-870).
 #
 # The port is a rewrite in Angular idiom, not a transplant (ADR 053). This
 # script fails if a forbidden legacy construct enters the tree: NgModules and
@@ -10,6 +10,11 @@
 # It greps the webapp *and* the Angular libraries the webapp builds from
 # source (DD-131, DD-137), so ported code cannot carry a construct the app
 # itself is banned from.
+#
+# It also enforces the search feature's layer boundaries (the rule DD-869 named
+# and 7.44/DD-870 makes enforceable): a feature never imports a sibling
+# feature, and the shared layers never import a feature. Code two features need
+# lives in `shared/` (or `meta/`), not in one of the features.
 #
 # Patterns match *usage* (imports, decorators, directives, `new`), so prose in
 # comments/docs that names a forbidden construct as context is allowed.
@@ -52,7 +57,44 @@ for check in "${checks[@]}"; do
     done
 done
 
+# --- search layer boundaries (DD-869's rule, enforced by DD-870) ------------
+#
+# `search/` is layered: the features (browse, details, editor, results) sit
+# above the shared layers (shared, meta). A feature may read down into a
+# shared layer, and a shared layer may read no feature at all — never sideways
+# into a sibling feature. When two features need the same code, it moves to a
+# shared layer instead of being imported across (7.44 moved the four helpers
+# this rule caught).
+search="apps/aurelius-atlas-webapp/src/app/search"
+features=(browse details editor results)
+shared_layers=(shared meta)
+
+# "<importing dir>|the import it must not make"
+layer_checks=()
+for src in "${features[@]}"; do
+    for dst in "${features[@]}"; do
+        [ "$src" = "$dst" ] || layer_checks+=("$src|$dst")
+    done
+done
+for src in "${shared_layers[@]}"; do
+    for dst in "${features[@]}"; do
+        layer_checks+=("$src|$dst")
+    done
+done
+
+for pair in "${layer_checks[@]}"; do
+    src="${pair%%|*}"
+    dst="${pair##*|}"
+    # Any relative import that climbs to `search/` and back down into the
+    # sibling feature: ../<dst>/, ../../<dst>/, and so on.
+    if matches=$(grep -rn --include='*.ts' -E "from \"(\.\./)+${dst}/" "$search/$src" 2>/dev/null); then
+        echo "FAIL: layer boundary — search/$src imports search/$dst (a shared layer never imports a feature; a feature never imports a sibling: DD-869, DD-870)"
+        echo "$matches"
+        status=1
+    fi
+done
+
 if [ "$status" -eq 0 ]; then
-    echo "webapp purity check passed (WBP-02, SHL-01, SHL-09, SHL-10, UIC-07)."
+    echo "webapp purity check passed (WBP-02, SHL-01, SHL-09, SHL-10, UIC-07; search layers, DD-869/DD-870)."
 fi
 exit "$status"
