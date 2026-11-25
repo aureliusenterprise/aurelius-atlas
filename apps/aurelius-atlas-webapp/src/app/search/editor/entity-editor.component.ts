@@ -2,7 +2,6 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
-    DestroyRef,
     ElementRef,
     effect,
     inject,
@@ -12,63 +11,32 @@ import {
     viewChild,
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { DatePipe, NgTemplateOutlet } from "@angular/common";
+import { NgTemplateOutlet } from "@angular/common";
 import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
 import { ActivatedRoute, Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import {
-    faCheckCircle,
-    faChevronDown,
-    faChevronUp,
-    faExclamationTriangle,
-    faXmark,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
+import { Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
 import {
-    Breadcrumbs,
-    type Breadcrumb,
-    Drawer,
-    Holdable,
-    InfiniteScrollContainer,
-    MarkdownEditor,
-    Select,
-    SortableTable,
-    TableColumn,
-    TableRow,
-    TypeName,
-} from "aurelius-atlas-ui";
-import {
-    AtlasEntitiesService,
     QualityRuleService,
-    type EntityAuditEventV2,
     type EntityValidationResponse,
     type GovernanceVerdict,
     ValidateEntityService,
 } from "aurelius-atlas-data-access";
 
-import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { cardTypeAlias } from "../shared/type-alias";
-import {
-    type AuditAttributeChange,
-    auditRowKey,
-    type AuditChanges,
-    type AuditProseChange,
-    type AuditRelationshipChange,
-    type AuditRestore,
-    auditTrailChanges,
-    isStateAction,
-    restoreOf,
-} from "./audit-details";
-import { auditActionDisplay } from "./audit-display";
+import { type AuditAttributeChange, restoreOf } from "./history/audit-details";
 import { attributeLabels } from "./attribute-labels";
 import { alertOnFailure } from "../shared/alert-on-failure";
 import { canWriteEntities } from "../shared/can-write-entities";
-import { type ProsePart, diffProse } from "./description-diff";
 import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState } from "./editor-state";
+import { AUDIT_RETRIEVE_LINE, AuditTrail } from "./history/audit-state";
+import { HistoryTab } from "./history/history-tab.component";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import { EntityWritten } from "../shared/entity-written";
 import {
@@ -79,7 +47,6 @@ import {
     blockedRelationshipNames,
     buildFields,
     buildRelationshipFields,
-    fieldLabel,
     mergeOntoEntity,
     mergeRelationshipsOntoEntity,
     seedRelationshipValues,
@@ -96,11 +63,6 @@ type EnumRow = { value: string };
 
 /** The drawer's pane (HST-01, DD-816): the entity form or the audit list. */
 type EditorTab = "entity" | "history";
-
-/** The audit page size (HST-08, DD-820): what the endpoint itself reads an
- * absent `count` as (AUD-08), asked explicitly so the short-page test for the
- * trail's end is exact rather than a guess about the server's default. */
-const AUDIT_PAGE = 100;
 
 /** One model slot: the value a field of any kind holds (DD-354). */
 type EditorValue = string | number | boolean | string[] | null;
@@ -142,25 +104,20 @@ type EditorValue = string | number | boolean | string[] | null;
  */
 @Component({
     imports: [
-        Breadcrumbs,
         ClassificationCombobox,
-        DatePipe,
         Drawer,
         EntityRelationshipInput,
         FontAwesomeModule,
         FormField,
+        HistoryTab,
         Holdable,
-        InfiniteScrollContainer,
         MarkdownEditor,
         NgTemplateOutlet,
         QualityFields,
         Select,
-        SortableTable,
-        TableColumn,
-        TableRow,
         TypeName,
     ],
-    providers: [EditorState],
+    providers: [EditorState, AuditTrail],
     selector: "aurelius-atlas-webapp-entity-editor",
     templateUrl: "./entity-editor.component.html",
     styleUrl: "./entity-editor.component.scss",
@@ -175,15 +132,9 @@ export class EntityEditor {
 
     private readonly qualityRule = inject(QualityRuleService);
 
-    /** The Atlas entity endpoints (7.35): the drawer's own audit read rides
-     * them directly, not the view doors (DD-817). */
-    private readonly entities = inject(AtlasEntitiesService);
-
-    /** The app's alert store (HST-06): a failed audit read lands here. */
-    private readonly alerts = inject(AlertsService);
-
-    /** The component's teardown (the audit read does not outlive the drawer). */
-    private readonly destroyRef = inject(DestroyRef);
+    /** The History trail's read store (HST-03..HST-10, DD-872): the drawer
+     * opens it on a History visit and hands it to the tab. */
+    protected readonly trail = inject(AuditTrail);
 
     /** The write-tick bus (DD-327, DD-803): the code that performs a save
      * or a delete fires its outcome here, heard to fill the outcome line
@@ -216,42 +167,6 @@ export class EntityEditor {
 
     /** The drawer's pane (HST-01, DD-816): the form or the audit list. */
     protected readonly tab = signal<EditorTab>("entity");
-
-    /** The History pane's events (HST-03), newest first as the server
-     * answered them (AUD-08) — the client never re-sorts. */
-    protected readonly audits = signal<EntityAuditEventV2[]>([]);
-
-    /** Whether the audit read is in flight (HST-05's loading line). */
-    protected readonly auditsLoading = signal(false);
-
-    /** Whether the trail is ended: the last page came back short, so the
-     * container hides its sentinel and no older read fires (HST-08). */
-    protected readonly auditsAllLoaded = signal(false);
-
-    /** The audit rows whose change list is open (HST-10): keyed by the row's
-     * `eventKey`, so more than one row can be open at once and a next page
-     * leaves the rows already open alone. */
-    protected readonly auditsOpen = signal<ReadonlySet<string>>(new Set());
-
-    /** The chevron of an audit row's toggle (HST-10): the accordion's chevron,
-     * shown by the state of the row it belongs to. */
-    protected readonly faChevronDown = faChevronDown;
-
-    /** The open chevron of an audit row's toggle (HST-10). */
-    protected readonly faChevronUp = faChevronUp;
-
-    /** The change list of every state row (HST-10, DD-821): derived from the
-     * trail already loaded, keyed by the row's `eventKey`, so the template
-     * reads a row's answer by the key it already tracks on. No request — the
-     * stored bodies of the rows on screen are the only input (AUD-06). */
-    protected readonly auditChanges = computed<ReadonlyMap<string, AuditChanges>>(() =>
-        auditTrailChanges(this.audits()),
-    );
-
-    /** The in-flight audit read (HST-03): a switch while one runs does not
-     * repeat it, and the drawer's teardown drops the answer it no longer
-     * needs — the constructor's onDestroy unsubscribes. */
-    private auditsPending: Subscription | null = null;
 
     private readonly route = inject(ActivatedRoute);
 
@@ -472,13 +387,9 @@ export class EntityEditor {
 
     protected readonly loadingLine = $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`;
 
-    /** The History pane's loading line and its failure alert (HST-05, HST-06):
-     * the vendored audit-retrieve string, one key for both states. */
-    protected readonly auditRetrieveLine = $localize`:@@search.services.entityAudit.retrieve:Retrieving the audit log`;
-
-    /** The History pane's sentinel label (HST-08): the results list's key, so
-     * one translation carries both infinite-scroll lists. */
-    protected readonly auditLoadLabel = $localize`:@@search.components.infiniteScrollContainer.loadNextPage:Load next page...`;
+    /** The History pane's loading line (HST-05): the same const the trail's
+     * failure alert uses (one key for both states, DD-872). */
+    protected readonly auditRetrieveLine = AUDIT_RETRIEVE_LINE;
 
     protected readonly savingLine = $localize`:@@search.services.entityUpdate.save:Saving the entity`;
 
@@ -565,8 +476,9 @@ export class EntityEditor {
         // relay (DD-871): the one place this drawer's store alerts.
         alertOnFailure(this.state);
 
-        // The audit read does not outlive the drawer (HST-03).
-        this.destroyRef.onDestroy(() => this.auditsPending?.unsubscribe());
+        // The trail's held failures reach the drawer through the same shared
+        // relay (DD-871, DD-872): the tab's store alerts through the shell.
+        alertOnFailure(this.trail);
 
         // The entity read follows the route's guid (EDT-02, VDE-01) — edit
         // mode only. The read door's client answers it (DD-608).
@@ -1055,7 +967,7 @@ export class EntityEditor {
     protected showTab(tab: EditorTab): void {
         this.tab.set(tab);
         if (tab === "history") {
-            this.loadAudits();
+            this.trail.open(this.auditEndActiveGuid());
         }
     }
 
@@ -1102,206 +1014,12 @@ export class EntityEditor {
         active?.nativeElement.focus();
     }
 
-    /**
-     * The audit read (HST-03 as amended by 7.36, DD-817, DD-820): one
-     * `GET /v2/entity/{guid}/audit` per page, asked with `count=100` and
-     * never an `offset` or `sortBy`, which would move the server onto its
-     * sorted, oldest-first path (AUD-07). The first read of a visit starts the
-     * list empty; a next page rides the server's inclusive key cursor
-     * (AUD-08) — `startKey` of the oldest event already listed — and appends
-     * what it answers, minus the one event that cursor repeats (HST-08). A
-     * page shorter than the ask ends the trail, so the container hides its
-     * sentinel. Every switch re-reads (no caching rule applies), and no read
-     * stacks: an in-flight read — the scroll's ask among them — is not
-     * repeated, and the drawer's teardown drops answers it no longer needs.
-     * A failed first read alerts once and leaves the list empty (HST-06); a
-     * failed next page alerts and keeps the rows and the sentinel, so the ask
-     * can be made again.
-     */
-    private loadAudits(nextPage = false): void {
-        const guid = this.state.entity()?.guid ?? this.guid();
-        if (!guid || this.auditsPending !== null) {
-            return;
-        }
-        if (!nextPage) {
-            this.audits.set([]);
-            this.auditsAllLoaded.set(false);
-        }
-        // The cursor is the oldest listed eventKey (AUD-08). With nothing
-        // listed there is no cursor to send, which is the fresh first-page ask
-        // the sentinel's retry of a failed first read needs (HST-06). An event
-        // listed without a key can carry no cursor, so the pane stops paging
-        // rather than re-asking for the page it already holds.
-        const listed = this.audits();
-        const oldestKey = listed.at(-1)?.eventKey ?? undefined;
-        if (listed.length > 0 && oldestKey === undefined) {
-            this.auditsAllLoaded.set(true);
-            return;
-        }
-        const query = oldestKey === undefined ? { count: AUDIT_PAGE } : { count: AUDIT_PAGE, startKey: oldestKey };
-        this.auditsLoading.set(true);
-        this.auditsPending = this.entities.getAuditEvents(guid, query).subscribe({
-            next: (events) => {
-                this.auditsPending = null;
-                this.auditsLoading.set(false);
-                const listed = new Set(this.audits().map((event) => event.eventKey));
-                const fresh = events.filter((event) => !listed.has(event.eventKey));
-                this.audits.update((current) => [...current, ...fresh]);
-                // The short page is the entity's oldest one (HST-08): the
-                // sentinel goes, and nothing older is asked for. A full page
-                // keeps the sentinel even when the trail ends there — a dead
-                // ask costs one read and no data (DD-820).
-                this.auditsAllLoaded.set(events.length < AUDIT_PAGE);
-            },
-            error: () => {
-                this.auditsPending = null;
-                this.auditsLoading.set(false);
-                this.alerts.add({
-                    severity: "error",
-                    message: this.auditRetrieveLine,
-                    source: "search",
-                });
-            },
-        });
-    }
-
-    /**
-     * The container's ask (HST-08): one more page of the trail. The container
-     * suppresses its own triggers while a page is in flight, and
-     * {@link loadAudits} guards again, so one scroll asks for one page.
-     */
-    protected loadAuditPage(): void {
-        if (!this.auditsAllLoaded()) {
-            this.loadAudits(true);
-        }
-    }
-
-    /** The audit row's change label (HST-04): the display map over the
-     * event's raw action name, the legacy's `| translate` lookup. */
-    protected auditActionLabel(event: EntityAuditEventV2): string {
-        return auditActionDisplay(event.action) ?? "";
-    }
-
-    /** The change list's heading (HST-10). */
-    protected readonly auditChangeLine = $localize`:@@search.components.editor.history.changes:Changes`;
-    /** The change-list tables' page size (HST-12): one change list per audit
-     * row is small, and the page is generous enough that the sortable table's
-     * pagination bar never appears here — the rows are all shown. */
-    protected readonly auditTablePage = 100;
-    /** The row's own state, compared with the state before it (HST-10). */
-    protected readonly auditNoChangesLine = $localize`:@@search.components.editor.history.noChanges:Nothing changed`;
-    /** The row with no older state on screen (HST-10). */
-    protected readonly auditNotLoadedLine = $localize`:@@search.components.editor.history.notLoaded:The earlier state is not loaded`;
-    /** The row whose body the server cut down (HST-10, AUD-04). */
-    protected readonly auditNotRecordedLine = $localize`:@@search.components.editor.history.notRecorded:The details are not recorded`;
-    /** The change list's attribute section (HST-10). */
-    protected readonly auditAttributesLine = $localize`:@@search.components.editor.history.attributes:Attributes`;
-    /** The change list's relationship section (HST-10). */
-    protected readonly auditRelationshipsLine = $localize`:@@search.components.editor.history.relationships:Relationships`;
-    /** The change list's added line (HST-10). */
-    protected readonly auditAddedLine = $localize`:@@search.components.editor.history.added:Added`;
-    /** The change list's removed line (HST-10). */
-    protected readonly auditRemovedLine = $localize`:@@search.components.editor.history.removed:Removed`;
-    /** The change list's changed line (HST-12): the third action of the
-     * attribute table, the one the changed row's `del`/`ins` pair shows. */
-    protected readonly auditChangedLine = $localize`:@@search.components.editor.history.changed:Changed`;
-    /** The attribute table's action header (HST-12). */
-    protected readonly auditActionHeader = $localize`:@@search.components.editor.history.action:Action`;
-    /** The attribute table's name header (HST-12): the table lists attributes,
-     * so its first column names them — the plain word, without the required
-     * star the editor's own field label for `name` carries (DD-356). */
-    protected readonly auditNameHeader = $localize`:@@search.components.editor.history.name:Name`;
-    /** The attribute table's value header (HST-12): the detail screen's own
-     * Properties word for a stored value (DET-11). */
-    protected readonly auditValueHeader = $localize`:@@search.details.components.properties.value:Value`;
-    /** The relationship table's relationship header (HST-12): which relation-
-     * ship attribute an end belongs to. */
-    protected readonly auditRelationshipHeader = $localize`:@@search.components.editor.history.relationship:Relationship`;
-    /** The relationship table's entity header (HST-12). */
-    protected readonly auditEntityHeader = $localize`:@@search.components.editor.history.entity:Entity`;
-    /** The fold marker's words (HST-16): how many kept words a long run left
-     * out. The helper stays locale-free, so the count's words live here. */
-    protected auditWordsLeftOut(count: number): string {
-        return $localize`:@@search.components.editor.history.wordsLeftOut:${count}:count: words left out`;
-    }
-
-    /** The parts of one prose change (HST-15, HST-16): the stored before and
-     * after texts worded as kept, removed and added parts, so a one-sentence
-     * fix shows the fix and not two whole texts. */
-    protected proseParts(change: AuditProseChange): readonly ProsePart[] {
-        return diffProse(change.from, change.to);
-    }
-    /** The restore button's text (HST-11). */
-    protected readonly auditRestoreLine = $localize`:@@search.components.editor.history.restore:Restore`;
-    /** The status line a finished restore fills (HST-11, LR-005). */
+    /** The status line a finished restore fills (HST-11, LR-005): the outcome
+     * the effect writes when the store's re-read lands, filled after the
+     * write tick's save line (WFE-02). */
     protected readonly auditRestoredLine = $localize`:@@search.components.editor.history.restored:Entity restored`;
 
-    /** The change lists' name for an attribute or relationship attribute
-     * (HST-12): the same localized field label the form shows for it (EDT-33),
-     * so a table line and the field it describes carry one word. The stored
-     * wire name stays underneath — `openAuditEnd` and the restore send it.
-     * @param name the attribute's wire name
-     * @returns the label to show */
-    protected auditName(name: string): string {
-        return fieldLabel(name, this.labels);
-    }
-
-    /** Whether a row shows a change list toggle (HST-10): the four
-     * entity-state actions carry a stored state to open, and only their rows
-     * offer it. Any other row keeps the label, the user and the time of 7.35
-     * (HST-04). */
-    protected auditChangeShown(event: EntityAuditEventV2): boolean {
-        return isStateAction(event.action);
-    }
-
-    /** What an open row says (HST-10): the trail's answer for it, or the
-     * not-recorded line for a state row whose stored body cannot be read —
-     * a row that offers a toggle never opens onto nothing. */
-    protected auditChangeOf(event: EntityAuditEventV2): AuditChanges {
-        return this.auditChanges().get(auditRowKey(event)) ?? { kind: "partial" };
-    }
-
-    /** Whether a row's change list is open (HST-10). */
-    protected auditChangeOpen(event: EntityAuditEventV2): boolean {
-        return this.auditsOpen().has(auditRowKey(event));
-    }
-
-    /** The id of the row at `index`'s change list (HST-10), paired with its
-     * toggle's `aria-controls` the way the accordion pairs them
-     * (FORM-CUSTOM-001). The pane's index in the list is unique among the rows
-     * and does not move when a next page appends, so it is the stable half of
-     * the pair — an event's `eventKey` would be, but it can be absent. */
-    protected auditPaneId(index: number): string {
-        return `aurelius-editor-audit-changes-${index}`;
-    }
-
-    /** What one change-list line restores (HST-11): a changed row with a
-     * single value the single-attribute door can take, and nothing else. */
-    protected auditRestoreOf(change: AuditAttributeChange): AuditRestore | null {
-        return restoreOf(change);
-    }
-
-    /**
-     * The relationship line's entity as one breadcrumb crumb (HST-12):
-     * the end's display text and its type icon, the anatomy every other
-     * entity mention in the product uses (VDR-06, DET-26). The audit body
-     * stores only the end's guid, type and display text, so the crumb is the
-     * end alone and never its parent trail (DD-823).
-     * @param change one relationship line of a change list
-     */
-    protected auditEndCrumb(change: AuditRelationshipChange): Breadcrumb[] {
-        const found = typeIcon(change.typeName ?? "");
-        return [
-            {
-                guid: change.guid,
-                name: change.entity,
-                typeName: change.typeName ?? "",
-                ...(found !== undefined ? { icon: found.icon, iconClass: found.classIcon } : {}),
-            },
-        ];
-    }
-
-    /** The entity the change list's crumbs are read against (HST-12): the
+    /** The entity the change lists' crumbs are read against (HST-12): the
      * edited entity's guid, so the crumb of that entity prints as plain text
      * and never as a link back to the screen behind the drawer (UIC-11). */
     protected auditEndActiveGuid(): string {
@@ -1327,27 +1045,6 @@ export class EntityEditor {
         return !this.isCreate && this.canWrite();
     }
 
-    /** Whether a restore line asks nothing right now (HST-11): one write at a
-     * time, the rule the Save and Delete buttons already hold. The store
-     * refuses a second write as well (DD-822). */
-    protected auditRestoreDisabled(): boolean {
-        return this.state.saving() || this.state.deleting() || this.state.restoring() !== null;
-    }
-
-    /** Whether the restore of `change`'s attribute is the write in flight
-     * (HST-11): the pressed line goes busy while it travels. */
-    protected auditRestoreBusy(change: AuditAttributeChange): boolean {
-        return this.state.restoring() === change.name;
-    }
-
-    /** The restore's accessible name (HST-11): the button's text alone would
-     * read the same for every line of a change list. The attribute rides the
-     * table's own localized name, so the line the button sits on and the name
-     * a screen reader speaks agree. */
-    protected auditRestoreLabel(change: AuditAttributeChange): string {
-        return $localize`:@@search.components.editor.history.restoreAria:Restore ${this.auditName(change.name)}:name:`;
-    }
-
     /**
      * Put one attribute back to the value an open change-list line shows
      * (HST-11, DD-822): the store's single-attribute write carries the stored
@@ -1364,22 +1061,6 @@ export class EntityEditor {
         if (restore !== null && guid !== "") {
             this.state.restore(guid, restore.name, restore.value);
         }
-    }
-
-    /** Open or close one row's change list (HST-10). The other rows keep
-     * whatever state they are in — a trail can hold several open rows. */
-    protected toggleAuditChanges(event: EntityAuditEventV2): void {
-        const key = auditRowKey(event);
-        this.auditsOpen.update((open) => {
-            const next = new Set(open);
-            if (next.has(key)) {
-                next.delete(key);
-            } else {
-                next.add(key);
-            }
-
-            return next;
-        });
     }
 
     /**

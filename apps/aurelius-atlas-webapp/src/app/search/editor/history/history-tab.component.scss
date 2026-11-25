@@ -1,0 +1,90 @@
+/*
+ * The History row's change list (HST-10, DD-821). The head is a Bulma level
+ * so the toggle sits at the row's end without a float; `is-mobile` keeps it
+ * on one line in the drawer's narrow pane. The toggle is the plain button the
+ * classification combobox uses — Bulma's ghost button, no colour of its own
+ * (UIC-03). The list it opens is indented once under the row's text and
+ * stays at the small size the row's user line already uses (HST-04's
+ * `<small>`). The tables' `del` and `ins` are the browser's own old/new marks;
+ * no colour is added to them, so the pair reads in dark mode as in light. The
+ * prose section shades its marks (HST-15) — see `.aurelius-editor-audit-prose`.
+ */
+.aurelius-editor-audit-head {
+    margin-bottom: 0.25rem;
+
+    .title {
+        margin-bottom: 0;
+    }
+}
+
+.aurelius-editor-audit-toggle {
+    line-height: 1;
+}
+
+.aurelius-editor-audit-changes {
+    margin-top: 0.5rem;
+    padding-left: 0.75rem;
+}
+
+.aurelius-editor-audit-section {
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+/* The two change lists (HST-12, DD-823) are the shared sortable table
+ * component, which owns its own header, borders and striping. The pane only
+ * compacts it: the small size the row's user line already uses (HST-04's
+ * `<small>`), and a tightened block margin between the two tables. These
+ * rules touch the component's host element only — its internals stay its own
+ * — and both settings inherit down into it. */
+.aurelius-editor-audit-changes aurelius-atlas-ui-sortable-table {
+    --bulma-block-spacing: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.aurelius-editor-audit-value {
+    overflow-wrap: anywhere;
+}
+
+.aurelius-editor-audit-entity {
+    padding-bottom: 0.125rem;
+    padding-top: 0.125rem;
+
+    aurelius-atlas-ui-breadcrumbs {
+        display: block;
+        overflow: hidden;
+    }
+}
+
+/* The descriptions section (HST-15, DD-825): one block per prose attribute,
+ * its name on its own line and the word diff under it. The parts carry their
+ * own whitespace, so the text keeps it and wraps instead of widening the pane
+ * (HST-16). A marked word takes Bulma's theme-aware success/danger wash through
+ * the helper classes on the marks, so the eye finds the fix and the theme owns
+ * the shade; `del`'s strikethrough and `ins`'s underline stay, so the marks
+ * still read with the colour removed. The padding and radius seat the wash off
+ * the words around it, and the box breaks inside the word rather than the line
+ * so a long marked word never widens the pane. The fold marker is quiet italic
+ * text, because it names nothing that changed. */
+.aurelius-editor-audit-prose {
+    margin-top: 0.5rem;
+}
+
+.aurelius-editor-audit-prose-name {
+    font-weight: 600;
+}
+
+.aurelius-editor-audit-prose-text {
+    overflow-wrap: anywhere;
+
+    del,
+    ins {
+        border-radius: 0.2em;
+        box-decoration-break: clone;
+        padding: 0.05em 0.15em;
+    }
+}
+
+.aurelius-editor-audit-fold {
+    font-style: italic;
+}
