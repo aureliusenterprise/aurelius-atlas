@@ -18,6 +18,7 @@ import { Holdable } from "aurelius-atlas-ui";
 import {
     type AtlasEntityDef,
     type EntityAuditEventV2,
+    type AtlasEnumDef,
     type AtlasRelationshipAttributeDef,
     type AtlasRelationshipDef,
     type AtlasTypeDefHeader,
@@ -120,7 +121,7 @@ export const TYPEDEFS: AtlasTypesDef = {
 /** The classification slice the tag box reads (VDE-02, DD-611). */
 export const CLASSIFICATION_SLICE = { classificationDefs: TYPEDEFS.classificationDefs };
 /** The enum slice the form's enum fields read (VDE-02, DD-611): none shipped. */
-export const ENUM_SLICE = { enumDefs: [] };
+export const ENUM_SLICE: { enumDefs: AtlasEnumDef[] } = { enumDefs: [] };
 /** The relationship slice the pickers read the opposite end from (RPS-07):
  * none shipped, so no picker of these fixtures filters its search. */
 export const RELATIONSHIP_SLICE: { relationshipDefs: AtlasRelationshipDef[] } = { relationshipDefs: [] };
@@ -156,6 +157,63 @@ export function chainFor(defs: AtlasTypesDef, name: string): ViewForTypeAnswer {
 
 /** The chain answer the DataSet drawer reads (edit and create share it). */
 export const DATASET_CHAIN = chainFor(TYPEDEFS, "DataSet");
+
+/** One enum typedef, its elements deliberately out of ordinal order so the
+ * renderer's ordinal sort (EDT-03's enum kind, `form-fields.ts`) is pinned
+ * rather than implied by the fixture's order. */
+export const TIER_ENUM = {
+    name: "tier",
+    elementDefs: [
+        { value: "gold", ordinal: 2 },
+        { value: "bronze", ordinal: 0 },
+        { value: "silver", ordinal: 1 },
+    ],
+};
+
+/** The enum slice carrying {@link TIER_ENUM} (the plain `ENUM_SLICE` ships none). */
+export const TIER_ENUM_SLICE: { enumDefs: AtlasEnumDef[] } = { enumDefs: [TIER_ENUM] };
+
+/** The DataSet chain carrying every field kind the form renders (EDT-03):
+ * the enum ({@link TIER_ENUM}), the mandatory boolean (whose `required` rule
+ * the form skips on purpose), the SET multi, the mandatory number and the
+ * date. The DataSet's own type has none of these, so the control render pins
+ * in `entity-fields.component.spec.ts` ride this chain. */
+export const ALL_KINDS_DEFS: AtlasTypesDef = {
+    ...TYPEDEFS,
+    entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+        def.name === "DataSet"
+            ? {
+                  ...def,
+                  attributeDefs: [
+                      { name: "tier", typeName: "tier" },
+                      { name: "retired", typeName: "boolean", isOptional: false },
+                      { name: "tags", typeName: "array<string>", cardinality: "SET" },
+                      { name: "score", typeName: "int", isOptional: false },
+                      { name: "when", typeName: "date" },
+                  ],
+              }
+            : def,
+    ),
+};
+
+/** The chain of {@link ALL_KINDS_DEFS}'s DataSet. */
+export const ALL_KINDS_CHAIN = chainFor(ALL_KINDS_DEFS, "DataSet");
+
+/** The edit view over the all-kinds type: one seeded value per kind (EDT-02's
+ * seed reads each in its own shape — the number as a number, the date as epoch
+ * ms, the multi as a list, the enum as its text). */
+export const ALL_KINDS_ANSWER: EntityView = {
+    ...ANSWER,
+    attributes: {
+        name: "genomic_variants",
+        description: "Curated variant calls.",
+        tier: "silver",
+        retired: true,
+        tags: ["a", "b"],
+        score: 7,
+        when: 1_700_000_000_000,
+    },
+};
 
 /** The edit-mode view for the relationship pickers (EDT-13..EDT-17, VDE-04):
  * one ACTIVE end, one end on a non-ACTIVE entity (never seeded, EDT-15), and
@@ -357,9 +415,10 @@ export function arriveSlices(
     httpMock: HttpTestingController,
     validate = true,
     relationships = RELATIONSHIP_SLICE,
+    enums = ENUM_SLICE,
 ) {
     httpMock.expectOne(CLASSIFICATION_SLICE_URL).flush(CLASSIFICATION_SLICE);
-    httpMock.expectOne(ENUM_SLICE_URL).flush(ENUM_SLICE);
+    httpMock.expectOne(ENUM_SLICE_URL).flush(enums);
     httpMock.expectOne(RELATIONSHIP_SLICE_URL).flush(relationships);
     httpMock.expectOne(ENTITY_HEADERS_URL).flush(ENTITY_HEADERS);
     fixture.detectChanges();
@@ -404,8 +463,9 @@ export function arrive(
     chain: ViewForTypeAnswer = DATASET_CHAIN,
     validate = true,
     relationships = RELATIONSHIP_SLICE,
+    enums = ENUM_SLICE,
 ) {
-    arriveSlices(fixture, httpMock, false, relationships);
+    arriveSlices(fixture, httpMock, false, relationships, enums);
     httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(view);
     // The chain is asked from the view's type (VDE-02): the effect fires on
     // the tick the answer lands on, so the request appears one settle later.

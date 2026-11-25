@@ -16,6 +16,13 @@ aurelius-atlas-webapp-quality-fields + .aurelius-editor-field {
     margin-top: 1.25rem;
 }
 
+/* The plain attribute fields (EDT-03) left the drawer at 7.49, so they mirror
+   their own rhythm in their scss. The first drawer field after the field
+   renderer — a relationship picker (EDT-13) — keeps the same rhythm. */
+aurelius-atlas-webapp-entity-fields + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
 /*
  * The Entity/History tab pair (HST-01, HST-02, DD-816): it rides the
  * drawer's subhead slot (DD-180) and goes full-bleed like the lineage
@@ -162,19 +169,6 @@ center in their halves. The pin is the lineage pair's (DD-416): the panel
 
 .aurelius-editor-delete[data-aurelius-hold="holding"] .aurelius-hold-donut circle {
     animation: aurelius-editor-hold-draw var(--aurelius-hold-duration, 3s) linear forwards;
-}
-
-/* The repeating text list (EDT-03): one input per row, its delete beside
-   it; rows stack tightly so the list reads as one field. */
-.aurelius-editor-multi-row {
-    align-items: center;
-    display: flex;
-    gap: 0.25rem;
-    margin-bottom: 0.25rem;
-}
-
-.aurelius-editor-multi-row .input {
-    flex: 1;
 }
 
 /* The required-fields notification (EDT-07, DD-331): the top of the form,

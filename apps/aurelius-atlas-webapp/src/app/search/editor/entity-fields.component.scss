@@ -1,0 +1,22 @@
+/*
+ * The plain attribute fields of the editor form (EDT-03). The drawer's between-
+ * field rhythm cannot reach over the element's boundary, so this file mirrors
+ * the rule inward — the quality form's scss does the same (DD-477). Bulma
+ * carries the controls themselves; only the multi list's own layout lives here.
+ */
+.aurelius-editor-field + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
+/* The repeating text list (EDT-03): one input per row, its delete beside
+   it; rows stack tightly so the list reads as one field. */
+.aurelius-editor-multi-row {
+    align-items: center;
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.aurelius-editor-multi-row .input {
+    flex: 1;
+}
