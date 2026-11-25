@@ -102,6 +102,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.53 | Chips row leaves the details header | apps/aurelius-atlas-webapp | none (proves DET-09, VDR-12; DD-880) |
 | 7.54 | Properties accordion leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-11, DD-154; DD-881) |
 | 7.55 | Side navigation leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-25, DD-381; DD-882) |
+| 7.56 | Shared chrome labels move to one module | apps/aurelius-atlas-webapp | none (proves UIC-21, UIC-34; DD-883) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
