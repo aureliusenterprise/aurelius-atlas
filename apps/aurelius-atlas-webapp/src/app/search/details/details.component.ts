@@ -2,7 +2,7 @@ import { ViewportScroller } from "@angular/common";
 import { afterRenderEffect, ChangeDetectionStrategy, Component, computed, effect, inject } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { Title } from "@angular/platform-browser";
-import { ActivatedRoute, Router, RouterLink } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import type { EntityView } from "aurelius-atlas-data-access";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
@@ -11,7 +11,6 @@ import { map } from "rxjs";
 import {
     Breadcrumbs,
     DetailsCardSection,
-    DetailsNavigation,
     EntityCard,
     QualityDimensionList,
     TypeName,
@@ -35,6 +34,7 @@ import { ComplianceChartBox, type ComplianceChart } from "./compliance-chart.com
 import { DetailsFirstRow } from "./first-row.component";
 import { DetailsStatsBar } from "./stats-bar.component";
 import { DetailsProperties } from "./properties.component";
+import { DetailsSideNav } from "./side-nav.component";
 import { type PropagatedChipEntry } from "../shared/propagated-chips.component";
 import { ClassificationChips } from "./classification-chips.component";
 import { DetailsGovQualityState, type GovSectionView } from "./sections/gov-quality.state";
@@ -78,8 +78,8 @@ import { cardTypeAlias } from "../shared/type-alias";
         ComplianceChartBox,
         DetailsCardSection,
         DetailsFirstRow,
-        DetailsNavigation,
         DetailsProperties,
+        DetailsSideNav,
         DetailsStatsBar,
         EntityCard,
         FontAwesomeModule,
@@ -87,7 +87,6 @@ import { cardTypeAlias } from "../shared/type-alias";
         LineageModel,
         QualityDimensionList,
         TypeName,
-        RouterLink,
     ],
     selector: "aurelius-atlas-webapp-details",
     // LineageModelState is NOT listed here (DD-415): the routed quickview
@@ -585,9 +584,6 @@ export class Details {
 
     /** The title's fallback while no entity answers (DET-02) — the chrome's type label. */
     protected readonly titleFallback = $localize`:@@search.details.typeSelect.label:Entity type`;
-
-    /** The side navigation's menu label (DET-04) — the legacy 'Details'. */
-    protected readonly navLabel = $localize`:@@search.details.components.navigation.details:Details`;
 
     /**
      * A crumb was clicked (DET-06): navigate the details route to that
