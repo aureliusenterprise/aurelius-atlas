@@ -4,7 +4,7 @@ import { TestBed } from "@angular/core/testing";
 import type { EntityCard, EntityView, RuleScore } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../../alerts/alerts.service";
-import { LAYOUTS } from "./section-config";
+import { LAYOUTS } from "./layouts";
 import { CHUNK_SIZE, PAGE_SIZE, type SectionCard, RelatedSectionsState } from "./related-sections.state";
 
 import { SEARCH_URL } from "../../../../testing/api";

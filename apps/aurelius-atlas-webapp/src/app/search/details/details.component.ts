@@ -43,14 +43,9 @@ import { DetailsRuleVerdictsState } from "./sections/rule-verdicts.state";
 import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
-import {
-    DATA_QUALITY_NOT_AVAILABLE,
-    hasGovQualityBox,
-    hasScoreSource,
-    qualityRows,
-    scorePercent,
-    type StatDef,
-} from "./sections/section-config";
+import { DATA_QUALITY_NOT_AVAILABLE, hasGovQualityBox } from "./sections/layouts";
+import { hasScoreSource, qualityRows, scorePercent } from "../shared/quality-mapping";
+import type { StatDef } from "./sections/section.model";
 import { peopleRowsOfSections } from "./shared/people";
 import { trailOf } from "../shared/trail";
 import { cardTypeAlias } from "../shared/type-alias";

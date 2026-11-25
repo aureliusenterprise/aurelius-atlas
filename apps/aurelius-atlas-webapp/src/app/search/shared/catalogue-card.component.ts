@@ -14,7 +14,7 @@ import {
 
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
-import { hasScoreSource, printableRuleScore, qualityRows } from "../details/sections/section-config";
+import { hasScoreSource, printableRuleScore, qualityRows } from "./quality-mapping";
 import { PEOPLE_ENDS } from "../details/shared/people";
 import { PropagatedChips, type PropagatedChipEntry } from "./propagated-chips.component";
 import { trailOf } from "./trail";
