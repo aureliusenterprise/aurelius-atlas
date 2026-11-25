@@ -2,7 +2,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 
-import { LAYOUTS, type TypeLayout } from "./section-config";
+import { LAYOUTS } from "./layouts";
+import type { TypeLayout } from "./section.model";
 import { DetailsLayoutState } from "./layout.state";
 
 /**

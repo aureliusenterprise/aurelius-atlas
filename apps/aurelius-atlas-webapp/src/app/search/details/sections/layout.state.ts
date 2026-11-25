@@ -1,7 +1,8 @@
 import { inject, Injectable, signal } from "@angular/core";
 import { TypeDefsService, type AtlasEntityDef, type AtlasTypeDef } from "aurelius-atlas-data-access";
 
-import { layoutForTypeName, type TypeLayout } from "./section-config";
+import { layoutForTypeName } from "./layouts";
+import type { TypeLayout } from "./section.model";
 
 /** A typedef answer: the definition, or null for a name without one. */
 type TypeDefAnswer = AtlasTypeDef | null;
