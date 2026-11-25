@@ -55,8 +55,21 @@ export class QualityDimensionList {
      */
     readonly notAvailable = input("");
 
+    /**
+     * Whether a row prints its parenthesised count (DD-866, DET-65). The roll-up
+     * list prints it (the legacy's `dqscorecnt_*`); a rule card's row does not —
+     * the legacy rule card printed the pie, the percent and the dimension word
+     * only — so the card passes `false`. One component draws both shapes.
+     */
+    readonly showCount = input(true);
+
     /** The pie's 0..100 value for one 0..1 score (the legacy's `* 100`). */
     protected pieValue(row: QualityDimensionRow): number {
         return row.score * 100;
+    }
+
+    /** The count text of one row: the legacy's nbsp-ed parenthesised count, or none (DD-866). */
+    protected countText(row: QualityDimensionRow): string {
+        return this.showCount() ? `\u00a0(${row.count})` : "";
     }
 }

@@ -62,6 +62,19 @@ export type RuleVerdictsAnswer = {
 };
 
 /**
+ * One quality result of an entity, as the read door joins it (`RuleScore`, AVS-13, DD-863): the rule GUID,
+ * its name, its dimension and the score it gave this entity (ASQ-02). A field's rules scored on it answer
+ * one row each, in the store's score GUID order (ASQ-09, VDR-16) — the rows the field page's rule cards
+ * print (DET-65).
+ */
+export type RuleScore = {
+    rule: string;
+    name: string;
+    dimension: string;
+    score: number;
+};
+
+/**
  * One related entity (`RelationEntity`, AVS-02, AVS-04).
  *
  * `breadcrumb` holds the trail its document stored, top down, so a propagation source's row can show where the
@@ -145,6 +158,12 @@ export type EntityView = EntityCard & {
     attributes?: Record<string, unknown>;
     businessMetadata?: Record<string, Record<string, unknown>> | null;
     sections?: EntityRelation[];
+    /**
+     * The quality results that reach the entity (`RuleScore`, AVS-13, VDR-16): only the read door fills
+     * them, for a field, beside the verdicts it joins. Like `sections` it is the view's own — a card never
+     * carries it — and a view the door did not join answers none.
+     */
+    ruleScores?: RuleScore[];
 };
 
 /** How the search door ranks (`mode`, ASV-01): words, meaning, or both. */

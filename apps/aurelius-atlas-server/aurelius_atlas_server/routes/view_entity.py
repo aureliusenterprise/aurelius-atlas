@@ -8,6 +8,7 @@ answers the live view of the written entity (AVW-07), its refusals in the door's
 its conflicts beside the stored view (DD-591).
 """
 
+from aurelius_atlas_core.app_search_quality import FIELD_TYPE
 from aurelius_atlas_core.view_derivation import read_ends, read_propagations, view_of
 from aurelius_atlas_core.view_mutation import ViewMutationDoor, ViewVersionConflictError
 from aurelius_atlas_model.errors import validate_guid
@@ -55,7 +56,17 @@ async def _live_view(store: Store, guid: str) -> EntityView | None:
     propagated = await read_propagations(store, found.entity)  # VDR-05, DD-835: and one of the tags' sources
     # The entity's refused verdicts ride the view, one read of the verdicts index (VDR-13, DD-838).
     verdicts = (await store.documents.verdicts_by_entity([guid])).get(guid)
-    return view_of(found.entity, entity_type, ends=ends, propagated=propagated, verdicts=verdicts)
+    # A field also carries its rule scores, beside the verdicts read (VDR-16, DD-864): ASQ-02 stores field
+    # GUIDs only, so no other type can have rows and no other type pays the read.
+    rule_scores = await store.documents.results_by_field(guid) if found.entity.type_name == FIELD_TYPE else None
+    return view_of(
+        found.entity,
+        entity_type,
+        ends=ends,
+        propagated=propagated,
+        verdicts=verdicts,
+        rule_scores=rule_scores,
+    )
 
 
 @VIEW_ENTITY.post("/entity", responses=VIEW_RESULT, **VIEW_BODY)

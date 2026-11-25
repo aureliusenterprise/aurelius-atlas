@@ -35,7 +35,7 @@
  */
 
 import { formatPercent } from "@angular/common";
-import type { CardQuality } from "aurelius-atlas-data-access";
+import type { CardQuality, RuleScore } from "aurelius-atlas-data-access";
 import type { QualityDimensionRow } from "aurelius-atlas-ui";
 
 /**
@@ -102,10 +102,31 @@ export interface SectionDef {
      * Which sort options the box offers (DET-21, DET-59, DD-854). Absent
      * means `"name"` — DET-21's Relevance/Name pair; `"score"` is the
      * legacy score pages' ask: the pair plus the five dimension sorts over
-     * the cards' own score rows (the ten boxes DET-59 names).
+     * the cards' own score rows (the ten boxes DET-59 names); `"rules"` is
+     * the field page's Data Quality Rules box: the pair plus Dimension and
+     * Quality Score over the score rows the opened view carries (DET-66,
+     * AVS-13, DD-863).
      */
-    readonly sorts?: "name" | "score";
+    readonly sorts?: "name" | "score" | "rules";
 }
+
+/**
+ * The rules box's two extra sort keys (DET-66): the legacy box's own asks,
+ * `['name', 'dataqualityruledimension', 'dqscore']`
+ * (`data-quality-cards.component.ts`) — kept raw as DET-59's
+ * {@link qualitySortKey} keeps the score pages' keys raw.
+ */
+export const RULE_SORT_KEYS = { dimension: "dataqualityruledimension", score: "dqscore" } as const;
+
+/**
+ * The rules box's two extra sort labels (DET-66): the catalogue keys every
+ * locale already carries — `dataqualityruledimension` and `dqscore` — so the
+ * box needs no new strings (SHL-08).
+ */
+export const RULE_SORT_LABELS = {
+    dimension: $localize`:@@dataqualityruledimension:Dimension`,
+    score: $localize`:@@dqscore:Quality Score`,
+} as const;
 
 /**
  * The Governance Quality Rules box's title (DET-48): the one key every
@@ -533,7 +554,9 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             scoreSection($localize`:@@search.details.field.dataQuality:Data Quality`),
             // DET-35 (7.24): the field's own `dataQuality` relationship end seeds
             // the rules box (DD-444). The legacy read the App Search
-            // `data_quality` index instead.
+            // `data_quality` index instead. DET-66 (7.25e, DD-867): the box
+            // orders by the score rows the field's view carries, and keeps
+            // DET-35's seed — the legacy's unscored-rules drop (DV-207).
             {
                 anchor: "related-rules",
                 title: $localize`:@@search.details.field.dataQualityCards.title:Data Quality Rules`,
@@ -541,6 +564,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 // The legacy asked the rule dimension (DV-168): no card
                 // field carries it, so the popover shows the empty line.
                 facets: [],
+                sorts: "rules",
             },
             {
                 anchor: "gov-quality",
@@ -1227,6 +1251,20 @@ export function qualitySortKey(dimension: QualityDimension): string {
  */
 function usableScore(row: CardQuality | undefined): row is CardQuality {
     return row !== undefined && typeof row.score === "number" && row.score >= 0;
+}
+
+/**
+ * The field's rule score row that prints a line (DET-65): a held row with a
+ * usable score — DET-63's posture, so `null`, `undefined`, and a negative
+ * score never print — and a dimension word to name the line with. DET-66's
+ * two sorts ask this one question, so the box can never sort on a row it
+ * prints nothing for.
+ * @param row the view's row for one rule (AVS-13), or absent
+ */
+export function printableRuleScore(row: RuleScore | undefined): RuleScore | undefined {
+    return row !== undefined && typeof row.score === "number" && row.score >= 0 && row.dimension !== ""
+        ? row
+        : undefined;
 }
 
 /**

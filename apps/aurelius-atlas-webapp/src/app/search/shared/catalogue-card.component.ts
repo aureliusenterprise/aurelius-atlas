@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
-import type { EntityCard as ViewCard } from "aurelius-atlas-data-access";
+import type { EntityCard as ViewCard, RuleScore } from "aurelius-atlas-data-access";
 import {
     Breadcrumbs,
     ClassificationChip,
@@ -9,11 +9,12 @@ import {
     PeopleBox,
     QualityDimensionList,
     type PeopleRow,
+    type QualityDimensionRow,
 } from "aurelius-atlas-ui";
 
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
-import { hasScoreSource, qualityRows } from "../details/sections/section-config";
+import { hasScoreSource, printableRuleScore, qualityRows } from "../details/sections/section-config";
 import { PEOPLE_ENDS } from "../details/shared/people";
 import { PropagatedChips, type PropagatedChipEntry } from "./propagated-chips.component";
 import { trailOf } from "./trail";
@@ -130,8 +131,16 @@ const PERSON_ATTRIBUTE = "m4i_person";
                              prints no block and no placeholder (DET-63's
                              card half, DET-64's count gate). Both screens
                              print it (DET-61 as amended, DD-860): the data
-                             decides, the screen does not. -->
-                    <aurelius-atlas-ui-quality-dimension-list class="aurelius-card-scores" [dimensions]="scoreRows()" />
+                             decides, the screen does not. DET-65 (7.25e,
+                             DD-866): a card the field scored prints that one
+                             row in DET-60's place instead — one list, one
+                             shape, and the count hidden (the legacy rule
+                             card printed pie, percent, dimension word). -->
+                    <aurelius-atlas-ui-quality-dimension-list
+                        class="aurelius-card-scores"
+                        [dimensions]="scoreRows()"
+                        [showCount]="showScoreCount()"
+                    />
                 }
                 @if (description()) {
                     <div class="aurelius-card-description">
@@ -163,6 +172,15 @@ export class CatalogueCard {
      * active (VCF-02).
      */
     readonly pageGuid = input<string | undefined>(undefined);
+
+    /**
+     * The opened field's score row for this card's rule (DET-65, AVS-13,
+     * DD-865): the sections store joined it by GUID, so the card prints it in
+     * DET-60's place (DD-866). Absent — a search result, another screen, a
+     * rule the scanner never scored (DV-207) — leaves the card exactly as
+     * DET-60 states, so the join never adds a block anywhere else.
+     */
+    readonly ruleScore = input<RuleScore | undefined>(undefined);
 
     /** Emits the clicked card's, crumb's, or person's guid — the screen routes (DD-154). */
     readonly cardClicked = output<string>();
@@ -235,15 +253,42 @@ export class CatalogueCard {
     );
 
     /**
-     * The score rows (DET-60, DET-63): the card's own score rows (AVS-01)
-     * in DET-56's dimension order — a partial set prints its scored dimensions
-     * only. The legacy's source gate reads the same here as on the box
-     * (DET-63): a sourceless card yields the empty list no block renders
-     * for, and never a placeholder (DET-60's card half).
+     * The field's joined row as UIC-37 draws it (DET-65, DD-866): the pie,
+     * the percent at `percent: '1.0-1'` (the pipe's, on the raw score), and
+     * the dimension word lowercased — the legacy rule card's shape. DET-63's
+     * posture holds: a score the screen cannot use — absent, negative, not a
+     * number — yields no row, and an empty dimension word never prints a
+     * wordless row either. The card's own `quality` is never the source here.
      */
-    protected readonly scoreRows = computed(() =>
-        hasScoreSource(this.card().quality) ? qualityRows(this.card().quality) : [],
-    );
+    protected readonly ruleScoreRow = computed<QualityDimensionRow | undefined>(() => {
+        const row = printableRuleScore(this.ruleScore());
+        if (row === undefined) {
+            return undefined;
+        }
+        // The count never renders for this row (DET-65), so it carries 0.
+        return { dimension: row.dimension.toLowerCase(), score: row.score, count: 0 };
+    });
+
+    /**
+     * The score block's rows (DET-60 as amended by DET-65): the field's
+     * joined rule row when there is one — and then never DET-60's roll-up
+     * too — else the card's own score rows (AVS-01) in DET-56's dimension
+     * order, a partial set printing its scored dimensions only. The legacy's
+     * source gate reads the same here as on the box (DET-63): a sourceless
+     * card yields the empty list no block renders for, and never a
+     * placeholder (DET-60's card half).
+     */
+    protected readonly scoreRows = computed<QualityDimensionRow[]>(() => {
+        const row = this.ruleScoreRow();
+        if (row !== undefined) {
+            return [row];
+        }
+        return hasScoreSource(this.card().quality) ? qualityRows(this.card().quality) : [];
+    });
+
+    /** Whether the printed rows carry their counts (DD-866): the roll-up
+     * prints them (DET-60), the rule's own row does not (DET-65). */
+    protected readonly showScoreCount = computed(() => this.ruleScoreRow() === undefined);
 
     /** The description text (VCF-03 as amended by SPA-05): the card's
      * `definition`, which the server derives from the entity's `description`. */

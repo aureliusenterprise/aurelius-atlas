@@ -34,7 +34,7 @@ from aurelius_atlas_core.free_text import field_terms, text_matches
 from aurelius_atlas_core.index_setup import LINKED_MODELS, Linked, LinkedKind
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery, facet_counts, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
-from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import DocumentVersion, StoredTypedefs, VersionConflictError
@@ -422,6 +422,21 @@ class MemoryEntityDocuments:
             for found in self._all_versioned()
             if found.entity.quality_result is not None or found.entity.quality_totals is not None
         ]
+
+    async def results_by_field(self, field_guid: str) -> list[StoredQualityResult]:
+        """The active scores' results naming this field, in score GUID order (ASQ-09, DD-862).
+
+        ``scores()``'s filter with the result's ``fieldguid`` added; ``_all_versioned`` already yields GUID
+        order, which is the order the Elasticsearch read sorts into.
+        """
+        return [
+            found.entity.quality_result
+            for found in self._all_versioned()
+            if found.entity.type_name == SCORE_TYPE
+            and found.entity.state is EntityStatus.ACTIVE
+            and found.entity.quality_result is not None
+            and field_guid in found.entity.quality_result.fieldguid
+        ]  # fmt: skip
 
     async def governance_rules(self) -> list[VersionedEntity]:
         """The active governance rule entities, by GUID (ASG-03)."""

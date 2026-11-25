@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
-import { type EntityCard, type EntityView, ViewSearchService } from "aurelius-atlas-data-access";
+import { type EntityCard, type EntityView, type RuleScore, ViewSearchService } from "aurelius-atlas-data-access";
 import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../../../alerts/alerts.service";
@@ -11,6 +11,9 @@ import {
     QUALITY_DIMENSIONS,
     QUALITY_DIMENSION_LABELS,
     qualitySortKey,
+    printableRuleScore,
+    RULE_SORT_KEYS,
+    RULE_SORT_LABELS,
     type FacetGroupKey,
     type QualityDimension,
     type SectionDef,
@@ -59,6 +62,13 @@ interface SectionRecord {
     sort: string;
     descending: boolean;
     /**
+     * The field's rule score rows by rule GUID (AVS-13, DET-65, DD-865): the
+     * screen hands them in with the view, the store joins each to the card of
+     * the same GUID. Only the `"rules"` box reads it — every other section
+     * holds an empty map.
+     */
+    ruleScores: Map<string, RuleScore>;
+    /**
      * The popover's selected values per group (VCF-11, DD-620): one entry
      * per group, an array of values — the legacy `filters.all` shape, so
      * a group matches by OR and the groups compose by AND. A group with
@@ -76,6 +86,9 @@ export type SectionCard =
           guid: string;
           displayText: string;
           card: EntityCard;
+          /** The field's score row for this card (DET-65, AVS-13), when the
+           * opened field's view carries one for it (DD-865). */
+          ruleScore?: RuleScore;
       }
     | {
           kind: "loading";
@@ -131,16 +144,26 @@ const SORT_OPTIONS: CardSortOption[] = [
 ];
 
 /**
- * The sort options one section offers (DET-21, DET-59, DD-854): DET-21's
- * pair for a `"name"` section, the pair plus the five dimension sorts in
- * the legacy order for a `"score"` section — the legacy `*-cards`
+ * The sort options one section offers (DET-21, DET-59, DET-66, DD-854):
+ * DET-21's pair for a `"name"` section, the pair plus the five dimension
+ * sorts in the legacy order for a `"score"` section — the legacy `*-cards`
  * component's `['name', 'dqscore_accuracy', …, 'dqscore_validity']` ask,
  * with the legacy's `dqscore_<dimension>` option values as the keys and
- * the `dqscore_<dimension>` catalogue keys as the labels.
+ * the `dqscore_<dimension>` catalogue keys as the labels — and the pair
+ * plus Dimension and Quality Score for the field rules box, the legacy
+ * `data-quality-cards` component's `['name', 'dataqualityruledimension',
+ * 'dqscore']` ask with its two catalogue labels.
  * @param def the section's config
  * @returns the select's options, in order
  */
 function sortOptionsOf(def: SectionDef): CardSortOption[] {
+    if (def.sorts === "rules") {
+        return [
+            ...SORT_OPTIONS,
+            { key: RULE_SORT_KEYS.dimension, label: RULE_SORT_LABELS.dimension },
+            { key: RULE_SORT_KEYS.score, label: RULE_SORT_LABELS.score },
+        ];
+    }
     if (def.sorts !== "score") {
         return [...SORT_OPTIONS];
     }
@@ -155,6 +178,22 @@ function sortOptionsOf(def: SectionDef): CardSortOption[] {
 
 /** The default sort key (DET-21: Relevance, the seed order). */
 const DEFAULT_SORT = "relevance";
+
+/**
+ * The field's rule score rows by rule GUID, for one section (DET-65, DD-865):
+ * only the `sorts: "rules"` box reads them, so every other section seeds an
+ * empty map and pays nothing. Later rows of the same GUID win — the view
+ * holds one row per rule (AVS-13), so the map has one entry per rule.
+ * @param def the section's config
+ * @param ruleScores the opened view's rule score rows (AVS-13)
+ * @returns the rows keyed by the rule's GUID
+ */
+function ruleScoresByRule(def: SectionDef, ruleScores: readonly RuleScore[]): Map<string, RuleScore> {
+    if (def.sorts !== "rules") {
+        return new Map();
+    }
+    return new Map(ruleScores.map((row) => [row.rule, row]));
+}
 
 /**
  * The details screen's card sections (DET-17..DET-22, DD-365/DD-368, DD-615):
@@ -211,14 +250,19 @@ export class RelatedSectionsState {
      * the section's anchor. Everything downstream — the chunked resolve,
      * the search, the facets, the page — is the shared card section
      * unchanged (DET-53); an anchor with no entry seeds empty.
+     * A `"rules"` box (DET-65, DET-66, DD-865) additionally joins the
+     * {@link ruleScores} rows to its cards by GUID: the screen hands the
+     * opened field's view rows in, and no other box reads them.
      * @param view the read door's answer for the opened entity, or null
      * @param layout the entity's layout, or undefined for the default
      * @param verdicts seed GUIDs per anchor for the verdict-seeded boxes
+     * @param ruleScores the opened view's rule score rows (AVS-13)
      */
     seed(
         view: EntityView | null,
         layout: TypeLayout | undefined,
         verdicts: Record<string, readonly string[]> = {},
+        ruleScores: readonly RuleScore[] = [],
     ): void {
         this.generation++;
         this.lastSeed = { view };
@@ -238,6 +282,7 @@ export class RelatedSectionsState {
             text: null,
             sort: DEFAULT_SORT,
             descending: false,
+            ruleScores: ruleScoresByRule(def, ruleScores),
             facetSelection: {},
             shown: PAGE_SIZE,
         }));
@@ -502,11 +547,15 @@ export class RelatedSectionsState {
                         ...(entry.name !== undefined ? { name: entry.name } : {}),
                     };
                 }
+                // DET-65, DD-865: the field's row for this card's GUID joins
+                // here, so the sort sees it and the card prints it.
+                const ruleScore = record.ruleScores.get(entry.guid);
                 return {
                     kind: "card" as const,
                     guid: entry.guid,
                     displayText: entity.displayText,
                     card: entity,
+                    ...(ruleScore === undefined ? {} : { ruleScore }),
                 };
             });
 
@@ -548,10 +597,12 @@ export class RelatedSectionsState {
     }
 
     /**
-     * The filtered cards in sort order (DET-21, DET-59): Relevance keeps
-     * the seed order, Name compares the display texts, and a score section
-     * orders on the sorted dimension's row (ascending, cards without that
-     * row last — the door's own missing-last rule); the direction reverses.
+     * The filtered cards in sort order (DET-21, DET-59, DET-66): Relevance
+     * keeps the seed order, Name compares the display texts, a score section
+     * orders on the sorted dimension's row, and the field rules box orders on
+     * the joined rule score row's dimension or score (ascending in both, the
+     * cards the sorted field cannot place last — the door's own missing-last
+     * rule); the direction reverses.
      * @param cards the filtered cards
      * @param record the section's record
      * @returns the sorted cards
@@ -561,6 +612,10 @@ export class RelatedSectionsState {
         const dimension = scoreSectionDimension(record);
         if (dimension !== undefined) {
             sorted.sort((a, b) => compareByScore(a, b, dimension));
+        } else if (record.sort === RULE_SORT_KEYS.dimension) {
+            sorted.sort((a, b) => compareByRuleDimension(a, b));
+        } else if (record.sort === RULE_SORT_KEYS.score) {
+            sorted.sort((a, b) => compareByRuleScore(a, b));
         } else if (record.sort === "name") {
             sorted.sort((a, b) => a.displayText.localeCompare(b.displayText));
         }
@@ -594,6 +649,53 @@ function scoreSectionDimension(record: SectionRecord): QualityDimension | undefi
 function compareByScore(a: SectionCard, b: SectionCard, dimension: QualityDimension): number {
     const scoreA = dimensionScore(a.kind === "card" ? a.card.quality : undefined, dimension);
     const scoreB = dimensionScore(b.kind === "card" ? b.card.quality : undefined, dimension);
+    if (scoreA === undefined && scoreB === undefined) {
+        return compareByLabel(a, b);
+    }
+    if (scoreA === undefined) {
+        return 1;
+    }
+    if (scoreB === undefined) {
+        return -1;
+    }
+    return scoreA - scoreB || compareByLabel(a, b);
+}
+
+/**
+ * The two cards' order on the rules box' Dimension sort (DET-66): the joined
+ * row's dimension word ascending. A card the sort cannot place — no row, or
+ * a row DET-65 prints no line for — takes DET-59's last place, and a tie
+ * falls back to the label tie-break. The two surfaces read the same row the
+ * same way through {@link printableRuleScore}.
+ * @param a the first card
+ * @param b the second card
+ */
+function compareByRuleDimension(a: SectionCard, b: SectionCard): number {
+    const dimA = printableRuleScore(a.kind === "card" ? a.ruleScore : undefined)?.dimension;
+    const dimB = printableRuleScore(b.kind === "card" ? b.ruleScore : undefined)?.dimension;
+    if (dimA === undefined && dimB === undefined) {
+        return compareByLabel(a, b);
+    }
+    if (dimA === undefined) {
+        return 1;
+    }
+    if (dimB === undefined) {
+        return -1;
+    }
+    return dimA.localeCompare(dimB) || compareByLabel(a, b);
+}
+
+/**
+ * The two cards' order on the rules box' Quality Score sort (DET-66): the
+ * joined row's score ascending, a card the sort cannot place — no row, or a
+ * row DET-65 prints no line for, DET-63's posture included — last, and a tie
+ * falling back to the label tie-break.
+ * @param a the first card
+ * @param b the second card
+ */
+function compareByRuleScore(a: SectionCard, b: SectionCard): number {
+    const scoreA = printableRuleScore(a.kind === "card" ? a.ruleScore : undefined)?.score;
+    const scoreB = printableRuleScore(b.kind === "card" ? b.ruleScore : undefined)?.score;
     if (scoreA === undefined && scoreB === undefined) {
         return compareByLabel(a, b);
     }

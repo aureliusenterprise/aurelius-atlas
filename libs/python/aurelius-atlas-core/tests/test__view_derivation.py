@@ -22,6 +22,7 @@ from aurelius_atlas_core.stored_entity import (
     StoredAppSearch,
     StoredDimensionTotals,
     StoredEntity,
+    StoredQualityResult,
     StoredQualityTotals,
 )
 from aurelius_atlas_core.testing.entity_samples import sample_registry
@@ -600,6 +601,43 @@ def test__a_view_keeps_only_the_refused_verdicts_sorted_and_capped(m4i: TypeRegi
     assert len(crowded.verdicts) == VERDICT_LIMIT  # the legacy card's page size (DD-839)
     assert crowded.verdicts[-1].rule == f"r-{VERDICT_LIMIT - 1:03d}"
     assert card_of(view).verdicts == view.verdicts  # the card carries the view's rows (VDR-12's pattern)
+
+
+def _scored(rule_guid: str, name: str, dimension: str, value: float) -> StoredQualityResult:
+    """One stored quality result of a field, as ASQ-02 derives it on a score."""
+    return StoredQualityResult(
+        qualityguid=rule_guid,
+        name=name,
+        dataqualityruledimension=dimension,
+        fieldguid=["-f"],
+        dqscore=value,
+    )
+
+
+@pytest.mark.covers(f"{V}.view_of", f"{V}._rule_scores", f"{V}.card_of", rules=["AVS-13"])
+def test__the_view_carries_the_rule_score_rows_the_door_joined_and_a_card_never_does(
+    m4i: TypeRegistry,
+) -> None:
+    """``ruleScores`` holds ``{rule, name, dimension, score}`` in the read's order, uncapped (AVS-13, DD-863).
+
+    A door that passes none answers the empty list like the other joined fields (AVS-02), and the card leaves
+    the field out as it leaves ``sections`` out — the rows are one field's, not a result line's (AVS-13).
+    """
+    entity_type = type_of(m4i, "m4i_field")
+    stored = hand("m4i_field", entity_type, qualifiedName="f", name="F").model_copy(update={"guid": "-f"})
+    results = [
+        _scored("r-2", "Beta rule", "Completeness", 0.4),
+        _scored("r-1", "Alpha rule", "Accuracy", 0.9),
+    ]
+
+    view = view_of(stored, entity_type, rule_scores=results)
+
+    assert [(row.rule, row.name, row.dimension, row.score) for row in view.rule_scores] == [
+        ("r-2", "Beta rule", "Completeness", 0.4),
+        ("r-1", "Alpha rule", "Accuracy", 0.9),
+    ]  # the read's score GUID order, unchanged and uncapped
+    assert view_of(stored, entity_type).rule_scores == []  # a door joining none leaves the field empty
+    assert "ruleScores" not in card_of(view).to_json()  # the rows are the view's own (DD-581's pair)
 
 
 async def _propagation_store() -> tuple[EntityStore, dict[str, str]]:
