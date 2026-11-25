@@ -8356,8 +8356,8 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>DV-205</td>
 <td>Webapp</td>
 <td>The legacy Data Quality Rules box sorts by <code>name</code>, <code>dataqualityruledimension</code> and <code>dqscore</code>: the dimension and the rule's own score ride its <code>atlas-dev-quality</code> result documents (ASQ-02's table), and the engine answers all three.</td>
-<td>The box keeps DET-21's Relevance/Name pair. The rule's dimension is an attribute no card carries (DET-46's facets ride the box's own rule read, DV-199), and the roll-up writes totals only on fields, data attributes and their breadcrumbs (ASQ-04, ASQ-05), never on a rule.</td>
-<td>The card rows DET-59 sorts are the honest sortable set (AVS-01). A dimension sort would need the rule attribute on every rule card — the wire change 7.25a declined for this box (DD-842) — or a per-card read (DV-204). The legacy's rule <code>dqscore</code> was its engine's result row, not a roll-up the store holds.</td>
+<td><em>Superseded by DV-207 (7.25e):</em> The box offers the legacy's four options - Relevance, Name, Dimension, Quality Score (DET-66). The two new sorts ride the field view's <code>ruleScores</code> rows (AVS-13) rather than result documents, so no rule attribute joins the card wire and no card asks for its own score.</td>
+<td>The rows 16.5j joins are the sortable set DET-66 asks for (ASQ-09), so the sort costs no wire change (DD-842) and no per-card read (DV-204): the screen's view already holds them (DV-198). The pair this row held was the honest answer while the score had no source.</td>
 <td>7.25c</td>
 </tr>
 <tr>
@@ -8367,6 +8367,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td><code>sample_data.zip</code> now ships 42 baked <code>m4i_dq_score</code> entities - one per legacy row - each filling only the five attributes the read path consumes (<code>verdict</code>, <code>score</code>, <code>ruleGuid</code>, <code>datasetGuid</code>, <code>dimension</code>) plus the scanner's key shape (DQS-06/DQS-07), with a fixed <code>runId</code>. <code>checkKind</code>, <code>passed</code>, <code>rowsChecked</code>, <code>rowsFailed</code> and <code>errorMessage</code> stay unset (DD-859). The roll-up then reproduces the oracle's totals on the demo store.</td>
 <td>The demo numbers come from the legacy recording, which never measured rows over a live extract, so filling the row-count attributes would invent facts on a surface users read as measurement; none of them feeds the roll-up or the 7.25c screens (ASQ-02, DD-532). A later real scan updates the same entity by its key (DD-456) and can write the full record. Baking the scores moves the demo store closer to the oracle, which was made from them.</td>
 <td>12.9</td>
+</tr>
+<tr>
+<td>DV-207</td>
+<td>Webapp</td>
+<td>The legacy box listed the App Search <code>data_quality</code> results for the field: its cards were score documents (filters <code>fieldguid: [entityId]</code>, <code>result_fields</code> <code>guid, name, dataqualityruledimension, dqscore</code>), so a rule associated with the field but never scored had no document and no card, and both sorts read the document's own <code>dqscore</code> and dimension.</td>
+<td><em>Supersedes DV-205 (7.25c):</em> The box keeps DET-35's seed - every rule of the <code>dataQuality</code> end is a card - and an unscored rule prints no score row (DET-65). Its two sorts ride the field view's <code>ruleScores</code> rows (AVS-13), joined to the cards by GUID, in place of the legacy's result documents (DET-66).</td>
+<td>The end is the field's own relationship, so hiding an associated rule because the scanner skipped it would hide a rule the person linked (DD-444). The score is a rule/field pair that only a field's view answers (DD-863), and 16.5j's join keeps the wire from gaining a consumer (ADR 064) where the legacy asked its engine directly. A rule entity carries no score totals (ASQ-04), so the row can only come from the field.</td>
+<td>7.25e</td>
 </tr>
 </tbody>
 </table>

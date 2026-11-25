@@ -1389,6 +1389,9 @@ Methods:
 - **`replace_verdicts`** –
 
   Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
+- **`results_by_field`** –
+
+  The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
 - **`scores`** –
 
   Every active score entity, by GUID (ASQ-02).
@@ -1461,6 +1464,16 @@ replace_verdicts(verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None
 ```
 
 Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
+
+#### results\_by\_field
+
+```
+results_by_field(field_guid: str) -> list[StoredQualityResult]
+```
+
+The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
+
+The same paged read `scores()` runs, filtered over `qualityResult.fieldguid` (ASQ-03's keyword); a score holding no result answers no row, and a field no score names answers the empty list. The read door joins these rows into a field's view (VDR-16).
 
 #### scores
 
@@ -1807,6 +1820,9 @@ Methods:
 - **`restore_linked`** –
 
   Put back a linked document's state before a write, or delete one the write created (DD-062).
+- **`results_by_field`** –
+
+  The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
 - **`scores`** –
 
   Every active score entity, by GUID (ASQ-02).
@@ -2032,6 +2048,16 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
 Put back a linked document's state before a write, or delete one the write created (DD-062).
+
+#### results\_by\_field
+
+```
+results_by_field(field_guid: str) -> list[StoredQualityResult]
+```
+
+The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
+
+The same paged read `scores()` runs, filtered over `qualityResult.fieldguid` (ASQ-03's keyword); a score holding no result answers no row, and a field no score names answers the empty list. The read door joins these rows into a field's view (VDR-16).
 
 #### scores
 

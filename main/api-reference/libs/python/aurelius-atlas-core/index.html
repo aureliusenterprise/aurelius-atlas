@@ -2953,6 +2953,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.results_by_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;results_by_field
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.scores" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -3570,6 +3581,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;restore_linked
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.StoreDocuments.results_by_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;results_by_field
       </span>
     </span>
   </a>
@@ -12964,6 +12986,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.results_by_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;results_by_field
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.scores" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -13581,6 +13614,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;restore_linked
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.StoreDocuments.results_by_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;results_by_field
       </span>
     </span>
   </a>
@@ -21556,6 +21600,18 @@ has work for, and writes its results back — nothing else. <code>StoreDocuments
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            results_by_field
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.EntityDocuments.results_by_field)" href="./#aurelius_atlas_core.entity_documents.EntityDocuments.results_by_field">results_by_field</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            scores
 
 
@@ -21832,6 +21888,33 @@ has work for, and writes its results back — nothing else. <code>StoreDocuments
     <div class="doc doc-contents ">
 
         <p>Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.EntityDocuments.results_by_field" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">results_by_field</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.EntityDocuments.results_by_field" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">results_by_field</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.results_by_field(field_guid)">field_guid</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoredQualityResult (aurelius_atlas_core.stored_entity.StoredQualityResult)" href="./#aurelius_atlas_core.stored_entity.StoredQualityResult">StoredQualityResult</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).</p>
+<p>The same paged read <code>scores()</code> runs, filtered over <code>qualityResult.fieldguid</code> (ASQ-03's keyword);
+a score holding no result answers no row, and a field no score names answers the empty list. The read
+door joins these rows into a field's view (VDR-16).</p>
 
 
     </div>
@@ -23316,6 +23399,18 @@ it is typed on the wide contract; an indexer or a door stays on the narrow one (
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            results_by_field
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.StoreDocuments.results_by_field)" href="./#aurelius_atlas_core.entity_documents.StoreDocuments.results_by_field">results_by_field</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            scores
 
 
@@ -24080,6 +24175,33 @@ it is typed on the wide contract; an indexer or a door stays on the narrow one (
     <div class="doc doc-contents ">
 
         <p>Put back a linked document's state before a write, or delete one the write created (DD-062).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.StoreDocuments.results_by_field" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">results_by_field</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.StoreDocuments.results_by_field" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">results_by_field</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.StoreDocuments.results_by_field(field_guid)">field_guid</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            StoredQualityResult (aurelius_atlas_core.stored_entity.StoredQualityResult)" href="./#aurelius_atlas_core.stored_entity.StoredQualityResult">StoredQualityResult</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).</p>
+<p>The same paged read <code>scores()</code> runs, filtered over <code>qualityResult.fieldguid</code> (ASQ-03's keyword);
+a score holding no result answers no row, and a field no score names answers the empty list. The read
+door joins these rows into a field's view (VDR-16).</p>
 
 
     </div>
