@@ -3,9 +3,9 @@ import { TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { describe, expect, it } from "vitest";
 
-import { APP_CONFIG } from "../../../tokens";
-import { Session } from "../../../shell/session.service";
-import { VersionService } from "../../../shell/version.service";
+import { APP_CONFIG } from "../tokens";
+import { Session } from "../shell/session.service";
+import { VersionService } from "../shell/version.service";
 import type { Ar3View } from "./parse-ar3";
 import { createChunk, joinChunk, splitChunk } from "./png-metadata";
 import { SaveViewAsImage, type RasterSurface } from "./save-view-as-image";

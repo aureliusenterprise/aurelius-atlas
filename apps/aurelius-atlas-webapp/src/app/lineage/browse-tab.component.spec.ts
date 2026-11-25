@@ -6,7 +6,7 @@ import type { LineageEntity } from "./lineage-entities";
 import { parseAr3Model, type Ar3Organization } from "./parse-ar3";
 import { LineageBrowseTab } from "./browse-tab.component";
 
-import entityFixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import entityFixture from "../../../tests/fixtures/lineage-graph.extract.json";
 
 /**
  * LDG-23 / DD-406: the Browse tab over the shipped chain's document — the

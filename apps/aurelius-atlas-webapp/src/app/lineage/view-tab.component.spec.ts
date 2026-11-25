@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { CategoryMap } from "aurelius-atlas-ui";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 
-import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import fixture from "../../../tests/fixtures/lineage-graph.extract.json";
 
 import type { LineageEntity } from "./lineage-entities";
 import { parseAr3Model } from "./parse-ar3";

@@ -154,7 +154,7 @@ describe("routes", () => {
         expect(lineageRoutes[0]?.path).toBeUndefined();
 
         const loadComponent = lineageRoutes[0]?.loadComponent as unknown as () => Promise<unknown>;
-        const { LineageModelBrowser } = await import("./search/details/lineage/model-browser.component");
+        const { LineageModelBrowser } = await import("./lineage/model-browser.component");
         await expect(loadComponent()).resolves.toBe(LineageModelBrowser);
     });
 

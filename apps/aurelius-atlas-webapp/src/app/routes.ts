@@ -166,8 +166,7 @@ export const routes: Routes = [
             {
                 matcher: lineageDrawerMatcher,
                 outlet: "drawer",
-                loadComponent: () =>
-                    import("./search/details/lineage/model-browser.component").then((m) => m.LineageModelBrowser),
+                loadComponent: () => import("./lineage/model-browser.component").then((m) => m.LineageModelBrowser),
             },
             // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
             // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain

@@ -94,7 +94,24 @@ for pair in "${layer_checks[@]}"; do
     fi
 done
 
+# --- the lineage feature is reached through its barrel (DD-884) --------------
+#
+# Lineage is a top-level feature (promoted out of `search/details/lineage/`
+# because it reaches into `shell/` and `tokens`). `search/` mounts the lineage
+# box and reads its store, and it does so through the feature's `index.ts` —
+# `from "../../lineage"`, never a deep file import. That keeps the box's
+# internals (the diagram, the tabs, the AR3 parsers, the routed quickview) off
+# the surface another feature can lean on. The routed quickview stays a direct
+# file import, but in `routes.ts`, which is outside `search/` (DD-884's
+# code-split note) — so this guard's scope is exactly `search/`.
+lineage_re='from "(\.\./)+lineage/'
+if matches=$(grep -rn --include='*.ts' -E "$lineage_re" "$search" 2>/dev/null); then
+    echo "FAIL: lineage boundary — search/ imports a file inside the lineage feature instead of its barrel (../lineage): DD-884"
+    echo "$matches"
+    status=1
+fi
+
 if [ "$status" -eq 0 ]; then
-    echo "webapp purity check passed (WBP-02, SHL-01, SHL-09, SHL-10, UIC-07; search layers, DD-869/DD-870)."
+    echo "webapp purity check passed (WBP-02, SHL-01, SHL-09, SHL-10, UIC-07; search layers DD-869/DD-870, lineage barrel DD-884)."
 fi
 exit "$status"
