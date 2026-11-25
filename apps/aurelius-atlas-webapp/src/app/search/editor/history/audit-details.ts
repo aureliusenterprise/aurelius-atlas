@@ -22,7 +22,7 @@
 
 import type { EntityAuditEventV2 } from "aurelius-atlas-data-access";
 
-import { DESCRIPTION_KEYS } from "./form-fields";
+import { DESCRIPTION_KEYS } from "../form-fields";
 
 /** The attribute keys whose text the change list words (HST-15). */
 const PROSE_KEYS: readonly string[] = DESCRIPTION_KEYS;

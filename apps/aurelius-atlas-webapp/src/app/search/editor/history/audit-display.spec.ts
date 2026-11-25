@@ -6,7 +6,7 @@
  * source the catalogue XLIFF is generated from — so the English fallbacks
  * here and the `nl-NL` translations there can never drift apart.
  */
-import enUs from "../../../../tests/fixtures/en-US.json";
+import enUs from "../../../../../tests/fixtures/en-US.json";
 
 import { AUDIT_ACTION_DISPLAY, auditActionDisplay } from "./audit-display";
 
