@@ -17,7 +17,6 @@ import {
     EntityCard,
     PropertiesItem,
     QualityDimensionList,
-    SectionStats,
     TypeName,
     type QualityDimensionRow,
     type SectionStat,
@@ -37,6 +36,7 @@ import { LineageModelState } from "./lineage/lineage-state";
 import { CatalogueCard } from "../shared/catalogue-card.component";
 import { ComplianceChartBox, type ComplianceChart } from "./compliance-chart.component";
 import { DetailsFirstRow } from "./first-row.component";
+import { DetailsStatsBar } from "./stats-bar.component";
 import { PropagatedChips, type PropagatedChipEntry } from "../shared/propagated-chips.component";
 import { DetailsGovQualityState, type GovSectionView } from "./sections/gov-quality.state";
 import { DetailsRuleVerdictsState } from "./sections/rule-verdicts.state";
@@ -81,6 +81,7 @@ import { cardTypeAlias } from "../shared/type-alias";
         DetailsCardSection,
         DetailsFirstRow,
         DetailsNavigation,
+        DetailsStatsBar,
         EntityCard,
         FontAwesomeModule,
         GovQualityCards,
@@ -88,7 +89,6 @@ import { cardTypeAlias } from "../shared/type-alias";
         PropertiesItem,
         PropagatedChips,
         QualityDimensionList,
-        SectionStats,
         TypeName,
         RouterLink,
     ],

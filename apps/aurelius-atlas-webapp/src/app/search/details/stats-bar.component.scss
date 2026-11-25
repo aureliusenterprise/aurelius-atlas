@@ -1,0 +1,11 @@
+/*
+ * The stats bar under the layout's first row (DET-24, DET-40): Bulma carries
+ * the boxes, the columns, and the level, so this sheet holds only the host. It
+ * rode out of the details screen with the bar (7.52).
+ */
+
+/* The host is one block in the page flow, so the bar keeps its Bulma margins
+ * against the first row above and the boxes below. */
+:host {
+    display: block;
+}

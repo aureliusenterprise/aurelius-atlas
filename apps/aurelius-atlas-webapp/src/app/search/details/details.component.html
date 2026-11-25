@@ -99,63 +99,19 @@
     />
 }
 
-<!-- The grouped stats bar (DET-40, DD-518): the person page's four
-     headed boxes — the legacy columns of boxes, each box a heading over
-     its one or two level-item links. A heading link scrolls its box into
-     view (DET-25's router anchor, DV-156: scroll only, no section filter).
-     Only a layout with `statsGroups` renders this; every other keeps the
-     flat bar below. -->
-@if (statsGroups().length > 0) {
-    <div class="columns is-centered has-text-centered aurelius-details-stats-groups">
-        @for (group of statsGroups(); track group.heading) {
-            <div class="column">
-                <div class="box aurelius-details-stats-group">
-                    <p class="heading">{{ group.heading }}</p>
-                    <nav class="level is-mobile" [attr.aria-label]="group.heading">
-                        @for (item of group.items; track item.label) {
-                            <div class="level-item has-text-centered">
-                                <div>
-                                    <p class="heading">
-                                        <a [routerLink]="[]" [fragment]="item.target">{{ item.label }}</a>
-                                    </p>
-                                    <p class="title">{{ item.count }}</p>
-                                </div>
-                            </div>
-                        }
-                    </nav>
-                </div>
-            </div>
-        }
-    </div>
-}
-
-<!-- The stats bar (DET-24): the layout's `section-stats` in legacy order,
-         counts live (a section's seed count, Properties the rendered rows)
-         and every sourceless stat left out (DD-369). The default layout
-         keeps the 7.20 single Properties level. -->
-@if (statsGroups().length === 0) {
-    <div class="box aurelius-details-stats">
-        @if (layout()) {
-            <aurelius-atlas-ui-section-stats [items]="stats()" (itemClicked)="onStatClick($event)" />
-        } @else {
-            <nav class="level" [attr.aria-label]="propertiesTitle()">
-                <div class="level-item has-text-centered">
-                    <div>
-                        <p class="heading">
-                            <a
-                                [routerLink]="[]"
-                                fragment="properties-details"
-                                i18n="@@search.details.default.properties"
-                                >Properties</a
-                            >
-                        </p>
-                        <p class="title aurelius-details-property-count">{{ propertyCount() }}</p>
-                    </div>
-                </div>
-            </nav>
-        }
-    </div>
-}
+<!-- The stats bar under the first row: the grouped boxes on the layouts that
+     group (DET-40, DD-518) or the flat bar on every other (DET-24), now one
+     part (7.52). The part paints the bar it is handed; the screen picks which
+     bar the layout means and fills the live counts, and routes the heading
+     anchor the part re-emits (DET-25, DV-156). -->
+<aurelius-atlas-webapp-details-stats-bar
+    [statsGroups]="statsGroups()"
+    [stats]="stats()"
+    [hasLayout]="layout() !== undefined"
+    [propertiesTitle]="propertiesTitle()"
+    [propertyCount]="propertyCount()"
+    (statClicked)="onStatClick($event)"
+/>
 
 <!-- The Compliance Chart box of the rule page (DET-54, DD-849): the legacy
      place between the stats bar and the Non-compliant box, now its own
