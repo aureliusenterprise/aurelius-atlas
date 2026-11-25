@@ -39,7 +39,7 @@ RUN --mount=type=cache,id=webapp-otel-apk,target=/var/cache/apk \
 # (--with-cc-opt='-O2 ...'), and the substitution must be re-parsed into
 # arguments — "$ARGS" alone would pass the whole string as one argument.
 #
-# The source kit sits in a versioned dir (nginx-1.30.6) while FROM pins only
+# The source kit sits in a versioned dir (nginx-1.30.8) while FROM pins only
 # the 1.30 minor, so the patch level is read from the running binary and
 # routed through a stable symlink — the recipe never hardcodes it, a dhi
 # patch bump needs no edit, and a missing source kit fails loudly here.
@@ -47,9 +47,16 @@ RUN NGINX_VER=$(nginx -v 2>&1 | sed 's|.*/||') \
     && test -d "/usr/src/nginx-$NGINX_VER" \
     && ln -sfn "/usr/src/nginx-$NGINX_VER" /usr/src/nginx-src
 WORKDIR /usr/src/nginx-src
+# Run the real entrypoint, `auto/configure`, not the top-level `./configure`.
+# The dhi-pushed nginx-stable-mod-dev kit ships the tree with auto/configure
+# but without the one-line `./configure` wrapper (the re-pushed 1.30.8-r0 kit
+# dropped it; 1.30.6's kit carried it). auto/configure reads its own tree by
+# relative path (. auto/options), and the wrapper only did
+# `exec sh auto/configure "$@"` from this same dir — so running it directly is
+# byte-identical and survives either kit layout.
 RUN ARGS=$(nginx -V 2>&1 | grep '^configure arguments:' \
     | sed -e 's/^configure arguments: //' -e 's/--add-dynamic-module=[^ ]*//g') \
-    && eval sh ./configure "$ARGS" --with-compat
+    && eval sh auto/configure "$ARGS" --with-compat
 
 # nginx-otel v0.1.2 (latest release): pinned by tag, built against system
 # gRPC/protobuf (NGX_OTEL_GRPC=package — the from-source fetch is 40+ min);
