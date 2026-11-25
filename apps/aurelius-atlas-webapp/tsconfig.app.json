@@ -4,6 +4,7 @@
         "types": ["@angular/localize"]
     },
     "exclude": [
+        "src/testing/**",
         "src/**/*.test.ts",
         "src/**/*.spec.ts",
         "src/**/*.test.tsx",
