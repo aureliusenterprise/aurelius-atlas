@@ -40,10 +40,13 @@ The change (no behaviour, template text, or string change):
   field's three labels move with the loop; `EditorValue` and `EnumRow` move to
   `form-fields.ts`, their owner.
 - The spec splits the same way. `entity-fields.component.spec.ts` holds the six
-  control-render tests with their names unchanged. They still drive the whole
-  drawer, which owns the field set, the form, and the save, so the render rule
-  ids stay attributed to the drawer. The drawer spec keeps the save, conflict,
-  notification, and validation tests, which are not about the controls.
+  control-render tests with their names unchanged, plus four new ones for the
+  kinds the plain fixtures never render: the enum, boolean, number, date and
+  multi controls ride a DataSet chain built for them. All ten still drive the
+  whole drawer, which owns the field set, the form, and the save, so the render
+  rule ids stay attributed to the drawer. The drawer spec keeps the save,
+  conflict, notification, and validation tests, which are not about the
+  controls.
 
 It does **not** deliver: any change to a string, a css class, an id, or a role
 (the controls keep `#editor-*`, `data-field`, and the e2e pins unchanged); the
@@ -68,9 +71,10 @@ No new rule ids. What this increment pins, as stated:
 - **The catalogue label still wins** (EDT-33, DD-722) and the raw name still
   falls back — that precedence lives in the field builder (`form-fields`), which
   this move does not touch.
-- **1,047 tests stay green** across 85 files: the same editor tests with the six
-  render tests now in the new spec, plus every other suite untouched (84 files
-  before, 85 now that the controls have their own file).
+- **1,051 tests stay green** across 85 files: the same editor tests with the six
+  render tests now in the new spec plus the four new kind tests, and every other
+  suite untouched (84 files before, 85 now that the controls have their own
+  file).
 - **The string catalogue is unchanged.** The three markdown labels move with the
   loop under the same ids, so both locale fixtures stay byte-equal (SHL-08).
 - **The trace tool sees no change.** The test names that carry EDT-03, EDT-07,

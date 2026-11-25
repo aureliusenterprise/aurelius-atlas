@@ -14,7 +14,17 @@ import { type AtlasTypesDef, type ViewSaveRequest } from "aurelius-atlas-data-ac
 
 import { VIEW_POST_URL } from "../../../testing/api";
 import { normalize } from "../../../testing/dom";
-import { ANSWER, TYPEDEFS, arrive, chainFor, savedView, setup } from "./editor-testing";
+import {
+    ALL_KINDS_ANSWER,
+    ALL_KINDS_CHAIN,
+    ANSWER,
+    TIER_ENUM_SLICE,
+    TYPEDEFS,
+    arrive,
+    chainFor,
+    savedView,
+    setup,
+} from "./editor-testing";
 
 describe("EntityEditor field controls (EDT-03, EDT-20)", () => {
     it("renders the edit form from the for-type chain (EDT-03, VDE-02)", () => {
@@ -193,5 +203,112 @@ describe("EntityEditor field controls (EDT-03, EDT-20)", () => {
         expect(area.getAttribute("aria-invalid")).toBe("true");
         expect(area.getAttribute("aria-describedby")).toBe("editor-description-error");
         expect(normalize(compiled.querySelector("#editor-description-error")?.textContent)).toBe("Name is required.");
+    });
+
+    /** The drawer over the all-kinds chain: every control kind the loop has
+     * (EDT-03), each seeded from {@link ALL_KINDS_ANSWER} (EDT-02). The plain
+     * DataSet fixtures carry none of these kinds, so these four tests are the
+     * renderer's only exercise of the boolean, enum, number, date and multi
+     * branches — the coverage the moved markup lost when the specs moved. */
+
+    it("renders each field kind its own control, seeded by kind (EDT-03, EDT-02)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, ALL_KINDS_ANSWER, ALL_KINDS_CHAIN, true, undefined, TIER_ENUM_SLICE);
+
+        // The boolean: the checkbox anatomy (Bulma's label wraps the input),
+        // seeded checked from the entity's `true`.
+        const checkbox = compiled.querySelector<HTMLInputElement>('[data-field="retired"] input[type="checkbox"]')!;
+        expect(checkbox.checked).toBe(true);
+        expect(normalize(checkbox.closest("label")?.textContent)).toBe("retired");
+
+        // The number: its own input type, seeded 7; `null` stays its empty,
+        // so a seeded text number must not reach it as text (DD-354).
+        const number = compiled.querySelector<HTMLInputElement>('#editor-score[type="number"]')!;
+        expect(number.value).toBe("7");
+
+        // The date: the datetime-local input, seeded from the epoch ms —
+        // local-time text, so only its presence is pinned (toDateTimeLocal's
+        // shape is form-fields' own spec).
+        const date = compiled.querySelector<HTMLInputElement>('#editor-when[type="datetime-local"]')!;
+        expect(date.value).not.toBe("");
+
+        // The enum: the Select's options, ordinal-sorted (the fixture ships
+        // them out of order to pin the sort), and the seeded value that is not
+        // one of them selects nothing — the placeholder, not a stray row.
+        const select = compiled.querySelector<HTMLSelectElement>('[data-field="tier"] select')!;
+        const labels = [...select.querySelectorAll("option")].map((option) => normalize(option.textContent));
+        expect(labels).toEqual(["-- Please select a value --", "bronze", "silver", "gold"]);
+        expect(select.value).toBe("");
+
+        // The multi: one row per seeded value plus the blank trailing row
+        // (EDT-03), each with its delete button.
+        const rows = [...compiled.querySelectorAll<HTMLInputElement>('[data-field="tags"] input')];
+        expect(rows.map((row) => row.value)).toEqual(["a", "b", ""]);
+        expect(compiled.querySelectorAll('[data-field="tags"] button[aria-label="Delete"]')).toHaveLength(rows.length);
+    });
+
+    it("an enum pick writes the model and reaches the save (EDT-03, EDT-06)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, ALL_KINDS_ANSWER, ALL_KINDS_CHAIN, true, undefined, TIER_ENUM_SLICE);
+
+        const select = compiled.querySelector<HTMLSelectElement>('[data-field="tier"] select')!;
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        select.value = "2"; // gold — the ordinal sort put it last
+        select.dispatchEvent(new Event("change"));
+        fixture.detectChanges();
+        expect(select.value).toBe("2");
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        expect((post.request.body as ViewSaveRequest).attributes["tier"]).toBe("gold");
+        post.flush(savedView());
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalled();
+    });
+
+    it("a multi delete drops the row and keeps the blank trailing one (EDT-03)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, ALL_KINDS_ANSWER, ALL_KINDS_CHAIN, true, undefined, TIER_ENUM_SLICE);
+
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        const deletes = [...compiled.querySelectorAll<HTMLButtonElement>('[data-field="tags"] button')];
+        deletes[0]?.click(); // the "a" row
+        fixture.detectChanges();
+
+        const rows = [...compiled.querySelectorAll<HTMLInputElement>('[data-field="tags"] input')];
+        expect(rows.map((row) => row.value)).toEqual(["b", ""]);
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        expect((post.request.body as ViewSaveRequest).attributes["tags"]).toEqual(["b"]);
+        post.flush(savedView());
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalled();
+    });
+
+    it("an unchecked required boolean still saves — false is a value (EDT-03, EDT-07)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, ALL_KINDS_ANSWER, ALL_KINDS_CHAIN, true, undefined, TIER_ENUM_SLICE);
+
+        // The `required` rule skips booleans on purpose (an unchecked box is a
+        // value, not a gap), so clearing it must not raise the notification.
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        const checkbox = compiled.querySelector<HTMLInputElement>('[data-field="retired"] input[type="checkbox"]')!;
+        checkbox.click();
+        fixture.detectChanges();
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        expect(compiled.querySelector(".aurelius-editor-notification")).toBeNull();
+
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        expect((post.request.body as ViewSaveRequest).attributes["retired"]).toBe(false);
+        post.flush(savedView());
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalled();
     });
 });

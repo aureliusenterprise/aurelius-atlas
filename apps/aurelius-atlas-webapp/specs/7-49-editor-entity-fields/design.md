@@ -72,11 +72,15 @@ same fix 7.46 and the ui-lib fields made.
 and its template from 442 to 308; `entity-fields.component.ts` (261 lines with
 its doc and inline template) and its small stylesheet hold the moved markup.
 `form-fields.ts` gains the two type aliases their doc already described. The
-spec split holds the total at 1,047 tests while going from 84 to 85 files: the
-six render tests move verbatim, and the drawer spec keeps the save, conflict,
-notification and validation tests. No string id changes (the markdown labels
-carry their `components.markdownEditor.*` ids unchanged), so the catalogue and
-both locale fixtures stay byte-equal (SHL-08's gate untouched). The drawer loses
+spec split goes from 84 to 85 files and from 1,047 to 1,051 tests. The six
+render tests move verbatim, and the drawer spec keeps the save, conflict,
+notification and validation tests. Four tests join them, because SonarCloud
+reads the moved markup as new code and its new-code gate wants it covered: the
+shared fixtures carry only the text and markdown kinds, so the enum, boolean,
+number, date and multi branches sat uncovered until a DataSet chain
+(`ALL_KINDS_*` in `editor-testing.ts`) rendered them. No string id changes (the
+markdown labels carry their `components.markdownEditor.*` ids unchanged), so the
+catalogue and both locale fixtures stay byte-equal (SHL-08's gate untouched). The drawer loses
 `MarkdownEditor`, `Select`, `FormField` and `FontAwesomeModule` from its imports
 — `FontAwesomeModule` and `faXmark` now belong to the child, which needs them for
 the multi delete. No `AGENTS.md` change: the editor feature documents its own
