@@ -15,8 +15,6 @@ import {
     DetailsCardSection,
     DetailsNavigation,
     EntityCard,
-    Markdown,
-    PeopleBox,
     PropertiesItem,
     QualityDimensionList,
     SectionStats,
@@ -38,6 +36,7 @@ import { LineageModel } from "./lineage/lineage-model.component";
 import { LineageModelState } from "./lineage/lineage-state";
 import { CatalogueCard } from "../shared/catalogue-card.component";
 import { ComplianceChartBox, type ComplianceChart } from "./compliance-chart.component";
+import { DetailsFirstRow } from "./first-row.component";
 import { PropagatedChips, type PropagatedChipEntry } from "../shared/propagated-chips.component";
 import { DetailsGovQualityState, type GovSectionView } from "./sections/gov-quality.state";
 import { DetailsRuleVerdictsState } from "./sections/rule-verdicts.state";
@@ -80,13 +79,12 @@ import { cardTypeAlias } from "../shared/type-alias";
         ClassificationChip,
         ComplianceChartBox,
         DetailsCardSection,
+        DetailsFirstRow,
         DetailsNavigation,
         EntityCard,
         FontAwesomeModule,
         GovQualityCards,
         LineageModel,
-        Markdown,
-        PeopleBox,
         PropertiesItem,
         PropagatedChips,
         QualityDimensionList,

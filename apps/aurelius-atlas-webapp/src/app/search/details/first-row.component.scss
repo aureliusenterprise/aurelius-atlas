@@ -1,0 +1,11 @@
+/*
+ * The layout's first row (DET-15, DET-16): the description box and the People
+ * box. Bulma carries the row, the columns, and the boxes, so this sheet holds
+ * only the host. It rode out of the details screen with the row (7.51).
+ */
+
+/* The host is one block in the page flow, so the `.columns` row keeps its
+ * Bulma margins against the header above and the stats bar below. */
+:host {
+    display: block;
+}
