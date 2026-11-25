@@ -6,6 +6,7 @@ import { FacetList, InfiniteScrollContainer } from "aurelius-atlas-ui";
 import { map } from "rxjs";
 
 import { CatalogueCard } from "../shared/catalogue-card.component";
+import { FACET_SHOW_LESS, FACET_SHOW_MORE, FILTER_NOT_AVAILABLE, LOAD_NEXT_PAGE } from "../shared/labels";
 import { SearchState } from "../search-state";
 
 /**
@@ -39,10 +40,10 @@ export class Results {
     private readonly router = inject(Router);
 
     /** The facet-list component's show-more labels (UIC-34, DD-136's caller-supplied rule). */
-    protected readonly showMoreLabel = $localize`:@@search.components.filter.facet.showMore:Show more`;
+    protected readonly showMoreLabel = FACET_SHOW_MORE;
 
     /** The show-less label (UIC-34). */
-    protected readonly showLessLabel = $localize`:@@search.components.filter.facet.showLess:Show less`;
+    protected readonly showLessLabel = FACET_SHOW_LESS;
 
     /** The count header's word ("results" / "resultaten", SRH-05). */
     protected readonly resultsWord = $localize`:@@search.results.results:results`;
@@ -51,10 +52,10 @@ export class Results {
     protected readonly closestWord = $localize`:@@search.results.closestMatches:closest matches`;
 
     /** The "Load next page..." label (SRH-04, UIC-21's caller-supplied string). */
-    protected readonly loadLabel = $localize`:@@search.components.infiniteScrollContainer.loadNextPage:Load next page...`;
+    protected readonly loadLabel = LOAD_NEXT_PAGE;
 
     /** The filter shell's line (SRH-07, the legacy `#noFilters` twin). */
-    protected readonly noFilters = $localize`:@@search.components.filter.notAvailable:No filters available.`;
+    protected readonly noFilters = FILTER_NOT_AVAILABLE;
 
     /** The no-results heading (SRH-06, the legacy `search.results.noResults`). */
     protected readonly noResultsMessage = $localize`:@@search.results.noResults:No results found`;
