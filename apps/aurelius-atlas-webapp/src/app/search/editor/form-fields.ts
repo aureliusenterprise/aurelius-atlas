@@ -11,6 +11,14 @@ import {
 /** The input one editor field renders. */
 export type EditorFieldKind = "text" | "markdown" | "number" | "boolean" | "date" | "enum" | "multi";
 
+/** One model slot: the value a field of any kind holds (DD-354). The drawer
+ * owns the model and the field renderer reads it, so the type sits here with
+ * the field shape both of them speak. */
+export type EditorValue = string | number | boolean | string[] | null;
+
+/** An enum option row (EDT-03's enum kind — the Select's `displayField`). */
+export type EnumRow = { value: string };
+
 /** One form control: its name, the input to render, and its label/state. */
 export type EditorField = {
     /** The entity attribute this control writes. */

@@ -11,13 +11,11 @@ import {
     viewChild,
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
+import { disabled, FieldTree, form, required, SchemaPathTree } from "@angular/forms/signals";
 import { ActivatedRoute, Router } from "@angular/router";
-import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
-import { Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
+import { Drawer, Holdable } from "aurelius-atlas-ui";
 import {
     QualityRuleService,
     type EntityValidationResponse,
@@ -33,6 +31,7 @@ import { canWriteEntities } from "../shared/can-write-entities";
 import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState, type PickerType } from "./editor-state";
 import { AUDIT_RETRIEVE_LINE, AuditTrail } from "./history/audit-state";
+import { EntityFields } from "./entity-fields.component";
 import { HistoryTab } from "./history/history-tab.component";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import { GovernanceLines } from "./governance-lines.component";
@@ -41,6 +40,8 @@ import { EntityWritten } from "../shared/entity-written";
 import {
     type EditorField,
     type EditorLabels,
+    type EditorValue,
+    type EnumRow,
     type RelationshipField,
     type RelationshipPick,
     blockedRelationshipNames,
@@ -54,14 +55,8 @@ import {
 import { bodyFromEdits, picksAfterConflict, valuesAfterConflict } from "./view-as-entity";
 import { QualityFields, QUALITY_FIELDS_RELATIONSHIP, QUALITY_TYPE_NAME, storedCheckKind } from "./quality-fields";
 
-/** An enum option row (EDT-03's enum kind — the Select's `displayField`). */
-type EnumRow = { value: string };
-
 /** The drawer's pane (HST-01, DD-816): the entity form or the audit list. */
 type EditorTab = "entity" | "history";
-
-/** One model slot: the value a field of any kind holds (DD-354). */
-type EditorValue = string | number | boolean | string[] | null;
 
 /**
  * The entity editor drawer (EDT-01..EDT-08, DD-322): the routed panel in the
@@ -102,15 +97,12 @@ type EditorValue = string | number | boolean | string[] | null;
     imports: [
         ClassificationCombobox,
         Drawer,
+        EntityFields,
         EntityRelationshipInput,
-        FontAwesomeModule,
-        FormField,
         GovernanceLines,
         HistoryTab,
         Holdable,
-        MarkdownEditor,
         QualityFields,
-        Select,
         TypeField,
     ],
     providers: [EditorState, AuditTrail],
@@ -339,19 +331,7 @@ export class EntityEditor {
 
     protected readonly saveLabel = $localize`:@@search.components.editor.save:Save`;
 
-    /** The multi row's delete icon. */
-    protected readonly faXmark = faXmark;
-
     protected readonly nameRequired = $localize`:@@search.components.editor.attribute.nameRequired:Name is required.`;
-
-    /** The markdown field's tab pair and placeholder (EDT-20, DD-353): the
-     * vendored `components.markdownEditor.*` trio — the ui library's field
-     * carries no string of its own (UIC-04, DD-136). */
-    protected readonly markdownWriteLabel = $localize`:@@components.markdownEditor.writeLabel:Write`;
-
-    protected readonly markdownPreviewLabel = $localize`:@@components.markdownEditor.previewLabel:Preview`;
-
-    protected readonly markdownPlaceholder = $localize`:@@components.markdownEditor.placeholder:Please type some markdown to get started...`;
 
     protected readonly notificationLine = $localize`:@@search.components.editor.attribute.notification:This entity can't be saved because one or more required fields are missing.`;
 
@@ -660,15 +640,17 @@ export class EntityEditor {
      * Each verdict names its own control: 18.8 retired the `definition`
      * attribute, so the description control's one-way borrow of the
      * `definition` verdict (DD-633) fell away with it (SPA-06). A control no
-     * rule measures renders nothing; `unreadRules` renders no line (VEV-03). */
-    protected validationItems(name: string): readonly GovernanceVerdict[] {
+     * rule measures renders nothing; `unreadRules` renders no line (VEV-03).
+     * An arrow property since 7.49: the field renderer binds it as its
+     * `verdictsFor` input, and an ordinary method would lose `this`. */
+    protected readonly validationItems = (name: string): readonly GovernanceVerdict[] => {
         const answer = this.validation();
         if (!answer) {
             return [];
         }
 
         return answer.verdicts.filter((verdict) => [verdict.attribute, ...(verdict.anyOf ?? [])].includes(name));
-    }
+    };
 
     /** A fresh signal form over {@link values}, with the current field set's
      * rules (EDT-03, DD-354). The injector rides because a rebuild calls
@@ -716,41 +698,18 @@ export class EntityEditor {
         return seeded;
     }
 
-    /** The field's node in the tree, typed for its input (the dynamic-record
-     * pattern: the binding site restates what the field's kind guarantees). */
-    protected fieldOf(name: string): Field<EditorValue> {
-        return this.form()[name] as unknown as Field<EditorValue>;
-    }
-
-    /** A text/textarea/date slot, typed for the text-like inputs. */
-    protected textField(name: string): Field<string> {
-        return this.form()[name] as unknown as Field<string>;
-    }
-
-    /** A number slot, typed for the number input (`null` is its empty). */
-    protected numberField(name: string): Field<number | null> {
-        return this.form()[name] as unknown as Field<number | null>;
-    }
-
-    /** A boolean slot, typed for the checkbox. */
-    protected booleanField(name: string): Field<boolean> {
-        return this.form()[name] as unknown as Field<boolean>;
-    }
-
-    /** A multi slot's rows (EDT-03's repeating text list) — the iterable
-     * tree over the string array. */
-    protected multiRows(name: string): FieldTree<string[]> {
-        return this.form()[name] as unknown as FieldTree<string[]>;
-    }
-
-    /** Whether a control shows its error (touched, or a Save was tried, EDT-07). */
-    protected showError(field: EditorField): boolean {
-        const state = this.fieldOf(field.name)();
+    /** Whether a control shows its error (touched, or a Save was tried, EDT-07).
+     * An arrow property since 7.49: the field renderer binds it as its
+     * `errorFor` input, and an ordinary method would lose `this`. The typed
+     * per-kind slot readers moved into that renderer with the controls. */
+    protected readonly showError = (field: EditorField): boolean => {
+        const state = this.form()[field.name]();
 
         return state.invalid() && (state.touched() || this.saveAttempted());
-    }
+    };
 
-    /** Drop one multi row; the list always keeps its blank trailing row. */
+    /** Drop one multi row; the list always keeps its blank trailing row.
+     * The renderer's delete button answers here (7.49). */
     protected removeMultiRow(field: EditorField, index: number): void {
         this.values.update((current) => {
             const list = [...((current[field.name] as string[]) ?? [])];
@@ -760,19 +719,8 @@ export class EntityEditor {
         });
     }
 
-    /** The enum field's options (EDT-03's enum kind). */
-    protected enumRows(field: EditorField): EnumRow[] {
-        return (field.enumValues ?? []).map((value) => ({ value }));
-    }
-
-    /** The enum field's selected row, read off the model. */
-    protected enumSelected(field: EditorField): EnumRow | null {
-        const current = String(this.values()[field.name] ?? "");
-
-        return (field.enumValues ?? []).includes(current) ? { value: current } : null;
-    }
-
-    /** Write an enum pick into the model (the Select carries no accessor). */
+    /** Write an enum pick into the model (the Select carries no accessor).
+     * The renderer's Select answers here (7.49). */
     protected enumPicked(field: EditorField, row: EnumRow | null): void {
         this.values.update((current) => ({ ...current, [field.name]: row?.value ?? "" }));
     }
