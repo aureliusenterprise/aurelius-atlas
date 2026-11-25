@@ -395,6 +395,15 @@ The body of `GET /api/atlas/admin/version`.
 }
 ```
 
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
+
 Fields:
 
 - `version` (`str`)
