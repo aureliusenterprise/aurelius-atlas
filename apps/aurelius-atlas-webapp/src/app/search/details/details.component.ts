@@ -12,7 +12,6 @@ import {
     Accordion,
     Breadcrumbs,
     ClassificationChip,
-    DataQualityPie,
     DetailsCardSection,
     DetailsNavigation,
     EntityCard,
@@ -38,6 +37,7 @@ import { viewProperties } from "./property-filter";
 import { LineageModel } from "./lineage/lineage-model.component";
 import { LineageModelState } from "./lineage/lineage-state";
 import { CatalogueCard } from "../shared/catalogue-card.component";
+import { ComplianceChartBox, type ComplianceChart } from "./compliance-chart.component";
 import { PropagatedChips, type PropagatedChipEntry } from "../shared/propagated-chips.component";
 import { DetailsGovQualityState, type GovSectionView } from "./sections/gov-quality.state";
 import { DetailsRuleVerdictsState } from "./sections/rule-verdicts.state";
@@ -78,7 +78,7 @@ import { cardTypeAlias } from "../shared/type-alias";
         Breadcrumbs,
         CatalogueCard,
         ClassificationChip,
-        DataQualityPie,
+        ComplianceChartBox,
         DetailsCardSection,
         DetailsNavigation,
         EntityCard,
@@ -425,7 +425,7 @@ export class Details {
      * The Compliance Chart box of the rule page (DET-54, DD-849): the
      * layout's strings and DET-51's score, or null for every other layout.
      */
-    protected readonly complianceChart = computed(() => {
+    protected readonly complianceChart = computed<ComplianceChart | null>(() => {
         const def = this.layout()?.complianceChart;
         return def === undefined ? null : { ...def, score: this.ruleVerdicts.score() };
     });
