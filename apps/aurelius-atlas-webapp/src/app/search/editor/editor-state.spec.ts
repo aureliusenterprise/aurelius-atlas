@@ -15,7 +15,7 @@ import { ViewEntityService, type EntityView, type ViewSaveRequest } from "aureli
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { EditorState } from "./editor-state";
-import { EntityWritten } from "./entity-written";
+import { EntityWritten } from "../shared/entity-written";
 
 import { ATLAS_ENTITY_URL, VIEW_POST_URL, VIEW_URL } from "../../../testing/api";
 import { provideScreenTest } from "../../../testing/providers";

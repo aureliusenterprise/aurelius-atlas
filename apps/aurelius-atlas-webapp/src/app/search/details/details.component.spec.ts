@@ -14,7 +14,7 @@ import modelFixture from "../../../../tests/fixtures/lineage-graph.extract.json"
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { VersionService } from "../../shell/version.service";
-import { EntityWritten } from "../editor/entity-written";
+import { EntityWritten } from "../shared/entity-written";
 
 import { Details } from "./details.component";
 

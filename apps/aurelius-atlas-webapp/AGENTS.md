@@ -33,8 +33,9 @@ and the increment specs in `docs/architecture/conversion/increments/`.
 - `src/locale/` — **generated** XLIFF catalogues (the Aurelius dictionary bridge,
   DD-128); regenerate with `node tools/generate-legacy-catalogue.mjs`, never hand-edit
 - `tests/fixtures/` — the vendored legacy dictionaries (parity reference, SHL-08)
-- `scripts/check-webapp-purity.sh` — the legacy-construct gate (WBP-02); runs as a
-  `dependsOn` of `test`, so CI enforces it
+- `scripts/check-webapp-purity.sh` — the legacy-construct gate (WBP-02) plus the
+  search layer boundaries (a feature never imports a sibling, a shared layer never
+  imports a feature — DD-869/DD-870); runs as a `dependsOn` of `test`, so CI enforces it
 - `dev/config.json` — runtime config, bundled **only** in the development build.
   Its `keycloak.url` must name the **same issuer the server verifies**
   (`AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL`, the TLS `:8443` listener) — tokens
@@ -78,6 +79,9 @@ and the increment specs in `docs/architecture/conversion/increments/`.
 - Angular idiom only: signals for state, standalone components, `inject()`,
   zoneless. The purity gate blocks NgModules, `@models4insight/`, ngx-translate,
   `environment.ts`, and state-owning `BehaviorSubject`s — do not loosen it to land code.
+- Search layering: `browse`, `details`, `editor`, `results` are peers and import
+  nothing across each other; `shared/` and `meta/` sit under them and import no
+  feature. Code two features need moves to `shared/` (DD-869, DD-870) — the gate fails it.
 - Dictionary strings: reference the existing XLIFF ids (`@@a.b.c`); never add
   strings to components that aren't in the catalogue — extend the fixtures and
   regenerate when the legacy app gains keys.

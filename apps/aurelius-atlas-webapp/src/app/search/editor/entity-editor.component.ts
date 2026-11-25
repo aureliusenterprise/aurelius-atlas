@@ -64,12 +64,12 @@ import {
 } from "./audit-details";
 import { auditActionDisplay } from "./audit-display";
 import { attributeLabels } from "./attribute-labels";
-import { canWriteEntities } from "./can-write-entities";
+import { canWriteEntities } from "../shared/can-write-entities";
 import { type ProsePart, diffProse } from "./description-diff";
 import { ClassificationCombobox } from "./classification-combobox.component";
 import { EditorState } from "./editor-state";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
-import { EntityWritten } from "./entity-written";
+import { EntityWritten } from "../shared/entity-written";
 import {
     type EditorField,
     type EditorLabels,
