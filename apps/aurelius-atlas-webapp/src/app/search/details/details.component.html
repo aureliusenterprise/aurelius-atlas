@@ -234,27 +234,8 @@
     (linkClicked)="onLinkClick($event)"
 />
 
-<!-- The side navigation is the 7.16 shell (UIC-18): the sticky
-             circular drop-up at the foot of the screen, its menu items
-             projected here as the legacy layout's anchors. -->
-<aurelius-atlas-ui-details-navigation class="aurelius-details-nav" [label]="navLabel">
-    <!-- The shell projects this list as-is (UIC-18), so the caller owns the
-         ul.menu-list container — the same shape the legacy pages wrote.
-         The layout's entries in legacy order (DET-25): the rendered box set
-         only, each entry the #href path the default layout takes. -->
-    <ul class="menu-list">
-        @if (layout()) {
-            @for (entry of layout()?.nav; track entry.anchor) {
-                <li>
-                    <a [routerLink]="[]" [fragment]="entry.anchor">{{ entry.label }}</a>
-                </li>
-            }
-        } @else {
-            <li>
-                <a [routerLink]="[]" fragment="properties-details" i18n="@@search.details.default.properties"
-                    >Properties</a
-                >
-            </li>
-        }
-    </ul>
-</aurelius-atlas-ui-details-navigation>
+<!-- The side navigation (DET-25): the sticky drop-up with the opened
+         layout's anchors, now its own part (7.55). The part needs the
+         layout's own entry set and whether a layout was named at all —
+         with none, the default's one Properties entry (DET-02). -->
+<aurelius-atlas-webapp-details-side-nav [entries]="layout()?.nav ?? []" [hasLayout]="layout() !== undefined" />
