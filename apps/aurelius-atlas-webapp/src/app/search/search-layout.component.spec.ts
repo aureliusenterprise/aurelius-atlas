@@ -1,23 +1,15 @@
-import { provideHttpClient } from "@angular/common/http";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { NavigationEnd, Router, provideRouter } from "@angular/router";
-import Keycloak from "keycloak-js";
+import { NavigationEnd, Router } from "@angular/router";
 import { Subject } from "rxjs";
 import { vi } from "vitest";
 
-import { AppConfig } from "../config";
-import { APP_CONFIG } from "../tokens";
 import { SearchState } from "./search-state";
 import { SearchLayout } from "./search-layout.component";
 
-const config: AppConfig = {
-    keycloak: { clientId: "aurelius", realm: "atlas", url: "https://keycloak.example/" },
-    apiBaseUrl: "/api",
-    otelExporterUrl: "/otel/v1/traces",
-    appName: "Aurelius Atlas Data Governance",
-    atlasClientId: "aurelius-atlas-server",
-};
+import { SEARCH_URL } from "../../testing/api";
+import { normalize } from "../../testing/dom";
+import { provideScreenTest } from "../../testing/providers";
 
 /**
  * Bring the layout up with a token (EDT-09): the fake Keycloak's
@@ -34,19 +26,9 @@ function setup({ atlasWrite = true, url = "/search/browse" }: { atlasWrite?: boo
     TestBed.configureTestingModule({
         imports: [SearchLayout],
         providers: [
-            provideRouter([]),
-            provideHttpClient(),
-            provideHttpClientTesting(),
-            { provide: APP_CONFIG, useValue: config },
+            ...provideScreenTest({ keycloak: { atlasWrite } }),
             SearchState,
             { provide: Router, useValue: fake },
-            {
-                provide: Keycloak,
-                useValue: {
-                    hasResourceRole: (role: string, resource?: string) =>
-                        atlasWrite && role === "atlas-write" && resource === config.atlasClientId,
-                },
-            },
         ],
     });
     return {
@@ -58,8 +40,6 @@ function setup({ atlasWrite = true, url = "/search/browse" }: { atlasWrite?: boo
         router: fake as { url: string },
     };
 }
-
-const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
 describe("SearchLayout (SRH-01, SRH-11)", () => {
     it("renders the hero with the legacy title and the search field (SRH-01)", () => {
@@ -94,7 +74,7 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         compiled.querySelector<HTMLButtonElement>("button.button.is-success[aria-label='Search']")!.click();
         fixture.detectChanges();
 
-        const request = httpMock.expectOne("/api/aurelius/v1/search");
+        const request = httpMock.expectOne(SEARCH_URL);
         expect(request.request.body).toMatchObject({ query: "genomic", mode: "keyword", limit: 10, offset: 0 });
         request.flush({ cards: [], facets: {}, total: 0 });
 
@@ -117,7 +97,7 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         compiled.querySelector<HTMLButtonElement>("button.delete")!.click();
         fixture.detectChanges();
 
-        const request = httpMock.expectOne("/api/aurelius/v1/search");
+        const request = httpMock.expectOne(SEARCH_URL);
         expect(request.request.body).toMatchObject({ query: "" });
         expect(request.request.body).not.toHaveProperty("filters");
         request.flush({ cards: [], facets: {}, total: 0 });

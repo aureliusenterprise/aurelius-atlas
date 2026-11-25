@@ -12,21 +12,18 @@
  * and its accessible name are the dumb `TokenPicker`'s and are tested in the ui
  * library (UIC-44, DD-713); this spec drives them through the rendered box.
  */
-import { provideHttpClient } from "@angular/common/http";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { provideRouter } from "@angular/router";
-import Keycloak from "keycloak-js";
 
 import type { EntityCard, ViewSearchAnswer } from "aurelius-atlas-data-access";
-
-import { APP_CONFIG } from "../../tokens";
 
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import type { RelationshipField, RelationshipPick } from "./form-fields";
 
-const SEARCH_URL = "/api/aurelius/v1/search";
+import { SEARCH_URL } from "../../../testing/api";
+import { card } from "../../../testing/view-fixtures";
+import { provideScreenTest } from "../../../testing/providers";
 
 const FIELD: RelationshipField = {
     name: "inputToProcesses",
@@ -38,11 +35,6 @@ const FIELD: RelationshipField = {
 };
 
 const SINGLE_FIELD: RelationshipField = { ...FIELD, name: "model", label: "model", single: true };
-
-/** One answer card of the door's population (AVS-01). */
-function card(over: Partial<EntityCard>): EntityCard {
-    return { guid: "g", typeName: "Process", displayText: "name", status: "ACTIVE", stale: false, ...over };
-}
 
 /**
  * A search answer (AVR-08): the first card carries a trail and a type the
@@ -73,15 +65,7 @@ const ANSWER: ViewSearchAnswer = {
 const TYPE_FILTER = { any: [{ typeName: ["Process"] }, { superTypeNames: ["Process"] }] };
 
 function setup(field: RelationshipField = FIELD, selected: readonly RelationshipPick[] = [], editedGuid = "edited-1") {
-    TestBed.configureTestingModule({
-        providers: [
-            provideHttpClient(),
-            provideHttpClientTesting(),
-            provideRouter([]),
-            { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
-            { provide: Keycloak, useValue: { hasResourceRole: () => true } },
-        ],
-    });
+    TestBed.configureTestingModule({ providers: provideScreenTest() });
     const fixture = TestBed.createComponent(EntityRelationshipInput);
     fixture.componentRef.setInput("field", field);
     fixture.componentRef.setInput("selected", selected);

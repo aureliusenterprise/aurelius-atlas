@@ -9,24 +9,20 @@
  * (their specs above); the panel only drives the facade.
  */
 import { TestBed } from "@angular/core/testing";
-import { provideHttpClient } from "@angular/common/http";
-import { Router, provideRouter } from "@angular/router";
+import { Router } from "@angular/router";
 import { AdminService, AtlasSession } from "aurelius-atlas-data-access";
 import { of, throwError } from "rxjs";
 
 import { signal } from "@angular/core";
-import { AppConfig } from "../config";
 import { VersionService } from "../shell/version.service";
-import { APP_CONFIG } from "../tokens";
 import { SettingsPanel } from "./settings-panel.component";
 import { SettingsService } from "./settings.service";
 
-const config: AppConfig = {
-    keycloak: { clientId: "aurelius", realm: "atlas", url: "https://keycloak.example/" },
-    apiBaseUrl: "/api",
-    otelExporterUrl: "/otel/v1/traces",
-    appName: "Aurelius Atlas Data Governance",
-};
+import { fakeAppConfig } from "../../testing/config";
+import { provideScreenTest } from "../../testing/providers";
+
+/** The deployed config (SHL-10): About prints its app name (SPL-12). */
+const config = fakeAppConfig();
 
 /** The version About prints: the server's answer, stubbed so the line is known. */
 const versionStub = { provide: VersionService, useValue: { version: signal("7.34.0#abc1234") } };
@@ -46,9 +42,7 @@ function setup() {
     TestBed.configureTestingModule({
         imports: [SettingsPanel],
         providers: [
-            provideHttpClient(),
-            provideRouter([]),
-            { provide: APP_CONFIG, useValue: config },
+            ...provideScreenTest(),
             { provide: AdminService, useValue: { getSession: () => of(session) } },
             versionStub,
         ],
@@ -335,9 +329,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         TestBed.configureTestingModule({
             imports: [SettingsPanel],
             providers: [
-                provideHttpClient(),
-                provideRouter([]),
-                { provide: APP_CONFIG, useValue: config },
+                ...provideScreenTest(),
                 { provide: AdminService, useValue: { getSession: () => throwError(() => new Error("no session")) } },
                 versionStub,
             ],

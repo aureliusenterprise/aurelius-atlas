@@ -8,7 +8,9 @@ import { vi } from "vitest";
 import { SearchState } from "../search-state";
 import { Results } from "./results.component";
 
-const DOOR = "/api/aurelius/v1/search";
+import { SEARCH_URL as DOOR } from "../../../testing/api";
+import { normalize } from "../../../testing/dom";
+import { card } from "../../../testing/view-fixtures";
 
 /**
  * A page of cards, named so the rows are identifiable, in the search door's
@@ -16,13 +18,9 @@ const DOOR = "/api/aurelius/v1/search";
  */
 function page(count: number, total: number, offset = 0) {
     return {
-        cards: Array.from({ length: count }, (_, i) => ({
-            guid: `g${offset + i}`,
-            typeName: "DataSet",
-            displayText: `entity-${offset + i}`,
-            status: "ACTIVE",
-            stale: false,
-        })),
+        cards: Array.from({ length: count }, (_, i) =>
+            card({ guid: `g${offset + i}`, displayText: `entity-${offset + i}` }),
+        ),
         facets: {},
         total,
     };
@@ -91,8 +89,6 @@ function arrive(query: string, answer = page(3, 3)) {
     return harness;
 }
 
-const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
-
 describe("Results screen (SRH-02, SRH-04..07)", () => {
     it("arrives on the URL's query and runs it (SRH-02, SRH-03)", () => {
         const harness = setup();
@@ -158,19 +154,15 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         return {
             ...page(2, 2),
             cards: [
-                {
-                    guid: "g0",
-                    typeName: "DataSet",
+                card({
                     displayText: "scored-entity",
-                    status: "ACTIVE",
-                    stale: false,
                     quality: [
                         { dimension: "overall", score: 0.7, count: 2, total: 2 },
                         { dimension: "completeness", score: 0.7, count: 2, total: 2 },
                         { dimension: "timeliness", score: 0, count: 0, total: 2 },
                     ],
-                },
-                { guid: "g1", typeName: "DataSet", displayText: "plain-entity", status: "ACTIVE", stale: false },
+                }),
+                card({ guid: "g1", displayText: "plain-entity" }),
             ],
         };
     }
@@ -203,7 +195,7 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
     it("a card whose type is in the icon map leads its badge with the icon (DET-26, DD-378)", () => {
         const cardPage = {
             ...page(1, 1),
-            cards: [{ guid: "g0", typeName: "m4i_dataset", displayText: "topic-x", status: "ACTIVE", stale: false }],
+            cards: [card({ typeName: "m4i_dataset", displayText: "topic-x" })],
         };
         const { compiled } = arrive("topic", cardPage);
 

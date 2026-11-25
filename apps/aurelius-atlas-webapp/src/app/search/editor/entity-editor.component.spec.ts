@@ -18,7 +18,6 @@ import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, RouterOutlet, convertToParamMap, provideRouter } from "@angular/router";
 import { By } from "@angular/platform-browser";
-import Keycloak from "keycloak-js";
 import { Subject, of } from "rxjs";
 
 import { Holdable } from "aurelius-atlas-ui";
@@ -38,10 +37,25 @@ import {
 } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../alerts/alerts.service";
-import { APP_CONFIG } from "../../tokens";
 import { createEntityMatcher } from "../../routes";
 
 import { EntityEditor } from "./entity-editor.component";
+
+import {
+    ATLAS_ENTITY_URL,
+    CHAIN_URL,
+    CLASSIFICATION_SLICE_URL,
+    ENTITY_HEADERS_URL,
+    ENUM_SLICE_URL,
+    RELATIONSHIP_SLICE_URL,
+    VALIDATE_URL,
+    VIEW_POST_URL,
+    VIEW_URL,
+} from "../../../testing/api";
+import { provideFakeKeycloak } from "../../../testing/auth";
+import { provideFakeAppConfig } from "../../../testing/config";
+import { normalize } from "../../../testing/dom";
+import { provideScreenTest } from "../../../testing/providers";
 
 /** The test host for the routed-drawer specs that need a real router: the
  * `drawer` aux outlet, the way `app.component.html` carries it (DD-355). */
@@ -51,22 +65,6 @@ import { EntityEditor } from "./entity-editor.component";
     template: `<router-outlet name="drawer" />`,
 })
 class DrawerTestHost {}
-
-/** The read door (VDE-01, DD-608): `GET /api/aurelius/v1/entity/guid/{guid}`. */
-const VIEW_URL = "/api/aurelius/v1/entity/guid/";
-/** The mutation door (VDE-05, DD-609): `POST /api/aurelius/v1/entity`. */
-const VIEW_POST_URL = "/api/aurelius/v1/entity";
-/** The form-slice door (VDE-02, AVW-11): `GET /api/aurelius/v1/types/for-type/{name}`. */
-const CHAIN_URL = "/api/aurelius/v1/types/for-type/";
-/** The Atlas typedef door the four small slices ride (VDE-02, DD-611). */
-const TYPEDEFS_URL = "/api/atlas/v2/types/typedefs";
-const CLASSIFICATION_SLICE_URL = `${TYPEDEFS_URL}?type=CLASSIFICATION`;
-const ENUM_SLICE_URL = `${TYPEDEFS_URL}?type=ENUM`;
-const RELATIONSHIP_SLICE_URL = `${TYPEDEFS_URL}?type=RELATIONSHIP`;
-const ENTITY_HEADERS_URL = `${TYPEDEFS_URL}/headers?type=ENTITY`;
-/** The delete stays Atlas's (VDE-11): `DELETE /api/atlas/v2/entity/guid/{guid}`. */
-const ATLAS_ENTITY_URL = "/api/atlas/v2/entity/guid/";
-const VALIDATE_URL = "/validate-entity/";
 
 /**
  * The edit-mode view of the DataSet (VDE-01): the read door's answer — the
@@ -315,9 +313,7 @@ function setup({
     TestBed.configureTestingModule({
         imports: [EntityEditor],
         providers: [
-            provideHttpClient(),
-            provideHttpClientTesting(),
-            provideRouter([]),
+            ...provideScreenTest({ keycloak: { atlasWrite } }),
             {
                 provide: ActivatedRoute,
                 useValue: {
@@ -326,8 +322,6 @@ function setup({
                     snapshot: { data: { editorMode: create ? "create" : "edit" } },
                 },
             },
-            { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
-            { provide: Keycloak, useValue: { hasResourceRole: () => atlasWrite } },
         ],
     });
     const fixture = TestBed.createComponent(EntityEditor);
@@ -508,8 +502,6 @@ function openEntityTab(compiled: HTMLElement, fixture: ComponentFixture<EntityEd
     compiled.querySelector<HTMLButtonElement>("#editor-entity-tab")!.click();
     fixture.detectChanges();
 }
-
-const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
 /**
  * The Delete button's hold directive instance, so a spec can fire `held`
@@ -1174,6 +1166,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         TestBed.configureTestingModule({
             imports: [DrawerTestHost, EntityEditor],
             providers: [
+                provideFakeAppConfig(),
+                provideFakeKeycloak({ atlasWrite: true }),
                 provideHttpClient(),
                 provideHttpClientTesting(),
                 provideRouter([
@@ -1184,8 +1178,6 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
                         loadComponent: () => Promise.resolve(EntityEditor),
                     },
                 ]),
-                { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
-                { provide: Keycloak, useValue: { hasResourceRole: () => true } },
             ],
         });
 

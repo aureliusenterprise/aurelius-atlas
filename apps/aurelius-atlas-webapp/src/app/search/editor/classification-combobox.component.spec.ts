@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { ClassificationCombobox } from "./classification-combobox.component";
 
-const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
+import { normalize } from "../../../testing/dom";
 
 function setup(suggestions: readonly string[] = ["PII", "CONFIDENTIAL"], chosen: readonly string[] = []) {
     TestBed.configureTestingModule({ imports: [ClassificationCombobox] });

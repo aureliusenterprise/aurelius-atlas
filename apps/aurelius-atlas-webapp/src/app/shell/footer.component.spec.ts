@@ -2,23 +2,20 @@ import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 
-import { AppConfig } from "../config";
-import { APP_CONFIG } from "../tokens";
 import { VersionService } from "./version.service";
 import { ShellFooter } from "./footer.component";
 
-const config: AppConfig = {
-    keycloak: { clientId: "aurelius", realm: "atlas", url: "https://keycloak.example/" },
-    apiBaseUrl: "/api",
-    otelExporterUrl: "/otel/v1/traces",
-    appName: "Aurelius Atlas Data Governance",
-};
+import { fakeAppConfig, provideFakeAppConfig } from "../../testing/config";
+import { normalize } from "../../testing/dom";
+
+/** The deployed config's app name — the harness value the footer prints. */
+const config = fakeAppConfig();
 
 function setup(version: string) {
     TestBed.configureTestingModule({
         imports: [FontAwesomeModule, ShellFooter],
         providers: [
-            { provide: APP_CONFIG, useValue: config },
+            provideFakeAppConfig(),
             // The version is the server's answer, stubbed here so the footer's
             // print is what this spec pins (VER-01's read is its service's spec).
             { provide: VersionService, useValue: { version: signal(version) } },
@@ -40,7 +37,6 @@ describe("ShellFooter", () => {
         fixture.detectChanges();
 
         const compiled = fixture.nativeElement as HTMLElement;
-        const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
         // The footer is Bulma `level`: copyright left, app name centre, version right.
         // The year is the browser's own (VER-04, DD-726), never a configured value.
