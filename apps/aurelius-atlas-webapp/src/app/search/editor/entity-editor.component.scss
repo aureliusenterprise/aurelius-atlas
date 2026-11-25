@@ -16,12 +16,6 @@ aurelius-atlas-webapp-quality-fields + .aurelius-editor-field {
     margin-top: 1.25rem;
 }
 
-/* The create-mode type field (EDT-04, DD-330): it stays above the form, so
-   it keeps the between-field rhythm below it. */
-.aurelius-editor-picker {
-    margin-bottom: 1.25rem;
-}
-
 /*
  * The Entity/History tab pair (HST-01, HST-02, DD-816): it rides the
  * drawer's subhead slot (DD-180) and goes full-bleed like the lineage

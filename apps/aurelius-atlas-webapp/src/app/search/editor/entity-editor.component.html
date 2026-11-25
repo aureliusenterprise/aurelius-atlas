@@ -134,44 +134,18 @@
          missed. Empty text, empty announcement. -->
         <output class="help aurelius-editor-loading">{{ loadingText() }}</output>
 
-        <!-- Create mode: the type field over the shipped entity typedefs
-         (EDT-04, DD-330). It stays above the form after the pick — the
-         chosen type rides the route, so re-picking switches the type and
-         re-seeds the form. The ui-lib Select as a plain dropdown. -->
-        @if (pickerVisible()) {
-            <div class="aurelius-editor-picker">
-                <aurelius-atlas-ui-select
-                    [options]="pickerRows()"
-                    displayField="label"
-                    [label]="pickerLabel"
-                    [value]="pickerSelected()"
-                    [searchVisible]="false"
-                    (valueChange)="pickType($event)"
-                ></aurelius-atlas-ui-select>
-            </div>
-        }
+        <!-- The type field above the form (EDT-04, DD-330, DD-873): create
+         mode's picker over the shipped entity typedefs, edit mode's static
+         badge. Both moved out of the drawer; the chosen type still rides the
+         route, so re-picking switches the type and re-seeds the form. -->
+        <aurelius-atlas-webapp-type-field
+            [picker]="isCreate"
+            [pickerTypes]="state.pickerTypes()"
+            [typeName]="routeType()"
+            [badge]="typeBadge()"
+            (picked)="pickType($event)"
+        />
         @if (formVisible()) {
-            <!-- Editing renders the type as a static badge (EDT-04, DD-330):
-             the type never changes there, so no control — unlike create,
-             where the picker above is how the type is chosen and switched.
-             The badge is the shared type-name part, the details header's
-             shape: the entity's alias when it carries one, the display
-             name of the base type beside it, the icon of the raw type
-             (MMS-09, DD-721). -->
-            @if (staticTypeShown()) {
-                <div class="field aurelius-editor-static-type">
-                    <p class="label">{{ pickerLabel }}</p>
-                    <p class="aurelius-editor-type">
-                        <aurelius-atlas-ui-type-name
-                            [typeName]="staticTypeName()"
-                            [typeAlias]="staticTypeAlias()"
-                            [showBaseTypeName]="true"
-                            [icon]="staticTypeIcon()?.icon"
-                            [iconClass]="staticTypeIcon()?.classIcon"
-                        />
-                    </p>
-                </div>
-            }
             <!-- The field set (EDT-03): one control per editable attribute, in the
              resolved order. Each control binds through [formField] (DD-354);
              the signal form owns validity and is not itself bound. -->
