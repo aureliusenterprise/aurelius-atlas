@@ -9,12 +9,10 @@ import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { map } from "rxjs";
 
 import {
-    Accordion,
     Breadcrumbs,
     DetailsCardSection,
     DetailsNavigation,
     EntityCard,
-    PropertiesItem,
     QualityDimensionList,
     TypeName,
     type QualityDimensionRow,
@@ -36,6 +34,7 @@ import { CatalogueCard } from "../shared/catalogue-card.component";
 import { ComplianceChartBox, type ComplianceChart } from "./compliance-chart.component";
 import { DetailsFirstRow } from "./first-row.component";
 import { DetailsStatsBar } from "./stats-bar.component";
+import { DetailsProperties } from "./properties.component";
 import { type PropagatedChipEntry } from "../shared/propagated-chips.component";
 import { ClassificationChips } from "./classification-chips.component";
 import { DetailsGovQualityState, type GovSectionView } from "./sections/gov-quality.state";
@@ -73,7 +72,6 @@ import { cardTypeAlias } from "../shared/type-alias";
  */
 @Component({
     imports: [
-        Accordion,
         Breadcrumbs,
         CatalogueCard,
         ClassificationChips,
@@ -81,12 +79,12 @@ import { cardTypeAlias } from "../shared/type-alias";
         DetailsCardSection,
         DetailsFirstRow,
         DetailsNavigation,
+        DetailsProperties,
         DetailsStatsBar,
         EntityCard,
         FontAwesomeModule,
         GovQualityCards,
         LineageModel,
-        PropertiesItem,
         QualityDimensionList,
         TypeName,
         RouterLink,
