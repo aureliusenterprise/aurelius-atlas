@@ -91,6 +91,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.42 | Webapp test harness | `apps/aurelius-atlas-webapp` | none (proves AVS-01/06, EDT-09; DD-868) |
 | 7.43 | Section config split | `apps/aurelius-atlas-webapp` | none (proves DET-16/56..66, VCF-10/18; DD-869) |
 | 7.44 | Search keeps its layers | `apps/aurelius-atlas-webapp` | none (proves EDT-09, VDE-01, WFE-02; DD-870) |
+| 7.45 | Stores hold failures, screens alert | apps/aurelius-atlas-webapp | none (proves SDX-01, DET-13/18; DD-871) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |

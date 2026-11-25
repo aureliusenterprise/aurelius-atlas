@@ -7882,6 +7882,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.45</td>
+<td>Stores hold failures, screens alert</td>
+<td><code>apps/aurelius-atlas-webapp/src/app/search/shared/alert-on-failure.ts</code>: the four search stores stop injecting <code>AlertsService</code> and hold their failure (<code>failures</code> + <code>handled()</code>) instead; a relay wired at each store's provider scope moves it to the drawer with byte-identical messages, so ALR-03's grouping is unchanged, a failed chunk still alerts once (DET-18), a 404 stays silent (ALR-05), and one new test proves the SearchState relay at component level (the 7.19 shape: no new rule ids; DD-871)</td>
+<td>– (Aurelius code organisation, not Atlas)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
