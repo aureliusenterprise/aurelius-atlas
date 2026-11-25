@@ -9,7 +9,7 @@ import {
 } from "aurelius-atlas-data-access";
 import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-ui";
 
-import { entityFromView } from "../../editor/view-as-entity";
+import { entityFromView } from "../../shared/entity-from-view";
 import { PAGE_SIZE } from "./related-sections.state";
 import { FACET_GROUP_TITLES, GOV_QUALITY_TITLE } from "./layouts";
 import type { FacetGroupKey } from "./section.model";

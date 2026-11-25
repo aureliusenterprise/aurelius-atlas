@@ -7,13 +7,8 @@
 import type { EntityView, ViewSaveRequest } from "aurelius-atlas-data-access";
 
 import type { EditorField, RelationshipField, RelationshipPick } from "./form-fields";
-import {
-    bodyFromEdits,
-    entityFromView,
-    picksAfterConflict,
-    tagsAfterConflict,
-    valuesAfterConflict,
-} from "./view-as-entity";
+import { entityFromView } from "../shared/entity-from-view";
+import { bodyFromEdits, picksAfterConflict, tagsAfterConflict, valuesAfterConflict } from "./view-as-entity";
 
 /** A text field the way buildFields answers it. */
 function textField(name: string, required = false): EditorField {

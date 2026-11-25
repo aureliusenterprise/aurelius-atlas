@@ -23,8 +23,9 @@ import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
 import { TYPE_ICONS } from "../meta/type-icons";
 
-import { EntityWritten } from "./entity-written";
-import { entityFromView, tagsAfterConflict } from "./view-as-entity";
+import { EntityWritten } from "../shared/entity-written";
+import { entityFromView } from "../shared/entity-from-view";
+import { tagsAfterConflict } from "./view-as-entity";
 
 /** The editor's mode, read off its own route segment (EDT-01, DD-325). */
 export type EditorMode = "edit" | "create";

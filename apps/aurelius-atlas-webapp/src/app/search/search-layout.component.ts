@@ -6,7 +6,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Hero, SearchField } from "aurelius-atlas-ui";
 
-import { canWriteEntities } from "./editor/can-write-entities";
+import { canWriteEntities } from "./shared/can-write-entities";
 import { SearchState } from "./search-state";
 
 /**

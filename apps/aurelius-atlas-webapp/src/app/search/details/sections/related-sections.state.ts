@@ -4,7 +4,7 @@ import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-u
 
 import { AlertsService } from "../../../alerts/alerts.service";
 import { nameDisplay } from "../../meta/type-display";
-import { sectionEnds, type SectionEnd } from "../shared/people";
+import { sectionEnds, type SectionEnd } from "../../shared/people";
 import { FACET_GROUP_TITLES, RULE_SORT_KEYS, RULE_SORT_LABELS } from "./layouts";
 import {
     dimensionScore,
