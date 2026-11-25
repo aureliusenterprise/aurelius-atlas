@@ -63,36 +63,3 @@
         outline-offset: 2px;
     }
 }
-
-/*
- * The Compliance Chart box of the rule page (DET-54, DD-849). The pie
- * wrapper is the legacy's `.gov-quality-overall-pie` — a fixed 100px
- * square the UIC-36 ring fills — and the two legend swatches are the
- * legacy's `.legend-*` classes at their own size and colours: the red of
- * "Non-compliant" first, the green of "Compliant" second (the colours
- * UIC-36's own layers carry, repeated here for the flat swatch).
- */
-.aurelius-details-score-pie {
-    width: 100px;
-    height: 100px;
-    position: relative;
-}
-
-.aurelius-details-legend-row + .aurelius-details-legend-row {
-    margin-top: 0.5rem;
-}
-
-.aurelius-details-legend-swatch {
-    display: block;
-    height: 10px;
-    width: 50px;
-    margin-bottom: 0.25rem;
-}
-
-.aurelius-details-legend-non-compliant {
-    background-color: hsl(348, 100%, 61%);
-}
-
-.aurelius-details-legend-compliant {
-    background-color: hsl(141, 53%, 53%);
-}

@@ -185,38 +185,11 @@
 }
 
 <!-- The Compliance Chart box of the rule page (DET-54, DD-849): the legacy
-         place between the stats bar and the Non-compliant box. The pie is
-         UIC-36 at size 8, the score DET-51's; the legend is the legacy's
-         two rows — non-compliant first — its colours verbatim. -->
+     place between the stats bar and the Non-compliant box, now its own
+     part (7.50). The guard that drops the whole region on every layout
+     without a chart stays here — the part paints a chart it is handed. -->
 @if (complianceChart(); as chart) {
-    <div class="box aurelius-details-compliance-chart">
-        <h2 class="title is-3">{{ chart.title }}</h2>
-        <div class="block">
-            <div class="columns">
-                <div class="column is-6">
-                    <div class="aurelius-details-legend-row">
-                        <span
-                            class="aurelius-details-legend-swatch aurelius-details-legend-non-compliant"
-                            aria-hidden="true"
-                        ></span>
-                        <span>{{ chart.nonCompliant }}</span>
-                    </div>
-                    <div class="aurelius-details-legend-row">
-                        <span
-                            class="aurelius-details-legend-swatch aurelius-details-legend-compliant"
-                            aria-hidden="true"
-                        ></span>
-                        <span>{{ chart.compliant }}</span>
-                    </div>
-                </div>
-                <div class="column is-6">
-                    <div class="aurelius-details-score-pie">
-                        <aurelius-atlas-ui-data-quality-pie [value]="chart.score" [size]="8" />
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <aurelius-atlas-webapp-compliance-chart [chart]="chart" />
 }
 
 <!-- The layout's card sections (DET-17..DET-22): the box carries the
