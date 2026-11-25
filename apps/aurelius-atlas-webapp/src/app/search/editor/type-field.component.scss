@@ -1,0 +1,10 @@
+/*
+ * The type field above the entity form (EDT-04, DD-330, DD-873): create mode's
+ * picker sits over the form and keeps the between-field rhythm below it — the
+ * rule the drawer's stylesheet carried until the field moved out. The edit-mode
+ * badge is a Bulma `field`/`label` pair, which Bulma already spaces, so it needs
+ * no rule of its own. No other component paints these classes.
+ */
+.aurelius-editor-picker {
+    margin-bottom: 1.25rem;
+}

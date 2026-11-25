@@ -18,7 +18,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
-import { Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
+import { Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
 import {
     QualityRuleService,
     type EntityValidationResponse,
@@ -26,18 +26,17 @@ import {
     ValidateEntityService,
 } from "aurelius-atlas-data-access";
 
-import { nameDisplay } from "../meta/type-display";
-import { typeIcon } from "../meta/type-icons";
 import { cardTypeAlias } from "../shared/type-alias";
 import { type AuditAttributeChange, restoreOf } from "./history/audit-details";
 import { attributeLabels } from "./attribute-labels";
 import { alertOnFailure } from "../shared/alert-on-failure";
 import { canWriteEntities } from "../shared/can-write-entities";
 import { ClassificationCombobox } from "./classification-combobox.component";
-import { EditorState } from "./editor-state";
+import { EditorState, type PickerType } from "./editor-state";
 import { AUDIT_RETRIEVE_LINE, AuditTrail } from "./history/audit-state";
 import { HistoryTab } from "./history/history-tab.component";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
+import { TypeField, type EditorTypeBadge } from "./type-field.component";
 import { EntityWritten } from "../shared/entity-written";
 import {
     type EditorField,
@@ -54,9 +53,6 @@ import {
 } from "./form-fields";
 import { bodyFromEdits, picksAfterConflict, valuesAfterConflict } from "./view-as-entity";
 import { QualityFields, QUALITY_FIELDS_RELATIONSHIP, QUALITY_TYPE_NAME, storedCheckKind } from "./quality-fields";
-
-/** A picker row for the ui-lib {@link Select} (its `displayField` is `label`). */
-type PickerRow = { name: string; label: string };
 
 /** An enum option row (EDT-03's enum kind — the Select's `displayField`). */
 type EnumRow = { value: string };
@@ -115,7 +111,7 @@ type EditorValue = string | number | boolean | string[] | null;
         NgTemplateOutlet,
         QualityFields,
         Select,
-        TypeName,
+        TypeField,
     ],
     providers: [EditorState, AuditTrail],
     selector: "aurelius-atlas-webapp-entity-editor",
@@ -176,7 +172,7 @@ export class EntityEditor {
     });
 
     /** The route's `:type` (create mode, DD-330) — "" before the first pick. */
-    private readonly routeType = toSignal(this.route.paramMap.pipe(map((params) => params.get("type") ?? "")), {
+    protected readonly routeType = toSignal(this.route.paramMap.pipe(map((params) => params.get("type") ?? "")), {
         initialValue: "",
     });
 
@@ -186,7 +182,7 @@ export class EntityEditor {
      * rebuilt this component (and replayed the drawer's slide-in) on the
      * first type pick. One matcher route now serves both URLs, so the mode
      * cannot come from the path anymore. */
-    private readonly isCreate = this.route.snapshot.data["editorMode"] === "create";
+    protected readonly isCreate = this.route.snapshot.data["editorMode"] === "create";
 
     /** Every field label the catalogue names (EDT-33): one localized string
      * per attribute the shipped metamodel can render (7-33, DD-722). */
@@ -274,12 +270,6 @@ export class EntityEditor {
         return this.blockedRelationships().has(field.name);
     }
 
-    /** The picker rows for the ui-lib Select (EDT-04). The Select's `options`
-     * input is a mutable array, so the map yields a fresh one (not readonly). */
-    protected readonly pickerRows = computed<PickerRow[]>(() =>
-        this.state.pickerTypes().map(({ name, label }) => ({ name, label })),
-    );
-
     /** The classification box's applicable type names (EDT-05): the defs the
      * chain answers, minus the chosen ones (VDE-02) — the combobox filters
      * and renders them, the store owns the chosen set (WFE-03, DD-804). */
@@ -291,38 +281,26 @@ export class EntityEditor {
      * A create has no entity, so it has no audit trail to show. */
     protected readonly tabsShown = computed(() => !this.isCreate);
 
-    /** The create-mode type field: the picker stays above the form (EDT-04, DD-330). */
-    protected readonly pickerVisible = computed(() => this.isCreate);
-
     /**
-     * Edit mode's static type badge (EDT-04, DD-330): the type never
-     * changes there. The badge is the shared type-name part in the details
-     * header's shape — the entity's alias when it carries one, the display
-     * name beside the raw type, the icon of the raw type (MMS-09, DD-721).
-     * The legacy's type select shows the dictionary display name
-     * (`translatedName`, `type-select.component.ts:116`), so the name is
-     * `nameDisplay` of the raw name.
+     * Edit mode's static type badge (EDT-04, DD-330): the type never changes
+     * there, so the field shows the entity's type instead of a picker. The
+     * drawer answers it off the stored entity (null in create mode — where the
+     * entity is a seeded draft, not a read — and until the read names a type);
+     * {@link TypeField} resolves the display name and the icon (DD-379, DD-378)
+     * and paints the shared type-name part in the details header's shape
+     * (MMS-09, DD-721).
      */
-    protected readonly staticTypeShown = computed(() => !this.isCreate && (this.state.entity()?.typeName ?? "") !== "");
-
-    /** The badge's name: `nameDisplay` of the stored entity's raw type (DD-379). */
-    protected readonly staticTypeName = computed(() => nameDisplay(this.state.entity()?.typeName ?? ""));
-
-    /** The badge's alias (MMS-09): `attributes.typeAlias` of the stored entity (DET-26's reader). */
-    protected readonly staticTypeAlias = computed(() => {
+    protected readonly typeBadge = computed<EditorTypeBadge | null>(() => {
+        if (this.isCreate) {
+            return null;
+        }
         const entity = this.state.entity();
-        return this.isCreate || entity === null ? undefined : cardTypeAlias(entity);
+        const typeName = entity?.typeName ?? "";
+        if (entity === null || typeName === "") {
+            return null;
+        }
+        return { typeName, alias: cardTypeAlias(entity) };
     });
-
-    /** The badge's icon (DD-378): the app's type map, resolved for the raw type name. */
-    protected readonly staticTypeIcon = computed(() => typeIcon(this.state.entity()?.typeName ?? ""));
-
-    /** The picker's selected row, read off the route's type (DD-330). The
-     * row must be the pickerRows() array's own object — the Select matches
-     * its value by identity. */
-    protected readonly pickerSelected = computed<PickerRow | null>(
-        () => this.pickerRows().find((row) => row.name === this.routeType()) ?? null,
-    );
 
     /** Whether a create type switch is in flight (the form's loading slot). */
     protected readonly typeSwitching = computed(
@@ -356,8 +334,6 @@ export class EntityEditor {
     protected readonly editTitle = $localize`:@@search.editEntity.editEntity:Edit entity`;
 
     protected readonly createTitle = $localize`:@@search.createEntity.newEntity:Create new entity`;
-
-    protected readonly pickerLabel = $localize`:@@search.details.typeSelect.label:Entity type`;
 
     protected readonly deleteLabel = $localize`:@@search.components.editor.delete:Delete`;
 
@@ -813,7 +789,7 @@ export class EntityEditor {
      * effect above rebuilds the form. An empty pick (the placeholder) is
      * ignored: there is no type-less form to show.
      */
-    protected pickType(row: PickerRow | null): void {
+    protected pickType(row: PickerType | null): void {
         if (row && row.name !== this.routeType()) {
             void this.router.navigate([{ outlets: { drawer: ["create", row.name] } }]);
         }
