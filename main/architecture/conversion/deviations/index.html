@@ -8331,9 +8331,9 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <tr>
 <td>DV-202</td>
 <td>Webapp</td>
-<td>The legacy details card prints its data-quality list under a boolean from an injection token (<code>SHOW_DATA_QUALITY</code>, default true everywhere but the results page, the one component providing <code>useValue: false</code>): the token's default reaches every details box's card.</td>
-<td>The shared card's score list is a mount-site input (<code>CatalogueCard.showScores</code>, off by default): the details sections pass true, the results screen passes nothing (DET-60, DET-61). The card reads no setting of its own.</td>
-<td>Aurelius has no injection-token idiom for the shared card — one component serves both screens (VCF-05) — and a default-on token needs a provider per screen. DET-61's rule is about the screen, not the data, so a plain input is smaller and says what it means.</td>
+<td>The legacy details card prints its data-quality list under a boolean from an injection token (<code>SHOW_DATA_QUALITY</code>), overridable with <code>useValue: false</code>. The Atlas 2.4.0 source holds no such token and no results-page override: the claim that a results card never printed the list rested on a minified bundle and could not be verified (DD-860, 7.25d). What the legacy list does prove is its count gate - a dimension counting 0 prints no row (DET-64).</td>
+<td>The shared card reads its score list from the card's own quality roll-up and prints it wherever the roll-up scored a dimension, on both screens and every mount site (DET-60, DET-61 as amended, DD-860). No token, no per-screen provider, and since 7.25d no mount-site input either: <code>CatalogueCard.showScores</code> is gone. A dimension the roll-up counts 0 prints no row (DET-64, DD-861).</td>
+<td>The score roll-up already rides every card of the view family (AVS-01), so the data says whether a card has scores and a per-screen switch would only hide facts a reader wants - the user asked for the results cards back. Aurelius still has no injection-token idiom for the shared card, since one component serves both screens (VCF-05): that half of this row stands, and the corrected premise removes only the parity claim.</td>
 <td>7.25c</td>
 </tr>
 <tr>

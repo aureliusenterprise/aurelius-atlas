@@ -7742,6 +7742,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.25d</td>
+<td>The score block on every card, the scored dimensions only</td>
+<td>DET-61 as amended: the shared card prints its score list on the results screen too, so the data decides and <code>CatalogueCard.showScores</code> retires (DD-860, DV-202 as corrected - the legacy's results-page switch was never in the Atlas source). DET-64: a dimension whose roll-up counts 0 prints no row on any score surface, which is the legacy list's own truthiness gate - the frozen oracle answers 0 on every timeliness and validity document - so DET-63's 0-count clause retires. Box, stat, card and dimension sorts keep sharing one row builder (DD-861)</td>
+<td>Aurelius <code>components/cards/**</code> (<code>SHOW_DATA_QUALITY</code>, DV-202), <code>search/components/data-quality-list</code> (the count gate)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>7.26</td>
 <td>HTTP retry: the dead-connection resend</td>
 <td>The browser resends an idempotent call once when its connection dies rather than its answer (APC-12/13, DD-449, DV-145): the editor-drawer field race (uvicorn's 5 s keep-alive close against the dev proxy's pooled socket) becomes invisible, and proxy restarts with it</td>
