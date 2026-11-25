@@ -64,6 +64,7 @@ import {
 } from "./audit-details";
 import { auditActionDisplay } from "./audit-display";
 import { attributeLabels } from "./attribute-labels";
+import { alertOnFailure } from "../shared/alert-on-failure";
 import { canWriteEntities } from "../shared/can-write-entities";
 import { type ProsePart, diffProse } from "./description-diff";
 import { ClassificationCombobox } from "./classification-combobox.component";
@@ -559,6 +560,10 @@ export class EntityEditor {
     constructor() {
         this.state.mode.set(this.isCreate ? "create" : "edit");
         this.state.loadSlices();
+
+        // EditorState's held failures reach the drawer through the shared
+        // relay (DD-871): the one place this drawer's store alerts.
+        alertOnFailure(this.state);
 
         // The audit read does not outlive the drawer (HST-03).
         this.destroyRef.onDestroy(() => this.auditsPending?.unsubscribe());

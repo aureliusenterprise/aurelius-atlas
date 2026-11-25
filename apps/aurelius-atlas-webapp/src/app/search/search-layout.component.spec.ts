@@ -4,6 +4,7 @@ import { NavigationEnd, Router } from "@angular/router";
 import { Subject } from "rxjs";
 import { vi } from "vitest";
 
+import { AlertsService } from "../alerts/alerts.service";
 import { SearchState } from "./search-state";
 import { SearchLayout } from "./search-layout.component";
 
@@ -227,5 +228,21 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         events.next(new NavigationEnd(2, router.url, "/search/results"));
         fixture.detectChanges();
         expect(heroTitleTag()).toBe("H1");
+    });
+
+    it("a failing search reaches the drawer through the store's relay (SDX-01, DD-214, DD-871)", () => {
+        // SearchState holds its failure (DD-871) and the layout — the store's
+        // owner — relays it to the alerts store, once. This is the one place
+        // the chrome's alert is proven: the store spec pins the held failure,
+        // not the alert it becomes.
+        const { httpMock } = setup();
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+
+        fixture.debugElement.injector.get(SearchState).run("boom");
+        httpMock.expectOne(SEARCH_URL).flush({ errorCode: "AURELIUS-503-00-001" }, { status: 503, statusText: "Down" });
+        fixture.detectChanges();
+
+        expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
     });
 });

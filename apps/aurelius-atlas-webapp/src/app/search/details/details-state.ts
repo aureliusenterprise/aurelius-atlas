@@ -2,7 +2,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Injectable, inject, signal } from "@angular/core";
 import { type EntityView, ViewEntityService } from "aurelius-atlas-data-access";
 
-import { AlertsService } from "../../alerts/alerts.service";
+import { type AlertNotice } from "../shared/alert-on-failure";
 
 /**
  * The details screen's read store (DET-08, DET-13, DD-318, VDR-01): the
@@ -15,19 +15,17 @@ import { AlertsService } from "../../alerts/alerts.service";
  * changes. The guid is captured per call and compared before an answer
  * paints, so an answer for a superseded guid is dropped — the legacy
  * `latestEntityId` guard (DET-08). A failed read clears the entity and
- * adds an error alert (the `SearchState` idiom, DD-214's visible failure
- * path); a 404 answers no entity, which the screen renders as the DET-02
- * empty state (VDR-08). The view cache ADR 064 schedules lives in
- * {@link ViewEntityService}, not here (DD-605, which supersedes DD-318's
- * no-cache posture); this store keeps DD-318's fetch states untouched and
- * {@link reload} evicts one guid before re-reading, the editor's save tick
- * (DD-327, VDR-07).
+ * holds an error failure (the `SearchState` idiom, DD-214's visible failure
+ * path) for the screen's relay to alert (DD-871); a 404 answers no entity,
+ * which the screen renders as the DET-02 empty state (VDR-08). The view
+ * cache ADR 064 schedules lives in {@link ViewEntityService}, not here
+ * (DD-605, which supersedes DD-318's no-cache posture); this store keeps
+ * DD-318's fetch states untouched and {@link reload} evicts one guid before
+ * re-reading, the editor's save tick (DD-327, VDR-07).
  */
 @Injectable()
 export class DetailsState {
     private readonly views = inject(ViewEntityService);
-
-    private readonly alerts = inject(AlertsService);
 
     /** The guid of the newest load — the stale-answer guard's key (DET-08). */
     private latestGuid = "";
@@ -37,6 +35,14 @@ export class DetailsState {
 
     /** Whether a load is in flight (DET-13's loading line). */
     readonly loading = signal(false);
+
+    /** The failed read awaiting the screen's relay (DD-871), oldest first. */
+    readonly failures = signal<readonly AlertNotice[]>([]);
+
+    /** Mark the held failures shown ({@link alertOnFailure}, DD-871). */
+    handled(): void {
+        this.failures.set([]);
+    }
 
     /**
      * Fetch the entity for one guid (DET-08): the newest load wins, a
@@ -65,16 +71,18 @@ export class DetailsState {
                 // A failed read leaves no entity: the screen renders the
                 // DET-02 empty state (DET-13). The server's 404 is the
                 // feature's own not-found handling and stays out of the
-                // drawer (ALR-05's 4xx rule); every other failure alerts,
-                // named by the legacy retrieve line (the SearchState error
-                // idiom, DD-214).
+                // drawer (ALR-05's 4xx rule); every other failure holds the
+                // legacy retrieve line for the screen's relay (DD-214's
+                // visible path, DD-871's seam).
                 this.entity.set(null);
                 if (!isNotFound(error)) {
-                    this.alerts.add({
-                        severity: "error",
-                        message: $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`,
-                        source: "search",
-                    });
+                    this.failures.update((held) => [
+                        ...held,
+                        {
+                            severity: "error",
+                            message: $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`,
+                        },
+                    ]);
                 }
             },
         });

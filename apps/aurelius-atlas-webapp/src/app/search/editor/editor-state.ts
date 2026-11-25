@@ -19,10 +19,10 @@ import {
     type ViewSaveRequest,
 } from "aurelius-atlas-data-access";
 
-import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
 import { TYPE_ICONS } from "../meta/type-icons";
 
+import { type AlertNotice } from "../shared/alert-on-failure";
 import { EntityWritten } from "../shared/entity-written";
 import { entityFromView } from "../shared/entity-from-view";
 import { tagsAfterConflict } from "./view-as-entity";
@@ -63,8 +63,6 @@ export class EditorState {
 
     private readonly typedefs = inject(TypeDefsService);
 
-    private readonly alerts = inject(AlertsService);
-
     private readonly router = inject(Router);
 
     /** The saved-tick bus (DD-327): the details screen underneath re-reads. */
@@ -72,6 +70,19 @@ export class EditorState {
 
     /** The editor's mode, set once by the route component from its route. */
     readonly mode = signal<EditorMode>("edit");
+
+    /** The failures awaiting the screen's relay (DD-871), oldest first. */
+    readonly failures = signal<readonly AlertNotice[]>([]);
+
+    /** Mark the held failures shown ({@link alertOnFailure}, DD-871). */
+    handled(): void {
+        this.failures.set([]);
+    }
+
+    /** Hold one failure for the screen's relay (DD-871). */
+    private pushFailure(notice: AlertNotice): void {
+        this.failures.update((held) => [...held, notice]);
+    }
 
     /**
      * The view the save merges onto (DD-608): the read door's answer, or — after
@@ -268,10 +279,9 @@ export class EditorState {
 
     /** The type-material failure line (EDT-04 kept): one alert, the drawer stays open. */
     private typesFailed(): void {
-        this.alerts.add({
+        this.pushFailure({
             severity: "error",
             message: $localize`:@@search.components.classification.retrieve:Retrieving the classification type definition`,
-            source: "search",
         });
     }
 
@@ -296,10 +306,9 @@ export class EditorState {
             },
             error: () => {
                 this.loading.set(false);
-                this.alerts.add({
+                this.pushFailure({
                     severity: "error",
                     message: $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`,
-                    source: "search",
                 });
             },
         });
@@ -391,19 +400,17 @@ export class EditorState {
 
     /** The name-taken line (VDE-08): one alert, drawer open, edits kept. */
     private nameTaken(): void {
-        this.alerts.add({
+        this.pushFailure({
             severity: "error",
             message: $localize`:@@search.components.editor.nameTaken:That name is already held by another entity.`,
-            source: "search",
         });
     }
 
     /** The refused-save path (EDT-08, VDE-09): one alert, drawer open, edits kept. */
     private saveFailed(): void {
-        this.alerts.add({
+        this.pushFailure({
             severity: "error",
             message: $localize`:@@search.services.entityUpdate.save:Saving the entity`,
-            source: "search",
         });
     }
 
@@ -437,10 +444,9 @@ export class EditorState {
             },
             error: () => {
                 this.deleting.set(false);
-                this.alerts.add({
+                this.pushFailure({
                     severity: "error",
                     message: $localize`:@@search.services.entityDelete.delete:Deleting the entity`,
-                    source: "search",
                 });
             },
         });
@@ -483,20 +489,18 @@ export class EditorState {
                         this.reloaded.set({ from: before, to: view });
                     },
                     error: () => {
-                        this.alerts.add({
+                        this.pushFailure({
                             severity: "error",
                             message: $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`,
-                            source: "search",
                         });
                     },
                 });
             },
             error: () => {
                 this.restoring.set(null);
-                this.alerts.add({
+                this.pushFailure({
                     severity: "error",
                     message: $localize`:@@search.components.editor.history.restoreFailed:Restoring the attribute`,
-                    source: "search",
                 });
             },
         });

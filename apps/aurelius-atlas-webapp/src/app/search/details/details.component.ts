@@ -26,6 +26,7 @@ import {
     type SectionStat,
 } from "aurelius-atlas-ui";
 
+import { alertOnFailure } from "../shared/alert-on-failure";
 import { canWriteEntities } from "../shared/can-write-entities";
 import { EntityWritten } from "../shared/entity-written";
 import { nameDisplay } from "../meta/type-display";
@@ -163,6 +164,12 @@ export class Details {
     private waitedKey = "";
 
     constructor() {
+        // The stores' held failures reach the drawer through the shared
+        // relay (DD-871): DetailsState's failed read and RelatedSectionsState's
+        // failed chunk each alert once, from the screen that shows them.
+        alertOnFailure(this.state);
+        alertOnFailure(this.sections);
+
         // The fetch follows the URL (DET-08): on arrival and on every guid
         // change (the results screen's URL-effect idiom).
         effect(() => {

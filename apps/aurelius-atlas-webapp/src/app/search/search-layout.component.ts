@@ -6,6 +6,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Hero, SearchField } from "aurelius-atlas-ui";
 
+import { alertOnFailure } from "./shared/alert-on-failure";
 import { canWriteEntities } from "./shared/can-write-entities";
 import { SearchState } from "./search-state";
 
@@ -54,6 +55,12 @@ export class SearchLayout {
 
     /** The `+`'s accessible name — the catalogue's create label (EDT-11). */
     protected readonly createLabel = $localize`:@@search.createEntity.newEntity:Create new entity`;
+
+    constructor() {
+        // SearchState's held failures reach the drawer through the shared
+        // relay (DD-871) — the one place this screen's store alerts.
+        alertOnFailure(this.search);
+    }
 
     /** The route's URL, current after every navigation (the signals below read it). */
     private readonly url = toSignal(

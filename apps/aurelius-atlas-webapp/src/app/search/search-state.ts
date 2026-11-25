@@ -10,9 +10,9 @@ import {
 } from "aurelius-atlas-data-access";
 import { FacetItem } from "aurelius-atlas-ui";
 
-import { AlertsService } from "../alerts/alerts.service";
 import { SearchMode, SearchModeService } from "../settings/search-mode.service";
 import { nameDisplay } from "./meta/type-display";
+import { type AlertNotice } from "./shared/alert-on-failure";
 
 /** The door's type-facet key (VSR-06) — the one facet the screen filters on (DD-426). */
 const TYPE_FACET = "typeName";
@@ -90,10 +90,16 @@ export class SearchState {
 
     private readonly searchMode = inject(SearchModeService);
 
-    private readonly alerts = inject(AlertsService);
-
     /** The legacy `pageSize` (the results store's 10). */
     static readonly PAGE_SIZE = 10;
+
+    /** The failures awaiting the screen's relay (DD-871), oldest first. */
+    readonly failures = signal<readonly AlertNotice[]>([]);
+
+    /** Mark the held failures shown ({@link alertOnFailure}, DD-871). */
+    handled(): void {
+        this.failures.set([]);
+    }
 
     /** The cards accumulated across pages, in answer order (SRH-04, VSR-07). */
     readonly entries = signal<ViewCard[]>([]);
@@ -383,13 +389,15 @@ export class SearchState {
                     this.meaningUnavailable();
                     return;
                 }
-                this.alerts.add({
-                    severity: "error",
+                this.failures.update((held) => [
+                    ...held,
                     // The legacy pipeline's quiet task line ("…loading a page
                     // of search results"), as the alert's message.
-                    message: $localize`:@@search.services.appSearchResults.loading:Loading a page of search results`,
-                    source: "search",
-                });
+                    {
+                        severity: "error",
+                        message: $localize`:@@search.services.appSearchResults.loading:Loading a page of search results`,
+                    },
+                ]);
             },
         });
     }
@@ -399,11 +407,13 @@ export class SearchState {
      * whose change searches again by the query's words (SBX-02).
      */
     private meaningUnavailable(): void {
-        this.alerts.add({
-            severity: "warning",
-            message: $localize`:@@search.mode.unavailable:Search by meaning is not available on this server`,
-            source: "search",
-        });
+        this.failures.update((held) => [
+            ...held,
+            {
+                severity: "warning",
+                message: $localize`:@@search.mode.unavailable:Search by meaning is not available on this server`,
+            },
+        ]);
         // Stored as Words: the setting's change searches again (SBX-02).
         this.searchMode.set("words");
     }

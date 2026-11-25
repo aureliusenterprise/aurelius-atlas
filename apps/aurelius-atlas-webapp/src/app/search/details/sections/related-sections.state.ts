@@ -2,8 +2,8 @@ import { computed, inject, Injectable, signal } from "@angular/core";
 import { type EntityCard, type EntityView, type RuleScore, ViewSearchService } from "aurelius-atlas-data-access";
 import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-ui";
 
-import { AlertsService } from "../../../alerts/alerts.service";
 import { nameDisplay } from "../../meta/type-display";
+import { type AlertNotice } from "../../shared/alert-on-failure";
 import { sectionEnds, type SectionEnd } from "../../shared/people";
 import { FACET_GROUP_TITLES, RULE_SORT_KEYS, RULE_SORT_LABELS } from "./layouts";
 import {
@@ -220,10 +220,16 @@ function ruleScoresByRule(def: SectionDef, ruleScores: readonly RuleScore[]): Ma
 export class RelatedSectionsState {
     private readonly search = inject(ViewSearchService);
 
-    private readonly alerts = inject(AlertsService);
-
     /** The sections of the current entity's layout. */
     private readonly records = signal<SectionRecord[]>([]);
+
+    /** The failed chunks awaiting the screen's relay (DD-871), oldest first. */
+    readonly failures = signal<readonly AlertNotice[]>([]);
+
+    /** Mark the held failures shown ({@link alertOnFailure}, DD-871). */
+    handled(): void {
+        this.failures.set([]);
+    }
 
     /** The resolve generation: a re-seed drops every in-flight answer. */
     private generation = 0;
@@ -492,13 +498,15 @@ export class RelatedSectionsState {
                         }
                         return { ...current, failed, pending: current.pending - 1 };
                     });
-                    // One alert per failed chunk, the DET-13 idiom; no
-                    // retry loop (DET-18). The cards the section has stay.
-                    this.alerts.add({
-                        severity: "error",
-                        message: $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`,
-                        source: "search",
-                    });
+                    // One held failure per failed chunk, the DET-13 idiom;
+                    // no retry loop (DET-18). The cards the section has stay.
+                    this.failures.update((held) => [
+                        ...held,
+                        {
+                            severity: "error",
+                            message: $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`,
+                        },
+                    ]);
                 },
             });
         }
