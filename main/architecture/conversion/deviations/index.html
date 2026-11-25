@@ -8360,6 +8360,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The card rows DET-59 sorts are the honest sortable set (AVS-01). A dimension sort would need the rule attribute on every rule card — the wire change 7.25a declined for this box (DD-842) — or a per-card read (DV-204). The legacy's rule <code>dqscore</code> was its engine's result row, not a roll-up the store holds.</td>
 <td>7.25c</td>
 </tr>
+<tr>
+<td>DV-206</td>
+<td>Data quality</td>
+<td>The legacy demo deployment carried data quality scores: its quality engine measured one score per rule over the sample's fields, and the averaging job rolled them up so 81 of the frozen 654 documents answered with <code>dqscore_*</code> totals (14.1's oracle fixtures). A real scan record also carried a check kind and row counts (<code>rowsChecked</code>, <code>rowsFailed</code>, <code>passed</code>).</td>
+<td><code>sample_data.zip</code> now ships 42 baked <code>m4i_dq_score</code> entities - one per legacy row - each filling only the five attributes the read path consumes (<code>verdict</code>, <code>score</code>, <code>ruleGuid</code>, <code>datasetGuid</code>, <code>dimension</code>) plus the scanner's key shape (DQS-06/DQS-07), with a fixed <code>runId</code>. <code>checkKind</code>, <code>passed</code>, <code>rowsChecked</code>, <code>rowsFailed</code> and <code>errorMessage</code> stay unset (DD-859). The roll-up then reproduces the oracle's totals on the demo store.</td>
+<td>The demo numbers come from the legacy recording, which never measured rows over a live extract, so filling the row-count attributes would invent facts on a surface users read as measurement; none of them feeds the roll-up or the 7.25c screens (ASQ-02, DD-532). A later real scan updates the same entity by its key (DD-456) and can write the full record. Baking the scores moves the demo store closer to the oracle, which was made from them.</td>
+<td>12.9</td>
+</tr>
 </tbody>
 </table>
 

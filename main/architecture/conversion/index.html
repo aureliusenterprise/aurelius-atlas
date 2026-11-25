@@ -8358,6 +8358,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>12.9</td>
+<td>The demo corpus ships per-field quality scores</td>
+<td><code>sample_data.zip</code> gains the 42 per-field <code>m4i_dq_score</code> records the legacy deployment measured (one per rule over 25 fields of 2 datasets, the frozen 14.1 quality fixture), keyed as 12.2 keys a scanner's score. No code changes: 14.5's quality round derives their results and ASQ-04/ASQ-05 add them up per field, data attribute and breadcrumb, so the 7.25c score surfaces (DET-56, DET-58, DET-60) light up and the demo store reproduces the 81 rolled-up documents of the frozen oracle. The records carry only the five attributes the read path consumes (DD-858, DD-859, DV-206)</td>
+<td>Aurelius <code>m4i-atlas-post-install</code> (<code>propagate_quality</code>) - the averaging job over the quality scan 14.1 froze</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>13.1</td>
 <td>The Kafka cluster scanner</td>
 <td><code>apps/aurelius-atlas-kafka-scanner</code>: a batch CLI that lists a broker's external topics, reads each schema from the Schema Registry or infers one from the topic's messages, and writes the System/Collection/Dataset/Field tree in one bulk request as its own service identity; the broker-and-Registry e2e stack (KSC-01..10, DD-465..469; the stack joined the app's <code>e2e/</code> with DD-541)</td>
