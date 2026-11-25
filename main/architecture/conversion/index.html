@@ -7924,6 +7924,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.51</td>
+<td>Layout's first row leaves the details screen</td>
+<td><code>apps/aurelius-atlas-webapp/src/app/search/details/first-row.component.ts</code>: the layout's first row (DET-15/DET-16: the <code>#description-details</code> markdown box of DET-10 and the <code>#people-details</code> People box of DET-23) moves out into one presentational <code>DetailsFirstRow</code> (the row paints the six values it is handed and re-emits the person click); the screen keeps the <code>descriptionBox</code> guard (DET-39 skips the whole row for a person, and the guard reads the layout store), the <code>Markdown</code> and <code>PeopleBox</code> imports ride with it, and no test moves, so the same tests hold on their unchanged names (the 7.19 shape: no new rule ids; DD-878)</td>
+<td>– (Aurelius code organisation, not Atlas)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>

@@ -97,6 +97,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.48 | Governance banner leaves the editor drawer | apps/aurelius-atlas-webapp | none (proves EDT-24, VEV-09; DD-874) |
 | 7.49 | Field controls leave the editor drawer | apps/aurelius-atlas-webapp | none (proves EDT-03, EDT-20; DD-875) |
 | 7.50 | Compliance Chart box leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-54, DD-849; DD-877) |
+| 7.51 | Layout's first row leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-15/DET-16, DD-518; DD-878) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
