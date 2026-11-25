@@ -11,11 +11,10 @@ import {
     viewChild,
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { NgTemplateOutlet } from "@angular/common";
 import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
 import { ActivatedRoute, Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
 import { Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
@@ -36,6 +35,7 @@ import { EditorState, type PickerType } from "./editor-state";
 import { AUDIT_RETRIEVE_LINE, AuditTrail } from "./history/audit-state";
 import { HistoryTab } from "./history/history-tab.component";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
+import { GovernanceLines } from "./governance-lines.component";
 import { TypeField, type EditorTypeBadge } from "./type-field.component";
 import { EntityWritten } from "../shared/entity-written";
 import {
@@ -105,10 +105,10 @@ type EditorValue = string | number | boolean | string[] | null;
         EntityRelationshipInput,
         FontAwesomeModule,
         FormField,
+        GovernanceLines,
         HistoryTab,
         Holdable,
         MarkdownEditor,
-        NgTemplateOutlet,
         QualityFields,
         Select,
         TypeField,
@@ -341,12 +341,6 @@ export class EntityEditor {
 
     /** The multi row's delete icon. */
     protected readonly faXmark = faXmark;
-
-    /** The banner line's verdict icons (EDT-24, the legacy's pair). */
-    protected readonly faCheckCircle = faCheckCircle;
-
-    /** The banner line's warning icon (EDT-24). */
-    protected readonly faExclamationTriangle = faExclamationTriangle;
 
     protected readonly nameRequired = $localize`:@@search.components.editor.attribute.nameRequired:Name is required.`;
 
