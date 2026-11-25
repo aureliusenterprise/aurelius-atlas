@@ -20,6 +20,16 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   read the tenant from a URL or a setting**: the remembered alias only picks what the silent check asks for
 - `public/silent-check-sso.html` — the silent-SSO redirect page (hash-pinned in
   the nginx CSP; served at the origin root, keyed to it by `keycloakInitOptions()`)
+- `src/testing/` — the **test-only** world every screen spec shares (7.42, DD-868):
+  `api.ts` the door URLs, `auth.ts` the Keycloak double, `config.ts` the fake
+  runtime config and tenancy, `providers.ts` the provider set
+  (`provideScreenTest({ keycloak, tenancy })`), `view-fixtures.ts` the entity
+  builders, `dom.ts` the whitespace collapse and the typedef-walk settle. Specs
+  import it by relative path (`../../../testing/api`) and never the reverse: no
+  file under `src/app/` may import from here. The folder is excluded in
+  `tsconfig.app.json`, so it never bundles — `nx test` type-checks it and
+  `nx build` does not see it. Write a new spec screen test on these providers;
+  add a door URL here rather than re-declaring it in a spec
 - `src/locale/` — **generated** XLIFF catalogues (the Aurelius dictionary bridge,
   DD-128); regenerate with `node tools/generate-legacy-catalogue.mjs`, never hand-edit
 - `tests/fixtures/` — the vendored legacy dictionaries (parity reference, SHL-08)
