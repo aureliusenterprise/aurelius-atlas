@@ -11,7 +11,8 @@ import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-u
 
 import { entityFromView } from "../../editor/view-as-entity";
 import { PAGE_SIZE } from "./related-sections.state";
-import { FACET_GROUP_TITLES, GOV_QUALITY_TITLE, type FacetGroupKey } from "./section-config";
+import { FACET_GROUP_TITLES, GOV_QUALITY_TITLE } from "./layouts";
+import type { FacetGroupKey } from "./section.model";
 
 /** The rule type's own name: the box lists the rules written for a type (DET-42). */
 const RULE_TYPE_NAME = "m4i_gov_data_quality";

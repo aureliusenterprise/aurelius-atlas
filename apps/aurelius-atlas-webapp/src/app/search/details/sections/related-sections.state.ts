@@ -5,20 +5,16 @@ import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-u
 import { AlertsService } from "../../../alerts/alerts.service";
 import { nameDisplay } from "../../meta/type-display";
 import { sectionEnds, type SectionEnd } from "../shared/people";
+import { FACET_GROUP_TITLES, RULE_SORT_KEYS, RULE_SORT_LABELS } from "./layouts";
 import {
     dimensionScore,
-    FACET_GROUP_TITLES,
     QUALITY_DIMENSIONS,
     QUALITY_DIMENSION_LABELS,
-    qualitySortKey,
     printableRuleScore,
-    RULE_SORT_KEYS,
-    RULE_SORT_LABELS,
-    type FacetGroupKey,
+    qualitySortKey,
     type QualityDimension,
-    type SectionDef,
-    type TypeLayout,
-} from "./section-config";
+} from "../../shared/quality-mapping";
+import type { FacetGroupKey, SectionDef, TypeLayout } from "./section.model";
 
 /** The resolve chunk size: one door request per chunk (DD-368, DD-615). */
 export const CHUNK_SIZE = 25;
