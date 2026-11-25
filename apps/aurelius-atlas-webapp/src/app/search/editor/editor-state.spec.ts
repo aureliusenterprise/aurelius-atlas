@@ -13,7 +13,6 @@ import { Router } from "@angular/router";
 
 import { ViewEntityService, type EntityView, type ViewSaveRequest } from "aurelius-atlas-data-access";
 
-import { AlertsService } from "../../alerts/alerts.service";
 import { EditorState } from "./editor-state";
 import { EntityWritten } from "../shared/entity-written";
 
@@ -91,20 +90,15 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         expect(state.view()?.guid).toBe("7a1b");
     });
 
-    it("a failed read alerts and keeps the drawer's empty state (EDT-02, VDE-01)", () => {
+    it("a failed read holds its failure and keeps the drawer's empty state (EDT-02, VDE-01)", () => {
         const { state, httpMock } = setup();
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
 
         state.loadEntity("missing");
         httpMock.expectOne(`${VIEW_URL}missing`).flush({}, { status: 404, statusText: "Not Found" });
 
         expect(state.loading()).toBe(false);
         expect(state.view()).toBeNull();
-        expect(add).toHaveBeenCalledWith({
-            severity: "error",
-            source: "search",
-            message: "Retrieving the entity details",
-        });
+        expect(state.failures()).toEqual([{ severity: "error", message: "Retrieving the entity details" }]);
     });
 
     it("an update save is one door POST carrying the base's version (VDE-05, AVW-04)", () => {
@@ -166,7 +160,6 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         const before = view();
         state.view.set(before);
         state.chosen.set(["PII"]);
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         const stored = view({ updateTime: 2_000_000_000_000, classificationNames: ["PII", "APPROVED"] });
@@ -175,9 +168,9 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
             .expectOne(VIEW_POST_URL)
             .flush({ errorCode: "ENTITY_VERSION_CONFLICT", view: stored }, { status: 409, statusText: "Conflict" });
 
-        // No alert, no navigation (DD-591's reload-and-reedit): the base moves
-        // to the stored view and the event waits for the component.
-        expect(add).not.toHaveBeenCalled();
+        // No held failure, no navigation (DD-591's reload-and-reedit): the base
+        // moves to the stored view and the event waits for the component.
+        expect(state.failures()).toEqual([]);
         expect(navigate).not.toHaveBeenCalled();
         expect(state.view()?.updateTime).toBe(2_000_000_000_000);
         expect(state.conflict()).toEqual({ from: before, to: stored });
@@ -194,7 +187,6 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
     it("a taken name answers its own line and keeps the drawer open (VDE-08, AVW-06)", () => {
         const { state, httpMock } = setup();
         state.beginCreate("DataSet");
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         state.save({
@@ -209,13 +201,11 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
                 { status: 409, statusText: "Conflict" },
             );
 
-        // One alert naming the taken name — not the conflict path, no navigation.
-        expect(add).toHaveBeenCalledTimes(1);
-        expect(add).toHaveBeenCalledWith({
-            severity: "error",
-            source: "search",
-            message: "That name is already held by another entity.",
-        });
+        // One held failure naming the taken name — not the conflict path, no
+        // navigation.
+        expect(state.failures()).toEqual([
+            { severity: "error", message: "That name is already held by another entity." },
+        ]);
         expect(state.conflict()).toBeNull();
         expect(navigate).not.toHaveBeenCalled();
     });
@@ -223,7 +213,6 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
     it("any other failure is the one EDT-08 alert (VDE-09)", () => {
         const { state, httpMock } = setup();
         state.view.set(view());
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         state.save(body());
@@ -234,8 +223,7 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
                 { status: 403, statusText: "Forbidden" },
             );
 
-        expect(add).toHaveBeenCalledTimes(1);
-        expect(add).toHaveBeenCalledWith({ severity: "error", source: "search", message: "Saving the entity" });
+        expect(state.failures()).toEqual([{ severity: "error", message: "Saving the entity" }]);
         expect(state.saving()).toBe(false);
         expect(navigate).not.toHaveBeenCalled();
     });
@@ -295,10 +283,9 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         httpMock.verify(); // no navigation, no further request (DD-822)
     });
 
-    it("a restore refusal alerts once and re-reads nothing (HST-11)", () => {
+    it("a restore refusal holds its failure once and re-reads nothing (HST-11)", () => {
         const { state, httpMock } = setup();
         state.view.set(view());
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
 
         state.restore("7a1b", "description", "the old text");
         httpMock
@@ -306,11 +293,7 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
             .flush({}, { status: 403, statusText: "Forbidden" });
 
         expect(state.restoring()).toBeNull();
-        expect(add).toHaveBeenCalledWith({
-            severity: "error",
-            source: "search",
-            message: "Restoring the attribute",
-        });
+        expect(state.failures()).toEqual([{ severity: "error", message: "Restoring the attribute" }]);
         expect(state.reloaded()).toBeNull();
         httpMock.verify(); // nothing re-reads, nothing ticks
     });
@@ -318,7 +301,6 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
     it("the saved tick rides the write, so a failed re-read still tells the details screen (HST-11, WFE-01)", () => {
         const { state, httpMock } = setup();
         state.view.set(view());
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         const written = TestBed.inject(EntityWritten);
         const before = written.latest()?.seq ?? 0;
 
@@ -327,15 +309,12 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         httpMock.expectOne(`${VIEW_URL}7a1b`).flush({}, { status: 500, statusText: "Server Error" });
 
         // The write landed, so the tick fired with it — the details screen
-        // underneath re-reads even though the drawer's read failed.
+        // underneath re-reads even though the drawer's read failed, which
+        // still holds its read failure for the screen's relay.
         expect(written.latest()?.seq).toBeGreaterThan(before);
         expect(written.latest()?.outcome).toBe("saved");
         expect(state.reloaded()).toBeNull();
-        expect(add).toHaveBeenCalledWith({
-            severity: "error",
-            source: "search",
-            message: "Retrieving the entity details",
-        });
+        expect(state.failures()).toEqual([{ severity: "error", message: "Retrieving the entity details" }]);
     });
 
     it("one write at a time: a second restore asks nothing (DD-822)", () => {
@@ -413,9 +392,8 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         expect(state.pickerTypes().map((row) => row.name)).toEqual(["m4i_dataset"]);
     });
 
-    it("a slice failure alerts once and leaves its list empty (VDE-02)", () => {
+    it("a slice failure holds its failure once and leaves its list empty (VDE-02)", () => {
         const { state, httpMock } = setup();
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
 
         state.loadSlices();
         httpMock
@@ -426,11 +404,9 @@ describe("EditorState on the view doors (VDE-01, VDE-05..VDE-11)", () => {
         httpMock.expectOne("/api/atlas/v2/types/typedefs/headers?type=ENTITY").flush([]);
 
         expect(state.classificationDefs()).toEqual([]);
-        expect(add).toHaveBeenCalledWith({
-            severity: "error",
-            source: "search",
-            message: "Retrieving the classification type definition",
-        });
+        expect(state.failures()).toEqual([
+            { severity: "error", message: "Retrieving the classification type definition" },
+        ]);
     });
 
     it("a tag add and remove move the chosen names the door body carries (VDE-03, EDT-05)", () => {

@@ -2,9 +2,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { EntityCard, FacetEntry, ViewSearchAnswer } from "aurelius-atlas-data-access";
-import { vi } from "vitest";
 
-import { AlertsService } from "../alerts/alerts.service";
 import { SearchMode, SearchModeService } from "../settings/search-mode.service";
 import { SearchState } from "./search-state";
 
@@ -426,10 +424,8 @@ describe("SearchState (SRH-02..06, SDX-01..07, VSR-03..09)", () => {
         expect(store.hasResults()).toBe(false);
     });
 
-    it("a failing page lands in the alerts store and ends the load (SDX-01, DD-214, VSR-08)", () => {
+    it("a failing page holds its failure and ends the load (SDX-01, DD-214, VSR-08)", () => {
         const { store, httpMock } = setup();
-        const alerts = TestBed.inject(AlertsService);
-        const add = vi.spyOn(alerts, "add");
 
         store.run("boom");
         httpMock
@@ -440,7 +436,9 @@ describe("SearchState (SRH-02..06, SDX-01..07, VSR-03..09)", () => {
             );
 
         expect(store.loading()).toBe(false);
-        expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: "error", source: "search" }));
+        // The store holds the legacy quiet task line for the screen's relay
+        // (DD-214's visible path, DD-871's seam) — byte-identical.
+        expect(store.failures()).toEqual([{ severity: "error", message: "Loading a page of search results" }]);
     });
 });
 
@@ -571,8 +569,6 @@ describe("SearchState by meaning (SBW-03..SBW-06, SBX-02, VSR-03/05/08/09)", () 
 
     it("a server without search by meaning says so and searches by words again (SBW-06, VSR-08)", () => {
         const { store, httpMock } = setup();
-        const alerts = TestBed.inject(AlertsService);
-        const add = vi.spyOn(alerts, "add");
         chooseMode("semantic");
         store.run("orders");
 
@@ -580,23 +576,23 @@ describe("SearchState by meaning (SBW-03..SBW-06, SBX-02, VSR-03/05/08/09)", () 
             .expectOne(DOOR)
             .flush({ errorCode: "AURELIUS-404-00-001", errorMessage: "off" }, { status: 404, statusText: "Not Found" });
 
-        expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: "warning", source: "search" }));
+        expect(store.failures()).toEqual([
+            { severity: "warning", message: "Search by meaning is not available on this server" },
+        ]);
         expect(store.mode()).toBe("words");
         const words = httpMock.expectOne(DOOR);
         expect(words.request.body).toMatchObject({ query: "orders", mode: "keyword" });
         httpMock.verify();
     });
 
-    it("any other failure by meaning is the failed page's alert, the mode kept (SBW-06, VSR-08)", () => {
+    it("any other failure by meaning is the failed page's failure, the mode kept (SBW-06, VSR-08)", () => {
         const { store, httpMock } = setup();
-        const alerts = TestBed.inject(AlertsService);
-        const add = vi.spyOn(alerts, "add");
         chooseMode("semantic");
         store.run("orders");
 
         httpMock.expectOne(DOOR).flush({ errorCode: "AURELIUS-503-00-001" }, { status: 503, statusText: "Down" });
 
-        expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: "error", source: "search" }));
+        expect(store.failures()).toEqual([{ severity: "error", message: "Loading a page of search results" }]);
         expect(store.mode()).toBe("semantic");
         expect(store.loading()).toBe(false);
         httpMock.verify();

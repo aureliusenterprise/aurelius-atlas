@@ -3,7 +3,6 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import type { EntityCard, EntityView, RuleScore } from "aurelius-atlas-data-access";
 
-import { AlertsService } from "../../../alerts/alerts.service";
 import { LAYOUTS } from "./layouts";
 import { CHUNK_SIZE, PAGE_SIZE, type SectionCard, RelatedSectionsState } from "./related-sections.state";
 
@@ -153,23 +152,21 @@ describe("Related sections store (DET-17..DET-22)", () => {
 
     it("a guid missing from the answer is a deleted relation: no card, the count keeps it (DET-18)", () => {
         const { store, httpMock } = setup();
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         store.seed(opened([related("a1", "Alpha"), related("a2", "Beta")]), LAYOUT);
 
         // The answer holds only one of the two: a deleted relation, not an
-        // error — no card for a2, no alert.
+        // error — no card for a2, no held failure.
         flushAll(httpMock, (guids) => guids.slice(0, 1).map((guid) => resolved(guid, `attr-${guid}`)));
 
         const attributes = store.views().find((view) => view.anchor === "related-attributes");
         expect(attributes?.count).toBe(2); // the count keeps the missing guid
         expect(attributes?.cards.map((card) => card.guid)).toEqual(["a1"]);
-        expect(add).not.toHaveBeenCalled();
+        expect(store.failures()).toEqual([]);
         httpMock.verify();
     });
 
-    it("drops a failed chunk's cards with one alert, keeps its count (DET-18)", () => {
+    it("drops a failed chunk's cards with one held failure, keeps its count (DET-18)", () => {
         const { store, httpMock } = setup();
-        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         store.seed(opened([related("a1", "Alpha"), related("a2", "Beta")]), LAYOUT);
 
         searchRequests(httpMock)[0].flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
@@ -178,12 +175,7 @@ describe("Related sections store (DET-17..DET-22)", () => {
         expect(attributes?.count).toBe(2); // the count keeps the dropped cards
         expect(attributes?.cards).toHaveLength(0);
         expect(attributes?.loading).toBe(false);
-        expect(add).toHaveBeenCalledTimes(1);
-        expect(add).toHaveBeenCalledWith({
-            severity: "error",
-            source: "search",
-            message: "Retrieving the entity details",
-        });
+        expect(store.failures()).toEqual([{ severity: "error", message: "Retrieving the entity details" }]);
         httpMock.expectNone(SEARCH_URL); // no retry loop
     });
 
@@ -1119,9 +1111,8 @@ describe("The section facet filters (VCF-09..VCF-14, VCF-18, DD-619/DD-620/DD-62
             httpMock.verify();
         });
 
-        it("a failed verdict chunk drops its cards with one alert and keeps the count (DET-53, DET-18)", () => {
+        it("a failed verdict chunk drops its cards with one held failure and keeps the count (DET-53, DET-18)", () => {
             const { store, httpMock } = setup();
-            const add = vi.spyOn(TestBed.inject(AlertsService), "add");
             store.seed(openedRule(), RULE_LAYOUT, verdictGuids(["e-1", "e-2"], []));
 
             searchRequests(httpMock)[0].flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
@@ -1130,13 +1121,12 @@ describe("The section facet filters (VCF-09..VCF-14, VCF-18, DD-619/DD-620/DD-62
             expect(view?.count).toBe(2); // the count keeps the dropped cards
             expect(view?.cards).toHaveLength(0);
             expect(view?.loading).toBe(false);
-            expect(add).toHaveBeenCalledTimes(1);
+            expect(store.failures()).toEqual([{ severity: "error", message: "Retrieving the entity details" }]);
             httpMock.expectNone(SEARCH_URL); // no retry loop
         });
 
         it("a verdict GUID the answer omits is a deleted entity: no card, the count keeps it (DET-53, DET-18)", () => {
             const { store, httpMock } = setup();
-            const add = vi.spyOn(TestBed.inject(AlertsService), "add");
             store.seed(openedRule(), RULE_LAYOUT, verdictGuids(["e-1", "e-2"], []));
 
             flushAll(httpMock, (guids) => guids.slice(0, 1).map((guid) => resolved(guid, `ds-${guid}`)));
@@ -1144,7 +1134,7 @@ describe("The section facet filters (VCF-09..VCF-14, VCF-18, DD-619/DD-620/DD-62
             const view = store.views().find((section) => section.anchor === "related-non-compliants");
             expect(view?.count).toBe(2);
             expect(view?.cards.map((card) => card.guid)).toEqual(["e-1"]);
-            expect(add).not.toHaveBeenCalled();
+            expect(store.failures()).toEqual([]);
             httpMock.verify();
         });
 
