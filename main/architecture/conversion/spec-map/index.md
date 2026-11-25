@@ -95,6 +95,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.46 | History pane leaves the editor drawer | apps/aurelius-atlas-webapp | none (proves HST-01..16, LR-002/005; DD-872) |
 | 7.47 | Type field leaves the editor drawer | apps/aurelius-atlas-webapp | none (proves EDT-04, DD-330; DD-873) |
 | 7.48 | Governance banner leaves the editor drawer | apps/aurelius-atlas-webapp | none (proves EDT-24, VEV-09; DD-874) |
+| 7.49 | Field controls leave the editor drawer | apps/aurelius-atlas-webapp | none (proves EDT-03, EDT-20; DD-875) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |

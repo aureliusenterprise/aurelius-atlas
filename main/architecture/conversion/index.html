@@ -7910,6 +7910,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.49</td>
+<td>Field controls leave the editor drawer</td>
+<td><code>apps/aurelius-atlas-webapp/src/app/search/editor/entity-fields.component.ts</code>: the drawer's per-kind field loop (EDT-03, EDT-20, FORM-REQ-001, FORM-ERR-002) moves out into one presentational <code>EntityFields</code> (the label seat, the required star, the control, the error line, and the markdown field's labels ride with it); the drawer keeps the whole form — the signal form and its rules (DD-354), the seed, the validate round (EDT-23), the save (EDT-06) and its conflict paths — the child is handed the form tree and answers to it for the enum pick and the multi delete, so the same tests hold on their unchanged names (the 7.19 shape: no new rule ids; DD-875)</td>
+<td>– (Aurelius code organisation, not Atlas)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
