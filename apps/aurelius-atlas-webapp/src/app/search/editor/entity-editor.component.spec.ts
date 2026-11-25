@@ -13,9 +13,10 @@
  * and the commit foot (EDT-10 amended by EDT-19, DD-347 — Delete + Save in the
  * foot, the hold mechanic specced at the directive). The History pane and its
  * specs moved to `history/history-tab.component.spec.ts` with the pane (7.46),
- * and the type field's list/badge/pick specs to `type-field.component.spec.ts`
- * with the field (7.47); the fixtures and settle helpers all three specs share
- * live in `editor-testing.ts`.
+ * the type field's list/badge/pick specs to `type-field.component.spec.ts`
+ * with the field (7.47), and the governance banner's render specs to
+ * `governance-lines.component.spec.ts` with the lines (7.48); the fixtures and
+ * settle helpers all four specs share live in `editor-testing.ts`.
  */
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
@@ -60,7 +61,6 @@ import {
     arriveTypeDefs,
     chainFor,
     flushValidation,
-    govVerdict,
     holdDirective,
     parentAnswer,
     parentChain,
@@ -1579,121 +1579,10 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         vi.useRealTimers();
     });
 
-    it("renders one banner line per verdict that names a control, nothing for the rest (EDT-24)", () => {
-        const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock);
-
-        // The engine answers four verdicts (VEV-02); the DataSet drawer renders
-        // controls for two of their attributes — the `description` verdict
-        // names the one prose control (EDT-24 as amended by 12.7 and 18.8,
-        // SPA-06). The attributes no control carries (`dataEntity`,
-        // `domainLead`) render nowhere (DD-446).
-        const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
-        expect(lines).toHaveLength(2);
-        // The DOM order is the form's (EDT-03's rank): the name control's
-        // line first, the description control's after it.
-        expect(lines.map((line) => normalize(line.textContent))).toEqual([
-            "This entity has a name",
-            "This entity has a description",
-        ]);
-
-        // The lines sit under their own control, at the legacy's small size,
-        // with the success icon (compliant true) in Bulma's icon seat.
-        const nameLine = lines.find((line) => line.closest(".aurelius-editor-field")?.querySelector("#editor-name"));
-        expect(normalize(nameLine?.textContent)).toBe("This entity has a name");
-        expect(nameLine?.classList.contains("is-size-7")).toBe(true);
-        expect(nameLine?.querySelector(".icon.has-text-success svg")).toBeTruthy();
-        const descriptionLine = lines.find((line) =>
-            line.closest(".aurelius-editor-field")?.querySelector("textarea#editor-description"),
-        );
-        expect(normalize(descriptionLine?.textContent)).toBe("This entity has a description");
-        expect(descriptionLine?.querySelector(".icon.has-text-success svg")).toBeTruthy();
-    });
-
-    it("a non-compliant verdict paints the warning icon (EDT-24)", () => {
-        const { fixture, compiled, httpMock } = setup();
-        arriveSlices(fixture, httpMock, false);
-        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
-        fixture.detectChanges(); // the answer's type fires the chain read (VDE-02)
-        arriveChain(httpMock, "DataSet", DATASET_CHAIN);
-        fixture.detectChanges();
-
-        httpMock.expectOne(VALIDATE_URL).flush({
-            verdicts: [govVerdict("name", "This entity is missing a name", false)],
-            unreadRules: [],
-        });
-        fixture.detectChanges();
-
-        const line = compiled.querySelector<HTMLElement>("[data-gov-line]")!;
-        expect(normalize(line.textContent)).toBe("This entity is missing a name");
-        expect(line.querySelector(".icon.has-text-warning svg")).toBeTruthy();
-        expect(line.querySelector(".icon.has-text-success")).toBeNull();
-    });
-
-    it("the retired key's verdict borrows nothing (EDT-24, SPA-06, DD-633 superseded)", () => {
-        // The alias DD-633 drew — a `definition` verdict naming the
-        // description control while the form carried no definition control —
-        // fell away with the attribute (18.8, ADR 070). On the shipped DataSet
-        // chain a `definition` verdict measures no control and paints no
-        // line; the description verdict paints under its own control alone.
-        const { fixture, compiled, httpMock } = setup();
-        arriveSlices(fixture, httpMock, false);
-        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
-        fixture.detectChanges();
-        arriveChain(httpMock, "DataSet", DATASET_CHAIN);
-        fixture.detectChanges();
-
-        httpMock.expectOne(VALIDATE_URL).flush({
-            verdicts: [
-                govVerdict("definition", "This entity has a definition", true),
-                govVerdict("description", "This entity has a description", true),
-            ],
-            unreadRules: [],
-        });
-        fixture.detectChanges();
-
-        const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
-        expect(lines.map((line) => normalize(line.textContent))).toEqual(["This entity has a description"]);
-        expect(lines[0].closest(".aurelius-editor-field")?.querySelector("textarea#editor-description")).toBeTruthy();
-    });
-
-    it("an anyOf verdict paints under each control the rule names (EDT-24, VEV-09, DD-636)", () => {
-        // The paired rule measures two names: its verdict carries `attribute`
-        // plus `anyOf` and sits once under each control it names — the fields
-        // rule's line rides both the fields picker and the child picker.
-        const pair = {
-            ruleGuid: "rule-fields-pair",
-            ruleName: "Dataset has a field or a child dataset",
-            attribute: "inputToProcesses",
-            anyOf: ["model"],
-            dimension: "COMPLETENESS",
-            compliant: true,
-            message: "This dataset has a field or a child dataset",
-        };
-        const solo = {
-            ...pair,
-            ruleGuid: "rule-model",
-            ruleName: "Dataset has a model",
-            attribute: "model",
-            message: "This dataset has a model",
-        };
-        const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock, RA_ANSWER, raChain(), false);
-        httpMock.expectOne(VALIDATE_URL).flush({ verdicts: [pair, solo], unreadRules: [] });
-        fixture.detectChanges();
-
-        const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
-        expect(lines).toHaveLength(3); // once per control per naming verdict — no copies
-        const inputs = [...compiled.querySelectorAll<HTMLElement>('[data-field="inputToProcesses"] [data-gov-line]')];
-        const models = [...compiled.querySelectorAll<HTMLElement>('[data-field="model"] [data-gov-line]')];
-        expect(inputs.map((line) => normalize(line.textContent))).toEqual([
-            "This dataset has a field or a child dataset",
-        ]);
-        expect(models.map((line) => normalize(line.textContent))).toEqual([
-            "This dataset has a field or a child dataset",
-            "This dataset has a model",
-        ]);
-    });
+    // The banner's own render tests (the lines under the controls, the icon
+    // pair, the retired key, the anyOf copies) moved with the lines to the
+    // GovernanceLines spec at 7.48 (DD-874); the validate round above still
+    // exercises what the drawer owns (EDT-23).
 
     it("a create draft is validated too, with the seeded type (EDT-23)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });

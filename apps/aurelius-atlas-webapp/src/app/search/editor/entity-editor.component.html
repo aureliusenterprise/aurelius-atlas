@@ -339,8 +339,10 @@
                             </p>
                         }
                         <!-- The governance banner lines under the control (EDT-24,
-                         DD-446), rendered by the one template below. -->
-                        <ng-container *ngTemplateOutlet="govLines; context: { fieldName: field.name }"></ng-container>
+                         DD-446, DD-874): the verdicts that name this control. -->
+                        <aurelius-atlas-webapp-governance-lines
+                            [verdicts]="validationItems(field.name)"
+                        ></aurelius-atlas-webapp-governance-lines>
                     </div>
                 }
 
@@ -393,9 +395,10 @@
                             </p>
                         }
                         <!-- The governance banner lines under the picker, the same
-                         rule as the plain controls (EDT-24), rendered by the
-                         one template below. -->
-                        <ng-container *ngTemplateOutlet="govLines; context: { fieldName: field.name }"></ng-container>
+                         rule as the plain controls (EDT-24, DD-874). -->
+                        <aurelius-atlas-webapp-governance-lines
+                            [verdicts]="validationItems(field.name)"
+                        ></aurelius-atlas-webapp-governance-lines>
                     </div>
                 }
 
@@ -436,32 +439,4 @@
             (endOpened)="openAuditEnd($event)"
         />
     </div>
-
-    <!-- The governance banner lines (EDT-24 as amended by 12.7, DD-446/DD-498):
-         one per verdict measuring the control — the icon by the boolean
-         `compliant`, then the verdict's message, at the legacy's small size.
-         No verdict of the key, no lines; `unreadRules` renders none. The one
-         template under every control and every picker alike (each renders it
-         through ngTemplateOutlet). -->
-    <ng-template #govLines let-fieldName="fieldName">
-        @for (verdict of validationItems(fieldName); track verdict.ruleGuid) {
-            <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
-                <span class="icon-text">
-                    <span
-                        class="icon"
-                        [class.has-text-warning]="!verdict.compliant"
-                        [class.has-text-success]="verdict.compliant"
-                    >
-                        @if (!verdict.compliant) {
-                            <fa-icon [icon]="faExclamationTriangle"></fa-icon>
-                        }
-                        @if (verdict.compliant) {
-                            <fa-icon [icon]="faCheckCircle"></fa-icon>
-                        }
-                    </span>
-                    <span>{{ verdict.message }}</span>
-                </span>
-            </p>
-        }
-    </ng-template>
 </aurelius-atlas-ui-drawer>
