@@ -4,6 +4,8 @@ import type { EntityCard, RuleScore } from "aurelius-atlas-data-access";
 
 import { CatalogueCard } from "./catalogue-card.component";
 
+import { normalize } from "../../../testing/dom";
+
 /**
  * The one rich card of both screens (VCF-01, VCF-06, DD-616, DD-617): the
  * shell's title and badge, the breadcrumb trail (the stored crumb array
@@ -37,9 +39,6 @@ class Host {
     pageGuid: string | undefined = undefined;
     last: string | null = null;
 }
-
-/** Collapse the markup's whitespace. */
-const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
 /** A card carrying every body field. */
 const CARD: EntityCard = {

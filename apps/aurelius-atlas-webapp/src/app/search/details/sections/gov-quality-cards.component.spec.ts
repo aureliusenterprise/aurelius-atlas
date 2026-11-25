@@ -4,6 +4,8 @@ import { TestBed } from "@angular/core/testing";
 import { GovQualityCards } from "./gov-quality-cards.component";
 import type { GovQualityRow } from "./gov-quality.state";
 
+import { normalize } from "../../../../testing/dom";
+
 /**
  * The Governance Quality Rules cards (DET-42, DD-521): one card per row —
  * the rule's name as the title link, the badge of its type — and the body
@@ -23,9 +25,6 @@ class Host {
     rows: readonly GovQualityRow[] = [];
     lastRule: string | null = null;
 }
-
-/** Collapse the markup's whitespace. */
-const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
 /** One row of each verdict shape. */
 const COMPLIANT: GovQualityRow = {

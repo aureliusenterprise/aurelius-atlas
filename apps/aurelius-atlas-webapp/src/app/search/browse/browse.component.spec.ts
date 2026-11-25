@@ -1,11 +1,11 @@
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting, HttpTestingController } from "@angular/common/http/testing";
+import { HttpTestingController } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { provideRouter } from "@angular/router";
-import Keycloak from "keycloak-js";
 
 import { SearchState } from "../search-state";
 import { Browse } from "./browse.component";
+
+import { normalize } from "../../../testing/dom";
+import { provideScreenTest } from "../../../testing/providers";
 
 describe("Browse", () => {
     let httpMock: HttpTestingController;
@@ -14,13 +14,10 @@ describe("Browse", () => {
         await TestBed.configureTestingModule({
             imports: [Browse],
             providers: [
-                provideRouter([]),
-                provideHttpClient(),
-                provideHttpClientTesting(),
+                // The governance card's explore reads the session e-mail, so
+                // the landing spec rides the harness double (tokenParsed).
+                ...provideScreenTest(),
                 SearchState,
-                // The governance card's explore reads the session e-mail; the
-                // landing spec keeps the Keycloak plumbing out of scope.
-                { provide: Keycloak, useValue: { tokenParsed: {} } },
             ],
         }).compileComponents();
 
@@ -40,8 +37,6 @@ describe("Browse", () => {
         // The i18n marker attribute is consumed by the compiler, so the rendered
         // English text is the observable proof of the @@search.browse.* keys.
         // Whitespace is collapsed: the template wraps its lines.
-        const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
-
         expect(normalize(compiled.querySelector(".box h2.title.is-2")?.textContent)).toBe("Getting started");
 
         const placeholder = compiled.querySelector("#browse-placeholder");

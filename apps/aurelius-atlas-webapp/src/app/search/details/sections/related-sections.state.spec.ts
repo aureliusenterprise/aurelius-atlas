@@ -1,11 +1,14 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import type { EntityCard, EntityRelation, EntityView, RelationEntity, RuleScore } from "aurelius-atlas-data-access";
+import type { EntityCard, EntityView, RuleScore } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../../alerts/alerts.service";
 import { LAYOUTS } from "./section-config";
 import { CHUNK_SIZE, PAGE_SIZE, type SectionCard, RelatedSectionsState } from "./related-sections.state";
+
+import { SEARCH_URL } from "../../../../testing/api";
+import { ends } from "../../../../testing/view-fixtures";
 
 /**
  * The card-section store (DET-17..DET-22, DD-365/DD-368, VDR-03, VCF-02,
@@ -14,8 +17,6 @@ import { CHUNK_SIZE, PAGE_SIZE, type SectionCard, RelatedSectionsState } from ".
  * the details screen's idiom — `provideHttpClientTesting`, `expectOne` +
  * `flush`.
  */
-const SEARCH_URL = "/api/aurelius/v1/search";
-
 /** The entity layout's sections: every section of one type at once. */
 const LAYOUT = LAYOUTS.m4i_data_entity;
 
@@ -28,15 +29,6 @@ function related(guid: string, displayText: string, status?: string): Record<str
         name: displayText,
         ...(status === undefined ? {} : { status }),
     };
-}
-
-/**
- * One view section carrying the given ends. The fixture ends stay loose
- * (`Record<string, unknown>`) on purpose: the guidless and deleted entries
- * the DET-17 rule drops are not representable as a `RelationEntity`.
- */
-function ends(attribute: string, seed: readonly Record<string, unknown>[]): EntityRelation {
-    return { attribute, entities: seed as unknown as RelationEntity[] };
 }
 
 /** A resolved card for the door answer (DD-615). */

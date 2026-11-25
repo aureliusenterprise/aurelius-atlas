@@ -4,7 +4,6 @@ import { provideRouter, Router, type Routes } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import Keycloak from "keycloak-js";
 
-import { AppConfig } from "../config";
 import { AlertsService } from "../alerts/alerts.service";
 import { APP_CONFIG } from "../tokens";
 import { ShellHeader } from "./header.component";
@@ -12,12 +11,13 @@ import { TENANCY } from "../tenancy";
 import { DashboardsService } from "./dashboards.service";
 import { Session } from "./session.service";
 
-const config: AppConfig = {
+import { fakeAppConfig } from "../../testing/config";
+import { normalize } from "../../testing/dom";
+
+/** The deployed config (SHL-10) on the realm the account link is pinned to. */
+const config = fakeAppConfig({
     keycloak: { clientId: "aurelius", realm: "atlas", url: "https://keycloak.example/" },
-    apiBaseUrl: "/api",
-    otelExporterUrl: "/otel/v1/traces",
-    appName: "Aurelius Atlas Data Governance",
-};
+});
 
 const DOC_HREF = "https://aureliusenterprise.github.io/aurelius-atlas-documentation/";
 
@@ -53,8 +53,6 @@ function render() {
 
     return fixture.nativeElement as HTMLElement;
 }
-
-const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
 describe("ShellHeader", () => {
     beforeEach(() => {

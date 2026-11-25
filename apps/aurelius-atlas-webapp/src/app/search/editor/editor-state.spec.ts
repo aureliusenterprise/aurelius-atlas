@@ -7,10 +7,9 @@
  * store is the door's only caller, so the specs ride the real clients through
  * HttpTestingController — the wire each rule names is the one under test.
  */
-import { provideHttpClient } from "@angular/common/http";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { Router, provideRouter } from "@angular/router";
+import { Router } from "@angular/router";
 
 import { ViewEntityService, type EntityView, type ViewSaveRequest } from "aurelius-atlas-data-access";
 
@@ -18,28 +17,27 @@ import { AlertsService } from "../../alerts/alerts.service";
 import { EditorState } from "./editor-state";
 import { EntityWritten } from "./entity-written";
 
-const VIEW_URL = "/api/aurelius/v1/entity/guid/";
-const VIEW_POST_URL = "/api/aurelius/v1/entity";
-const ATLAS_DELETE_URL = "/api/atlas/v2/entity/guid/7a1b";
+import { ATLAS_ENTITY_URL, VIEW_POST_URL, VIEW_URL } from "../../../testing/api";
+import { provideScreenTest } from "../../../testing/providers";
+import { view as viewFixture } from "../../../testing/view-fixtures";
 
-/** The view the read door answers (VDE-01). */
+/** The entity the delete door answers for (VDE-11). */
+const ATLAS_DELETE_URL = `${ATLAS_ENTITY_URL}7a1b`;
+
+/** The view the read door answers (VDE-01): the shared view plus the fields
+ * this store parses — its own tags (VDE-03), a value the form edits, and one
+ * relationship section (VDE-06). */
 function view(overrides: Partial<EntityView> = {}): EntityView {
-    return {
-        guid: "7a1b",
-        typeName: "DataSet",
-        qualifiedName: "genomic_variants@cluster",
-        displayText: "genomic_variants",
-        status: "ACTIVE",
+    return viewFixture({
         createTime: 1_700_000_000_000,
         updateTime: 1_700_000_021_000,
         classificationNames: ["PII"],
-        stale: false,
-        attributes: { name: "genomic_variants", owner: "analyst-3" },
+        attributes: { name: "genomic_variants", qualifiedName: "genomic_variants@cluster", owner: "analyst-3" },
         sections: [
             { attribute: "inputToProcesses", entities: [{ guid: "p1", name: "load_events", status: "ACTIVE" }] },
         ],
         ...overrides,
-    };
+    });
 }
 
 /** One door body the shape the store posts (VDE-05). */
@@ -56,7 +54,7 @@ function body(overrides: Partial<ViewSaveRequest> = {}): ViewSaveRequest {
 
 function setup() {
     TestBed.configureTestingModule({
-        providers: [EditorState, provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+        providers: [EditorState, ...provideScreenTest()],
     });
     const state = TestBed.inject(EditorState);
     return { state, httpMock: TestBed.inject(HttpTestingController) };

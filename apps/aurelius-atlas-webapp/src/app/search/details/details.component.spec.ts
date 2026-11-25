@@ -1,25 +1,27 @@
 import { ViewportScroller } from "@angular/common";
-import { provideHttpClient } from "@angular/common/http";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter, type UrlTree } from "@angular/router";
+import { ActivatedRoute, ParamMap, Router, convertToParamMap, type UrlTree } from "@angular/router";
 import { By } from "@angular/platform-browser";
-import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 
-import type { EntityRelation, EntityView, RelationEntity } from "aurelius-atlas-data-access";
+import type { EntityView } from "aurelius-atlas-data-access";
 import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
 
 import modelFixture from "../../../../tests/fixtures/lineage-graph.extract.json";
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { VersionService } from "../../shell/version.service";
-import { APP_CONFIG } from "../../tokens";
 import { EntityWritten } from "../editor/entity-written";
 
 import { Details } from "./details.component";
+
+import { TYPEDEF_URL, VIEW_URL } from "../../../testing/api";
+import { normalize, settleTypeDefs } from "../../../testing/dom";
+import { provideScreenTest } from "../../../testing/providers";
+import { ends, sectionsOf, view } from "../../../testing/view-fixtures";
 
 /**
  * The details screen on its data spine (DET-08..DET-13, 7.20, VDR-01): the
@@ -31,20 +33,8 @@ import { Details } from "./details.component";
  * observable, `expectOne` + `flush` for the arrival, `detectChanges` to let
  * the effects and signals settle.
  */
-const VIEW_URL = "/api/aurelius/v1/entity/guid/";
-
-/** The layout dispatch's typedef read (DET-15): `/v2/types/typedef/name/{name}`. */
-const TYPEDEF_URL = "/api/atlas/v2/types/typedef/name/";
-
 /** The read door's answer for the fixture entity: two renderable properties. */
-const ANSWER: EntityView = {
-    guid: "7a1b",
-    typeName: "DataSet",
-    displayText: "genomic_variants",
-    name: "genomic_variants",
-    qualifiedName: "genomic_variants@cluster",
-    status: "ACTIVE",
-    stale: false,
+const ANSWER: EntityView = view({
     classificationNames: ["PII", "CONFIDENTIAL"],
     attributes: {
         name: "genomic_variants",
@@ -52,7 +42,7 @@ const ANSWER: EntityView = {
         description: "Curated variant calls.",
         owner: "analyst-3",
     },
-};
+});
 
 /** The view minus its classification names — the chip-less variant (VDR-05). */
 const NO_CHIPS: EntityView = { ...ANSWER, classificationNames: [] };
@@ -95,15 +85,8 @@ function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = 
     TestBed.configureTestingModule({
         imports: [Details],
         providers: [
-            provideHttpClient(),
-            provideHttpClientTesting(),
-            provideRouter([]),
+            ...provideScreenTest({ keycloak: { atlasWrite } }),
             { provide: ActivatedRoute, useValue: { paramMap, fragment: fragment$ } },
-            { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
-            {
-                provide: Keycloak,
-                useValue: { hasResourceRole: (role: string) => atlasWrite && role === "atlas-write" },
-            },
             // The lineage box's save flow reads the version (VER-01, DD-725);
             // the screen's own reads are what this spec verifies, so the
             // version never leaves this stub (its fetch is its service's spec).
@@ -129,34 +112,6 @@ function arrive(fixture: { detectChanges: () => void }, httpMock: HttpTestingCon
     fixture.detectChanges();
     settleTypeDefs(httpMock);
 }
-
-/**
- * One view section carrying the given ends. The fixture ends stay loose
- * (`Record<string, unknown>`) on purpose: the guidless and DELETED entries
- * the fixtures carry are not representable as a `RelationEntity`.
- */
-function ends(attribute: string, seed: readonly Record<string, unknown>[]): EntityRelation {
-    return { attribute, entities: seed as unknown as RelationEntity[] };
-}
-
-/** The view's sections, one per key in ``seeds``. */
-function sectionsOf(seeds: Record<string, readonly Record<string, unknown>[]>): EntityRelation[] {
-    return Object.entries(seeds).map(([attribute, seed]) => ends(attribute, seed));
-}
-
-/**
- * Settle the DET-15 layout walk: a type that is not one of the seven reads
- * its typedef; every fixture type here is `DataSet` or `m4i_*` with no
- * layout of its own to walk, so a "no typedef" answer (the built-in
- * error, DET-15) ends the walk and keeps the default layout.
- */
-function settleTypeDefs(httpMock: HttpTestingController): void {
-    for (const request of httpMock.match((r) => r.url.startsWith(TYPEDEF_URL))) {
-        request.flush({}, { status: 404, statusText: "Not Found" });
-    }
-}
-
-const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
 describe("Details data spine (DET-08..DET-13)", () => {
     it("fetches the entity by guid on arrival (DET-08, VDR-01)", () => {
