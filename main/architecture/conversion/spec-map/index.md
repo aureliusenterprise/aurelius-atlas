@@ -89,6 +89,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.40 | History definition diff | `apps/aurelius-atlas-webapp` | HST (DD-825) |
 | 7.41 | Editor drops the term-assignment picker | `apps/aurelius-atlas-webapp` | EDT-36 (EDT-13 amended, DD-828, DV-193) |
 | 7.42 | Webapp test harness | `apps/aurelius-atlas-webapp` | none (proves AVS-01/06, EDT-09; DD-868) |
+| 7.43 | Section config split | `apps/aurelius-atlas-webapp` | none (proves DET-16/56..66, VCF-10/18; DD-869) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
