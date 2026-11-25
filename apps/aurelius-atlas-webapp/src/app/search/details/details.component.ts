@@ -20,6 +20,7 @@ import {
 
 import { alertOnFailure } from "../shared/alert-on-failure";
 import { canWriteEntities } from "../shared/can-write-entities";
+import { FACET_SHOW_LESS, FACET_SHOW_MORE, FILTER_NOT_AVAILABLE, LOAD_NEXT_PAGE } from "../shared/labels";
 import { EntityWritten } from "../shared/entity-written";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
@@ -561,20 +562,20 @@ export class Details {
     /** The count line's word — `search.details.components.detailsCardsList.results`. */
     protected readonly resultWord = $localize`:@@search.details.components.detailsCardsList.results:result(s)`;
 
-    /** The scroll container's label — `search.components.infiniteScrollContainer.loadNextPage`. */
-    protected readonly loadLabel = $localize`:@@search.components.infiniteScrollContainer.loadNextPage:Load next page...`;
+    /** The scroll container's label — the shared chrome label (DD-883). */
+    protected readonly loadLabel = LOAD_NEXT_PAGE;
 
     /** The funnel button's name — `search.details.components.detailsCardsList.filter` (VCF-08). */
     protected readonly filterLabel = $localize`:@@search.details.components.detailsCardsList.filter:Filter`;
 
-    /** The popover's empty line — `search.components.filter.notAvailable` (VCF-10). */
-    protected readonly notAvailableLabel = $localize`:@@search.components.filter.notAvailable:No filters available.`;
+    /** The popover's empty line — the shared chrome label (DD-883). */
+    protected readonly notAvailableLabel = FILTER_NOT_AVAILABLE;
 
-    /** The facet menu's show-more label — `search.components.filter.facet.showMore` (UIC-34). */
-    protected readonly showMoreLabel = $localize`:@@search.components.filter.facet.showMore:Show more`;
+    /** The facet menu's show-more label — the shared chrome label (DD-883). */
+    protected readonly showMoreLabel = FACET_SHOW_MORE;
 
-    /** The facet menu's show-less label — `search.components.filter.facet.showLess` (UIC-34). */
-    protected readonly showLessLabel = $localize`:@@search.components.filter.facet.showLess:Show less`;
+    /** The facet menu's show-less label — the shared chrome label (DD-883). */
+    protected readonly showLessLabel = FACET_SHOW_LESS;
 
     /** The People box's placeholder — `search.components.people.empty`. */
     protected readonly peopleEmpty = $localize`:@@search.components.people.empty:No people assigned.`;

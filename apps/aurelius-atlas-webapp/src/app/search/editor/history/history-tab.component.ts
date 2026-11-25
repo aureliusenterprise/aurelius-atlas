@@ -13,6 +13,7 @@ import {
 import { type EntityAuditEventV2 } from "aurelius-atlas-data-access";
 
 import { typeIcon } from "../../meta/type-icons";
+import { LOAD_NEXT_PAGE } from "../../shared/labels";
 import { EditorState } from "../editor-state";
 import { attributeLabels } from "../attribute-labels";
 import { fieldLabel, type EditorLabels } from "../form-fields";
@@ -89,8 +90,8 @@ export class HistoryTab {
     }
 
     /** The container's sentinel label (HST-08): the results list's key, so
-     * the trail pages with the same words every other paged list uses. */
-    protected readonly auditLoadLabel = $localize`:@@search.components.infiniteScrollContainer.loadNextPage:Load next page...`;
+     * the trail pages with the same words every other paged list uses (DD-883). */
+    protected readonly auditLoadLabel = LOAD_NEXT_PAGE;
 
     /** The change list's heading (HST-10). */
     protected readonly auditChangeLine = $localize`:@@search.components.editor.history.changes:Changes`;
