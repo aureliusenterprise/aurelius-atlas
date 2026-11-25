@@ -7931,6 +7931,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.52</td>
+<td>Stats bar leaves the details screen</td>
+<td><code>apps/aurelius-atlas-webapp/src/app/search/details/stats-bar.component.ts</code>: the stats bar (DET-24: the flat <code>section-stats</code> bar, DET-40/DD-518: the person page's grouped boxes, the default layout's Properties level) moves out into one presentational <code>DetailsStatsBar</code> (the bar paints the list it is handed and re-emits the heading anchor for the screen to route); the screen keeps <code>stats()</code>, <code>statsGroups()</code>, and <code>statCount()</code> (the live counts read the property, lineage, section, and score stores, so the math stays the screen's), the <code>SectionStats</code> import rides with it, and no test moves (the 7.19 shape: no new rule ids; DD-879)</td>
+<td>– (Aurelius code organisation, not Atlas)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
