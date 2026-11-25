@@ -148,6 +148,51 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         httpMock.verify();
     });
 
+    /**
+     * A page whose first card carries the roll-up (AVS-01) and whose second
+     * carries none — the two cases one results list can hold side by side.
+     * The `overall` row rides along as the door writes it; DET-64 leaves it
+     * out of the printed list and DET-63 needs it to open the source.
+     */
+    function scoredPage() {
+        return {
+            ...page(2, 2),
+            cards: [
+                {
+                    guid: "g0",
+                    typeName: "DataSet",
+                    displayText: "scored-entity",
+                    status: "ACTIVE",
+                    stale: false,
+                    quality: [
+                        { dimension: "overall", score: 0.7, count: 2, total: 2 },
+                        { dimension: "completeness", score: 0.7, count: 2, total: 2 },
+                        { dimension: "timeliness", score: 0, count: 0, total: 2 },
+                    ],
+                },
+                { guid: "g1", typeName: "DataSet", displayText: "plain-entity", status: "ACTIVE", stale: false },
+            ],
+        };
+    }
+
+    it("a scored card draws its block on the results screen, an un-scored one none (DET-61 as amended, DET-60, DET-64)", () => {
+        // 7.25d retires the results-screen switch (DD-860): the shared card
+        // decides from its own data, so the list prints a block wherever a
+        // roll-up scored something and none where it did not. The 0-count
+        // timeliness row prints no line either (DET-64, LAS-12's zeros).
+        const { compiled, httpMock } = arrive("genomic", scoredPage());
+
+        const blocks = compiled.querySelectorAll(".result-row .aurelius-card-scores");
+        expect(blocks).toHaveLength(1);
+        expect([...blocks[0].querySelectorAll(".quality-dimension")].map((row) => normalize(row.textContent))).toEqual([
+            "70% Completeness (2)",
+        ]);
+        // The un-scored card draws nothing in its place — no block, no
+        // placeholder (the card's `showPlaceholder` stays off, DET-60).
+        expect(compiled.querySelector(".aurelius-quality-not-available")).toBeNull();
+        httpMock.verify();
+    });
+
     it("a card click routes to the entity's details (SRH-05)", () => {
         const { compiled, navigate } = arrive("genomic");
 

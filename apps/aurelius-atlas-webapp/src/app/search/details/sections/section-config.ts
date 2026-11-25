@@ -1250,12 +1250,15 @@ export function hasScoreSource(quality: CardQuality[] | undefined): boolean {
 }
 
 /**
- * The five dimension rows as UIC-37 draws them (DET-56, DET-60, DD-852):
- * the held dimensions in the fixed order, `overall` left out, a row whose
- * score never renders skipped (DET-63). The gate on the source is the
- * caller's — a card prints its partial set (DET-60), the box shows the
- * placeholder (DET-56). A 0-count dimension stays: it is a held row of
- * the roll-up, and the legacy prints it (DET-63).
+ * The dimension rows as UIC-37 draws them (DET-56, DET-60, DD-852, DD-861):
+ * the scored dimensions in the fixed order, `overall` left out, a row whose
+ * score never renders skipped (DET-63), and a dimension whose `count` is 0
+ * dropped (DET-64) — the legacy gates each dimension on the count's truthy
+ * value, and its own documents hold 0 for every dimension nothing measured.
+ * The gate on the source is the caller's — a card prints its partial set
+ * (DET-60), the box shows the placeholder (DET-56). ASQ-05 sums the five
+ * dimensions into `overall`, so a sourceless view is the only one whose list
+ * can come back empty.
  * @param quality the AVS-01 score rows, or absent
  * @returns the rows in DET-56's order
  */
@@ -1263,7 +1266,7 @@ export function qualityRows(quality: CardQuality[] | undefined): QualityDimensio
     const rows: QualityDimensionRow[] = [];
     for (const dimension of QUALITY_DIMENSIONS) {
         const row = quality?.find((entry) => entry.dimension === dimension);
-        if (usableScore(row)) {
+        if (usableScore(row) && row.count > 0) {
             rows.push({ dimension: QUALITY_DIMENSION_LABELS[dimension], score: row.score, count: row.count });
         }
     }
@@ -1272,14 +1275,16 @@ export function qualityRows(quality: CardQuality[] | undefined): QualityDimensio
 
 /**
  * One dimension's usable score on a card, for the score sort (DET-59,
- * DET-63): the card's row for the dimension, or `undefined` when it holds
- * none or the score never renders — the sort's last place.
+ * DET-63, DET-64): the card's row for the dimension, or `undefined` when it
+ * holds none, the score never renders, or the dimension counts nothing —
+ * an uncounted dimension is not a scored one (DET-64), so it takes the
+ * sort's last place like an absent row.
  * @param quality the card's AVS-01 score rows, or absent
  * @param dimension the sorted dimension
  */
 export function dimensionScore(quality: CardQuality[] | undefined, dimension: QualityDimension): number | undefined {
     const row = quality?.find((entry) => entry.dimension === dimension);
-    return usableScore(row) ? row.score : undefined;
+    return usableScore(row) && row.count > 0 ? row.score : undefined;
 }
 
 /**

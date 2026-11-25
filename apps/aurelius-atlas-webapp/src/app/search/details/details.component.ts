@@ -454,7 +454,7 @@ export class Details {
 
     /**
      * The Data Quality score box (DET-56, DET-63, DD-852): the opened
-     * view's own score rows (AVS-01, AVS-08) in DET-56's five-row order,
+     * view's own score rows (AVS-01, AVS-08) in DET-56's dimension order,
      * or the placeholder rows the UIC-37 list shows — no second read,
      * the box rides DET-08's read exactly like the stats bar's counts.
      */
@@ -759,7 +759,8 @@ type DetailsSectionView = SectionView | GovSectionView | ScoreSectionView;
 
 /**
  * The Data Quality score box as the template draws it (DET-56, DD-852):
- * the five dimension rows, or an empty list with the placeholder text.
+ * the scored dimension rows — a dimension with no rules prints no row
+ * (DET-64) — or an empty list with the placeholder text.
  * The title is the layout's own key — read from the layout's section
  * entry by the template's own title binding.
  */

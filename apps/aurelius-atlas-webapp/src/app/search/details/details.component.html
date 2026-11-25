@@ -299,15 +299,13 @@
                                 <!-- The shared rich card (VCF-05, DD-616): the
                                  same component the results row mounts —
                                  trail, chips, description, flat people. -->
-                                <!-- DET-60/DET-61 (7.25c, DD-855): a details
-                                 section's card prints its score rows —
-                                 the mount-site switch, the legacy's
-                                 SHOW_DATA_QUALITY, off on the results
-                                 screen (DV-202). -->
+                                <!-- DET-60 as amended by 7.25d (DD-860): the
+                                 score block is the card's own rule, not a
+                                 mount-site switch — the section card and the
+                                 results row print it the same way. -->
                                 <aurelius-atlas-webapp-catalogue-card
                                     [card]="card.card"
                                     [pageGuid]="guid()"
-                                    [showScores]="true"
                                     (cardClicked)="onCardClick($event)"
                                 />
                             }
