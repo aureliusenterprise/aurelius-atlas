@@ -11,7 +11,6 @@ import { map } from "rxjs";
 import {
     Accordion,
     Breadcrumbs,
-    ClassificationChip,
     DetailsCardSection,
     DetailsNavigation,
     EntityCard,
@@ -37,7 +36,8 @@ import { CatalogueCard } from "../shared/catalogue-card.component";
 import { ComplianceChartBox, type ComplianceChart } from "./compliance-chart.component";
 import { DetailsFirstRow } from "./first-row.component";
 import { DetailsStatsBar } from "./stats-bar.component";
-import { PropagatedChips, type PropagatedChipEntry } from "../shared/propagated-chips.component";
+import { type PropagatedChipEntry } from "../shared/propagated-chips.component";
+import { ClassificationChips } from "./classification-chips.component";
 import { DetailsGovQualityState, type GovSectionView } from "./sections/gov-quality.state";
 import { DetailsRuleVerdictsState } from "./sections/rule-verdicts.state";
 import { GovQualityCards } from "./sections/gov-quality-cards.component";
@@ -76,7 +76,7 @@ import { cardTypeAlias } from "../shared/type-alias";
         Accordion,
         Breadcrumbs,
         CatalogueCard,
-        ClassificationChip,
+        ClassificationChips,
         ComplianceChartBox,
         DetailsCardSection,
         DetailsFirstRow,
@@ -87,7 +87,6 @@ import { cardTypeAlias } from "../shared/type-alias";
         GovQualityCards,
         LineageModel,
         PropertiesItem,
-        PropagatedChips,
         QualityDimensionList,
         TypeName,
         RouterLink,
