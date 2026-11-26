@@ -1,4 +1,4 @@
-# Compliance &amp; Auditability
+# Compliance & Auditability
 
 > [!NOTE]
 >

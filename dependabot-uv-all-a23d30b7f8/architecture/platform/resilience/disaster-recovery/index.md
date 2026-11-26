@@ -1,6 +1,6 @@
 # Disaster Recovery
 
-How the system comes back when more than one part is lost, and the bounds on what that costs ([ADR 026](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/026-the-system-can-be-brought-back-from-a-named-snapshot/index.md>)). The parts come back from two sources: the released images and charts reproduce the machinery, and the store's snapshots reproduce the catalogue ([Backup &amp; Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md>)).
+How the system comes back when more than one part is lost, and the bounds on what that costs ([ADR 026](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/026-the-system-can-be-brought-back-from-a-named-snapshot/index.md>)). The parts come back from two sources: the released images and charts reproduce the machinery, and the store's snapshots reproduce the catalogue ([Backup & Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md>)).
 
 ## The objectives
 
@@ -23,11 +23,11 @@ The values are ADR 026's to name. The maximum data loss follows from the schedul
 | The cluster, its storage survives | a new install bound to the old volumes, then a restore | writes since the snapshot |
 | The cluster and its storage | a new install and a restore from a copy kept elsewhere, if there is one | the catalogue, without such a copy |
 
-The last row is the gap: the snapshots live inside the cluster (DD-356). A deployment that must survive the loss of its cluster copies the snapshots claim elsewhere on its own schedule, or registers an object store repository of its own. Keycloak's users are not backed up (see [Backup &amp; Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md>)).
+The last row is the gap: the snapshots live inside the cluster (DD-356). A deployment that must survive the loss of its cluster copies the snapshots claim elsewhere on its own schedule, or registers an object store repository of its own. Keycloak's users are not backed up (see [Backup & Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md>)).
 
 ## Rebuilding
 
 1. Install the umbrella chart of the same release as the lost one, with its values, at `atlas-server.replicaCount=0`. The store's schema comes from the snapshot, so the release must be the one that wrote it or a later one (ADR 023).
 2. Bind the snapshots claim to the surviving volume, or put the copy of the repository on it.
-3. Restore, then start the servers: steps 2 and 3 of [Backup &amp; Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md#on-a-cluster>).
+3. Restore, then start the servers: steps 2 and 3 of [Backup & Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md#on-a-cluster>).
 4. Check the catalogue: the newest entities, and `admin/metrics` for its counts.

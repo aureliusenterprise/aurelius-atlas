@@ -49,7 +49,7 @@ All 14 have offline suites; totals in brackets.
 
 Each suite scored per non-happy category: **●●** proven · **○** partial · **—** absent · **n/a** no such surface exists.
 
-| Suite | Input &amp; validation | Business rule / auth | Infrastructure | Interrupted / async | Edge-case behaviour |
+| Suite | Input & validation | Business rule / auth | Infrastructure | Interrupted / async | Edge-case behaviour |
 | --- | --- | --- | --- | --- | --- |
 | server | ●● | ●● | ○ startup/readiness only | — | ○ |
 | data2model | ●● | ●● auth | n/a stateless | — | ●● engine nulls |

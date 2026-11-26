@@ -1,4 +1,4 @@
-# Roles &amp; Responsibilities
+# Roles & Responsibilities
 
 > [!NOTE]
 >

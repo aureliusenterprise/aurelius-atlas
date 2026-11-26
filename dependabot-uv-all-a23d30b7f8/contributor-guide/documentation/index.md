@@ -26,6 +26,8 @@ nx docs
 
 Open your browser and navigate to [`http://localhost:8000`](<http://localhost:8000>) to view the documentation. The changes you make to the documentation will be automatically reflected in the browser.
 
+The webapp's development configuration points its header's Documentation link at this address, so `nx serve aurelius-atlas-webapp` and `nx docs` together let you follow a link from the app into the page you are editing. Run the docs command in another terminal: the webapp does not start it.
+
 ## Adding a New Page
 
 To add a new page to the documentation, create a new Markdown file in the `docs` directory.
@@ -36,7 +38,7 @@ Please ensure that the folder structure in the `docs` directory matches the stru
 
 ## Architecture Pages
 
-The reference-architecture trees under `docs/architecture/` (Vision &amp; Strategy, Data Lifecycle Management, Data Governance, Platform) are written **increment by increment**: the [filling maps](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/index.md>) on the tree index pages name the increment that writes each page. A page is written in the pull request of the increment that claims it — the facts are fresh there, and the increment's Definition of Done covers it.
+The reference-architecture trees under `docs/architecture/` (Vision & Strategy, Data Lifecycle Management, Data Governance, Platform) are written **increment by increment**: the [filling maps](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/index.md>) on the tree index pages name the increment that writes each page. A page is written in the pull request of the increment that claims it — the facts are fresh there, and the increment's Definition of Done covers it.
 
 A page not yet written is not left empty. It carries the standard marker, so a reader can tell a planned page from a forgotten one:
 

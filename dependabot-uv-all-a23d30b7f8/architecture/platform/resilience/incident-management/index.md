@@ -63,7 +63,7 @@ The commands are for a cluster release named `atlas` in the namespace `atlas`. I
 2. A full data volume shows as watermark errors in the log; a pod that does not start, as its events.
 3. Silent but healthy: the store's puller, `deploy/atlas-elasticsearch-metrics-puller`.
 
-**Mitigate.** Restart the store's pod only when it is stuck at start. A full volume needs a larger claim. A shard that stays red after the node is up needs a restore of its index: [Backup &amp; Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md#restoring>), after taking a snapshot of what is left.
+**Mitigate.** Restart the store's pod only when it is stuck at start. A full volume needs a larger claim. A shard that stays red after the node is up needs a restore of its index: [Backup & Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md#restoring>), after taking a snapshot of what is left.
 
 **Escalate.** Before any restore: it loses the writes since the snapshot. The decider and a second maintainer agree on it, and the dataset's owner is told.
 

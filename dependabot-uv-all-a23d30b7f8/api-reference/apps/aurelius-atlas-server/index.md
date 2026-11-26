@@ -1596,7 +1596,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 
 ## Design
 
-The technology-specific detail of how the server runs. The properties it must keep are in the architecture: [Configuration Management](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/delivery/configuration-management/index.md>) (ADR 018), [Components &amp; Interfaces](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/components-and-interfaces/index.md>).
+The technology-specific detail of how the server runs. The properties it must keep are in the architecture: [Configuration Management](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/delivery/configuration-management/index.md>) (ADR 018), [Components & Interfaces](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/components-and-interfaces/index.md>).
 
 **Settings.** Read once at start-up into a frozen `ServerSettings`; a validation failure (missing key, bad scheme, missing TLS material) stops start-up with a message naming the variable (SRV-01, SRV-02, SRV-06). All names carry the `AURELIUS_ATLAS_SERVER_` prefix. What a deployment must supply, with no defaults:
 

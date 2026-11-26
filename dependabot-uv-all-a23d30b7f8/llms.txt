@@ -2,10 +2,18 @@
 
 ## User Guide
 
+- [Change Data](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/change-data/index.md>)
+- [Check Data Quality](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/check-data-quality/index.md>)
 - [Deploy to Kubernetes](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/deployment/index.md>)
+- [Find Data](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/find-data/index.md>)
+- [Follow Lineage](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/follow-lineage/index.md>)
 - [User Guide](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/index.md>)
+- [Quick Start](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/quick-start/index.md>)
+- [Settings and Alerts](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/settings-and-alerts/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/standalone-server/index.md>)
 - [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/standalone-tenants/index.md>)
+- [Understand Data](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/understand-data/index.md>)
+- [Write Quality Rules](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/write-quality-rules/index.md>)
 
 ## Contributor Guide
 
@@ -19,6 +27,7 @@
 - [Secrets Management](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/contributor-guide/secrets-management/index.md>)
 - [Testing](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/contributor-guide/testing/index.md>)
 - [TLS Certificates](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/contributor-guide/tls-certificates/index.md>)
+- [User Documentation Plan](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/contributor-guide/user-documentation-plan/index.md>)
 - [Version Control](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/contributor-guide/version-control/index.md>)
 - [Writing Style](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/contributor-guide/writing-style/index.md>)
 
@@ -121,6 +130,7 @@
 - [068\. A catalogue bootstraps only the metamodel it serves](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/index.md>)
 - [069\. Each browser-facing surface answers on its own hostname](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/index.md>)
 - [070\. The catalogue ships one prose attribute](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/070-the-catalogue-ships-one-prose-attribute/index.md>)
+- [071\. A rule's verdicts come through the view family](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/071-a-rule-s-verdicts-come-through-the-view-family/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/design-log/index.md>)
@@ -133,12 +143,12 @@
 - [Conversion](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/index.md>)
 - [Java to Python Map](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/java-map/index.md>)
 - [Spec Map](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/spec-map/index.md>)
-- [Compliance &amp; Auditability](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/compliance-and-auditability/index.md>)
+- [Compliance & Auditability](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/compliance-and-auditability/index.md>)
 - [Data Dictionary](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/data-dictionary/index.md>)
 - [Data Lineage](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/data-lineage/index.md>)
 - [Data Quality](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/data-quality/index.md>)
 - [Data Governance](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/index.md>)
-- [Roles &amp; Responsibilities](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/roles-and-responsibilities/index.md>)
+- [Roles & Responsibilities](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/roles-and-responsibilities/index.md>)
 - [Data Archiving](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-lifecycle-management/data-archiving/index.md>)
 - [Data Collection](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-lifecycle-management/data-collection/index.md>)
 - [Data Processing](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-lifecycle-management/data-processing/index.md>)
@@ -150,7 +160,7 @@
 - [Secret Storage](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/deployment/secret-storage/index.md>)
 - [Architecture](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/index.md>)
 - [CI Test Tiers Plan](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/ci-test-tiers-plan/index.md>)
-- [Components &amp; Interfaces](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/components-and-interfaces/index.md>)
+- [Components & Interfaces](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/components-and-interfaces/index.md>)
 - [API Management](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/connectivity/api-management/index.md>)
 - [Connectivity](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/connectivity/index.md>)
 - [Integration Methods](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/connectivity/integration-methods/index.md>)
@@ -168,7 +178,7 @@
 - [Observability](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/observability/index.md>)
 - [Logging](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/observability/logging/index.md>)
 - [Monitoring](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/observability/monitoring/index.md>)
-- [Backup &amp; Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md>)
+- [Backup & Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md>)
 - [Disaster Recovery](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/disaster-recovery/index.md>)
 - [High Availability](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/high-availability/index.md>)
 - [Incident Management](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/incident-management/index.md>)
@@ -186,7 +196,7 @@
 - [Self-hosted CI](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/self-hosted-ci/index.md>)
 - [Architecture Roadmap](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/vision-and-strategy/architecture-roadmap/index.md>)
 - [Business Objectives](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/vision-and-strategy/business-objectives/index.md>)
-- [Vision &amp;amp; Strategy](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/vision-and-strategy/index.md>)
+- [Vision & Strategy](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/vision-and-strategy/index.md>)
 - [Mission Statement](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/vision-and-strategy/mission-statement/index.md>)
 - [Stakeholder Analysis](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/vision-and-strategy/stakeholder-analysis/index.md>)
 

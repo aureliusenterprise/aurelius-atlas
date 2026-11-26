@@ -1,4 +1,4 @@
-# Backup &amp; Restore
+# Backup & Restore
 
 What is backed up, how often, how long it is kept, and how a snapshot comes back ([ADR 026](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/026-the-system-can-be-brought-back-from-a-named-snapshot/index.md>)). The rules are those of increment 6.4e (SNP-01 to SNP-07).
 

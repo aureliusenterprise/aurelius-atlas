@@ -58,4 +58,4 @@ An entity delete marks the entity deleted; a purge (`PUT admin/purge`) or a hard
 
 ## Snapshots
 
-The store is snapshotted every hour and each snapshot is kept 7 days ([Backup &amp; Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md>)). A snapshot holds what the store held when it was taken, so data a lifetime has removed can live on in a snapshot for up to 7 more days: a stored metric, for example, until 21 days after it was taken. A restore brings such data back, and the next sweep removes it again.
+The store is snapshotted every hour and each snapshot is kept 7 days ([Backup & Restore](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/resilience/backup-and-restore/index.md>)). A snapshot holds what the store held when it was taken, so data a lifetime has removed can live on in a snapshot for up to 7 more days: a stored metric, for example, until 21 days after it was taken. A restore brings such data back, and the next sweep removes it again.

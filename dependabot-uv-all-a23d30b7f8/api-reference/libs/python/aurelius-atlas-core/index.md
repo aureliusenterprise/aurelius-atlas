@@ -1389,6 +1389,9 @@ Methods:
 - **`replace_verdicts`** –
 
   Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
+- **`results_by_field`** –
+
+  The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
 - **`scores`** –
 
   Every active score entity, by GUID (ASQ-02).
@@ -1398,6 +1401,12 @@ Methods:
 - **`unseen_relationships`** –
 
   Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+- **`verdicts_by_entity`** –
+
+  The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+- **`verdicts_by_rule`** –
+
+  The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
 - **`without_app_search`** –
 
   Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
@@ -1456,6 +1465,16 @@ replace_verdicts(verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None
 
 Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
 
+#### results\_by\_field
+
+```
+results_by_field(field_guid: str) -> list[StoredQualityResult]
+```
+
+The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
+
+The same paged read `scores()` runs, filtered over `qualityResult.fieldguid` (ASQ-03's keyword); a score holding no result answers no row, and a field no score names answers the empty list. The read door joins these rows into a field's view (VDR-16).
+
 #### scores
 
 ```
@@ -1479,6 +1498,26 @@ unseen_relationships(limit: int) -> list[VersionedRelationship]
 ```
 
 Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+
+#### verdicts\_by\_entity
+
+```
+verdicts_by_entity(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]
+```
+
+The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+
+Each group is in document id order, and an entity with no verdicts has no key. The doors answer a card's `verdicts` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
+
+#### verdicts\_by\_rule
+
+```
+verdicts_by_rule(rule_guid: str) -> list[StoredVerdict]
+```
+
+The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
+
+The same paged read as `verdicts_by_entity`, filtered over `guid`; a rule with no verdict documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).
 
 #### without\_app\_search
 
@@ -1781,6 +1820,9 @@ Methods:
 - **`restore_linked`** –
 
   Put back a linked document's state before a write, or delete one the write created (DD-062).
+- **`results_by_field`** –
+
+  The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
 - **`scores`** –
 
   Every active score entity, by GUID (ASQ-02).
@@ -1799,6 +1841,12 @@ Methods:
 - **`unseen_relationships`** –
 
   Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+- **`verdicts_by_entity`** –
+
+  The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+- **`verdicts_by_rule`** –
+
+  The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
 - **`without_app_search`** –
 
   Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
@@ -2001,6 +2049,16 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 
 Put back a linked document's state before a write, or delete one the write created (DD-062).
 
+#### results\_by\_field
+
+```
+results_by_field(field_guid: str) -> list[StoredQualityResult]
+```
+
+The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
+
+The same paged read `scores()` runs, filtered over `qualityResult.fieldguid` (ASQ-03's keyword); a score holding no result answers no row, and a field no score names answers the empty list. The read door joins these rows into a field's view (VDR-16).
+
 #### scores
 
 ```
@@ -2048,6 +2106,26 @@ unseen_relationships(limit: int) -> list[VersionedRelationship]
 ```
 
 Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+
+#### verdicts\_by\_entity
+
+```
+verdicts_by_entity(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]
+```
+
+The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+
+Each group is in document id order, and an entity with no verdicts has no key. The doors answer a card's `verdicts` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
+
+#### verdicts\_by\_rule
+
+```
+verdicts_by_rule(rule_guid: str) -> list[StoredVerdict]
+```
+
+The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
+
+The same paged read as `verdicts_by_entity`, filtered over `guid`; a rule with no verdict documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).
 
 #### without\_app\_search
 

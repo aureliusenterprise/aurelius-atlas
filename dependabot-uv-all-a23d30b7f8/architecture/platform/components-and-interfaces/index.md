@@ -1,4 +1,4 @@
-# Components &amp; Interfaces
+# Components & Interfaces
 
 The parts of the running system (increments 0.2–0.6 today) and the interfaces between them. The production shape is this same set — one service, one store, one identity provider, one signal path — with the deployment supplying certificates and endpoints. The development arrangement mirrors it; where a row describes development, that is labelled.
 

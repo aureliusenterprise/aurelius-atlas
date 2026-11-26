@@ -4,7 +4,7 @@ How the Aurelius Atlas system is connected, delivered, observed, kept alive, and
 
 | Page | Scope | Written by |
 | --- | --- | --- |
-| [Components &amp; Interfaces](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/components-and-interfaces/index.md>) | The running parts by role: service, dashboards, store, identity, signals, with one anchor line | written (0.2–0.6) |
+| [Components & Interfaces](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/components-and-interfaces/index.md>) | The running parts by role: service, dashboards, store, identity, signals, with one anchor line | written (0.2–0.6) |
 | [Data Pipelines](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/data-pipelines/index.md>) | The catalogue's flows: request → store, model load at start-up; no streaming plane (ADR 050) | 2.4 |
 | [Vector Search and Chat](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/vector-search-and-chat/index.md>) | Store options for embeddings and a chat over the catalogue; a proposal, no decision | written (proposal) |
 

@@ -1,4 +1,4 @@
-# Vision &amp; Strategy
+# Vision & Strategy
 
 Why Aurelius Atlas exists, whom it serves, and where it is going. All four pages are written from material that already exists: [ADRs 046–052](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/index.md>) and the [conversion roadmap](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/index.md>).
 

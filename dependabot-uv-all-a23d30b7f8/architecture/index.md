@@ -20,7 +20,7 @@ The remaining trees are the **reference architecture**: they describe the system
 
 | Tree | Subject | Written by |
 | --- | --- | --- |
-| [Vision &amp; Strategy](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/vision-and-strategy/index.md>) | Why the system exists, for whom, and where it is going | written (ADRs 046–052, the roadmap) |
+| [Vision & Strategy](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/vision-and-strategy/index.md>) | Why the system exists, for whom, and where it is going | written (ADRs 046–052, the roadmap) |
 | [Data Lifecycle Management](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-lifecycle-management/index.md>) | How catalogue data enters, lives, is shared, and is retired | 0.2 → 6.3, per page |
 | [Data Governance](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/data-governance/index.md>) | Types, lineage, quality, ownership, auditability | 1.6 → 6.2, per page |
 | [Platform](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/index.md>) | Connectivity, delivery, observability, resilience, security | 0.2 → 6.4, per page |
