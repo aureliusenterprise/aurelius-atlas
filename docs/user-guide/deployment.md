@@ -6,12 +6,6 @@ prerequisites, the install, how to tell that it worked, and the first
 administrators. It covers
 the two shapes the project tests, a local minikube cluster and a GKE cluster.
 
-This page is the guided path. The
-[deployment reference](../architecture/deployment/index.md) explains why the
-system has this shape, and the [runbook](../architecture/deployment/runbook.md)
-carries every DNS, certificate, and rename edge in full. This page links them
-instead of repeating them.
-
 To run the server on one machine without a cluster, see
 [Standalone Server](./standalone-server.md) instead.
 
@@ -21,9 +15,7 @@ You install one Helm release into one namespace (default: `atlas`). The
 `aurelius-atlas` umbrella composes eight component charts: the Atlas API, the
 dashboard, three auxiliary APIs, the Elasticsearch store, the Keycloak issuer,
 and the observability stack. The umbrella also owns the shared edge, the trust
-issuers, and the generated Secrets. The
-[deployment reference](../architecture/deployment/index.md#topology) holds the
-topology and the component table.
+issuers, and the generated Secrets.
 
 ```mermaid
 flowchart LR
@@ -33,19 +25,16 @@ flowchart LR
 ```
 
 Each cluster needs the prerequisites once, and every later change is an upgrade
-of the same release ([ADR 057](../architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs.md)).
+of the same release.
 
 !!! NOTE "The scanner charts are separate"
 
     The three batch scanner charts install as their own releases and never
-    travel with the umbrella. See
-    [Scanner charts install on their own](../architecture/deployment/index.md#scanner-charts-install-on-their-own).
+    travel with the umbrella.
 
 ## Before you start
 
-A cluster must carry a few things before the first install. The
-[runbook prerequisites](../architecture/deployment/runbook.md#0-prerequisites)
-give the exact command for each one.
+A cluster must carry a few things before the first install:
 
 - `kubectl` bound to your cluster context, and Helm.
 - cert-manager (CRDs and controller). The whole trust model depends on it.
@@ -68,10 +57,9 @@ give the exact command for each one.
 
     With observability on, in-cluster jobs reach Keycloak by its public host
     (`auth.<domain>`), so that name must resolve to the Keycloak Service inside
-    the cluster too. The runbook's
-    [split-horizon DNS step](../architecture/deployment/runbook.md#0-prerequisites)
-    covers both minikube (a CoreDNS rewrite) and GKE (a private Cloud DNS zone).
-    On GKE with a public edge, this is a hard prerequisite, not an optimization.
+    the cluster too. Minikube solves this with a CoreDNS rewrite, and GKE with a
+    private Cloud DNS zone. On GKE with a public edge, this is a hard
+    prerequisite, not an optimization.
 
 ## Choose an environment
 
@@ -117,9 +105,7 @@ cosign verify ghcr.io/aureliusenterprise/charts/aurelius-atlas:<chart-version> \
 
 The umbrella generates each credential (the Elasticsearch password, the Keycloak
 admin and database passwords, the ingest client Secrets) at the first install,
-then keeps it on every upgrade. Read one with `kubectl get secret`. The
-[secret storage](../architecture/deployment/secret-storage.md) page explains the
-generate-and-preserve rule.
+then keeps it on every upgrade. Read one with `kubectl get secret`.
 
 ## Make sure that the install worked
 
@@ -174,10 +160,8 @@ curl -sk -X POST "$KC/admin/realms/aurelius-atlas/users" -H "Authorization: Bear
 
     The `clientRoles` map is keyed by the client's name, not its id. A
     misspelled or id-keyed entry creates the user with no roles and still
-    answers `201`. Read
-    the user's role mappings back before you hand over the account. The
-    [runbook admin step](../architecture/deployment/runbook.md#admin-accounts)
-    adds email and password-policy detail and a generated password.
+    answers `201`. Read the user's role mappings back before you hand over the
+    account.
 
 A script that calls the Atlas API uses a service client and a
 client-credentials token, not a person's password. The scanners and the
@@ -190,15 +174,12 @@ Open the product at `https://<domain>` and sign in with the Keycloak
 button. Open the observability stack at `https://observability.<domain>`. Its Grafana
 login also runs through Keycloak, and only the `admin` or `editor` role of the
 `grafana` client passes the door. The generated `atlas-grafana-admin` Secret is
-an account-recovery credential, for use only when the realm path is broken. The
-[runbook Grafana section](../architecture/deployment/runbook.md#grafana) covers
-the full login path in detail.
+an account-recovery credential, for use only when the realm path is broken.
 
 ## Turn on tenancy (optional)
 
 Tenancy is off by default, and the server then answers as Apache Atlas does. Set
-`tenancy.enabled` and list your tenants in `tenancy.tenants` to switch it on
-([ADR 063](../architecture/adr/063-each-tenant-is-an-organization-with-its-own-store.md)).
+`tenancy.enabled` and list your tenants in `tenancy.tenants` to switch it on.
 Each tenant is a Keycloak organization with its own store. A provisioning hook
 runs after every install and upgrade and leaves an existing tenant alone, so you
 remove a tenant with the server's command, never by dropping it from the list.
@@ -239,11 +220,9 @@ recover the previous data.
 
 ## Troubleshooting
 
-| Symptom                                      | Likely cause and fix                                                                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Pods stay `ImagePullBackOff`                 | The cluster cannot pull from `dhi.io` or `ghcr.io`. Create the pull Secrets named in [Before you start](#before-you-start).     |
-| Install fails with a missing `Bundle`        | trust-manager is absent, or its trust namespace is not the install namespace. See [Before you start](#before-you-start).        |
-| A browser host's certificate stays `Pending` | DNS-01 cannot see the challenge in public DNS. See the [ACME edge step](../architecture/deployment/runbook.md#0-prerequisites). |
-| Panels answer `plugin.notRegistered`         | The first-boot plugin download is still running. Wait a minute, then reload the page.                                           |
-
-Each fix above points at the step that owns the detail.
+| Symptom                                      | Likely cause and fix                                                                                                        |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Pods stay `ImagePullBackOff`                 | The cluster cannot pull from `dhi.io` or `ghcr.io`. Create the pull Secrets named in [Before you start](#before-you-start). |
+| Install fails with a missing `Bundle`        | trust-manager is absent, or its trust namespace is not the install namespace. See [Before you start](#before-you-start).    |
+| A browser host's certificate stays `Pending` | DNS-01 cannot see the challenge in public DNS. Confirm the public DNS records.                                              |
+| Panels answer `plugin.notRegistered`         | The first-boot plugin download is still running. Wait a minute, then reload the page.                                       |

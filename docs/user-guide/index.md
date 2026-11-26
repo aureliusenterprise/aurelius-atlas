@@ -4,8 +4,7 @@ Aurelius Atlas is a data catalogue. A catalogue answers four questions about the
 organisation holds: where a dataset lives, who is accountable for it, whether you can trust it, and
 what breaks if you change it. This guide shows a data steward, an analyst, or a data scientist how
 to answer those questions in the Aurelius Atlas webapp. It does not cover the Apache Atlas dashboard
-or the REST API. The [API Reference](../api-reference/index.md) covers the API, and the
-[Contributor Guide](../contributor-guide/index.md) covers building the system.
+or the REST API.
 
 ## The four questions
 
@@ -38,7 +37,3 @@ You reach the catalogue one of two ways.
 
     The webapp ships English and Dutch, so you can switch its language in the Settings panel. This
     guide ships in English only.
-
-The catalogue's behaviour is documented here, in this repository. The
-[Deviations from Apache Atlas](../architecture/conversion/deviations.md) ledger lists every intended
-difference from Apache Atlas 2.4.0, and it grows as the conversion proceeds.

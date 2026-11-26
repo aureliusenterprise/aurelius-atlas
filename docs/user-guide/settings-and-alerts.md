@@ -38,6 +38,10 @@ language." **Search by** is covered in [Find data](find-data.md#words-meaning-an
     the other tables use their own fixed sizes. The gap is known. Do not expect the number to change
     anything you can see.
 
+The panel below holds those choices in that order.
+
+![The Settings drawer.](../assets/user-guide/settings-panel.png)
+
 ## Usage telemetry
 
 Telemetry is on by default. It sends three things to your own deployment's collector: a trace for

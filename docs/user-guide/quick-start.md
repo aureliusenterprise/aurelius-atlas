@@ -49,6 +49,8 @@ Keycloak sign-in page and returns you to the page you asked for.
    **Business context**, **Technical context**, and **Data governance organization**. Each card asks
    for a keyword and has a green button that browses one type.
 
+    ![The Getting started screen.](../assets/user-guide/landing.png)
+
 ??? QUESTION "Do the three buttons find the sample?"
 
     Not yet on the sample catalogue. The reason and what to use instead are in

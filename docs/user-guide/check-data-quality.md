@@ -53,8 +53,8 @@ carries the rule's own score row, such as `81.4% accuracy`, so you can see which
 down.
 
 A card always appears when a rule is attached to the field. A rule that the worker never scored keeps its
-card and prints no score row ([DV-207](../architecture/conversion/deviations.md)). The card is the promise
-that the rule exists. The score row only appears when a measurement exists.
+card and prints no score row. The card is the promise that the rule exists. The score row only appears
+when a measurement exists.
 
 On the sample field `HIER_ORGANIZATION` the box holds three cards. Two carry a score row, and the third, an
 inactive rule, shows none. That third card is the expected case, not a missing number.
@@ -112,6 +112,11 @@ The sample field `HIER_ORGANIZATION` is a clean walk-through of every case:
 3. Read the **Data Quality Rules** box. Three cards appear. Two carry a score row. The third carries none,
    which is the unscored rule.
 4. Its stats bar reads `90.7%`, the pooled figure across the two measurements.
+
+The screen below holds both boxes: the two scored dimensions, and the three rule cards, one of which
+scores nothing.
+
+![The Data Quality and Data Quality Rules boxes of HIER_ORGANIZATION.](../assets/user-guide/data-quality-box.png)
 
 The next step, to change a rule or write a new one, is [Write quality rules](write-quality-rules.md). To
 change a record itself, see [Change data](change-data.md).
