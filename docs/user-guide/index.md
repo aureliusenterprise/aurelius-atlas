@@ -12,16 +12,17 @@ or the REST API. The [API Reference](../api-reference/index.md) covers the API, 
 Each question has a page. Start with [Quick Start](quick-start.md), which signs you in and walks you
 to one dataset page in about twenty minutes.
 
-| Your question                               | Page                           |
-| ------------------------------------------- | ------------------------------ |
-| Where is this data, and how do I find it?   | Find data (`Planned`)          |
-| What does this record say, and who owns it? | Understand data (`Planned`)    |
-| Can I trust this data, and why or why not?  | Check data quality (`Planned`) |
-| What breaks if I change this data?          | Follow lineage (`Planned`)     |
+| Your question                               | Page                                  |
+| ------------------------------------------- | ------------------------------------- |
+| Where is this data, and how do I find it?   | [Find data](find-data.md)             |
+| What does this record say, and who owns it? | [Understand data](understand-data.md) |
+| Can I trust this data, and why or why not?  | Check data quality (`Planned`)        |
+| What breaks if I change this data?          | [Follow lineage](follow-lineage.md)   |
 
-Three more catalogue jobs have pages that are not written yet: write quality rules, change data, and
-the settings and alerts on the header. The table links only the pages that exist today. As each page
-is written, it replaces its `Planned` marker here.
+The guide also covers [Settings and Alerts](settings-and-alerts.md), the choices on the header. Three
+catalogue jobs have pages that are not written yet: check data quality, write quality rules, and
+change data. The table links only the pages that exist today. As each page is written, it replaces
+its `Planned` marker here.
 
 ## The two ways in
 

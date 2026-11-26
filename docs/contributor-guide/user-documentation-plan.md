@@ -100,7 +100,7 @@ still reads _in review_ for increments that merged weeks ago (see the gap note b
 | ------------------------ | ------------------------------------------------------------------------- | ------------------ | ------------------ |
 | `index.md`               | What the catalogue does, who the guide is for, which page answers what    | —                  | Yes (rewrite)      |
 | `quick-start.md`         | Sign in, import the sample, reach one dataset page                        | 9.5d, 15.7         | Yes                |
-| `find-data.md`           | Hero search, Words/Meaning/Both, results, facets, sort, paging            | 7.4a, 11.5, 11.5b  | Yes (facets: 7.4b) |
+| `find-data.md`           | Hero search, Words/Meaning/Both, results, facets, sort, paging            | 7.4a, 7.4b, 11.5   | Yes                |
 | `understand-data.md`     | The details page: header, chips, breadcrumb, properties, sections, People | 7.6, 7.20, 7.21a/c | Yes                |
 | `follow-lineage.md`      | Open the diagram, pan, zoom, select, quickview, save an image             | 7.22a–d            | Yes                |
 | `check-data-quality.md`  | The five dimensions, a field's scores, the rules box, the banner          | 7.24–7.25e, 12.x   | Yes                |
@@ -160,12 +160,16 @@ what page explains them.
 
 The search screen, from a question to a short list.
 
-- The landing page's three starting points: business context, technical context, governance
-  responsibilities
-- Words, Meaning and Both, and which one to try first
-- What a result card states, and what its score list means
-- The facet column, and today's limit (Planned: 7.4b)
-- Sort, page, and read the total
+- The landing page's three starting points: Business context, Technical context, and Data governance
+  organization. The first two explore `m4i_data_domain` and `m4i_system`, which the sample holds
+  (DV-84), and the third searches the signed-in user's e-mail.
+- Words, Meaning and Both, which live in the Settings panel and not on the search screen, and which
+  one to try first
+- What a result card states, and what its score row means
+- The facet column, and today's limit: only the Type facet filters, the other three are read-only
+  counters (7.4b, DV-143)
+- Order and paging: no sort control by design (7.4a), ten at a time behind a load link, and the
+  header count, which a search by meaning words as "closest matches"
 - No saved search: the page URL carries the query, so it is the bookmark
 - Empty results: three causes, in the order a reader meets them
 
@@ -176,8 +180,9 @@ Sample `sample_data`, identity `demo_scientist`. The searches are `employee`, th
 One record's page, and how to leave it for a related record.
 
 - What a page is made of: header, chips, breadcrumb, prose, stats bar, sections, side navigation
-- The breadcrumb is the hierarchy, business side and technical side
-- Who answers for the record, and the five responsibilities
+- The breadcrumb rule: the stored parent chain, and no trail at all for a parentless record (DD-630)
+- Who answers for the record: the People box on the three types that carry it, and the five merged
+  responsibilities on a person's own page (DET-23, DET-41)
 - The sections of the eleven layouts, and how a card opens the record it names
 - The badge under a name: the type alias, so a Kafka topic reads "Kafka Topic"
 - Tags of a record, and the ones propagated to it

@@ -76,6 +76,10 @@ nav:
                 - Deploy to Kubernetes: user-guide/deployment.md
           - Using the catalogue:
                 - Quick Start: user-guide/quick-start.md
+                - Find Data: user-guide/find-data.md
+                - Understand Data: user-guide/understand-data.md
+                - Follow Lineage: user-guide/follow-lineage.md
+                - Settings and Alerts: user-guide/settings-and-alerts.md
     - Contributor Guide:
           - contributor-guide/index.md
           - Development Environment: contributor-guide/development-environment.md
