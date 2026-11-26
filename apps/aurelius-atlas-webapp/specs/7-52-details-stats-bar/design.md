@@ -25,9 +25,9 @@ screen keeps `stats()`, `statsGroups()`, and `statCount()`, because those read
 live counts, and pushing them into the bar would hand a painter five stores (DET-
 06). The bar answers one exclusive-or with its two inputs and paints; the screen
 routes the anchor. The `SectionStats` import rides with the flat bar. The bar
-takes a one-rule stylesheet with `:host { display: block; }` so it keeps its
-place in the page flow, and no rule moves out of the screen's sheet because none
-existed for these boxes.
+takes a stylesheet with `:host { display: block; }` so it sits in the page flow,
+plus the one margin Bulma cannot give it there (the fix DD-885 records): the
+1.5rem block spacing the bar lost when it became its host's only child.
 
 **Why.** The two bars are one region the screen already made mutually exclusive
 with `statsGroups().length` — a layout answers groups or flat, never both. One
@@ -62,10 +62,64 @@ and 7.51 do.
 **Consequences.** `details.component.ts` drops one import and gains one (780
 lines), its template drops from 344 to 300, and its stylesheet stays at 65;
 `stats-bar.component.ts` (102 lines with its doc and inline template) and its
-11-line sheet hold the bar. No test moves, so the suite stays at 1,047 across 85
+18-line sheet hold the bar. No test moves, so the suite stays at 1,047 across 85
 files (DET-24, DET-25, DET-40, DET-52, and DET-58 pass against the whole screen,
 which now paints the bar through the child, and the e2e pins on the bar's boxes
 and counts are unchanged). The one `$localize`-free i18n string in the region
 (`@@search.details.default.properties`) moves as text with its id, so both locale
 fixtures stay byte-equal (SHL-08's gate untouched). No `AGENTS.md` change: the
 details feature documents its own components in their file headers.
+
+## DD-885. The moved boxes keep the block spacing on their own host
+
+- **Status:** Proposed
+- **Increment:** 7.52 (a fix, 2026-11-26)
+- **Date:** 2026-11-26
+- **Supersedes:** –
+
+**Decision.** The three details parts that paint a top-level box — 7.51's first
+row, 7.52's stats bar, and 7.50's Compliance Chart box — each give their `:host`
+the Bulma block rhythm (`margin-bottom: var(--bulma-block-spacing)`) next to the
+`display: block` they already carried. The screen's own boxes are unchanged.
+
+**Reason.** Bulma's vertical rhythm for a box comes from `.box:not(:last-child)`
+and, for a `.columns` row, from `.columns:not(:last-child)` (bulma.css:3129,
+9640). While the markup sat in `details.component.html`, every box had a sibling
+after it, so the rules matched and each gap measured 24px. A part host holds
+exactly one top-level box, so inside the host that box _is_ the last child, the
+rule stopped matching, and the box dropped to `margin-bottom: 0`. The row and the
+grouped bar then pulled further apart from their target: the `.columns` carries
+`margin-bottom: -12px`, which the column's 12px padding used to cancel once the
+rhythm returned, so the visible gap went 24px → 0px on both sides of the stats
+bar (`#description-details` → bar → `.aurelius-details-section`, measured on the
+running stack). The shipped stylesheets claimed "Bulma carries … its Bulma
+margins", which is what let the regression through: no test reads a computed
+margin, and the DOM stayed byte-identical, so every structural pin stayed green
+while the page lost its rhythm. This entry corrects that claim in DD-877, DD-878,
+and DD-879 rather than superseding them — the extractions stand, only their
+one-line note about the sheet was wrong (all three are still Proposed).
+
+**Alternatives.** _Put the parts back in the screen_ — undoes DD-877–DD-879 to
+fix a margin. _A `margin-top` on the following box_ — each box would need to
+know which box precedes it, and the guard-wrapped ones (`@if (complianceChart())`)
+come and go, so the rule could not be static. _A wrapper with a `gap` around the
+screen's flow_ — changes every sibling pair at once, including the chips row and
+the Properties accordion whose spacing never moved (the row keeps its 12px from
+Bulma's `.field` rule and the accordion was already the last flow child before
+the split, so it never lost a margin). _Restoring the rhythm from the screen's
+sheet with `::ng-deep` or a global rule_ — an emulated-encapsulation parent
+cannot style a child's markup, which is the reason DD-877 gave for moving the
+five rules at all.
+
+**Consequences.** The three sheets grow by one rule each and their comments now
+say what the rule is for. The `--bulma-block-spacing` token is global, so the
+rule tracks the theme's block spacing instead of a hard-coded 1.5rem. No test
+moves: the parts have no computed-style pin today (Storybook covers
+`aurelius-atlas-ui` only, and AGENTS.md keeps computed-style pins out of e2e), so
+this class of regression stays untested by tooling and is caught by eye or by the
+screenshot pass in `docs/contributor-guide/user-documentation-plan.md`. If the
+details screen gains visual coverage, the pin belongs there — measure the gap
+between `#description-details`, the stats bar's `.box`, and
+`.aurelius-details-section` at 24px, and the same across the grouped bar (the
+person layout) and the chart box (the rule layout), where the sample data holds
+no Person or Rule entity to check by eye.

@@ -1,11 +1,17 @@
 /*
  * The layout's first row (DET-15, DET-16): the description box and the People
  * box. Bulma carries the row, the columns, and the boxes, so this sheet holds
- * only the host. It rode out of the details screen with the row (7.51).
+ * the host and the one margin Bulma can no longer give it. It rode out of the
+ * details screen with the row (7.51).
  */
 
-/* The host is one block in the page flow, so the `.columns` row keeps its
- * Bulma margins against the header above and the stats bar below. */
+/* The host is one block in the page flow. Bulma's 1.5rem block rhythm comes
+ * from `.columns:not(:last-child)`, and inside this host the row *is* the last
+ * child, so the rule stopped matching when the row moved out (7.51) and the
+ * bar below moved up against it. The host carries the rhythm instead: the
+ * row's -12px bottom margin against the column's 12px padding leaves the same
+ * 24px gap to the next box the screen gave before the split. */
 :host {
     display: block;
+    margin-bottom: var(--bulma-block-spacing);
 }

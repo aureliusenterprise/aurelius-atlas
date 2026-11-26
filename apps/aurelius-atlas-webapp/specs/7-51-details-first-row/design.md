@@ -24,9 +24,9 @@ nothing. The screen keeps `@if (layout()?.descriptionBox !== false)`, because
 deciding that the person page has no row at all (DET-39, DD-518) reads the layout
 row, and the screen already holds that layout. The `Markdown` and `PeopleBox`
 imports move with the markup, which was their only use on the screen. The row
-takes a one-rule stylesheet with `:host { display: block; }` so the Bulma
-`.columns` keeps its margins in the page flow (the same fix 7.49 and 7.50 made),
-and no rule moves out of the screen's sheet because none existed for these boxes.
+takes a stylesheet with `:host { display: block; }` so it sits in the page flow,
+plus the one margin Bulma cannot give it there (the fix DD-885 records): the
+1.5rem block spacing the `.columns` lost when it became its host's only child.
 
 **Why.** The row is the screen's next own-markup leaf after 7.50's box: 36
 template lines, no store read inside them, and its two boxes share one guard and
@@ -55,7 +55,7 @@ test do.
 **Consequences.** `details.component.ts` drops two imports and gains one (780
 lines), its template drops from 371 to 344, and its stylesheet stays at 65;
 `first-row.component.ts` (83 lines with its doc and inline template) and its
-11-line sheet hold the row. No test moves, so the suite stays at 1,047 across 85
+17-line sheet hold the row. No test moves, so the suite stays at 1,047 across 85
 files (DET-10, DET-16, DET-23, and DET-39 pass against the whole screen, which
 now renders the row through the child, and the e2e pins on `#description-details`
 and `#people-details` are unchanged). The one `$localize` in the region is an
