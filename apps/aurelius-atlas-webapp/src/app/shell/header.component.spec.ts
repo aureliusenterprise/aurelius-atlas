@@ -5,6 +5,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import Keycloak from "keycloak-js";
 
 import { AlertsService } from "../alerts/alerts.service";
+import { type AppConfig } from "../config";
 import { APP_CONFIG } from "../tokens";
 import { ShellHeader } from "./header.component";
 import { TENANCY } from "../tenancy";
@@ -19,7 +20,10 @@ const config = fakeAppConfig({
     keycloak: { clientId: "aurelius", realm: "atlas", url: "https://keycloak.example/" },
 });
 
-const DOC_HREF = "https://aureliusenterprise.github.io/aurelius-atlas-documentation/";
+// The docs site's root plus the deployment's version folder (SHC-03, DD-886):
+// a config without `docsRef` opens the trunk, one with it opens that tag.
+const DOCS_ROOT = "https://aureliusenterprise.github.io/aurelius-atlas/";
+const DOC_HREF = `${DOCS_ROOT}main/`;
 
 // The drawer route's placeholder (SPL-14's shape): the router rejects a
 // componentless named-outlet route, and the header's template has no
@@ -27,7 +31,7 @@ const DOC_HREF = "https://aureliusenterprise.github.io/aurelius-atlas-documentat
 @Component({ selector: "aurelius-atlas-webapp-lib-drawer-panel", template: "" })
 class DrawerPanelPlaceholder {}
 
-function setup(identity = "aurelius-writer", routes: Routes = []) {
+function setup(identity = "aurelius-writer", routes: Routes = [], configOverrides: Partial<AppConfig> = {}) {
     const logout = vi.fn();
 
     // jsdom ships no matchMedia (the reduced-motion probe, ALR-02a).
@@ -37,7 +41,7 @@ function setup(identity = "aurelius-writer", routes: Routes = []) {
         imports: [FontAwesomeModule, ShellHeader],
         providers: [
             provideRouter(routes),
-            { provide: APP_CONFIG, useValue: config },
+            { provide: APP_CONFIG, useValue: fakeAppConfig({ ...config, ...configOverrides }) },
             { provide: Keycloak, useValue: { logout } },
             { provide: Session, useValue: { identity: () => identity } },
         ],
@@ -82,9 +86,26 @@ describe("ShellHeader", () => {
         const link = render().querySelector<HTMLAnchorElement>('a[target="_blank"]');
 
         expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+        // No `docsRef` in the config: the trunk's docs folder (DD-886).
         expect(link?.getAttribute("href")).toBe(DOC_HREF);
         // The i18n bridge key renders its English leaf (SHC-07).
         expect(normalize(link?.textContent)).toBe("Documentation");
+    });
+
+    it("opens the versioned docs when the config names a docsRef folder (SHC-03, DD-886)", () => {
+        setup("aurelius-writer", [], { docsRef: "v0.1.0-rc.11" });
+        const link = render().querySelector<HTMLAnchorElement>('a[target="_blank"]');
+
+        expect(link?.getAttribute("href")).toBe(`${DOCS_ROOT}v0.1.0-rc.11/`);
+    });
+
+    it("opens a docs site on another host when the config names a URL (SHC-03, DD-886)", () => {
+        // The dev and e2e configs name the local docs server, which the
+        // published site's root cannot reach.
+        setup("aurelius-writer", [], { docsRef: "http://localhost:8000/" });
+        const link = render().querySelector<HTMLAnchorElement>('a[target="_blank"]');
+
+        expect(link?.getAttribute("href")).toBe("http://localhost:8000/");
     });
 
     it("sits the gear and the bell in the always-visible utility group", () => {

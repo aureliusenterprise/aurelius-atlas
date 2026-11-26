@@ -42,6 +42,10 @@ global:
 # json | jq .ipAllocationPolicy` and set both to it. The range below is
 # GKE's VPC-native default (the 10.13 cluster validation ran on it).
 atlas-webapp:
+    config:
+        # Unreleased deployment (the overlay's placeholder domain): the trunk's
+        # docs, not the last tag's (SHC-03, DD-886).
+        docsRef: main
     nginx:
         trustedProxyCIDRs:
             - 10.4.0.0/14

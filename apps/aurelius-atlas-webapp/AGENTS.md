@@ -46,7 +46,9 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   roles gate the write affordances (the pencil, the `+`): it pairs with the
   server's `AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID` and the realm's four Atlas
   roles (DD-300, DD-324), and `src/app/config.ts` defaults it to
-  `aurelius-atlas-server`
+  `aurelius-atlas-server`. Its `docsRef` points the header's Documentation link
+  at the local docs server (`http://localhost:8000/`, `nx docs`), which the
+  published site's root cannot reach (SHC-03, DD-886)
 - `proxy.conf.json` — dev-server proxy: `/api` → atlas-server :21000 (**no
   rewrite** — the client composes the `/api` prefix, DD-139), `/otel` → 4318
   (HTTPS, CA-verified)

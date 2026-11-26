@@ -14,6 +14,10 @@ global:
 # webapp pods live in it — the webapp resolves X-Forwarded-For only from
 # that network, and the server trusts X-Forwarded-For only from it.
 atlas-webapp:
+    config:
+        # Pre-release deployment: the trunk's docs, not the last tag's
+        # (SHC-03, DD-886 — the chart default is the release's own appVersion).
+        docsRef: main
     nginx:
         trustedProxyCIDRs:
             - 10.244.0.0/16

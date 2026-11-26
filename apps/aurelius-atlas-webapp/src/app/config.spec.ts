@@ -101,6 +101,20 @@ describe("parseAppConfig", () => {
     it("throws when validateEntityBaseUrl is present but empty (EDT-22)", () => {
         expect(() => parseAppConfig({ ...valid, validateEntityBaseUrl: "" })).toThrow(/"validateEntityBaseUrl"/);
     });
+
+    it("keeps docsRef absent when the config omits it (SHC-03, DD-886)", () => {
+        // The header's own `main` default is what the app runs on, so the
+        // parsed config must not invent a key (DD-387's override-only rule).
+        expect("docsRef" in parseAppConfig(valid)).toBe(false);
+    });
+
+    it("keeps an explicit docsRef (SHC-03, DD-886)", () => {
+        expect(parseAppConfig({ ...valid, docsRef: "v0.1.0-rc.11" }).docsRef).toBe("v0.1.0-rc.11");
+    });
+
+    it("throws when docsRef is present but empty (SHC-03, DD-886)", () => {
+        expect(() => parseAppConfig({ ...valid, docsRef: "" })).toThrow(/"docsRef"/);
+    });
 });
 
 describe("metricsUrl", () => {

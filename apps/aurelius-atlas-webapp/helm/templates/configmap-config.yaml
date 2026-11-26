@@ -1,11 +1,15 @@
 {{/*
 /config.json (CHT-26, SHL-02): the SPA's bootstrap fetch (fails loudly),
 shape in src/app/config.ts. Rendered from values; the Keycloak URL derives
-from the issuer (CHT-03). It carries no version and no copyright year
-(7.34, VER-01/VER-04, DD-725/DD-726): the SPA reads the version from the
-server's admin/version answer and prints the current year, so the release
-needs to stamp nothing here (DD-288 stays the chart's own appVersion, used
-for the image tag and labels). Mounted as one file over
+from the issuer (CHT-03). It carries no copyright year and no version for
+the SPA to print (7.34, VER-01/VER-04, DD-725/DD-726): the SPA reads the
+version from the server's admin/version answer and prints the current year,
+so the release needs to stamp nothing for that (DD-288 stays the chart's own
+appVersion, used for the image tag and labels). The one version-shaped key
+it does carry is docsRef (SHC-03, DD-886): the docs site's version folder the
+header's Documentation link opens, defaulted to the chart's appVersion — the
+tag the release stamped (DD-288) — so a released chart points at its own
+versioned docs with no extra value. Mounted as one file over
 /usr/share/nginx/html/config.json — the prod build bundles neither the
 config nor a way to write it (SHL-02).
 */}}
@@ -32,6 +36,14 @@ path; the key lets a deployment point it elsewhere. */ -}}
 governance banner's aux API. */ -}}
 {{- with $cfg.validateEntityBaseUrl -}}
 {{- $configJson = set $configJson "validateEntityBaseUrl" . -}}
+{{- end -}}
+{{- /* Docs version folder (SHC-03, DD-886): the release's tag by default —
+Chart.AppVersion, the value the release stamps (DD-288) — so the chart
+serves the versioned docs it was released with. A pre-release deployment
+overrides it with the branch name or clears the key for the trunk. */ -}}
+{{- $docsRef := default .Chart.AppVersion $cfg.docsRef -}}
+{{- with $docsRef -}}
+{{- $configJson = set $configJson "docsRef" . -}}
 {{- end -}}
 apiVersion: v1
 kind: ConfigMap

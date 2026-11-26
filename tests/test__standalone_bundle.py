@@ -15,6 +15,7 @@ bundle's own file declares, which keeps this suite free of a second roster (SBD-
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -182,6 +183,16 @@ def test__every_certificate_and_sample_folder_stays_a_variable(flat: dict[str, A
     folder_knobs = bundler._guarded_folder_names(flat)
     assert {"SERVER_CERTS_DIR", "GATEWAY_CERTS_DIR", "WEBAPP_CERTS_DIR", "EMBEDDER_CERTS_DIR"} <= folder_knobs
     assert "SAMPLE_DIR" in folder_knobs
+
+
+@pytest.mark.covers(rules=["SBD-02", "SBD-06"])
+def test__the_bundled_config_opens_the_docs_of_the_bundled_release(bundle: Path) -> None:
+    """The bundler stamps the release tag into the webapp config's ``docsRef``, so the
+    Documentation link opens the docs of the release the images carry (SHC-03, DD-886).
+    """  # noqa: D205 - one sentence
+    config = json.loads((bundle / bundler.WEBAPP_CONFIG).read_text())
+
+    assert config["docsRef"] == VERSION
 
 
 @pytest.mark.covers(rules=["SBD-02"])

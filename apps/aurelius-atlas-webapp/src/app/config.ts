@@ -78,6 +78,23 @@ export interface AppConfig {
      * deployment-proxy path is not ported, DV-144).
      */
     readonly validateEntityBaseUrl?: string;
+
+    /**
+     * The documentation site the header's Documentation link opens
+     * (SHC-03, DD-886). Two shapes:
+     *
+     * - a version folder name, which the header places under
+     *   `https://aureliusenterprise.github.io/aurelius-atlas/` (the docs
+     *   publish one folder per branch or tag: `main/`, `v0.1.0-rc.11/`).
+     *   A build that leaves the key out opens `main`.
+     * - a whole URL, for a docs site served elsewhere — a developer's
+     *   `zensical serve`, for instance, answers on `http://localhost:8000/`.
+     *
+     * The server's own version is NOT the source: dev builds report the last
+     * released number, so only the deployment knows which docs belong to it
+     * (DD-886).
+     */
+    readonly docsRef?: string;
 }
 
 /**
@@ -124,6 +141,7 @@ export function parseAppConfig(value: unknown): AppConfig {
         atlasClientId,
         lineageModelBaseUrl,
         validateEntityBaseUrl,
+        docsRef,
     } = value as Partial<AppConfig>;
 
     if (typeof keycloak !== "object" || keycloak === null) {
@@ -155,6 +173,10 @@ export function parseAppConfig(value: unknown): AppConfig {
         requireString("validateEntityBaseUrl", validateEntityBaseUrl);
     }
 
+    if (docsRef !== undefined) {
+        requireString("docsRef", docsRef);
+    }
+
     return {
         keycloak: {
             clientId: requireString("keycloak.clientId", clientId),
@@ -167,6 +189,7 @@ export function parseAppConfig(value: unknown): AppConfig {
         ...(otelMetricsExporterUrl ? { otelMetricsExporterUrl } : {}),
         ...(lineageModelBaseUrl ? { lineageModelBaseUrl } : {}),
         ...(validateEntityBaseUrl ? { validateEntityBaseUrl } : {}),
+        ...(docsRef ? { docsRef } : {}),
         atlasClientId: atlasClientId ?? DEFAULT_ATLAS_CLIENT_ID,
     };
 }
