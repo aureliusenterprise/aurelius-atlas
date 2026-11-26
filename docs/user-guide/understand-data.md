@@ -18,7 +18,7 @@ From the top:
 | Properties table | Two columns, Key and Value, of everything else the record stores       |
 
 The pencil at the top right opens the editor. It appears only for a person who can write, and
-`Change data` covers what it lets you do.
+[Change data](change-data.md) covers what it lets you do.
 
 ## The header
 
@@ -96,5 +96,6 @@ the browser's Back button walks your jumps.
    **Domain Lead(s)** row names a person.
 4. Open that person. The **Governance Responsibilities** box lists everything they lead or own.
 
-Next, decide whether you can trust what you just read, in `Check data quality`, or see what a change
+Next, decide whether you can trust what you just read, in [Check data quality](check-data-quality.md),
+or see what a change
 affects, in [Follow lineage](follow-lineage.md).

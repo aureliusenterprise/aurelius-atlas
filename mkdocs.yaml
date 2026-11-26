@@ -78,7 +78,10 @@ nav:
                 - Quick Start: user-guide/quick-start.md
                 - Find Data: user-guide/find-data.md
                 - Understand Data: user-guide/understand-data.md
+                - Check Data Quality: user-guide/check-data-quality.md
+                - Write Quality Rules: user-guide/write-quality-rules.md
                 - Follow Lineage: user-guide/follow-lineage.md
+                - Change Data: user-guide/change-data.md
                 - Settings and Alerts: user-guide/settings-and-alerts.md
     - Contributor Guide:
           - contributor-guide/index.md

@@ -98,8 +98,9 @@ You are done with the quick start. The next pages of the guide take each of thes
 | Search well: words, meaning, both, facets | [Find data](find-data.md)                     |
 | Read any record: layout, sections, people | [Understand data](understand-data.md)         |
 | See what a change affects                 | [Follow lineage](follow-lineage.md)           |
-| Trust a record, and see why not           | Check data quality (`Planned`)                |
-| Change a record, or make a new one        | Change data (`Planned`)                       |
+| Trust a record, and see why not           | [Check data quality](check-data-quality.md)   |
+| Write the check behind a score            | [Write quality rules](write-quality-rules.md) |
+| Change a record, or make a new one        | [Change data](change-data.md)                 |
 | Choose language, search mode, theme       | [Settings and alerts](settings-and-alerts.md) |
 
 The **Create new entity** button is the plus icon at the right end of the search band. It appears
