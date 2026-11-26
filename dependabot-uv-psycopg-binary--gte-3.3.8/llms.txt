@@ -2,10 +2,18 @@
 
 ## User Guide
 
+- [Change Data](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/change-data/index.md>)
+- [Check Data Quality](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/check-data-quality/index.md>)
 - [Deploy to Kubernetes](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/deployment/index.md>)
+- [Find Data](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/find-data/index.md>)
+- [Follow Lineage](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/follow-lineage/index.md>)
 - [User Guide](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/index.md>)
+- [Quick Start](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/quick-start/index.md>)
+- [Settings and Alerts](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/settings-and-alerts/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/standalone-server/index.md>)
 - [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/standalone-tenants/index.md>)
+- [Understand Data](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/understand-data/index.md>)
+- [Write Quality Rules](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/write-quality-rules/index.md>)
 
 ## Contributor Guide
 
@@ -19,6 +27,7 @@
 - [Secrets Management](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/secrets-management/index.md>)
 - [Testing](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/testing/index.md>)
 - [TLS Certificates](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/tls-certificates/index.md>)
+- [User Documentation Plan](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/user-documentation-plan/index.md>)
 - [Version Control](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/version-control/index.md>)
 - [Writing Style](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/writing-style/index.md>)
 
@@ -119,6 +128,9 @@
 - [066\. Infrastructure components live at the repository root](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/066-infrastructure-components-live-at-the-repository-root/index.md>)
 - [067\. The standalone stack ships as one generated release bundle](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/index.md>)
 - [068\. A catalogue bootstraps only the metamodel it serves](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/index.md>)
+- [069\. Each browser-facing surface answers on its own hostname](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/index.md>)
+- [070\. The catalogue ships one prose attribute](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/070-the-catalogue-ships-one-prose-attribute/index.md>)
+- [071\. A rule's verdicts come through the view family](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/071-a-rule-s-verdicts-come-through-the-view-family/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/conversion/design-log/index.md>)

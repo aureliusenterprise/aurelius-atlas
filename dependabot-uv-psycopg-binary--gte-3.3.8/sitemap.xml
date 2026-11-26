@@ -289,6 +289,15 @@
         <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/070-the-catalogue-ships-one-prose-attribute/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/071-a-rule-s-verdicts-come-through-the-view-family/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/architecture/adr/template/</loc>
       </url>
       <url>
@@ -517,6 +526,9 @@
         <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/tls-certificates/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/user-documentation-plan/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/contributor-guide/version-control/</loc>
       </url>
       <url>
@@ -526,12 +538,36 @@
         <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/change-data/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/check-data-quality/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/deployment/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/find-data/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/follow-lineage/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/quick-start/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/settings-and-alerts/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/standalone-server/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/standalone-tenants/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/understand-data/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-uv-psycopg-binary--gte-3.3.8/user-guide/write-quality-rules/</loc>
       </url>
 </urlset>
