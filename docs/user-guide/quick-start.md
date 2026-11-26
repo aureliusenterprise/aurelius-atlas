@@ -47,15 +47,10 @@ Keycloak sign-in page and returns you to the page you asked for.
       [Standalone Server](standalone-server.md) to add a person and give it the `atlas-read` role.
 3. You arrive on the **Getting started** screen. It holds one search box at the top and three cards:
    **Business context**, **Technical context**, and **Data governance organization**. Each card asks
-   for a keyword and has a green button that browses one type.
+   for a keyword and has a green button that lists records for that card.
+   [Find data](find-data.md#the-three-starting-points) says what each button lists.
 
-??? QUESTION "Do the three buttons find the sample?"
-
-    Not yet on the sample catalogue. Each button filters on an Apache Atlas type
-    (`AtlasGlossary`, `Infrastructure`, or a person's own e-mail), and the sample records use
-    Aurelius's own types instead ([DV-84](../architecture/conversion/deviations.md)). So the buttons
-    answer **No results found** here. Use the search box at the top instead, which is the normal path
-    anyway.
+    ![The Getting started screen.](../assets/user-guide/landing.png)
 
 ## Find one dataset
 
@@ -67,9 +62,8 @@ The search box sits above every screen, so you never lose it. Type a name and pr
 3. Click **NL1-HR-001** in the list. Each result card shows the record's name and, on the right, its
    type badge.
 
-If you see **No results found**, one of three things is true: the import did not finish, the search
-mode looks for meaning and the sample's meaning index is not ready, or you typed a name the sample
-does not hold. Make sure that the import logged its counts, then search again.
+If you see **No results found**, make sure that the import finished and that you typed a name the
+sample holds. `Find data` covers the other causes.
 
 !!! TIP "Change how the search works in Settings, not on the screen"
 
@@ -83,25 +77,29 @@ does not hold. Make sure that the import logged its counts, then search again.
 The record's page answers the four questions the guide is built around.
 
 You land on the **NL1-HR-001** dataset page. Its header shows the name, and below it the badge
-**Dataset**. Under the header you can see the description, the properties, and the sections of cards
-that link to the record's fields, its people, and its systems. Two things to try here:
+**Dataset**. Under the header sit the **Description** box, the **Fields** box, and a **Properties**
+table that lists the record's attributes in two columns.
 
-- Follow a card to a related record. Each card links to the record it names, and the breadcrumb at
-  the top shows where you are.
-- Look at the people named on the page. They answer for the record.
+Two things to try here:
+
+- Follow a card to a related record. Each card links to the record it names, so the **Fields** box
+  takes you to a field's own page.
+- Scroll to the **Lineage Model** box. It shows where this dataset's data comes from and where it
+  goes.
 
 You are done with the quick start. The next pages of the guide take each of these jobs further.
 
 ## Where to next
 
-| What you want to do                       | Page                            |
-| ----------------------------------------- | ------------------------------- |
-| Search well: words, meaning, both, facets | Find data (`Planned`)           |
-| Read any record: layout, sections, people | Understand data (`Planned`)     |
-| See what a change would affect            | Follow lineage (`Planned`)      |
-| Trust a record, and see why not           | Check data quality (`Planned`)  |
-| Change a record, or make a new one        | Change data (`Planned`)         |
-| Choose language, search mode, theme       | Settings and alerts (`Planned`) |
+| What you want to do                       | Page                                          |
+| ----------------------------------------- | --------------------------------------------- |
+| Search well: words, meaning, both, facets | [Find data](find-data.md)                     |
+| Read any record: layout, sections, people | [Understand data](understand-data.md)         |
+| See what a change affects                 | [Follow lineage](follow-lineage.md)           |
+| Trust a record, and see why not           | [Check data quality](check-data-quality.md)   |
+| Write the check behind a score            | [Write quality rules](write-quality-rules.md) |
+| Change a record, or make a new one        | [Change data](change-data.md)                 |
+| Choose language, search mode, theme       | [Settings and alerts](settings-and-alerts.md) |
 
 The **Create new entity** button is the plus icon at the right end of the search band. It appears
 only for a person who can write. Use `demo_steward`, or a person with the `atlas-write` role, to try

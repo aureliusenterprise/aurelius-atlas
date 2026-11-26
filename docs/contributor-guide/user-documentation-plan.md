@@ -96,22 +96,22 @@ running stack or the merged commits, and never copy a status from this table or 
 [conversion roadmap](../architecture/conversion/index.md#roadmap): the roadmap's status column
 still reads _in review_ for increments that merged weeks ago (see the gap note below).
 
-| Page                     | Job                                                                       | Screen owner       | Write today?       |
-| ------------------------ | ------------------------------------------------------------------------- | ------------------ | ------------------ |
-| `index.md`               | What the catalogue does, who the guide is for, which page answers what    | —                  | Yes (rewrite)      |
-| `quick-start.md`         | Sign in, import the sample, reach one dataset page                        | 9.5d, 15.7         | Yes                |
-| `find-data.md`           | Hero search, Words/Meaning/Both, results, facets, sort, paging            | 7.4a, 11.5, 11.5b  | Yes (facets: 7.4b) |
-| `understand-data.md`     | The details page: header, chips, breadcrumb, properties, sections, People | 7.6, 7.20, 7.21a/c | Yes                |
-| `follow-lineage.md`      | Open the diagram, pan, zoom, select, quickview, save an image             | 7.22a–d            | Yes                |
-| `check-data-quality.md`  | The five dimensions, a field's scores, the rules box, the banner          | 7.24–7.25e, 12.x   | Yes                |
-| `write-quality-rules.md` | Author a rule from the vocabulary, the threshold, the verdict             | 7.27, 12.5         | Yes                |
-| `change-data.md`         | Create, edit, tag, relate, delete, and the history tab                    | 7.7a, 7.35–7.40    | Yes (delete: 7.7b) |
-| `settings-and-alerts.md` | Language, search mode, theme, page size, telemetry, alerts, tenant        | 7.14, 7.15, 15.6   | Yes                |
+| Page                     | Job                                                                       | Screen owner          | Write today?  |
+| ------------------------ | ------------------------------------------------------------------------- | --------------------- | ------------- |
+| `index.md`               | What the catalogue does, who the guide is for, which page answers what    | —                     | Yes (rewrite) |
+| `quick-start.md`         | Sign in, import the sample, reach one dataset page                        | 9.5d, 15.7            | Yes           |
+| `find-data.md`           | Hero search, Words/Meaning/Both, results, facets, sort, paging            | 7.4a, 7.4b, 11.5      | Yes           |
+| `understand-data.md`     | The details page: header, chips, breadcrumb, properties, sections, People | 7.6, 7.20, 7.21a/c    | Yes           |
+| `follow-lineage.md`      | Open the diagram, pan, zoom, select, quickview, save an image             | 7.22a–d               | Yes           |
+| `check-data-quality.md`  | The five dimensions, a field's scores, the rules box, the banner          | 7.24–7.25e, 12.x      | Yes           |
+| `write-quality-rules.md` | Author a rule from the vocabulary, the threshold, the verdict             | 7.27, 12.5            | Yes           |
+| `change-data.md`         | Create, edit, tag, relate, delete, and the history tab                    | 7.7a, 7.7c, 7.35–7.40 | Yes           |
+| `settings-and-alerts.md` | Language, search mode, theme, page size, telemetry, alerts, tenant        | 7.14, 7.15, 15.6      | Yes           |
 
 There is no page for people arriving from the Atlas dashboard. The guide describes the one
 interface it ships, and the differences from Apache Atlas stay in
 [deviations.md](../architecture/conversion/deviations.md). Each page names the gap its own reader
-meets, where they meet it: `find-data.md` says a search has no save button and the page URL is the
+meets, where they meet it: `find-data.md` says the page URL carries the query, so it is the
 bookmark, and `change-data.md` says a term assignment builds no field and survives a save untouched
 (7.41, DV-193).
 
@@ -160,13 +160,18 @@ what page explains them.
 
 The search screen, from a question to a short list.
 
-- The landing page's three starting points: business context, technical context, governance
-  responsibilities
-- Words, Meaning and Both, and which one to try first
-- What a result card states, and what its score list means
-- The facet column, and today's limit (Planned: 7.4b)
-- Sort, page, and read the total
-- No saved search: the page URL carries the query, so it is the bookmark
+- The landing page's three starting points: Business context, Technical context, and Data governance
+  organization. The first two explore `m4i_data_domain` and `m4i_system`, which the sample holds
+  (DV-84), and the third searches the signed-in user's e-mail.
+- Words, Meaning and Both, which live in the Settings panel and not on the search screen, and which
+  one to try first
+- What a result card states, and what its score row means
+- The facet column, and today's limit: only the Type facet filters, the other three are read-only
+  counters (7.4b, DV-143)
+- Order and paging: no sort control by design (7.4a), ten at a time behind a load link, and the
+  header count, which a search by meaning words as "closest matches"
+- Share a search: the page URL carries the query, so it is the bookmark. Saved searches are not a
+  webapp feature and the pages do not mention them
 - Empty results: three causes, in the order a reader meets them
 
 Sample `sample_data`, identity `demo_scientist`. The searches are `employee`, then `NL1-HR-001`.
@@ -176,8 +181,9 @@ Sample `sample_data`, identity `demo_scientist`. The searches are `employee`, th
 One record's page, and how to leave it for a related record.
 
 - What a page is made of: header, chips, breadcrumb, prose, stats bar, sections, side navigation
-- The breadcrumb is the hierarchy, business side and technical side
-- Who answers for the record, and the five responsibilities
+- The breadcrumb rule: the stored parent chain, and no trail at all for a parentless record (DD-630)
+- Who answers for the record: the People box on the three types that carry it, and the five merged
+  responsibilities on a person's own page (DET-23, DET-41)
 - The sections of the eleven layouts, and how a card opens the record it names
 - The badge under a name: the type alias, so a Kafka topic reads "Kafka Topic"
 - Tags of a record, and the ones propagated to it
@@ -213,10 +219,11 @@ Whether to trust a record, and why not.
 - The governance banner during an edit: live verdicts, and why one line names two fields
 - A dimension with no rows: no rule of that dimension, which is not a failure
 
-Identity `demo_scientist`. The field is `NL1-HR-001.HIER_ORGANIZATION`, which holds five rules of
-three dimensions. Every surface named above runs today: the score block (7.25d), the rule scores on
-the field (7.25e), the governance rules box (7.25a) and a rule's own page (7.25b) all merged, so the
-page carries no `Planned` marker. Two honest absences belong on the page: a dimension with no rows
+Identity `demo_scientist`. The field is `NL1-HR-001.HIER_ORGANIZATION`, which holds three rules of
+two dimensions, two of them scored. Every surface named above runs today: the score block (7.25d),
+the rule scores on the field (7.25e), the governance rules box (7.25a) and a rule's own page (7.25b)
+all merged, so the page carries no `Planned` marker. Two honest absences belong on the page: a
+dimension with no rows
 means no rule of that dimension, and a rule the scanner never scored keeps its card and prints no
 score (DV-207). The reader who wants to change a rule goes to `write-quality-rules.md`.
 
@@ -241,16 +248,18 @@ Sample `sample_data`, identity `demo_steward`.
 
 The editor drawer, and what the reader's rights allow.
 
-- What you may change, in one short table: read, write, administer. This is where an absent pencil
-  is explained.
+- What you may change, in one short table. Four roles exist (`atlas-read`, `atlas-write`, `atlas-types`,
+  `atlas-admin`) and only the first two have a webapp screen. This is where an absent pencil is
+  explained.
 - Create a record: pick a type, fill the required fields, save
 - Edit a record
 - Tag a record, and what propagation means for the records below it
-- Relate two records: one parent per child, and the two parents the model refuses (18.3, 18.5)
+- Relate two records: one parent per child, and the three parent groups the model refuses (18.2, 18.3,
+  18.5)
 - No term assignment: the drawer builds no field for it, and a stored one survives a save (DV-193)
 - See what changed, and restore one attribute
 - When the save is refused: a version conflict, a name taken, a governance line
-- Delete a record (Planned: 7.7b)
+- Delete a record, which ships: hold **Delete** for three seconds (7.7c, #262)
 
 Sample `sample_data`, identity `demo_steward`.
 
@@ -284,7 +293,9 @@ Sample `sample_data`, any signed-in identity. Tenancy on for the tenant section.
    an architecture and admin topic.
 5. **No numbered screenshots.** Where an image helps, use one full-screen image with a sentence
    that names what to look at. Keep the first pass to at most eight images, in
-   `docs/assets/user-guide/`, captured from the standalone stack with the `small` sample.
+   `docs/assets/user-guide/`, captured from a running stack at 1280x720 with the `sample_data`
+   sample, because every walkthrough uses that sample. Read-only screens are captured with a
+   read-only identity, so no pencil or plus button appears where the page says none should.
    Images are the most expensive thing in the guide to keep true.
 6. **The style gates are the review gates.** Prettier, `zensical build --strict`, markdownlint, in
    that order, per [Documentation](documentation.md). Documentation needs no SOPS key and no
@@ -316,8 +327,6 @@ Sample `sample_data`, any signed-in identity. Tenancy on for the tenant section.
   landing page can browse `AtlasGlossary`, but the Aurelius webapp builds no glossary editor and no
   term-assignment picker (7.41, DV-193). A guide that implies otherwise is wrong. `change-data.md`
   names the gap where a person reaches for a term.
-- **The webapp has no saved searches.** The server has them (4.5). `find-data.md` names the gap where
-  a person wants to keep a search, and points at the page URL instead.
 - **The roadmap's status column lags the code in several places.** It lists 15.7 as planned while
   `docker/bin/tenant.sh` and its guide page are merged, and it still reads _in review_ for 7.25 and
   7.27, which merged as #462, #463 and #317. Verify a screen against the running stack or the merged
@@ -335,7 +344,8 @@ Three pull requests, each under the 1,500-line norm for an increment.
 
 Each pull request carries its own page set, so a reviewer reads one job at a time. PR 1 is the
 smallest slice that changes the posture, which makes the posture change the thing under review
-first.
+first. All three pull requests delivered (PRs #484, #486, and this one), so every page in the
+inventory above now exists and no user-guide page carries a `Planned` marker.
 
 An optional guard test joins PR 3, in `tests/`: every `Planned` marker in the user guide names an
 increment that exists in the roadmap table, every sample named in a walkthrough exists in
