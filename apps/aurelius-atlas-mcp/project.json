@@ -1,0 +1,35 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": [
+        "aurelius-atlas-auth",
+        "aurelius-atlas-infra-keycloak",
+        "aurelius-atlas-model",
+        "aurelius-atlas-server-client",
+        "aurelius-atlas-validate-entity-client"
+    ],
+    "name": "aurelius-atlas-mcp",
+    "projectType": "application",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_mcp",
+    "tags": [],
+    "targets": {
+        "serve": {
+            "continuous": true,
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                { "projects": ["aurelius-atlas-infra-keycloak"], "target": "up" }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "Serve the MCP API on https://localhost:21005 (the tools call the dev server and validate-entity if they are up)"
+            },
+            "options": {
+                "command": "uv run python -m aurelius_atlas_mcp",
+                "envFile": "apps/aurelius-atlas-mcp/.env"
+            },
+            "readyWhen": {
+                "port": 21005
+            }
+        }
+    }
+}

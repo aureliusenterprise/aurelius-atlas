@@ -20,6 +20,7 @@ dev = [
     "aurelius-atlas-license-report",
     "aurelius-atlas-lineage-model",
     "aurelius-atlas-lineage-model-client",
+    "aurelius-atlas-mcp",
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-parity",
@@ -94,6 +95,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-kafka-scanner]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-mcp]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-model]
 workspace = true
 
@@ -143,6 +147,7 @@ members = [
     "apps/aurelius-atlas-embedder",
     "apps/aurelius-atlas-kafka-scanner",
     "apps/aurelius-atlas-lineage-model",
+    "apps/aurelius-atlas-mcp",
     "apps/aurelius-atlas-quality-scanner",
     "apps/aurelius-atlas-validate-entity",
     "apps/aurelius-atlas-server",
@@ -205,6 +210,10 @@ root = "apps/aurelius-atlas-lineage-model"
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["apps/aurelius-atlas-validate-entity/tests"]
 root = "apps/aurelius-atlas-validate-entity"
+
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["apps/aurelius-atlas-mcp/tests"]
+root = "apps/aurelius-atlas-mcp"
 
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["apps/aurelius-atlas-server/tests", "apps/aurelius-atlas-server/e2e"]
