@@ -34,7 +34,7 @@ Some values you cannot set by typing them. Where a value names another record, a
 
 ## Tag a record
 
-Under **Classifications**, type to filter the list and pick a tag to add it. To remove one, click the small cross on its chip. The catalogue holds five tags today: `PII`, `key_data`, `high_risk`, `medium_risk`, and `low_risk`. With none set, the row reads **No classifications available**.
+Under **Classifications**, type to filter the list and pick a tag to add it. To remove one, click the small cross on its chip. The catalogue holds five tags today: **Has PII**, **Is key**, **High risk**, **Medium risk**, and **Low risk**. With none set, the row reads **No classifications available**.
 
 A tag can travel. Some tags are set to carry down the records attached to the one you tagged, so a column inherits a tag put on its table. You can tell an inherited tag from one set here: hover it and a note names where it came from. An inherited tag is not yours to remove here — remove it from the record it came from.
 
@@ -103,7 +103,7 @@ Click the record to open it, click the pencil, **Edit entity**, then hold the **
 
 1. Sign in as `demo_steward` and click the plus button.
 2. Choose the type **Dataset** and name the record something you will recognise, then **Save**.
-3. Tag it `key_data`, and relate it to a collection from the sample.
+3. Pick **Is key** from the tag list, and relate it to a collection from the sample.
 4. Open the record with the pencil and switch to **History**; turn on **Changes**.
 5. Edit a value, then **Restore** it from the history.
 6. Delete the record to clean up: pencil, then hold **Delete** for three seconds.

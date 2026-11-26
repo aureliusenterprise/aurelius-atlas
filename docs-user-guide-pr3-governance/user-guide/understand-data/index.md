@@ -25,7 +25,7 @@ The dataset page below shows each part: the header, the Description box, and the
 
 The header states what the record is. The name is the record's name, or its qualified name when it has none. Below it sits the type badge: an icon and a friendly type name such as **Dataset**, **Data Field**, or **Person**.
 
-A badge can show an alias instead of the type name, when the record carries one. A record of type `m4i_system` stored with the alias `Kafka Topic` shows a badge that reads **Kafka Topic**, and the header adds the friendly type in brackets, so it reads `Kafka Topic (System)`. The alias is stored on the record, not chosen by the screen. The sample catalogue stores no aliases, so its badges show plain type names.
+A badge can show an alias instead of the type name, when the record carries one. A record of the **System** type stored with the alias `Kafka Topic` shows a badge that reads **Kafka Topic**, and the header adds the friendly type in brackets, so it reads `Kafka Topic (System)`. The alias is stored on the record, not chosen by the screen. The sample catalogue stores no aliases, so its badges show plain type names.
 
 Classification chips sit under the badge. Your own classifications and the ones propagated to the record share one row. A propagated chip carries a marker. Open it and the marker lists the source records under "originates from the following sources:", each a link. Click one to open the record the chip came from.
 

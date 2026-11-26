@@ -36,15 +36,9 @@ The webapp has no sign-in button. When you open it while signed out, it sends yo
 
    - With tenancy on, sign in as `demo_steward`. Its password is `DEMO_USER_STEWARD_PASSWORD` in `infra/keycloak/.env`. See [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/user-guide/standalone-tenants/index.md>).
    - Without tenancy, the stack ships only the platform operator, who cannot read the catalogue. Follow the bring-your-own-user steps in [Standalone Server](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/user-guide/standalone-server/index.md>) to add a person and give it the `atlas-read` role.
-3. You arrive on the **Getting started** screen. It holds one search box at the top and three cards: **Business context**, **Technical context**, and **Data governance organization**. Each card asks for a keyword and has a green button that browses one type.
+3. You arrive on the **Getting started** screen. It holds one search box at the top and three cards: **Business context**, **Technical context**, and **Data governance organization**. Each card asks for a keyword and has a green button that lists records for that card. [Find data](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/user-guide/find-data/#the-three-starting-points>) says what each button lists.
 
    ![The Getting started screen.](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/assets/user-guide/landing.png>)
-
-> [!NOTE]
->
-> **Do the three buttons find the sample?**
->
-> Not yet on the sample catalogue. The reason and what to use instead are in [Find data](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/user-guide/find-data/#the-three-starting-points>).
 
 ## Find one dataset
 
