@@ -9,7 +9,7 @@ dependencies = [
 description = "The OTLP ingest credential: a refresh-ahead client-credentials token source and the app-owned OTLP export pipeline."
 name = "aurelius-atlas-otel"
 requires-python = ">=3.14"
-version = "0.1.0-rc.11"
+version = "0.1.0-rc.12"
 
 [[project.authors]]
 name = "Aurelius Enterprise"

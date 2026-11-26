@@ -1,3 +1,24 @@
+## 0.1.0-rc.12 (2026-11-26)
+
+### 🚀 Features
+
+- **core,model,server,data-access,ui,webapp,docs:** the rules box shows each rule's score (16.5j, 7.25e) ([#463](https://github.com/aureliusenterprise/aurelius-atlas/pull/463))
+- **core,model,server,data-access,webapp,docs:** the cards and the box carry governance verdicts; the unread corpus rules retire (16.5h, 7.25a, 12.7g, ASG-08, AVS-11, VDR-13, VCF-19/VCF-20, DET-44..48, DV-198, DV-200, DD-838/DD-840/DD-844) ([#458](https://github.com/aureliusenterprise/aurelius-atlas/pull/458))
+- **core,model,server,data-access,webapp,docs:** the rule's verdicts door and its details page (16.5i, 7.25b, ASG-09, AVS-12, VDR-14, VDR-15, DET-50..55, DV-201, DD-845..850, ADR 071) ([#459](https://github.com/aureliusenterprise/aurelius-atlas/pull/459))
+- **core,model,server,ui,webapp,docs:** the details header marks propagated tags and names their sources (16.5b, VDR-12, DV-197, DD-834/DD-835) ([#457](https://github.com/aureliusenterprise/aurelius-atlas/pull/457))
+- **data,core,docs:** the demo corpus ships per-field quality scores (12.9, DD-858/DD-859, DV-206) ([#461](https://github.com/aureliusenterprise/aurelius-atlas/pull/461))
+- **webapp:** the Documentation link follows the deployment's docs site (SHC-03, DD-886) ([#489](https://github.com/aureliusenterprise/aurelius-atlas/pull/489))
+- **webapp,docs:** the data-quality scores on the seven catalogue layouts (7.25c) ([#460](https://github.com/aureliusenterprise/aurelius-atlas/pull/460))
+- **webapp,docs:** the score block on every card and the scored dimensions only (7.25d) ([#462](https://github.com/aureliusenterprise/aurelius-atlas/pull/462))
+
+### 🩹 Fixes
+
+- **charts:** data2model verifies the webapp's audience ([#456](https://github.com/aureliusenterprise/aurelius-atlas/pull/456))
+- **webapp:** build the OTel module against auto/configure (DD-876) ([#474](https://github.com/aureliusenterprise/aurelius-atlas/pull/474))
+- **webapp:** the tag scenarios re-mint the token their waits outlive ([#483](https://github.com/aureliusenterprise/aurelius-atlas/pull/483))
+- **webapp:** the Explore buttons browse the Aurelius types the catalogue holds ([#485](https://github.com/aureliusenterprise/aurelius-atlas/pull/485))
+- **webapp:** the moved details boxes keep their block spacing (7.50-7.52, DD-885) ([#488](https://github.com/aureliusenterprise/aurelius-atlas/pull/488))
+
 ## 0.1.0-rc.11 (2026-11-23)
 
 ### 🚀 Features
