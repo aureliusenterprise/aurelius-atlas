@@ -25,6 +25,11 @@
     "aliases": []
   },
   {
+    "version": "fix-webapp-details-block-spacing",
+    "title": "fix-webapp-details-block-spacing",
+    "aliases": []
+  },
+  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
