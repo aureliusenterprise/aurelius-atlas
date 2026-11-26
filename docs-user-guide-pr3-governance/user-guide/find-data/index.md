@@ -18,7 +18,7 @@ The landing screen holds one box plus three cards, each with its own box and a g
 | Technical context | Start browsing systems | Records of `m4i_system` |
 | Data governance organization | Start browsing people | Your own e-mail as a search |
 
-The sample catalogue holds data domains and systems, so the first two buttons list them ([DV-84](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/architecture/conversion/deviations/index.md>)). The third button searches the signed-in account's e-mail address.
+The sample catalogue holds data domains and systems, so the first two buttons list them. The third button searches the signed-in account's e-mail address.
 
 ## Words, meaning, and both
 
@@ -35,6 +35,10 @@ Words is the default. A word may end in `*` to match words that begin with it, s
 Changing the mode while a search is on screen runs that search again from the first page. If the server has no meaning index, choosing Meaning or Both shows the alert "Search by meaning is not available on this server" and returns you to Words.
 
 ## What a result card states
+
+The search below lists the sample dataset and the fields under it. Look at the filter column at the left, and at one card: it carries the type badge, a quality row, and a people row.
+
+![Search results for NL1-HR-001.](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/assets/user-guide/search-results.png>)
 
 Each result is a card. It shows:
 
@@ -59,11 +63,11 @@ The results have no sort control, and that is deliberate. The server returns the
 
 The list holds ten records and grows as you scroll. Click **Load next page...** to add the next ten. The list never jumps to a random page and carries no "page 3 of 70" control. The header counts the whole answer, for example `25 results`. A search by meaning cannot know its total, so it counts the nearest records it found and says `25 closest matches`.
 
-## Keep a search
+## Share a search
 
-There is no save button for a search. The server can save searches, and the webapp exposes none of that yet, and that is expected. The address bar is the tool you have: a search's text rides the URL as `?query=`, so bookmarking the page or sharing the address brings the search back exactly.
+A search's text rides the page address as `?query=`. Copy the address from the browser bar to send the same search to a colleague, or to come back to it later. Opening the address runs the search again.
 
-The search mode and your type ticks do not ride the URL. A bookmarked search opens in whatever mode your browser last used, with no ticks.
+The search mode and your type ticks do not ride the address. The address opens in whatever mode your browser last used, with no ticks.
 
 ## When nothing comes back
 
@@ -79,6 +83,6 @@ A failure looks different: an error appears in the Alerts drawer, and the list s
 
 1. Sign in as `demo_scientist` and type `employee` in the search box. Press Enter.
 2. Look at the **Type** menu in the filter column. Tick **Data Field** and watch the list shrink to fields. Untick it.
-3. Search for `NL1-HR-001` and open the result. The dataset page opens, and the address bar now holds `/search/details/` and the record's identifier, which you can bookmark.
+3. Search for `NL1-HR-001` and open the result. The dataset page opens, and the address bar now holds `/search/details/` and the record's identifier, which you can copy to share or revisit.
 
 The next step is the record page itself, in [Understand data](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/user-guide/understand-data/index.md>).

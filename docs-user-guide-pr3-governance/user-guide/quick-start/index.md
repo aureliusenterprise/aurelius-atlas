@@ -38,6 +38,8 @@ The webapp has no sign-in button. When you open it while signed out, it sends yo
    - Without tenancy, the stack ships only the platform operator, who cannot read the catalogue. Follow the bring-your-own-user steps in [Standalone Server](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/user-guide/standalone-server/index.md>) to add a person and give it the `atlas-read` role.
 3. You arrive on the **Getting started** screen. It holds one search box at the top and three cards: **Business context**, **Technical context**, and **Data governance organization**. Each card asks for a keyword and has a green button that browses one type.
 
+   ![The Getting started screen.](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/assets/user-guide/landing.png>)
+
 > [!NOTE]
 >
 > **Do the three buttons find the sample?**

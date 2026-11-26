@@ -7555,8 +7555,8 @@ failing timeliness. Nothing looked at it.</p>
 carries the rule's own score row, such as <code>81.4% accuracy</code>, so you can see which rule pulled a dimension
 down.</p>
 <p>A card always appears when a rule is attached to the field. A rule that the worker never scored keeps its
-card and prints no score row (<a href="../../architecture/conversion/deviations/">DV-207</a>). The card is the promise
-that the rule exists. The score row only appears when a measurement exists.</p>
+card and prints no score row. The card is the promise that the rule exists. The score row only appears
+when a measurement exists.</p>
 <p>On the sample field <code>HIER_ORGANIZATION</code> the box holds three cards. Two carry a score row, and the third, an
 inactive rule, shows none. That third card is the expected case, not a missing number.</p>
 <h2 id="two-kinds-of-rule-two-kinds-of-page">Two kinds of rule, two kinds of page<a class="headerlink" href="#two-kinds-of-rule-two-kinds-of-page" title="Permanent link">&para;</a></h2>
@@ -7600,6 +7600,9 @@ both fields carry the same line:</p>
    which is the unscored rule.</li>
 <li>Its stats bar reads <code>90.7%</code>, the pooled figure across the two measurements.</li>
 </ol>
+<p>The screen below holds both boxes: the two scored dimensions, and the three rule cards, one of which
+scores nothing.</p>
+<p><img alt="The Data Quality and Data Quality Rules boxes of HIER_ORGANIZATION." src="../../assets/user-guide/data-quality-box.png" /></p>
 <p>The next step, to change a rule or write a new one, is <a href="../write-quality-rules/">Write quality rules</a>. To
 change a record itself, see <a href="../change-data/">Change data</a>.</p>
 

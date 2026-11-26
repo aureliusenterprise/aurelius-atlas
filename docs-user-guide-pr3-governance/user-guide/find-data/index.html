@@ -895,10 +895,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keep-a-search" class="md-nav__link">
+  <a href="#share-a-search" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Keep a search
+        Share a search
       </span>
     </span>
   </a>
@@ -7358,10 +7358,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keep-a-search" class="md-nav__link">
+  <a href="#share-a-search" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Keep a search
+        Share a search
       </span>
     </span>
   </a>
@@ -7552,8 +7552,7 @@ lists every record the server holds.</p>
 </tbody>
 </table>
 <p>The sample catalogue holds data domains and systems, so the first two buttons
-list them (<a href="../../architecture/conversion/deviations/">DV-84</a>). The third button
-searches the signed-in account's e-mail address.</p>
+list them. The third button searches the signed-in account's e-mail address.</p>
 <h2 id="words-meaning-and-both">Words, meaning, and both<a class="headerlink" href="#words-meaning-and-both" title="Permanent link">&para;</a></h2>
 <p>The webapp searches in one of three modes. The mode is not a control on the search screen. Open
 Settings with the gear icon, and choose one under <strong>Search by</strong>:</p>
@@ -7589,6 +7588,9 @@ Settings with the gear icon, and choose one under <strong>Search by</strong>:</p
 server has no meaning index, choosing Meaning or Both shows the alert
 "Search by meaning is not available on this server" and returns you to Words.</p>
 <h2 id="what-a-result-card-states">What a result card states<a class="headerlink" href="#what-a-result-card-states" title="Permanent link">&para;</a></h2>
+<p>The search below lists the sample dataset and the fields under it. Look at the filter column at the
+left, and at one card: it carries the type badge, a quality row, and a people row.</p>
+<p><img alt="Search results for NL1-HR-001." src="../../assets/user-guide/search-results.png" /></p>
 <p>Each result is a card. It shows:</p>
 <ul>
 <li>The record's name as the title. A record with no name shows its qualified name instead.</li>
@@ -7616,12 +7618,11 @@ matches first, and the webapp keeps that order.</p>
 The list never jumps to a random page and carries no "page 3 of 70" control. The header counts the
 whole answer, for example <code>25 results</code>. A search by meaning cannot know its total, so it counts the
 nearest records it found and says <code>25 closest matches</code>.</p>
-<h2 id="keep-a-search">Keep a search<a class="headerlink" href="#keep-a-search" title="Permanent link">&para;</a></h2>
-<p>There is no save button for a search. The server can save searches, and the webapp exposes none of
-that yet, and that is expected. The address bar is the tool you have: a search's text rides the URL
-as <code>?query=</code>, so bookmarking the page or sharing the address brings the search back exactly.</p>
-<p>The search mode and your type ticks do not ride the URL. A bookmarked search opens in whatever mode
-your browser last used, with no ticks.</p>
+<h2 id="share-a-search">Share a search<a class="headerlink" href="#share-a-search" title="Permanent link">&para;</a></h2>
+<p>A search's text rides the page address as <code>?query=</code>. Copy the address from the browser bar to send the
+same search to a colleague, or to come back to it later. Opening the address runs the search again.</p>
+<p>The search mode and your type ticks do not ride the address. The address opens in whatever mode your
+browser last used, with no ticks.</p>
 <h2 id="when-nothing-comes-back">When nothing comes back<a class="headerlink" href="#when-nothing-comes-back" title="Permanent link">&para;</a></h2>
 <p><strong>No results found</strong> means the server answered with nothing. The usual causes, in the order to try
 them:</p>
@@ -7640,7 +7641,7 @@ the bell icon to read it.</p>
 <li>Look at the <strong>Type</strong> menu in the filter column. Tick <strong>Data Field</strong> and watch the list shrink to
    fields. Untick it.</li>
 <li>Search for <code>NL1-HR-001</code> and open the result. The dataset page opens, and the address bar now
-   holds <code>/search/details/</code> and the record's identifier, which you can bookmark.</li>
+   holds <code>/search/details/</code> and the record's identifier, which you can copy to share or revisit.</li>
 </ol>
 <p>The next step is the record page itself, in <a href="../understand-data/">Understand data</a>.</p>
 

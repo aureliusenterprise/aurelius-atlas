@@ -30,6 +30,10 @@ The settings panel holds these choices, in this order:
 >
 > This setting stores your choice, and no screen reads it. Search results always page in tens, and the other tables use their own fixed sizes. The gap is known. Do not expect the number to change anything you can see.
 
+The panel below holds those choices in that order.
+
+![The Settings drawer.](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/assets/user-guide/settings-panel.png>)
+
 ## Usage telemetry
 
 Telemetry is on by default. It sends three things to your own deployment's collector: a trace for each API call, uncaught browser errors with their stack trace, and page-performance timings. It also adds a trace header to API calls so an operator can follow one click across services. Each browser tab carries a random session id, so an operator can count journeys without naming you. Your sign-in token rides the telemetry push, which is how the collector accepts it.

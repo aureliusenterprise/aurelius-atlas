@@ -22,6 +22,10 @@ With read rights only, the plus button and the pencil button are absent, and a r
 
 The new record's address is decided for it, so you never type one. After a save the page opens on the record itself, and the record appears in search and in the browse tree.
 
+The drawer below sits open on step 2, waiting for an entity type.
+
+![The Create new entity drawer.](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/assets/user-guide/create-entity.png>)
+
 ## Edit a record
 
 Open the record and click the pencil, **Edit entity**. The form opens over the page you were reading, so the record stays in view behind it. Change the values and click **Save**. The button says **Saving the entity** while it works, then **Entity saved**. Cancel discards your edits.
@@ -59,6 +63,10 @@ The webapp stops you from making the shapes the catalogue refuses. Where a relat
 ## Read the history
 
 The record's page has no history. Click the pencil to open the editor and switch its tabs to **History**. It lists every change to the record, newest first, with who made it and when: when the record was created, when an attribute changed, when a tag arrived or was removed.
+
+The list below is the History tab of the sample dataset. An entry that changed stored values carries a **Changes** button.
+
+![The History tab of the entity editor.](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/assets/user-guide/history-tab.png>)
 
 Each entry names what changed. Turn on **Changes** to expand the entries into tables of before and after. Sort the tables by clicking a column heading. Where a long piece of text changed, the entry shows the words that left out rather than the whole paragraph.
 

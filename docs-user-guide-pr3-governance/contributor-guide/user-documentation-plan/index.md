@@ -83,7 +83,7 @@ The page inventory names the job of each page and the increment that makes its s
 | `change-data.md` | Create, edit, tag, relate, delete, and the history tab | 7.7a, 7.7c, 7.35–7.40 | Yes |
 | `settings-and-alerts.md` | Language, search mode, theme, page size, telemetry, alerts, tenant | 7.14, 7.15, 15.6 | Yes |
 
-There is no page for people arriving from the Atlas dashboard. The guide describes the one interface it ships, and the differences from Apache Atlas stay in [deviations.md](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/architecture/conversion/deviations/index.md>). Each page names the gap its own reader meets, where they meet it: `find-data.md` says a search has no save button and the page URL is the bookmark, and `change-data.md` says a term assignment builds no field and survives a save untouched (7.41, DV-193).
+There is no page for people arriving from the Atlas dashboard. The guide describes the one interface it ships, and the differences from Apache Atlas stay in [deviations.md](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/architecture/conversion/deviations/index.md>). Each page names the gap its own reader meets, where they meet it: `find-data.md` says the page URL carries the query, so it is the bookmark, and `change-data.md` says a term assignment builds no field and survives a save untouched (7.41, DV-193).
 
 ## Storyboard
 
@@ -127,7 +127,7 @@ The search screen, from a question to a short list.
 - What a result card states, and what its score row means
 - The facet column, and today's limit: only the Type facet filters, the other three are read-only counters (7.4b, DV-143)
 - Order and paging: no sort control by design (7.4a), ten at a time behind a load link, and the header count, which a search by meaning words as "closest matches"
-- No saved search: the page URL carries the query, so it is the bookmark
+- Share a search: the page URL carries the query, so it is the bookmark. Saved searches are not a webapp feature and the pages do not mention them
 - Empty results: three causes, in the order a reader meets them
 
 Sample `sample_data`, identity `demo_scientist`. The searches are `employee`, then `NL1-HR-001`.
@@ -223,7 +223,7 @@ Sample `sample_data`, any signed-in identity. Tenancy on for the tenant section.
 2. **Every walkthrough names its data and its identity.** "Open the `NL1-HR-001` dataset, signed in as `demo_steward`." A reader must be able to repeat it at the running stack. A walkthrough that cannot be repeated is deleted, not softened. The two samples are not interchangeable: `small` holds 13 entities and no quality data, so every quality scene runs in `sample_data`.
 3. **One owner per fact.** The standalone stack's README owns the realm name, the user names, and the certificates; the guide links it. Sign-in identities are moving now (9.5b and 15.7 are open), so no page may restate them.
 4. **Roles appear where the reader needs them.** The reason a pencil is missing belongs in `change-data.md`, in one short table. There is no roles page in the user guide; rights design is an architecture and admin topic.
-5. **No numbered screenshots.** Where an image helps, use one full-screen image with a sentence that names what to look at. Keep the first pass to at most eight images, in `docs/assets/user-guide/`, captured from the standalone stack with the `small` sample. Images are the most expensive thing in the guide to keep true.
+5. **No numbered screenshots.** Where an image helps, use one full-screen image with a sentence that names what to look at. Keep the first pass to at most eight images, in `docs/assets/user-guide/`, captured from a running stack at 1280x720 with the `sample_data` sample, because every walkthrough uses that sample. Read-only screens are captured with a read-only identity, so no pencil or plus button appears where the page says none should. Images are the most expensive thing in the guide to keep true.
 6. **The style gates are the review gates.** Prettier, `zensical build --strict`, markdownlint, in that order, per [Documentation](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/contributor-guide/documentation/index.md>). Documentation needs no SOPS key and no Docker, so the work is a level 0 change.
 
 ## Open decisions
@@ -249,7 +249,6 @@ Sample `sample_data`, any signed-in identity. Tenancy on for the tenant section.
 ## Gaps to name, not paper over
 
 - **The webapp has no glossary screen.** The server has the whole glossary API (5.2a–5.2d) and the landing page can browse `AtlasGlossary`, but the Aurelius webapp builds no glossary editor and no term-assignment picker (7.41, DV-193). A guide that implies otherwise is wrong. `change-data.md` names the gap where a person reaches for a term.
-- **The webapp has no saved searches.** The server has them (4.5). `find-data.md` names the gap where a person wants to keep a search, and points at the page URL instead.
 - **The roadmap's status column lags the code in several places.** It lists 15.7 as planned while `docker/bin/tenant.sh` and its guide page are merged, and it still reads *in review* for 7.25 and 7.27, which merged as \#462, \#463 and \#317. Verify a screen against the running stack or the merged commits before you write it. Do not trust the roadmap's word over the stack.
 
 ## Sequence

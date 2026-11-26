@@ -27,6 +27,10 @@ A line runs from a dataset into a process, and out of a process into a dataset, 
 
 The webapp draws the first view of a model only. A model can hold more than one view, and you choose among them from the drawer described below.
 
+The view below opens on the sample dataset `NL1-HR-001`, outlined in green, and runs right through the two processes it flows into.
+
+![The lineage of NL1-HR-001.](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/assets/user-guide/lineage-diagram.png>)
+
 ## Move around
 
 Drag the drawing to pan it and scroll to zoom. The zoom stops at half size and at three times, and the diagram gives no warning when it hits either bound.

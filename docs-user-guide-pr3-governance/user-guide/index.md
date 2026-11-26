@@ -1,6 +1,6 @@
 # User Guide
 
-Aurelius Atlas is a data catalogue. A catalogue answers four questions about the data your organisation holds: where a dataset lives, who is accountable for it, whether you can trust it, and what breaks if you change it. This guide shows a data steward, an analyst, or a data scientist how to answer those questions in the Aurelius Atlas webapp. It does not cover the Apache Atlas dashboard or the REST API. The [API Reference](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/api-reference/index.md>) covers the API, and the [Contributor Guide](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/contributor-guide/index.md>) covers building the system.
+Aurelius Atlas is a data catalogue. A catalogue answers four questions about the data your organisation holds: where a dataset lives, who is accountable for it, whether you can trust it, and what breaks if you change it. This guide shows a data steward, an analyst, or a data scientist how to answer those questions in the Aurelius Atlas webapp. It does not cover the Apache Atlas dashboard or the REST API.
 
 ## The four questions
 
@@ -27,5 +27,3 @@ You reach the catalogue one of two ways.
 > **The guide is in English**
 >
 > The webapp ships English and Dutch, so you can switch its language in the Settings panel. This guide ships in English only.
-
-The catalogue's behaviour is documented here, in this repository. The [Deviations from Apache Atlas](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/architecture/conversion/deviations/index.md>) ledger lists every intended difference from Apache Atlas 2.4.0, and it grows as the conversion proceeds.

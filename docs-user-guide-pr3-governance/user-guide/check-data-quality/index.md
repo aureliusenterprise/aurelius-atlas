@@ -38,7 +38,7 @@ A dimension you do not see at all is not a failure. The box prints a row only wh
 
 On a field page, the **Data Quality Rules** box holds one card per rule attached to the field. Each card carries the rule's own score row, such as `81.4% accuracy`, so you can see which rule pulled a dimension down.
 
-A card always appears when a rule is attached to the field. A rule that the worker never scored keeps its card and prints no score row ([DV-207](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/architecture/conversion/deviations/index.md>)). The card is the promise that the rule exists. The score row only appears when a measurement exists.
+A card always appears when a rule is attached to the field. A rule that the worker never scored keeps its card and prints no score row. The card is the promise that the rule exists. The score row only appears when a measurement exists.
 
 On the sample field `HIER_ORGANIZATION` the box holds three cards. Two carry a score row, and the third, an inactive rule, shows none. That third card is the expected case, not a missing number.
 
@@ -80,5 +80,9 @@ The sample field `HIER_ORGANIZATION` is a clean walk-through of every case:
 2. Open the **Fields** box and choose `HIER_ORGANIZATION`. Its **Data Quality** box shows `81.4% Accuracy (1)` and `100% Completeness (1)`, with no Timeliness, Uniqueness, or Validity row, because nothing measured those.
 3. Read the **Data Quality Rules** box. Three cards appear. Two carry a score row. The third carries none, which is the unscored rule.
 4. Its stats bar reads `90.7%`, the pooled figure across the two measurements.
+
+The screen below holds both boxes: the two scored dimensions, and the three rule cards, one of which scores nothing.
+
+![The Data Quality and Data Quality Rules boxes of HIER\_ORGANIZATION.](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/assets/user-guide/data-quality-box.png>)
 
 The next step, to change a rule or write a new one, is [Write quality rules](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/user-guide/write-quality-rules/index.md>). To change a record itself, see [Change data](<https://aureliusenterprise.github.io/docs-user-guide-pr3-governance/user-guide/change-data/index.md>).

@@ -7917,7 +7917,7 @@ still reads <em>in review</em> for increments that merged weeks ago (see the gap
 <p>There is no page for people arriving from the Atlas dashboard. The guide describes the one
 interface it ships, and the differences from Apache Atlas stay in
 <a href="../../architecture/conversion/deviations/">deviations.md</a>. Each page names the gap its own reader
-meets, where they meet it: <code>find-data.md</code> says a search has no save button and the page URL is the
+meets, where they meet it: <code>find-data.md</code> says the page URL carries the query, so it is the
 bookmark, and <code>change-data.md</code> says a term assignment builds no field and survives a save untouched
 (7.41, DV-193).</p>
 <h2 id="storyboard">Storyboard<a class="headerlink" href="#storyboard" title="Permanent link">&para;</a></h2>
@@ -7968,7 +7968,8 @@ what page explains them.</p>
   counters (7.4b, DV-143)</li>
 <li>Order and paging: no sort control by design (7.4a), ten at a time behind a load link, and the
   header count, which a search by meaning words as "closest matches"</li>
-<li>No saved search: the page URL carries the query, so it is the bookmark</li>
+<li>Share a search: the page URL carries the query, so it is the bookmark. Saved searches are not a
+  webapp feature and the pages do not mention them</li>
 <li>Empty results: three causes, in the order a reader meets them</li>
 </ul>
 <p>Sample <code>sample_data</code>, identity <code>demo_scientist</code>. The searches are <code>employee</code>, then <code>NL1-HR-001</code>.</p>
@@ -8077,7 +8078,9 @@ what a score means.</p>
    an architecture and admin topic.</li>
 <li><strong>No numbered screenshots.</strong> Where an image helps, use one full-screen image with a sentence
    that names what to look at. Keep the first pass to at most eight images, in
-   <code>docs/assets/user-guide/</code>, captured from the standalone stack with the <code>small</code> sample.
+   <code>docs/assets/user-guide/</code>, captured from a running stack at 1280x720 with the <code>sample_data</code>
+   sample, because every walkthrough uses that sample. Read-only screens are captured with a
+   read-only identity, so no pencil or plus button appears where the page says none should.
    Images are the most expensive thing in the guide to keep true.</li>
 <li><strong>The style gates are the review gates.</strong> Prettier, <code>zensical build --strict</code>, markdownlint, in
    that order, per <a href="../documentation/">Documentation</a>. Documentation needs no SOPS key and no
@@ -8108,8 +8111,6 @@ guide's index, so a Dutch reader does not expect a translated guide.</p>
   landing page can browse <code>AtlasGlossary</code>, but the Aurelius webapp builds no glossary editor and no
   term-assignment picker (7.41, DV-193). A guide that implies otherwise is wrong. <code>change-data.md</code>
   names the gap where a person reaches for a term.</li>
-<li><strong>The webapp has no saved searches.</strong> The server has them (4.5). <code>find-data.md</code> names the gap where
-  a person wants to keep a search, and points at the page URL instead.</li>
 <li><strong>The roadmap's status column lags the code in several places.</strong> It lists 15.7 as planned while
   <code>docker/bin/tenant.sh</code> and its guide page are merged, and it still reads <em>in review</em> for 7.25 and
   7.27, which merged as #462, #463 and #317. Verify a screen against the running stack or the merged
