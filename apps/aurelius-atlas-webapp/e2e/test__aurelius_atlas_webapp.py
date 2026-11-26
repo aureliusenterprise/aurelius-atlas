@@ -2061,7 +2061,7 @@ def test__the_editor_previews_markdown_it_saves(authenticated: Page, root_url: s
 
 
 @pytest.mark.critical
-def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, user_token: str) -> None:
+def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, fresh_user_token: Callable[[], str]) -> None:
     """A classification added in the drawer lands as a chip on the details header (EDT-05, EDT-12).
 
     The tag box offers the typedefs whose ``entityTypes`` name the entity's
@@ -2075,6 +2075,9 @@ def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, user_tok
     tag = f"zz{run}tag"
     name = f"zz{run}tagged"
 
+    # A token per API stretch (fresh_user_token's rule): the seed below and the
+    # teardown after the browser phase would otherwise share one 60s token.
+    user_token = fresh_user_token()
     typedef = authenticated.request.post(
         urljoin(root_url, "/api/atlas/v2/types/typedefs"),
         data=json.dumps({"classificationDefs": [{"name": tag, "entityTypes": ["DataSet"]}]}),
@@ -2112,6 +2115,7 @@ def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, user_tok
         # please try again" until the attach settles, the typedef delete 409
         # "has references" until the detach is visible. Retry both (bounded;
         # self-cleaning only).
+        user_token = fresh_user_token()
         deadline = time.monotonic() + 30
         while True:
             detached = authenticated.request.delete(
@@ -2124,7 +2128,8 @@ def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, user_tok
             assert time.monotonic() < deadline, detached.text()
             time.sleep(1)
 
-        _delete_entity(authenticated, root_url, user_token, guid)
+        _delete_entity(authenticated, root_url, fresh_user_token, guid)
+        user_token = fresh_user_token()  # the detach budget can outlast a token
         while True:
             removed = authenticated.request.delete(
                 urljoin(root_url, f"/api/atlas/v2/types/typedef/name/{tag}"),
@@ -2237,7 +2242,7 @@ def _the_propagated_chip_menu_names_its_source(page: Page, marker: Locator, tag:
 # propagation engine is server-tested, this is the one screen that shows them)
 @pytest.mark.high
 def test__the_details_header_marks_a_propagated_tag_with_its_source(
-    authenticated: Page, root_url: str, user_token: str
+    authenticated: Page, root_url: str, fresh_user_token: Callable[[], str]
 ) -> None:
     """A tag that rode in on an edge shows in the header, marked, and names its source (VDR-12, DV-197).
 
@@ -2256,8 +2261,11 @@ def test__the_details_header_marks_a_propagated_tag_with_its_source(
     process_name = f"zz{run}process"
     target_name = f"zz{run}target"
 
+    # The dev realm's token lives 60s (fresh_user_token's rule): the seed, the
+    # browser phase and the teardown each get their own mint, so a retry loop
+    # never reads a 401 it mistakes for the 409/406 it is waiting on.
     seeded = _a_tag_propagates_down_an_edge(
-        authenticated, root_url, user_token, tag, source_name, process_name, target_name
+        authenticated, root_url, fresh_user_token(), tag, source_name, process_name, target_name
     )
     source_guid, process_guid, target_guid = seeded["source"], seeded["process"], seeded["target"]
 
@@ -2298,6 +2306,7 @@ def test__the_details_header_marks_a_propagated_tag_with_its_source(
         # race the propagation work the tag started (CLS-12's retry, the tags
         # scenario) — on both entities, since the target holds a propagated
         # instance of the same type.
+        user_token = fresh_user_token()
         deadline = time.monotonic() + 30
         for guid in (source_guid, target_guid):
             while True:
@@ -2312,11 +2321,13 @@ def test__the_details_header_marks_a_propagated_tag_with_its_source(
                 time.sleep(1)
 
         for guid in (target_guid, process_guid, source_guid):
-            _delete_entity(authenticated, root_url, user_token, guid)
+            _delete_entity(authenticated, root_url, fresh_user_token, guid)
         # The type stays referenced until the soft-deleted entities are purged
         # (an async task), so this retry races the purge on top of the detaches
         # above. It gets its own budget: a slow propagation recompute in the
         # detach loop, or a slow purge, must not spend the type delete's time.
+        # A fresh mint: the detach budget above can outlast a token.
+        user_token = fresh_user_token()
         deadline = time.monotonic() + 60
         while True:
             removed = authenticated.request.delete(
