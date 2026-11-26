@@ -8,10 +8,13 @@
  * an emulated-encapsulation parent cannot style a child's inner markup.
  */
 
-/* The host is one block in the page flow, so the box keeps the margins Bulma
- * gives it between the stats bar and the next box. */
+/* The host is one block in the page flow. The box's bottom margin came from
+ * Bulma's `.box:not(:last-child)`, and inside this host the box is the last
+ * child, so the rule stopped matching when the box moved out (7.50) and the
+ * box below moved up against it. The host carries the rhythm instead. */
 :host {
     display: block;
+    margin-bottom: var(--bulma-block-spacing);
 }
 
 .aurelius-details-score-pie {

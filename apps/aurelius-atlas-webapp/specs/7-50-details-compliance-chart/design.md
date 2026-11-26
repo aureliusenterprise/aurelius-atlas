@@ -23,7 +23,9 @@ with the red swatch, compliant second with the green), and the quality pie at si
 chart at all — reading the layout row and the verdicts store — is the screen's
 job, not the box's; the box is mounted only when a chart is in hand. The five
 stylesheet rules the box owned move into the new stylesheet with `:host { display:
-block; }` so the box keeps its place in the page flow, and the `DataQualityPie`
+block; }` so the box keeps its place in the page flow — plus the one margin
+Bulma cannot give it there (the fix DD-885 records): the 1.5rem block spacing
+the box lost when it became its host's only child — and the `DataQualityPie`
 import leaves the screen for the child.
 
 **Why.** This is the details screen's smallest own-markup leaf: eighteen template
@@ -58,7 +60,7 @@ first section). The tests stay driving the whole screen, as 7.48 did.
 **Consequences.** `details.component.ts` is the same length (782 lines: it drops
 the `DataQualityPie` import and gains `ComplianceChartBox`), its template drops
 from 398 to 371, and its stylesheet from 98 to 65; `compliance-chart.component.ts`
-(66 lines with its doc and inline template) and its 40-line stylesheet hold the
+(66 lines with its doc and inline template) and its 43-line stylesheet hold the
 box. No test moves, so the suite stays at 1,047 across 85 files (DET-50 and DET-54
 pass against the whole screen, which now renders the box through the child, and the
 e2e rule-page test's pins are unchanged). No string id changes (the box prints its
