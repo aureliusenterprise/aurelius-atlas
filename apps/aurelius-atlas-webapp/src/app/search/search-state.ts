@@ -257,7 +257,7 @@ export class SearchState {
      * the in-memory filters and navigated, the URL carried nothing. The
      * selection list is the same field the sidebar ticks (DD-425's
      * consequence: one wire field, one signal).
-     * @param typeName the Atlas type to explore (DV-84's base-model mapping)
+     * @param typeName the type to explore (the card's own type, DV-84)
      */
     explore(typeName: string): void {
         this.queryText.set("");

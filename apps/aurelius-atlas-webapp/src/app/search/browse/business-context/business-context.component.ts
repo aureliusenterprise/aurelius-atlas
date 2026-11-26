@@ -61,12 +61,12 @@ export class BusinessContext {
 
     /**
      * The explore button (SRH-08, DV-84): the empty query and the
-     * AtlasGlossary type filter — the legacy's data domains are Atlas's
-     * glossaries (the glossary model ships no plain `Glossary` type, so the
-     * server would answer the explore `UNKNOWN_TYPENAME`, SRC-03).
+     * `m4i_data_domain` type filter — the card browses data domains, the
+     * Aurelius type the catalogue holds them in (the base `AtlasGlossary`
+     * filter found nothing in the sample data).
      */
     protected explore(): void {
-        this.search.explore("AtlasGlossary");
+        this.search.explore("m4i_data_domain");
         void this.router.navigate(["/search/results"]);
     }
 }

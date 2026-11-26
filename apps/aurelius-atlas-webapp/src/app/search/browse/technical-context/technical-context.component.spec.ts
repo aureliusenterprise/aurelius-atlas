@@ -130,7 +130,7 @@ describe("TechnicalContext", () => {
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: "warehouse" } });
     });
 
-    it("the explore button searches the Infrastructure type, no URL query (SRH-08, DV-84)", () => {
+    it("the explore button searches the m4i_system type, no URL query (SRH-08, DV-84)", () => {
         const { navigate, httpMock } = setup();
         const fixture = TestBed.createComponent(TechnicalContext);
         fixture.detectChanges();
@@ -139,13 +139,12 @@ describe("TechnicalContext", () => {
         exploreButton(compiled).click();
         fixture.detectChanges();
 
-        // The legacy directToTechnical's filter read as Atlas's base model
-        // (DV-84): the empty query and typeName=Infrastructure ride the
-        // session store, the URL carries nothing (DD-219).
+        // The card browses systems: the empty query and typeName=m4i_system
+        // ride the session store, the URL carries nothing (DV-84, DD-219).
         expectSearch(httpMock, {
             query: "",
             mode: "keyword",
-            filters: { any: [{ typeName: ["Infrastructure"] }, { superTypeNames: ["Infrastructure"] }] },
+            filters: { any: [{ typeName: ["m4i_system"] }, { superTypeNames: ["m4i_system"] }] },
             limit: 10,
             offset: 0,
         });

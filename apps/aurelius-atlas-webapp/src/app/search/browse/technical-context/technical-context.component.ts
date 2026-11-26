@@ -59,12 +59,13 @@ export class TechnicalContext {
     }
 
     /**
-     * The explore button (SRH-08, DV-84): the empty query and the
-     * Infrastructure type filter — the legacy's systems are Atlas's
-     * infrastructure entities.
+     * The explore button (SRH-08, DV-84): the empty query and the `m4i_system`
+     * type filter — the card browses systems, the Aurelius type the catalogue
+     * holds them in (the base `Infrastructure` filter found nothing in the
+     * sample data).
      */
     protected explore(): void {
-        this.search.explore("Infrastructure");
+        this.search.explore("m4i_system");
         void this.router.navigate(["/search/results"]);
     }
 }

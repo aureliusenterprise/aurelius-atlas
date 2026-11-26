@@ -131,7 +131,7 @@ describe("BusinessContext", () => {
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: "domain" } });
     });
 
-    it("the explore button searches the AtlasGlossary type, no URL query (SRH-08, DV-84)", () => {
+    it("the explore button searches the m4i_data_domain type, no URL query (SRH-08, DV-84)", () => {
         const { navigate, httpMock } = setup();
         const fixture = TestBed.createComponent(BusinessContext);
         fixture.detectChanges();
@@ -143,13 +143,13 @@ describe("BusinessContext", () => {
         explore.click();
         fixture.detectChanges();
 
-        // The legacy directToConceptual's filter read as Atlas's model
-        // (DV-84): the empty query and typeName=AtlasGlossary ride the
-        // session store, the URL carries nothing (DD-219).
+        // The card browses data domains: the empty query and
+        // typeName=m4i_data_domain ride the session store, the URL carries
+        // nothing (DV-84, DD-219).
         expectSearch(httpMock, {
             query: "",
             mode: "keyword",
-            filters: { any: [{ typeName: ["AtlasGlossary"] }, { superTypeNames: ["AtlasGlossary"] }] },
+            filters: { any: [{ typeName: ["m4i_data_domain"] }, { superTypeNames: ["m4i_data_domain"] }] },
             limit: 10,
             offset: 0,
         });

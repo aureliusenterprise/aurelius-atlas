@@ -1726,30 +1726,29 @@ def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_
             _purge_type(authenticated, root_url, user_token, type_name)
 
 
-# impact=major, likelihood=medium (the glossary promise in browse; churn on the search path)
+# impact=major, likelihood=medium (the data-domain promise in browse; churn on the search path)
 @pytest.mark.high
-def test__business_explore_lists_glossary_entities_without_a_url_query(
+def test__business_explore_lists_data_domain_entities_without_a_url_query(
     authenticated: Page, root_url: str, user_token: str
 ) -> None:
-    """The business card's explore button lists glossary entities, type-filtered (SRH-08, DV-84).
+    """The business card's explore button lists data domains, type-filtered (SRH-08, DV-84).
 
-    Explore is the legacy ``directToGlossary``: an empty query plus the
-    session type filter ``typeName=AtlasGlossary`` (DV-84 — the Atlas type,
-    not the m4i ``Glossary`` label, which the server would reject as
-    UNKNOWN_TYPENAME, SRC-03). The filter rides the store, never the URL
-    (SRH-02: the URL carries only ``?query=``), so the results URL stays
-    clean — reloading it restarts from the URL alone: the empty query, which
-    lists every entity (DD-221), proving the filter lived only in the
-    session store.
+    Explore is the legacy ``directToGlossary`` ported to the Aurelius model:
+    an empty query plus the session type filter
+    ``typeName=m4i_data_domain`` (DV-84 — the type the catalogue holds data
+    domains in). The filter rides the store, never the URL (SRH-02: the URL
+    carries only ``?query=``), so the results URL stays clean — reloading it
+    restarts from the URL alone: the empty query, which lists every entity
+    (DD-221), proving the filter lived only in the session store.
 
-    The type is purged first: the shared stack keeps every run's glossaries
-    and the explore page shows the first ten (limit 10) — the purge makes
-    the seeded entity the page.
+    The type is purged first: the shared stack keeps every run's domains and
+    the explore page shows the first ten (limit 10) — the purge makes the
+    seeded entity the page.
     """
     run = secrets.token_hex(4)
     name = f"zz{run}domain"
-    _purge_type(authenticated, root_url, user_token, "AtlasGlossary")
-    _seed_entities(authenticated, root_url, user_token, "AtlasGlossary", [name])
+    _purge_type(authenticated, root_url, user_token, "m4i_data_domain")
+    _seed_entities(authenticated, root_url, user_token, "m4i_data_domain", [name])
 
     authenticated.goto(urljoin(root_url, "/en-US/search"))
     authenticated.get_by_role("button", name="Start browsing data domains").click()
@@ -1761,7 +1760,7 @@ def test__business_explore_lists_glossary_entities_without_a_url_query(
     # The type filter is session state: reloading the bare results URL
     # restarts from the URL alone — the empty query with no filter, which the
     # door answers with every entity (VSR-04, AVR-11). The purged type holds
-    # exactly the seeded glossary, so a filtered re-run would show its one
+    # exactly the seeded domain, so a filtered re-run would show its one
     # row; the every-entity search shows more (stack-size agnostic: on a
     # fresh CI stack the few seeded entities, on a shared stack the full page
     # of ten).
