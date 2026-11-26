@@ -20,8 +20,8 @@ From the top:
 The pencil at the top right opens the editor. It appears only for a person who can write, and
 [Change data](change-data.md) covers what it lets you do.
 
-The dataset page below shows each part: the header, the Description box, the stats bar, and the
-first card section.
+The dataset page below shows each part: the header, the Description box, and the stats bar with the
+record's counts.
 
 ![The page of the sample dataset NL1-HR-001.](../assets/user-guide/entity-details.png)
 
