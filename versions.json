@@ -75,6 +75,11 @@
     "aliases": []
   },
   {
+    "version": "docs-user-guide-pr1-quick-start",
+    "title": "docs-user-guide-pr1-quick-start",
+    "aliases": []
+  },
+  {
     "version": "dependabot-uv-pymdown-extensions-13.0",
     "title": "dependabot-uv-pymdown-extensions-13.0",
     "aliases": []
