@@ -47,14 +47,10 @@ Keycloak sign-in page and returns you to the page you asked for.
       [Standalone Server](standalone-server.md) to add a person and give it the `atlas-read` role.
 3. You arrive on the **Getting started** screen. It holds one search box at the top and three cards:
    **Business context**, **Technical context**, and **Data governance organization**. Each card asks
-   for a keyword and has a green button that browses one type.
+   for a keyword and has a green button that lists records for that card.
+   [Find data](find-data.md#the-three-starting-points) says what each button lists.
 
     ![The Getting started screen.](../assets/user-guide/landing.png)
-
-??? QUESTION "Do the three buttons find the sample?"
-
-    Not yet on the sample catalogue. The reason and what to use instead are in
-    [Find data](find-data.md#the-three-starting-points).
 
 ## Find one dataset
 

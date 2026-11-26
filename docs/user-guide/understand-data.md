@@ -31,8 +31,8 @@ The header states what the record is. The name is the record's name, or its qual
 has none. Below it sits the type badge: an icon and a friendly type name such as **Dataset**,
 **Data Field**, or **Person**.
 
-A badge can show an alias instead of the type name, when the record carries one. A record of type
-`m4i_system` stored with the alias `Kafka Topic` shows a badge that reads **Kafka Topic**, and the
+A badge can show an alias instead of the type name, when the record carries one. A record of the
+**System** type stored with the alias `Kafka Topic` shows a badge that reads **Kafka Topic**, and the
 header adds the friendly type in brackets, so it reads `Kafka Topic (System)`. The alias is stored
 on the record, not chosen by the screen. The sample catalogue stores no aliases, so its badges show
 plain type names.

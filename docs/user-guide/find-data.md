@@ -17,11 +17,11 @@ lists every record the server holds.
 
 The landing screen holds one box plus three cards, each with its own box and a green button:
 
-| Card                         | Green button                | The button lists             |
-| ---------------------------- | --------------------------- | ---------------------------- |
-| Business context             | Start browsing data domains | Records of `m4i_data_domain` |
-| Technical context            | Start browsing systems      | Records of `m4i_system`      |
-| Data governance organization | Start browsing people       | Your own e-mail as a search  |
+| Card                         | Green button                | The button lists                    |
+| ---------------------------- | --------------------------- | ----------------------------------- |
+| Business context             | Start browsing data domains | Records of the **Data Domain** type |
+| Technical context            | Start browsing systems      | Records of the **System** type      |
+| Data governance organization | Start browsing people       | Your own e-mail as a search         |
 
 The sample catalogue holds data domains and systems, so the first two buttons
 list them. The third button searches the signed-in account's e-mail address.
@@ -101,8 +101,6 @@ them:
 1. You typed a word the catalogue does not hold. Shorten it, or end it with `*`.
 2. The webapp is in Meaning or Both mode and the meaning index is not ready. Switch to **Words** in
    Settings.
-3. On the sample, you used one of the three starting-point buttons. See
-   [The three starting points](#the-three-starting-points).
 
 A failure looks different: an error appears in the Alerts drawer, and the list stays as it was. Open
 the bell icon to read it.
