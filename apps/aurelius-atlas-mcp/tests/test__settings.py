@@ -9,6 +9,7 @@ from aurelius_atlas_mcp.settings import (
     DEFAULT_SERVER_URL,
     DEFAULT_VALIDATE_ENTITY_URL,
     DEFAULT_WRITE_ROLE,
+    DEFAULT_WRITE_ROLE_CLIENT,
     TLS_PAIR_ERROR,
     McpSettings,
 )
@@ -52,6 +53,7 @@ def test__settings_default_to_the_dev_services() -> None:
     assert str(settings.server_base_url) == f"{DEFAULT_SERVER_URL}/"
     assert str(settings.validate_entity_base_url) == f"{DEFAULT_VALIDATE_ENTITY_URL}/"
     assert settings.write_role == DEFAULT_WRITE_ROLE
+    assert settings.write_role_client == DEFAULT_WRITE_ROLE_CLIENT
     assert settings.auth_audience == "aurelius"
 
 

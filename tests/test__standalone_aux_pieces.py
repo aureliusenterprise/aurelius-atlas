@@ -13,8 +13,8 @@ from conftest import WORKSPACE, compose_load, standalone_compose
 
 STACK = WORKSPACE / "docker"
 # The front door joins the aux roster (21.2, DD-896): the same piece posture,
-# reached through the webapp's /mcp proxy. Its e2e layer is 21.3, so it stays
-# out of the e2e-extends layers below.
+# reached through the webapp's /mcp proxy. Its e2e layer arrived with 21.3 and
+# joins the e2e-extends layers below.
 AUX = (
     "aurelius-atlas-data2model",
     "aurelius-atlas-lineage-model",
@@ -86,6 +86,7 @@ def test__each_e2e_layer_extends_its_own_piece() -> None:
         "aurelius-atlas-data2model": "apps/aurelius-atlas-data2model/e2e/compose.data2model.yaml",
         "aurelius-atlas-lineage-model": "apps/aurelius-atlas-lineage-model/e2e/compose.lineage-model.yaml",
         "aurelius-atlas-validate-entity": "apps/aurelius-atlas-validate-entity/e2e/compose.validate-entity.yaml",
+        "aurelius-atlas-mcp": "apps/aurelius-atlas-mcp/e2e/compose.mcp.yaml",
         "aurelius-atlas-webapp": "apps/aurelius-atlas-webapp/e2e/docker-compose.yaml",
     }
     for name, layer_path in layers.items():

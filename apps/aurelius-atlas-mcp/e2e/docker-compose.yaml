@@ -1,0 +1,77 @@
+name: aurelius-atlas-mcp-e2e
+
+# The 21.3 chain: the MCP front door beside the real Atlas server and the real
+# verdicts API (the aux chain pattern, DD-200's sibling, upstream-as-container).
+# The server is the server project's e2e service, extended from
+# ../../aurelius-atlas-server/e2e/compose.server.yaml; the verdicts API is the
+# validate-entity project's e2e layer, extended from its
+# compose.validate-entity.yaml; the app under test is this project's own e2e
+# service, extended from compose.mcp.yaml beside this file. Each base's cert
+# mount rebases to its owner's certs folder — every leaf the in-network calls
+# verify is the one its service presents (the shared dev CA, one `nx certgen`
+# root). This stack states only its differences: the server's fixed host port
+# for the suite's seeding client, the audiences the two identities this suite
+# presents carry, the app's gate on this stack's services, and the networks.
+# The suite and the collector stacks ride the dev Keycloak and store on the
+# host/external networks (DD-223: started by the e2e target, left running).
+services:
+    atlas-server:
+        extends:
+            file: ../../aurelius-atlas-server/e2e/compose.server.yaml
+            service: atlas-server
+        ports:
+            # Fixed host port, loopback-pinned (CIA-03): the suite seeds entities
+            # and rules through it as the writer, and its client speaks to it
+            # there. 21009 is this stack's — the quality scanner's 21005, the
+            # kafka-scanner's 21006, the db-scanner's 21007 and the verdicts
+            # suite's 21008 stay free (DD-897's ladder note).
+            - 127.0.0.1:21009:21000
+        environment:
+            # The two identities this chain's calls carry (AUT-02): the browser's
+            # `aurelius` token, which the front door forwards unchanged (MCP-03),
+            # and the verdicts app's own client-credentials token, which signs its
+            # rules leg (VEV-04). The front door needs no entry of its own: it
+            # holds no service identity (DV-208, DD-893). One key over the base's
+            # map, the same join the verdicts suite's stack makes.
+            AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius", "aurelius-atlas-validate-entity"]'
+
+    aurelius-atlas-validate-entity:
+        # The verdicts API, the validate_entity tool's upstream (MCP-12). The layer's
+        # e2e identity arrives by inheritance: host issuer, its rules leg against the
+        # stack's server, the OTel leg. Its OTel secret is the stack's shared dev
+        # ingest value, under the name this project's .env carries.
+        extends:
+            file: ../../aurelius-atlas-validate-entity/e2e/compose.validate-entity.yaml
+            service: aurelius-atlas-validate-entity
+        environment:
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+
+    aurelius-atlas-mcp:
+        # The app under test, as this project's e2e service. Its healthcheck gates
+        # the stack's readiness; the app reaches both upstreams by their certificate
+        # names on the store network.
+        extends:
+            file: ./compose.mcp.yaml
+            service: aurelius-atlas-mcp
+        depends_on:
+            atlas-server:
+                condition: service_healthy
+            aurelius-atlas-validate-entity:
+                condition: service_healthy
+
+networks:
+    # `extends` copies the service, not the network definitions: all three
+    # declare the same external networks under the same keys (as in every
+    # consumer of the server base).
+    # The dev Elasticsearch stack (the e2e target's up dependency, and conftest's
+    # guard): the server reaches the store as `elasticsearch`, and both aux legs
+    # reach the server under its certificate-name alias.
+    atlas:
+        name: aurelius-atlas-infra-elasticsearch-network
+        external: true
+    # The dev telemetry stack (infra/observability): the two exporters of this
+    # chain reach the collector on it. The MCP app joins no network here — it
+    # exports no OTLP (ADR 072, MCP-22).
+    observability:
+        name: aurelius-atlas-infra-observability-network
+        external: true

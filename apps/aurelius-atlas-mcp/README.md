@@ -65,7 +65,14 @@ The app deploys with the cluster and the standalone stack (increment
 - There is **no Keycloak realm client** and none is planned: the app has no
   service identity (DV-208), the caller's token is the only credential.
 
-## Still to come
+## Testing
 
-The e2e suite that stands a real server and verdicts API lands in increment
-21.3 (DD-897), along with the sonar test path it opens up.
+The unit suite runs offline against a fake issuer and a fake upstream, and
+drives a real MCP client session through the gated app (`nx test
+aurelius-atlas-mcp -c ci`). The chain suite (increment
+[21.3](specs/21-3-mcp-e2e/spec.md)) runs the image beside a real Atlas server
+and the real verdicts API (`npx nx e2e aurelius-atlas-mcp -c ci`): it mints
+browser tokens like an agent does, probes the realm's write-role claim before
+the stack starts, and proves both sides of the write gate live — a writer's
+`save_entity` lands, a reader's write refuses before the server sees it
+(MCP-25 to MCP-32, DD-898).

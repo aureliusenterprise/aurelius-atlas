@@ -1,6 +1,6 @@
 # aurelius-atlas-mcp
 
-The MCP front door of the catalogue (increment 21.1, ADR 072): a FastMCP
+The MCP front door of the catalogue (increments 21.1–21.3, ADR 072): a FastMCP
 service over Streamable HTTP that answers twelve catalogue tools. This file
 covers wiring specific to this app; workspace-wide rules, including the
 conversion workflow, live in the root `AGENTS.md`.
@@ -25,7 +25,7 @@ auth=None, clients=None)` builds the issuer verifier, the two upstream pools,
   the token `BearerGate` stored in the ASGI state and fails closed;
   `AtlasClients` holds the two seeded clients; `relay()`/`upstream_tool_error()`
   map upstream errors to MCP tool errors that name the status (MCP-14).
-- `aurelius_atlas_mcp/tools.py` — `register_tools(mcp, clients, audience,
+- `aurelius_atlas_mcp/tools.py` — `register_tools(mcp, clients, role_client,
 write_role)`: the twelve tools (MCP-04..MCP-13). Each builds a
   per-request client through `clients.atlas.with_token(bearer_token)` so the
   caller's own token travels upstream (MCP-03, DD-890), and projects answers
@@ -46,9 +46,17 @@ write_role)`: the twelve tools (MCP-04..MCP-13). Each builds a
   (DD-894).
 - `specs/21-2-mcp-deployment/` — the deployment spec and design (MCP-17..24,
   DD-893..DD-897), beside the 21.1 pair.
+- `e2e/compose.mcp.yaml` — the e2e layer over the stack piece (MCP-25): proxy
+  network reset, the dev Keycloak issuer on the host, the two legs by their
+  in-network certificate names. It names no secret and no `OTEL_*` key — the
+  chain is the deployment's proof of DV-208's posture.
+- `e2e/docker-compose.yaml` — the 21.3 chain: the server base at host port
+  21009, the verdicts API layer, this app. Run through the `e2e` target
+  (`npx nx e2e aurelius-atlas-mcp -c ci`); the conftest starts the shared
+  infra and leaves it running (DD-223).
 - `sonar-project.properties` — key `aureliusenterprise_aurelius-atlas-mcp`
-  (DD-897). Only `tests/` is a sources/tests path so far; `e2e/` joins in 21.3.
-- `tests/` — the unit suite (35 tests, offline): a fake RSA issuer,
+  (DD-897). `tests/` and `e2e/` are the tests paths.
+- `tests/` — the unit suite (36 tests, offline): a fake RSA issuer,
   `FakeUpstream`/`call_tool` in `fake_upstream.py`, and a real MCP client
   session driven through an `ASGITransport` over the gated app (DD-892).
 
@@ -63,9 +71,11 @@ acting.
 
 ## Wiring Checklist
 
-- `project.json` — `serve` depends on `decrypt`, `certgen` and dev Keycloak.
-  `test`/`build`/`docker-*`/`decrypt`/`lint`/`typecheck` are inferred by
-  `tools/plugins/python.ts` from `pyproject.toml`, `sourceRoot` and `tests/`.
+- `project.json` — `serve` depends on `decrypt`, `certgen` and dev Keycloak;
+  the hand-written `e2e` target adds the server and verdicts builds and the
+  three infra `up`s (DD-200's target shape). `test`/`build`/`docker-*`/
+  `decrypt`/`lint`/`typecheck` are inferred by `tools/plugins/python.ts` from
+  `pyproject.toml`, `sourceRoot` and `tests/`.
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-mcp` after changing
   `.env`; CI regenerates plaintext `.env` from `.env.enc`).
 - `tls.json` — the app's own certificate for `nx serve` (`nx certgen` runs
@@ -84,20 +94,23 @@ acting.
   `KeycloakAuth.verify` around the FastMCP ASGI app. Audience `aurelius` in dev
   (the webapp's client, AUX-04): an agent's token is minted like the browser's.
 - The write gate reads the caller's claims (`may_write` in `auth.py`) — role
-  `atlas-write` in `realm_access.roles` or `resource_access.<audience>.roles`,
-  the same claim shapes `aurelius-atlas-auth` accepts. A write tool must refuse
-  before any upstream request (MCP-11).
+  `atlas-write` in `realm_access.roles` or
+  `resource_access.<write_role_client>.roles` (default
+  `aurelius-atlas-server`, the catalogue client — MCP-28, DD-898: Keycloak
+  namespaces client roles per client, so the audience's entry never carries
+  it). A write tool must refuse before any upstream request (MCP-11).
 - There is deliberately **no** service identity, OTLP ingest identity, client
   secret, or circuit breaker in this app (ADR 072, DV-208, DD-890). Do not add
   a mint here; upstreams see only the caller's bearer token.
 - `sonar-project.properties` is in place with the deployment increment; the
   SonarCloud project `aureliusenterprise_aurelius-atlas-mcp` is created by a
   person before the first analysis (DD-897).
-- What landed in 21.2 and what has not: the chart, the umbrella join, the
-  standalone piece and the webapp proxy are in (21.2 spec). The Keycloak realm
-  client never lands — this app has no service identity (DV-208, DD-893). The
-  e2e chain (`e2e/`, host port 21009, the token probe) is increment 21.3
-  (DD-897).
+- What landed: the chart, the umbrella join, the standalone piece and the
+  webapp proxy (21.2), and the e2e chain with its token probe (21.3 — the
+  suite's `.env` carries the shared dev secrets for the stack's `${VAR:?}`
+  guards and the writer password the e2e task mints with; the app itself reads
+  none of them). The Keycloak realm client never lands — this app has no
+  service identity (DV-208, DD-893).
 
 ## Removal
 
