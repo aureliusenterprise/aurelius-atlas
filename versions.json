@@ -25,11 +25,6 @@
     "aliases": []
   },
   {
-    "version": "fix-webapp-e2e-token-lapse",
-    "title": "fix-webapp-e2e-token-lapse",
-    "aliases": []
-  },
-  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
