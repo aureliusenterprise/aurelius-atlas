@@ -335,7 +335,7 @@ describe("SearchState (SRH-02..06, SDX-01..07, VSR-03..09)", () => {
     it("applyUrl follows the URL and re-runs nothing on the same text (SRH-02)", () => {
         const { store, httpMock } = setup();
 
-        store.explore("AtlasGlossary");
+        store.explore("m4i_data_domain");
         httpMock.expectOne(DOOR).flush(page(0, 1, 1));
 
         // The results screen's effect fires on arrival with the URL's
@@ -343,7 +343,7 @@ describe("SearchState (SRH-02..06, SDX-01..07, VSR-03..09)", () => {
         store.applyUrl();
         store.applyUrl("");
         httpMock.expectNone(DOOR);
-        expect(store.typeSelection()).toEqual(["AtlasGlossary"]);
+        expect(store.typeSelection()).toEqual(["m4i_data_domain"]);
 
         // A hero submit of "term" (run) followed by the URL effect (applyUrl
         // of the same text): one request, not two (DD-219's no-op guard).
@@ -363,13 +363,13 @@ describe("SearchState (SRH-02..06, SDX-01..07, VSR-03..09)", () => {
     it("explore searches the empty query with the card's type in the selection (SRH-08, DV-84)", () => {
         const { store, httpMock } = setup();
 
-        store.explore("Infrastructure");
+        store.explore("m4i_system");
 
         const request = httpMock.expectOne(DOOR);
         expect(request.request.body).toEqual({
             query: "",
             mode: "keyword",
-            filters: { any: [{ typeName: ["Infrastructure"] }, { superTypeNames: ["Infrastructure"] }] },
+            filters: { any: [{ typeName: ["m4i_system"] }, { superTypeNames: ["m4i_system"] }] },
             facets: FACETS,
             limit: 10,
             offset: 0,
