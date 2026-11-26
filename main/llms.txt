@@ -2,10 +2,18 @@
 
 ## User Guide
 
+- [Change Data](<https://aureliusenterprise.github.io/main/user-guide/change-data/index.md>)
+- [Check Data Quality](<https://aureliusenterprise.github.io/main/user-guide/check-data-quality/index.md>)
 - [Deploy to Kubernetes](<https://aureliusenterprise.github.io/main/user-guide/deployment/index.md>)
+- [Find Data](<https://aureliusenterprise.github.io/main/user-guide/find-data/index.md>)
+- [Follow Lineage](<https://aureliusenterprise.github.io/main/user-guide/follow-lineage/index.md>)
 - [User Guide](<https://aureliusenterprise.github.io/main/user-guide/index.md>)
+- [Quick Start](<https://aureliusenterprise.github.io/main/user-guide/quick-start/index.md>)
+- [Settings and Alerts](<https://aureliusenterprise.github.io/main/user-guide/settings-and-alerts/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/main/user-guide/standalone-server/index.md>)
 - [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/main/user-guide/standalone-tenants/index.md>)
+- [Understand Data](<https://aureliusenterprise.github.io/main/user-guide/understand-data/index.md>)
+- [Write Quality Rules](<https://aureliusenterprise.github.io/main/user-guide/write-quality-rules/index.md>)
 
 ## Contributor Guide
 
@@ -19,6 +27,7 @@
 - [Secrets Management](<https://aureliusenterprise.github.io/main/contributor-guide/secrets-management/index.md>)
 - [Testing](<https://aureliusenterprise.github.io/main/contributor-guide/testing/index.md>)
 - [TLS Certificates](<https://aureliusenterprise.github.io/main/contributor-guide/tls-certificates/index.md>)
+- [User Documentation Plan](<https://aureliusenterprise.github.io/main/contributor-guide/user-documentation-plan/index.md>)
 - [Version Control](<https://aureliusenterprise.github.io/main/contributor-guide/version-control/index.md>)
 - [Writing Style](<https://aureliusenterprise.github.io/main/contributor-guide/writing-style/index.md>)
 
