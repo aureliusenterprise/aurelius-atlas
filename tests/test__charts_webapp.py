@@ -258,6 +258,11 @@ def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) ->
     assert config["atlasClientId"] == "aurelius-atlas-server"  # EDT-09, DD-324
     assert config["lineageModelBaseUrl"] == "/lineage-model"  # 7.22a, LDG-07
     assert config["validateEntityBaseUrl"] == "/validate-entity"  # 7.24, EDT-22
+    # The docs version folder defaults to the chart's appVersion, the tag the
+    # release stamped (SHC-03, DD-886, DD-288). Read from Chart.yaml so a
+    # release bump cannot break the pin.
+    chart = yaml.safe_load((WEBAPP_CHART / "Chart.yaml").read_text())
+    assert config["docsRef"] == chart["appVersion"]
     assert "appVersion" not in config  # VER-01, DD-725
     assert "appCopyright" not in config  # VER-04, DD-726
     mounts = {

@@ -35,6 +35,7 @@ name the images the same run pushed (DD-685).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -334,6 +335,30 @@ any machine. `docker/bin/` holds the scripts you run by hand: the certificate sc
 """
 
 
+#: The bundle-relative home of the webapp's browser config — the file the
+#: compose mounts at the SPA's `/config.json` (SPC-02, DD-694). The bundler
+#: stamps the docs version folder into it (SHC-03, DD-886).
+WEBAPP_CONFIG = "apps/aurelius-atlas-webapp/docker/config.json"
+
+
+def _stamp_docs_ref(output: Path, version: str) -> None:
+    """Point the bundle's Documentation link at the docs of the release it ships (SHC-03, DD-886).
+
+    The repository's own ``config.json`` carries no ``docsRef``, which is the
+    trunk; a bundle is one release, so the tool writes the release tag in. The
+    key is the whole write — the file's own values (hosts, realm, client) stay
+    as committed. A release tag is also a docs folder name because the docs
+    publish one per tag (DD-886), the same tag the image variables carry
+    (SBD-06).
+    """
+    path = output / WEBAPP_CONFIG
+    if not path.is_file():
+        raise BundleError(f"the bundle holds no {WEBAPP_CONFIG}, so its docs link cannot be stamped (SHC-03)")
+    config = json.loads(path.read_text())
+    config["docsRef"] = version
+    path.write_text(json.dumps(config, indent=4) + "\n")
+
+
 def build_bundle(output: Path, version: str) -> Path:
     """Build the bundle in `output`, return the tarball written beside it, and self-check it.
 
@@ -356,6 +381,7 @@ def build_bundle(output: Path, version: str) -> Path:
     (output / BUNDLE_COMPOSE_DIR / "docker-compose.yaml").write_text(yaml.safe_dump(flat, sort_keys=False, width=120))
     (output / BUNDLE_COMPOSE_DIR / ".env").write_text(_bundle_env(flat_text, answers, version))
     (output / "README.md").write_text(_bundle_readme())
+    _stamp_docs_ref(output, version)
     _self_check(output, version)
     return _tar(output, output)
 

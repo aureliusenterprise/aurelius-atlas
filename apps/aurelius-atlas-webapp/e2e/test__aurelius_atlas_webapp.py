@@ -569,10 +569,15 @@ def test__footer_shows_the_product_name_copyright_and_version(
 # impact=minor, likelihood=low (an outbound link)
 @pytest.mark.low
 def test__documentation_link_points_at_the_aurelius_docs(authenticated: Page) -> None:
-    """The navbar's Documentation link opens the Aurelius docs safely (SHC-03, SHC-09)."""
+    """The navbar's Documentation link opens the Aurelius docs safely (SHC-03, SHC-09).
+
+    The suite's own ``config.json`` names the local docs server, so the link opens
+    that URL. The published deployments name a version folder instead, which opens
+    the GitHub Pages site of that branch or tag (DD-886).
+    """
     link = authenticated.locator('a[target="_blank"]')
 
-    expect(link).to_have_attribute("href", "https://aureliusenterprise.github.io/aurelius-atlas-documentation/")
+    expect(link).to_have_attribute("href", "http://localhost:8000/")
     expect(link).to_have_attribute("rel", "noopener noreferrer")
     expect(link).to_have_text("Documentation")
 

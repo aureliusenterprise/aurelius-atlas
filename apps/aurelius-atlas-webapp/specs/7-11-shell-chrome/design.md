@@ -221,3 +221,70 @@ both JS and Playwright count `\u00a0` as whitespace, so the e2e greeting (SHC-09
 still passes on the non-breaking space and still fails if the words glue together.
 Neither matcher can see the flex gap, so the unit test stays the only pin on the
 shape, and the gap it guards shows only above the burger breakpoint.
+
+### DD-886. The Documentation link opens the docs folder the deployment names
+
+- **Status:** Proposed
+- **Increment:** 7.11 (a fix, 2026-11-26)
+- **Date:** 2026-11-26
+- **Supersedes:** none
+
+**Decision.** The Documentation link points at the docs site this deployment
+shows (SHC-03). A new optional runtime-configuration key `docsRef` names it
+(SHL-10), in one of two shapes. A version folder name places the link under the
+published site root `https://aureliusenterprise.github.io/aurelius-atlas/`, whose
+last path segment is that folder (`main/`, `v0.1.0-rc.11/`). A whole URL names a
+docs site served elsewhere. A build that leaves the key out opens `main`. A
+release names the tag it ships. The webapp chart defaults the key to
+`Chart.AppVersion`, the tag the release already stamps (DD-288), and the two
+environment overlays set it to `main` because they run pre-release code. The
+standalone bundler writes the release tag into the bundle's `config.json`. The
+dev and e2e configurations name the local docs server,
+`http://localhost:8000/`, where `nx docs` serves the site.
+
+**Reason.** The user asked the link to open the GitHub Pages site, whose last path
+segment names a branch or a tag, and asked a released build to open its own
+versioned docs. The docs publish one folder per branch or tag under the site, so
+the link is the root plus the folder the deployment belongs to. A developer or
+the e2e stack reads the same site from a local `zensical serve`, which answers on
+another host and port, so the key must also carry a whole URL.
+
+The webapp cannot read that folder from the server. The `admin/version` answer
+(ADM-01) returns `version("aurelius-atlas-server")`, which is the number in
+`pyproject.toml`, and the tree holds the last released tag's number between
+releases. A dev build and a released build therefore report the same version. The
+answer's `Revision` would tell them apart, but nothing stamps it. No Dockerfile,
+chart, or workflow sets the revision, so every build reports `UNKNOWN`. A link
+built from the version sends a dev build at the last tag's docs. The deployment is
+the only part that knows whether it runs pre-release code or a release, so the
+deployment names the folder.
+
+The runtime configuration is the channel for that choice (SHL-10). The webapp
+already reads optional per-deployment keys there the same way,
+`lineageModelBaseUrl` (LDG-07) and `validateEntityBaseUrl` (EDT-22).
+
+**Alternatives.**
+
+- Build the URL from the server's version: rejected, because dev and release
+  report one number. Only the `Revision` separates them, and nothing stamps it.
+- Stamp the `Revision` now, from the git SHA through the image build into the
+  server settings and the chart, and branch on it: rejected as a larger change for
+  one link. It would also close a gap ADM-01 already carries. A later increment can
+  add it if the header needs more from the answer.
+- Put the whole docs URL in the configuration for every deployment: rejected as
+  the only shape, because a release then repeats the site's root in every release
+  manifest. The folder form keeps one root in the component, and the URL form is
+  the escape for a site served elsewhere (the dev and e2e docs servers). A
+  version folder never holds `://`, so the header tells the two apart.
+
+**Consequences.** The link, the parser, and the two deployment layers each carry a
+pin. `shell/header.component.spec.ts` checks `main` without the key, the tag with
+a folder, and the dev server's URL with a whole URL. `parseAppConfig` keeps the key
+only when the configuration names it, and rejects it when empty. The chart test
+reads the rendered `docsRef` back against `Chart.yaml`, so a release bump cannot
+break it. The bundle test builds a real bundle and checks the stamped tag. The e2e
+link check (SHC-09) reads the suite's own `config.json`, the local docs server.
+The link needs no CSP change: `navigate-to` is not set, and the policy governs
+fetched resources, not window navigations. The dev stack does not start `nx docs`
+with it, so a developer who wants the link live runs the docs target in another
+terminal.

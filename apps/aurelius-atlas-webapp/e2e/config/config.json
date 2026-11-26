@@ -2,6 +2,7 @@
     "apiBaseUrl": "/api",
     "appName": "Aurelius Atlas Data Governance",
     "atlasClientId": "aurelius-atlas-server",
+    "docsRef": "http://localhost:8000/",
     "keycloak": {
         "clientId": "aurelius",
         "realm": "master",

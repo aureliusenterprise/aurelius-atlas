@@ -132,6 +132,11 @@ config:
     # DD-435): the same-origin path this chart's nginx proxies, the editor's
     # governance banner's data path. The same override rule as the lineage key.
     validateEntityBaseUrl: /validate-entity
+    # The docs site's version folder the header's Documentation link opens
+    # (SHC-03, DD-886). "" defaults to the chart's appVersion — the tag the
+    # release stamped (DD-288) — so a released chart points at its own
+    # versioned docs. A pre-release deployment sets its branch name here.
+    docsRef: ""
     keycloak:
         clientId: aurelius
         url: ""

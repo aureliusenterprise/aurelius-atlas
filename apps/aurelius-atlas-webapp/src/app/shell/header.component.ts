@@ -6,14 +6,42 @@ import { Badge, Header } from "aurelius-atlas-ui";
 import Keycloak from "keycloak-js";
 
 import { AlertsService } from "../alerts/alerts.service";
+import { type AppConfig } from "../config";
 import { realmUrl } from "../settings/account-language.service";
 import { SIGN_IN_SCOPE, TENANCY } from "../tenancy";
 import { APP_CONFIG } from "../tokens";
 import { DashboardsService } from "./dashboards.service";
 import { Session } from "./session.service";
 
-/** The Aurelius Atlas documentation site, the legacy header's Documentation link. */
-const DOCUMENTATION_URL = "https://aureliusenterprise.github.io/aurelius-atlas-documentation/";
+/**
+ * The documentation site's root (DD-886): mike publishes one folder per
+ * branch or tag under it (`main/` for the trunk, `v0.1.0-rc.11/` for a
+ * released tag), so a {@link AppConfig.docsRef} that names a folder opens
+ * this root plus that folder.
+ */
+const DOCUMENTATION_BASE = "https://aureliusenterprise.github.io/aurelius-atlas/";
+
+/** The version folder a config without `docsRef` opens: the trunk docs (DD-886). */
+const DEFAULT_DOCS_REF = "main";
+
+/**
+ * The header's Documentation link target (SHC-03, DD-886).
+ *
+ * The deployment's `docsRef` names either one folder of the published site
+ * or a whole URL for a site served elsewhere (a developer's `zensical serve`
+ * on `http://localhost:8000/`). A whole URL carries its own trailing slash;
+ * the folder form gets one here, because GitHub Pages serves each folder at
+ * its directory URL.
+ *
+ * @param config the runtime configuration
+ * @returns the docs site's URL for this deployment
+ */
+function documentationUrl(config: AppConfig): string {
+    const ref = config.docsRef ?? DEFAULT_DOCS_REF;
+
+    // A version folder never holds a scheme, so "://" separates the two forms.
+    return ref.includes("://") ? ref : `${DOCUMENTATION_BASE}${ref}/`;
+}
 
 /**
  * The bell's ring (ALR-02a): a pendulum swing from the handle, decaying
@@ -74,7 +102,8 @@ export class ShellHeader {
 
     protected readonly faBell = faBell;
 
-    protected readonly documentationUrl = DOCUMENTATION_URL;
+    /** The docs site for this deployment's version folder (SHC-03, DD-886). */
+    protected readonly documentationUrl = documentationUrl(this.config);
 
     /** The bell's icon element, the ring animation's target (ALR-02a). */
     private readonly bellIcon = viewChild<ElementRef<HTMLElement>>("bellIcon");
