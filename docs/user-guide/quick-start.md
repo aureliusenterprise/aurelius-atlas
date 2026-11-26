@@ -47,12 +47,10 @@ Keycloak sign-in page and returns you to the page you asked for.
       [Standalone Server](standalone-server.md) to add a person and give it the `atlas-read` role.
 3. You arrive on the **Getting started** screen. It holds one search box at the top and three cards:
    **Business context**, **Technical context**, and **Data governance organization**. Each card asks
-   for a keyword and has a green button that browses one type.
+   for a keyword and has a green button that lists records for that card.
+   [Find data](find-data.md#the-three-starting-points) says what each button lists.
 
-??? QUESTION "Do the three buttons find the sample?"
-
-    Not yet on the sample catalogue. The reason and what to use instead are in
-    [Find data](find-data.md#the-three-starting-points).
+    ![The Getting started screen.](../assets/user-guide/landing.png)
 
 ## Find one dataset
 
@@ -98,8 +96,9 @@ You are done with the quick start. The next pages of the guide take each of thes
 | Search well: words, meaning, both, facets | [Find data](find-data.md)                     |
 | Read any record: layout, sections, people | [Understand data](understand-data.md)         |
 | See what a change affects                 | [Follow lineage](follow-lineage.md)           |
-| Trust a record, and see why not           | Check data quality (`Planned`)                |
-| Change a record, or make a new one        | Change data (`Planned`)                       |
+| Trust a record, and see why not           | [Check data quality](check-data-quality.md)   |
+| Write the check behind a score            | [Write quality rules](write-quality-rules.md) |
+| Change a record, or make a new one        | [Change data](change-data.md)                 |
 | Choose language, search mode, theme       | [Settings and alerts](settings-and-alerts.md) |
 
 The **Create new entity** button is the plus icon at the right end of the search band. It appears

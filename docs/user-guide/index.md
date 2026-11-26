@@ -4,25 +4,23 @@ Aurelius Atlas is a data catalogue. A catalogue answers four questions about the
 organisation holds: where a dataset lives, who is accountable for it, whether you can trust it, and
 what breaks if you change it. This guide shows a data steward, an analyst, or a data scientist how
 to answer those questions in the Aurelius Atlas webapp. It does not cover the Apache Atlas dashboard
-or the REST API. The [API Reference](../api-reference/index.md) covers the API, and the
-[Contributor Guide](../contributor-guide/index.md) covers building the system.
+or the REST API.
 
 ## The four questions
 
 Each question has a page. Start with [Quick Start](quick-start.md), which signs you in and walks you
 to one dataset page in about twenty minutes.
 
-| Your question                               | Page                                  |
-| ------------------------------------------- | ------------------------------------- |
-| Where is this data, and how do I find it?   | [Find data](find-data.md)             |
-| What does this record say, and who owns it? | [Understand data](understand-data.md) |
-| Can I trust this data, and why or why not?  | Check data quality (`Planned`)        |
-| What breaks if I change this data?          | [Follow lineage](follow-lineage.md)   |
+| Your question                               | Page                                        |
+| ------------------------------------------- | ------------------------------------------- |
+| Where is this data, and how do I find it?   | [Find data](find-data.md)                   |
+| What does this record say, and who owns it? | [Understand data](understand-data.md)       |
+| Can I trust this data, and why or why not?  | [Check data quality](check-data-quality.md) |
+| What breaks if I change this data?          | [Follow lineage](follow-lineage.md)         |
 
-The guide also covers [Settings and Alerts](settings-and-alerts.md), the choices on the header. Three
-catalogue jobs have pages that are not written yet: check data quality, write quality rules, and
-change data. The table links only the pages that exist today. As each page is written, it replaces
-its `Planned` marker here.
+The guide also covers the jobs around those questions: [Write quality rules](write-quality-rules.md) for
+the checks the scores come from, [Change data](change-data.md) for creating, editing and deleting records,
+and [Settings and Alerts](settings-and-alerts.md) for the choices on the header.
 
 ## The two ways in
 
@@ -39,7 +37,3 @@ You reach the catalogue one of two ways.
 
     The webapp ships English and Dutch, so you can switch its language in the Settings panel. This
     guide ships in English only.
-
-The catalogue's behaviour is documented here, in this repository. The
-[Deviations from Apache Atlas](../architecture/conversion/deviations.md) ledger lists every intended
-difference from Apache Atlas 2.4.0, and it grows as the conversion proceeds.
