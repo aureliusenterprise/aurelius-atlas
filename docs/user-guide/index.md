@@ -1,30 +1,44 @@
 # User Guide
 
-Aurelius Atlas helps your organisation make data-driven decisions:
+Aurelius Atlas is a data catalogue. A catalogue answers four questions about the data your
+organisation holds: where a dataset lives, who is accountable for it, whether you can trust it, and
+what breaks if you change it. This guide shows a data steward, an analyst, or a data scientist how
+to answer those questions in the Aurelius Atlas webapp. It does not cover the Apache Atlas dashboard
+or the REST API. The [API Reference](../api-reference/index.md) covers the API, and the
+[Contributor Guide](../contributor-guide/index.md) covers building the system.
 
-- **Discover, search, and understand your data** — find a data asset and its context in seconds,
-  including who to ask about it.
-- **Improve efficiency** — see who is accountable for each asset, which systems to connect to for
-  access, and whether the data is fit for purpose.
-- **Track data lineage** — follow the journey and transformations of your data across systems, and
-  see what a change would affect.
-- **Enhance data compliance** — classify sensitive information and keep an audit trail of what
-  changed, in line with regulations such as GDPR.
-- **Guide data quality efforts** — use classifications and impact analysis to prioritise where
-  governance controls pay off.
+## The four questions
 
-The Aurelius Atlas open-source release serves the Apache Atlas REST API (`/api/atlas/v2/...`) and the
-Apache Atlas dashboard, so those capabilities arrive with the behaviour Atlas users already know.
-Until the conversion is complete, the
-[Apache Atlas documentation](https://atlas.apache.org/2.4.0/index.html) describes the behaviour this
-system reproduces; every intended difference is listed in
-[Deviations from Apache Atlas](../architecture/conversion/deviations.md).
+Each question has a page. Start with [Quick Start](quick-start.md), which signs you in and walks you
+to one dataset page in about twenty minutes.
 
-To run the server on your machine and import a sample dataset, see
-[Standalone Server](./standalone-server.md).
-To add a tenant to it, see [Add a Tenant to the Standalone Server](./standalone-tenants.md).
-To install the whole system on a Kubernetes cluster, see
-[Deploy to Kubernetes](./deployment.md).
+| Your question                               | Page                           |
+| ------------------------------------------- | ------------------------------ |
+| Where is this data, and how do I find it?   | Find data (`Planned`)          |
+| What does this record say, and who owns it? | Understand data (`Planned`)    |
+| Can I trust this data, and why or why not?  | Check data quality (`Planned`) |
+| What breaks if I change this data?          | Follow lineage (`Planned`)     |
 
-If you are setting up your machine for the first time, see the
-[Development Environment](../contributor-guide/development-environment.md) guide instead.
+Three more catalogue jobs have pages that are not written yet: write quality rules, change data, and
+the settings and alerts on the header. The table links only the pages that exist today. As each page
+is written, it replaces its `Planned` marker here.
+
+## The two ways in
+
+You reach the catalogue one of two ways.
+
+- Your own stack: [Standalone Server](standalone-server.md) runs the whole system on your machine so
+  you can try it by hand. To run it for several teams, add a tenant
+  ([Add a Tenant to the Standalone Server](standalone-tenants.md)).
+- Your organisation's deployment: an operator installed the system for you, usually on Kubernetes
+  ([Deploy to Kubernetes](deployment.md) documents that install). Sign in at the address your operator
+  gives you and start at [Quick Start](quick-start.md).
+
+!!! NOTE "The guide is in English"
+
+    The webapp ships English and Dutch, so you can switch its language in the Settings panel. This
+    guide ships in English only.
+
+The catalogue's behaviour is documented here, in this repository. The
+[Deviations from Apache Atlas](../architecture/conversion/deviations.md) ledger lists every intended
+difference from Apache Atlas 2.4.0, and it grows as the conversion proceeds.

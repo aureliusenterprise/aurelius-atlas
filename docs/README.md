@@ -21,11 +21,6 @@ the [Conversion roadmap](architecture/conversion/index.md) for plan and status, 
 [Architecture](architecture/index.md) overview for the system as it will stand, and the
 [Contributor Guide](contributor-guide/index.md) to set up your machine.
 
-The [User Guide](user-guide/index.md) is intentionally short: until the conversion is complete, the
-[Apache Atlas documentation](https://atlas.apache.org/2.4.0/index.html) describes the behaviour this
-system reproduces, and every intended difference is listed in
-[Deviations from Apache Atlas](architecture/conversion/deviations.md).
-
 ## About the team
 
 This project is maintained by the Aurelius Enterprise team. Please feel free to reach out if you have any questions,
