@@ -12,7 +12,15 @@ import pytest
 from conftest import WORKSPACE, compose_load, standalone_compose
 
 STACK = WORKSPACE / "docker"
-AUX = ("aurelius-atlas-data2model", "aurelius-atlas-lineage-model", "aurelius-atlas-validate-entity")
+# The front door joins the aux roster (21.2, DD-896): the same piece posture,
+# reached through the webapp's /mcp proxy. Its e2e layer is 21.3, so it stays
+# out of the e2e-extends layers below.
+AUX = (
+    "aurelius-atlas-data2model",
+    "aurelius-atlas-lineage-model",
+    "aurelius-atlas-validate-entity",
+    "aurelius-atlas-mcp",
+)
 
 
 def _piece_env(name: str) -> dict[str, str]:
@@ -29,8 +37,9 @@ def services() -> dict[str, Any]:
 
 @pytest.mark.covers(rules=["IRT-10"])
 def test__the_umbrella_includes_each_aux_piece_always_on(services: dict[str, Any]) -> None:
-    """The umbrella includes the three aux pieces with no profile, so a plain `up -d` serves the
-    webapp's lineage and validator pages (IRT-10).
+    """The umbrella includes the four aux pieces with no profile, so a plain `up -d` serves the
+    webapp's lineage and validator pages and the webapp's /mcp proxy reaches the front
+    door (IRT-10, MCP-17).
     """  # noqa: D205 - one sentence
     umbrella = compose_load(STACK / "docker-compose.yaml")
     included = {entry["path"] for entry in umbrella.get("include") or ()}
@@ -59,6 +68,13 @@ def test__each_aux_piece_states_the_standalone_posture() -> None:
     assert lineage["AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE"] == "aurelius-atlas-lineage-model"
     assert lineage["AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_EXTRA_AUDIENCES"] == '["aurelius"]'
     assert _piece_env("aurelius-atlas-validate-entity")["AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE"] == ("aurelius")
+    # The front door verifies the browser's audience too (MCP-02, AUX-04) and
+    # names both catalogue legs without any credential (MCP-18, DD-893).
+    mcp_env = _piece_env("aurelius-atlas-mcp")
+    assert mcp_env["AURELIUS_ATLAS_MCP_AUTH_AUDIENCE"] == "aurelius"
+    assert mcp_env["AURELIUS_ATLAS_MCP_SERVER_BASE_URL"] == "https://localhost:21000"
+    assert mcp_env["AURELIUS_ATLAS_MCP_VALIDATE_ENTITY_BASE_URL"] == "https://localhost:21003"
+    assert not [k for k in mcp_env if "CLIENT_SECRET" in k or k.endswith("TOKEN_URL") or "OTEL_" in k]
 
 
 @pytest.mark.covers(rules=["IRT-10"])

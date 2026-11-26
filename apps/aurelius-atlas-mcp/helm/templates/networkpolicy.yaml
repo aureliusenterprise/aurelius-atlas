@@ -1,0 +1,32 @@
+{{/*
+The MCP ingress allow (21.2, MCP-19, DD-894; the CHT-66 shape, EDT-22's
+sibling). Agents never dial this API directly — the webapp's nginx is the one
+front door (the user's decision for 21.2): its /mcp location reaches the
+Service, the same data path the webapp's chart pins for /validate-entity/
+(DD-435). Peers join by pod labels (CHT-70): chart name + release instance,
+never a Service name. The probe surface is exempt by CNI design (CHT-71).
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-ingress" (include "atlas-mcp.fullname" .) }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-mcp.labels" . | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            {{- include "atlas-mcp.selectorLabels" . | nindent 12 }}
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ default "atlas-webapp" .Values.networkPolicy.peers.webapp | quote }}
+                            app.kubernetes.io/instance: {{ .Release.Name | quote }}
+            ports:
+                -   port: {{ int .Values.port }}
+                    protocol: TCP
+{{- end }}

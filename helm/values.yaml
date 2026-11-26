@@ -348,6 +348,11 @@ atlas-validate-entity:
     enabled: true
     telemetry:
         enabled: true
+atlas-mcp:
+    # 21.2 (DD-893): the front door has no credential — no client secret,
+    # no OTel client — so this block carries no telemetry or secret join,
+    # the only aux entry that does not (DV-208).
+    enabled: true
 atlas-observability:
     # ADR 016: the system observes itself. Off only for deployments that
     # point telemetry at their own collector (values, not a fork).

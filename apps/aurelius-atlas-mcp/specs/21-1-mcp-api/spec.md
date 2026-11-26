@@ -30,13 +30,13 @@ This increment delivers:
 
 This increment does not deliver:
 
-| Not delivered                                   | It lands in                                                                                                                   |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| The Keycloak realm client, compose piece, chart | The deployment increment for this app; the dev `.env` points at the realm's `aurelius` client so `nx serve` runs today.       |
-| The e2e suite standing a real server            | The same deployment increment (DD-892). Unit tests prove the rules against a mock upstream.                                   |
-| Resources and prompts                           | Not planned. The catalogue's data is tool-shaped (DD-889).                                                                    |
-| stdio transport                                 | Not planned. The app is a shared service (DD-887).                                                                            |
-| The 2.x aux-client parity scenarios             | Not applicable. The app ports no Java class; its upstream calls are the client libraries' contracts, proven at home (DV-208). |
+| Not delivered                        | It lands in                                                                                                                   |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| The Keycloak realm client            | None needed. The app has no service identity — the caller's own token is the only credential (DV-208, DD-893).                |
+| The compose piece and the chart      | The deployment increment (21.2): the stack piece, the chart, and the webapp's /mcp proxy (MCP-17 to MCP-23).                  |
+| The e2e suite standing a real server | The deployment chain's increment (21.3, DD-897). Unit tests prove the rules against a mock upstream.                          |
+| stdio transport                      | Not planned. The app is a shared service (DD-887).                                                                            |
+| The 2.x aux-client parity scenarios  | Not applicable. The app ports no Java class; its upstream calls are the client libraries' contracts, proven at home (DV-208). |
 
 ## Semantics
 

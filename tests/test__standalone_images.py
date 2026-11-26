@@ -19,7 +19,7 @@ AURELIUS_IMAGE = re.compile(
     r"^\$\{(?P<var>[A-Z][A-Z0-9_]*_IMAGE):-ghcr\.io/aureliusenterprise/[a-z0-9][a-z0-9-]*:local\}$"
 )
 
-# The six images the stack builds. The observability piece's jwks-fetch one shot shares the server's,
+# The seven images the stack builds. The observability piece's jwks-fetch one shot shares the server's,
 # because it runs that image for its Python and its CA trust.
 IMAGE_VARIABLES = {
     "SERVER_IMAGE",
@@ -28,6 +28,7 @@ IMAGE_VARIABLES = {
     "DATA2MODEL_IMAGE",
     "LINEAGE_MODEL_IMAGE",
     "VALIDATE_ENTITY_IMAGE",
+    "MCP_IMAGE",  # the front door (21.2, MCP-17)
 }
 
 

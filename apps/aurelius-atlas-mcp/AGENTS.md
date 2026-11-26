@@ -37,6 +37,17 @@ write_role)`: the twelve tools (MCP-04..MCP-13). Each builds a
   upstream error texts.
 - `aurelius_atlas_mcp/__main__.py` — the uvicorn entry point (port 21005, TLS
   when the cert pair is set).
+- `helm/` — the `atlas-mcp` chart (21.2, MCP-20): the aux chart shape without
+  the credential join (DD-893). Conventions: `helm/AGENTS.md`; chart tests in
+  the root `tests/test__charts_aux.py`.
+- `docker/compose.yaml` — this project's piece of the standalone stack (ADR
+  065, MCP-17): proxy service network, no published ports, folder-guarded
+  `/certs` mount (`MCP_CERTS_DIR`). The webapp's `/mcp` location reaches it
+  (DD-894).
+- `specs/21-2-mcp-deployment/` — the deployment spec and design (MCP-17..24,
+  DD-893..DD-897), beside the 21.1 pair.
+- `sonar-project.properties` — key `aureliusenterprise_aurelius-atlas-mcp`
+  (DD-897). Only `tests/` is a sources/tests path so far; `e2e/` joins in 21.3.
 - `tests/` — the unit suite (35 tests, offline): a fake RSA issuer,
   `FakeUpstream`/`call_tool` in `fake_upstream.py`, and a real MCP client
   session driven through an `ASGITransport` over the gated app (DD-892).
@@ -58,8 +69,15 @@ acting.
 - `.env.enc` — dev settings (`nx encrypt aurelius-atlas-mcp` after changing
   `.env`; CI regenerates plaintext `.env` from `.env.enc`).
 - `tls.json` — the app's own certificate for `nx serve` (`nx certgen` runs
-  through the tls plugin). The deployment increment adds the standalone compose
-  piece, which needs the SANs of the compose service names.
+  through the tls plugin). The SANs already cover the compose service name and
+  localhost, so the standalone piece (`docker/compose.yaml`) reuses the same
+  certificate folder; the manifest line lives in `docker/certs.txt`.
+- The webapp is the only ingress: its nginx `/mcp` location (static
+  `docker/webapp/nginx.conf`, chart template in
+  `apps/aurelius-atlas-webapp/nginx.conf.template`) proxies the path with
+  buffering off and hour-long reads — no prefix rewrite, because the app serves
+  `/mcp` itself (DD-894). The chart's NetworkPolicy admits the webapp pod only
+  (MCP-19). Agents never dial this app directly.
 - `Dockerfile` — installs the wheel `nx build` makes (workspace libs bundled),
   nonroot, liveness healthcheck that follows the cert pair.
 - The caller gate is the shared lib (`aurelius-atlas-auth`): `BearerGate` wraps
@@ -72,7 +90,25 @@ acting.
 - There is deliberately **no** service identity, OTLP ingest identity, client
   secret, or circuit breaker in this app (ADR 072, DV-208, DD-890). Do not add
   a mint here; upstreams see only the caller's bearer token.
-- No `sonar-project.properties` yet: the SonarCloud project key comes with the
-  deployment increment (the embedder shipped the same way first).
-- `e2e/`, the Keycloak realm client, the Helm chart and `docker/compose.yaml`
-  land in the deployment increment (the spec's "Not delivered" table, DD-892).
+- `sonar-project.properties` is in place with the deployment increment; the
+  SonarCloud project `aureliusenterprise_aurelius-atlas-mcp` is created by a
+  person before the first analysis (DD-897).
+- What landed in 21.2 and what has not: the chart, the umbrella join, the
+  standalone piece and the webapp proxy are in (21.2 spec). The Keycloak realm
+  client never lands — this app has no service identity (DV-208, DD-893). The
+  e2e chain (`e2e/`, host port 21009, the token probe) is increment 21.3
+  (DD-897).
+
+## Removal
+
+Removing the front door removes `apps/aurelius-atlas-mcp` — its root
+`pyproject.toml` entries (member, dev group, uv source), the umbrella's
+`atlas-mcp` dependency, values block and `Chart.lock` entry, the webapp's
+`/mcp` proxy trio (the nginx location in both template copies, the
+`mcpService` helper and `mcp`/`nginx.mcpUpstream*` values, and the
+placeholder pair in the webapp chart's deployment), the stack piece
+(`docker/docker-compose.yaml` include, `stack.env`/`.env.example` and
+`certs.txt` lines), the roadmap/spec rows, and the root-test roster entries
+(charts aux/umbrella/webapp, standalone pieces/paths/host/images/webapp).
+There is no realm client, secret or otel client to unwire (DV-208, DD-893).
+`aurelius-atlas-auth` and the SDKs stay — the other apps use them.

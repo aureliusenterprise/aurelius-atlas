@@ -109,6 +109,12 @@ LDG-06, DD-384). */}}
 {{- include "atlas-webapp.siblingService" (dict "name" "atlas-validate-entity" "release" .Release.Name "override" .Values.validateEntity.service) -}}
 {{- end -}}
 
+{{/* The MCP front door this nginx proxies /mcp to (21.2, MCP-19, DD-894 —
+the aux sibling that keeps its prefix: the app serves /mcp itself). */}}
+{{- define "atlas-webapp.mcpService" -}}
+{{- include "atlas-webapp.siblingService" (dict "name" "atlas-mcp" "release" .Release.Name "override" .Values.mcp.service) -}}
+{{- end -}}
+
 {{/*
 The Secret carrying the trust root (key: ca.crt) this nginx pins as a TLS
 client (CHT-25, DD-259, DD-707). A name is explicit first: `global.trust.caSecretName`
