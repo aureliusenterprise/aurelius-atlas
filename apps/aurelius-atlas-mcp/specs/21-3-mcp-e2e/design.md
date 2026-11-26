@@ -77,5 +77,6 @@ surfacing as twelve failing write assertions. It is the same fact the suite's
 writer tests depend on, checked once before the work.
 
 The reader half of the suite mints the realm's `aurelius-reader` the same way
-(read role only, the webapp suite's public dev default) so the refusal path
-(MCP-30) tests the gate rather than a missing credential.
+(read role only). Both identities' passwords are required settings read from the
+project's encrypted env, never defaults written into the test source, so the
+refusal path (MCP-30) tests the gate rather than a missing credential.

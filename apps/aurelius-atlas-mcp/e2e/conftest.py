@@ -79,8 +79,9 @@ class Settings(BaseSettings):
     reader_username: str = "aurelius-reader"
     """The dev user holding atlas-read only: the caller that must not write (MCP-30)."""
 
-    reader_password: SecretStr = SecretStr("bzMCZRmdyOBOA3xHvaOu7Q")  # the public dev default, not a secret
-    """The reader's password, the realm import's public dev default."""
+    reader_password: SecretStr
+    """The reader's password; never shown in logs. Like the writer's, it comes from the
+    project's encrypted env (the realm import's ``DEV_USER_READER_PASSWORD``)."""
 
     model_config = SettingsConfigDict(
         # Same prefix as the application's settings: the project .env Nx injects
