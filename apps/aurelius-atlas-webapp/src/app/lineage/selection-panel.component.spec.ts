@@ -10,7 +10,7 @@ import { buildIndexes } from "./lineage-indexes";
 import { parseAr3Model } from "./parse-ar3";
 import { LineageSelectionPanel } from "./selection-panel.component";
 
-import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import fixture from "../../../tests/fixtures/lineage-graph.extract.json";
 
 /**
  * LDG-20/LDG-21/LDG-22: the Selection tab over the shipped chain's document

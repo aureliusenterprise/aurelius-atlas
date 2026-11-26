@@ -4,9 +4,9 @@ import { Router } from "@angular/router";
 import Keycloak from "keycloak-js";
 import { describe, expect, it, vi } from "vitest";
 
-import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
-import { VersionService } from "../../../shell/version.service";
-import { APP_CONFIG } from "../../../tokens";
+import fixture from "../../../tests/fixtures/lineage-graph.extract.json";
+import { VersionService } from "../shell/version.service";
+import { APP_CONFIG } from "../tokens";
 import { LineageModelState } from "./lineage-state";
 import { parseAr3Model, type Ar3Model } from "./parse-ar3";
 import { SaveViewAsImage } from "./save-view-as-image";

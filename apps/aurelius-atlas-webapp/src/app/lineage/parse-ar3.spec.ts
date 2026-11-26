@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 // scenario fixture `apps/aurelius-atlas-lineage-model/scenarios/fixtures/
 // graph.extract.json` — the 8.1-verified model document. The expected ids,
 // positions, and names below are that document's own values.
-import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import fixture from "../../../tests/fixtures/lineage-graph.extract.json";
 
 import { connectionConceptId, nodeConceptId, nodeElement, parseAr3Model, type Ar3Model } from "./parse-ar3";
 

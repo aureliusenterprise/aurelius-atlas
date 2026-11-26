@@ -3,7 +3,7 @@ import type { IconDefinition, IconName } from "@fortawesome/free-solid-svg-icons
 
 import { LINEAGE_ICON_PATHS } from "aurelius-atlas-ui";
 
-import type { TypeIconClass } from "../../meta/type-icons";
+import type { TypeIconClass } from "../search/meta/type-icons";
 
 /**
  * The lineage badge helpers and the drawer's scroll posture (DD-419): what

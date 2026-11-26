@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import fixture from "../../../tests/fixtures/lineage-graph.extract.json";
 
 import { parseAr3Model } from "./parse-ar3";
 import { buildIndexes } from "./lineage-indexes";

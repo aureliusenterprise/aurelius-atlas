@@ -1,9 +1,9 @@
 import { Injectable, inject } from "@angular/core";
 import html2canvas from "html2canvas";
 
-import { APP_CONFIG } from "../../../tokens";
-import { Session } from "../../../shell/session.service";
-import { VersionService } from "../../../shell/version.service";
+import { APP_CONFIG } from "../tokens";
+import { Session } from "../shell/session.service";
+import { VersionService } from "../shell/version.service";
 import type { Ar3View } from "./parse-ar3";
 import { addTextMetadata, binaryStringToBytes, bytesToBinaryString } from "./png-metadata";
 

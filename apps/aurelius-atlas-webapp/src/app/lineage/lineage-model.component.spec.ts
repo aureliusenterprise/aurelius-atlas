@@ -6,9 +6,9 @@ import { Router } from "@angular/router";
 import Keycloak from "keycloak-js";
 import { describe, expect, it } from "vitest";
 
-import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
-import { VersionService } from "../../../shell/version.service";
-import { APP_CONFIG } from "../../../tokens";
+import fixture from "../../../tests/fixtures/lineage-graph.extract.json";
+import { VersionService } from "../shell/version.service";
+import { APP_CONFIG } from "../tokens";
 
 import { LineageModel } from "./lineage-model.component";
 import { LineageModelState } from "./lineage-state";

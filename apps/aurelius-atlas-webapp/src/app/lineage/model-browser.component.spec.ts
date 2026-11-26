@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 
-import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import fixture from "../../../tests/fixtures/lineage-graph.extract.json";
 
 import { buildEntitiesById } from "./lineage-entities";
 import { LineageModelState } from "./lineage-state";
