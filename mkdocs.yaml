@@ -70,15 +70,26 @@ markdown_extensions:
 nav:
     - User Guide:
           - user-guide/index.md
-          - Standalone Server: user-guide/standalone-server.md
-          - Add a Tenant to the Standalone Server: user-guide/standalone-tenants.md
-          - Deploy to Kubernetes: user-guide/deployment.md
+          - Trying and running it:
+                - Standalone Server: user-guide/standalone-server.md
+                - Add a Tenant to the Standalone Server: user-guide/standalone-tenants.md
+                - Deploy to Kubernetes: user-guide/deployment.md
+          - Using the catalogue:
+                - Quick Start: user-guide/quick-start.md
+                - Find Data: user-guide/find-data.md
+                - Understand Data: user-guide/understand-data.md
+                - Check Data Quality: user-guide/check-data-quality.md
+                - Write Quality Rules: user-guide/write-quality-rules.md
+                - Follow Lineage: user-guide/follow-lineage.md
+                - Change Data: user-guide/change-data.md
+                - Settings and Alerts: user-guide/settings-and-alerts.md
     - Contributor Guide:
           - contributor-guide/index.md
           - Development Environment: contributor-guide/development-environment.md
           - AI-Assisted Development: contributor-guide/ai-assisted-development.md
           - Adopting the Template: contributor-guide/adopting-the-template.md
           - Documentation: contributor-guide/documentation.md
+          - User Documentation Plan: contributor-guide/user-documentation-plan.md
           - Writing Style: contributor-guide/writing-style.md
           - Testing: contributor-guide/testing.md
           - TLS Certificates: contributor-guide/tls-certificates.md
