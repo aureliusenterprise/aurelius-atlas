@@ -146,3 +146,4 @@ This table is the reference for a move: it fixes the home before files are touch
 | 19.7 | Small deletions | `specs/19-7-small-deletions/` + `libs/python/aurelius-atlas-core` | PAR |
 | 21.1 | The catalogue answers agents through MCP | `apps/aurelius-atlas-mcp` | MCP |
 | 21.2 | The front door deploys with the cluster and the stack | `apps/aurelius-atlas-mcp` + `apps/aurelius-atlas-webapp` + `docker/` + `helm/` | MCP |
+| 21.3 | The chain proves the front door live | `apps/aurelius-atlas-mcp` | MCP |
