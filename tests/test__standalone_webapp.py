@@ -65,11 +65,19 @@ def test__the_stacks_static_config_names_every_upstream_and_holds_no_placeholder
     assert "proxy_ssl_name aurelius-atlas-lineage-model;" in static
     assert "set $validate_entity_upstream https://proxy:21003;" in static
     assert "proxy_ssl_name aurelius-atlas-validate-entity;" in static
+    # The MCP front door (21.2, MCP-19, DD-894): the app serves /mcp itself,
+    # so this leg keeps the prefix (no rewrite) and streams (no buffering).
+    assert "set $mcp_upstream https://proxy:21005;" in static
+    assert "proxy_ssl_name aurelius-atlas-mcp;" in static
+    mcp_leg = static[static.index("    location /mcp {") :]
+    assert "rewrite" not in mcp_leg[: mcp_leg.index("}")]
+    assert "proxy_buffering off;" in mcp_leg
+    assert "proxy_read_timeout 3600s;" in mcp_leg
     assert "resolver 127.0.0.11 valid=10s ipv6=off;" in static
     # The listener's own material, which the piece's cert mount supplies.
     assert "ssl_certificate /certs/aurelius-atlas-webapp.pem;" in static
     assert "ssl_certificate_key /certs/aurelius-atlas-webapp-key.pem;" in static
-    assert static.count("proxy_ssl_trusted_certificate /certs/ca.pem;") == 4
+    assert static.count("proxy_ssl_trusted_certificate /certs/ca.pem;") == 5
     # No ingest token (DD-695): the browser's OTLP push rides the proxy, so the edge leg here is a
     # spare path and its exporter block states no bearer header.
     assert "header authorization" not in static

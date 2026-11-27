@@ -13,6 +13,7 @@ apps/aurelius-atlas-embedder/certs aurelius-atlas-embedder aurelius-atlas-embedd
 apps/aurelius-atlas-data2model/certs aurelius-atlas-data2model aurelius-atlas-data2model localhost 127.0.0.1
 apps/aurelius-atlas-lineage-model/certs aurelius-atlas-lineage-model aurelius-atlas-lineage-model localhost 127.0.0.1
 apps/aurelius-atlas-validate-entity/certs aurelius-atlas-validate-entity aurelius-atlas-validate-entity localhost 127.0.0.1
+apps/aurelius-atlas-mcp/certs aurelius-atlas-mcp aurelius-atlas-mcp localhost 127.0.0.1
 infra/elasticsearch/certs elasticsearch elasticsearch localhost 127.0.0.1
 infra/keycloak/certs keycloak keycloak keycloak.localhost localhost 127.0.0.1
 infra/keycloak/certs postgres postgres postgres-keycloak localhost 127.0.0.1

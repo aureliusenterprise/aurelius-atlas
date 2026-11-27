@@ -24,6 +24,7 @@ GUARDED_SERVICES = {
     "aurelius-atlas-data2model",
     "aurelius-atlas-lineage-model",
     "aurelius-atlas-validate-entity",
+    "aurelius-atlas-mcp",  # the front door (21.2, MCP-17)
     "sample-import",
     "tenants",
 }

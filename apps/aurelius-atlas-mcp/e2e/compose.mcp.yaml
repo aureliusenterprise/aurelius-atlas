@@ -1,0 +1,62 @@
+# The e2e MCP front door, as a base: the chain stack beside this file extends it (MCP-25).
+# The project's stack piece (../docker/compose.yaml), which the standalone stack includes, is
+# the identity underneath: the image pin, the certificate mount (the piece's ../certs, rebased
+# by extends to this project's certs/ — the leaf this project's `nx certgen` issued), the log
+# level, the TLS pair and the caller-side bearer check arrive by inheritance. This layer states
+# the e2e identity on top of it: the host-mapped issuer (the dev Keycloak, off this stack's
+# network), the two catalogue legs against the stack's services (MCP-03: the caller's token
+# rides both, in-network under their certificate names), the store network, the
+# Keycloak-on-host mapping and a published random port — and it undoes the piece's share of
+# the proxy's network, which the standalone stack needs and an e2e stack has no proxy for.
+# The app names NO secret and NO OTel key on purpose: it holds no service identity, so the
+# e2e identity is only where the caller's token verifies and where the tools forward it
+# (MCP-18, MCP-22, DV-208, DD-893). This file is the deployment's proof of that posture:
+# the stack that would first need a credential is the one that runs without any.
+# The guards are the consumer's: compose interpolates this file with the consuming project's
+# environment, and Nx injects this project's .env into its e2e task. Keep the service name
+# `aurelius-atlas-mcp` and the network keys: the suite and the certificate names speak them.
+name: aurelius-atlas-mcp-e2e
+
+services:
+    aurelius-atlas-mcp:
+        extends:
+            file: ../docker/compose.yaml
+            service: aurelius-atlas-mcp
+        # The standalone piece shares the proxy's network namespace; an e2e stack
+        # has no proxy, so the key is deleted and the service joins the networks
+        # below (the aux layers' idiom, verified against compose).
+        network_mode: !reset null
+        extra_hosts:
+            # The issuer, published loopback-wide on this machine by the dev
+            # Keycloak stack (as every aux suite reaches it).
+            - keycloak.localhost:host-gateway
+        environment:
+            # The e2e issuer (infra/keycloak, TLS listener): POST /mcp verifies the
+            # caller's bearer token against it (MCP-02). The audience stays the
+            # browser's public client: the suite mints exactly what an agent mints
+            # (AUX-04, DV-75). The write role rides the catalogue client (MCP-28),
+            # the setting's default — named nowhere here on purpose.
+            AURELIUS_ATLAS_MCP_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_MCP_AUTH_REALM: master
+            # The two catalogue legs (MCP-03): both ride this stack, in-network — the
+            # aliases on the store network are the names in their certificates (the
+            # server base and the verdicts layer mount their own project's cert
+            # folders). Every call carries the caller's own token; there is no
+            # secret here to name (DV-208), and no OTel identity to mint (ADR 072).
+            AURELIUS_ATLAS_MCP_SERVER_BASE_URL: https://aurelius-atlas-server:21000
+            AURELIUS_ATLAS_MCP_VALIDATE_ENTITY_BASE_URL: https://aurelius-atlas-validate-entity:21003
+        networks:
+            # The store network carries both upstreams' certificate-name aliases,
+            # which the tools' legs dial. The MCP app exports no OTLP, so it joins
+            # no collector network (ADR 072) — the one aux app whose network list
+            # holds a single network.
+            atlas: {}
+        ports:
+            - 21005
+
+networks:
+    # The dev Elasticsearch stack. `extends` copies the service, not the network
+    # definitions: the consumer declares the same external network under the same key.
+    atlas:
+        name: aurelius-atlas-infra-elasticsearch-network
+        external: true

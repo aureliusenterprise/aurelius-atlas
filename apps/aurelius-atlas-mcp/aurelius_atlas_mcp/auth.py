@@ -119,14 +119,15 @@ async def _refuse(  # noqa: PLR0913 - the ASGI triple plus what to answer with
     await JSONResponse(body, status_code=status, headers=headers)(scope, receive, send)
 
 
-def token_roles(claims: dict, audience: str) -> set[str]:
-    """The roles a caller holds, from the two places Keycloak puts them (MCP-11, DD-891).
+def token_roles(claims: dict, role_client: str) -> set[str]:
+    """The roles a caller holds, from the two places Keycloak puts them (MCP-11, DD-891, DD-898).
 
     The same claim locations :class:`aurelius_atlas_auth.KeycloakAuth` reads for its write
-    gate: ``realm_access.roles`` for a realm role, and ``resource_access.<audience>.roles``
-    for a role of this app's own client — Keycloak namespaces client roles per client, so
-    only this audience's entry counts. The test set pins both shapes, so a change to the
-    shared rule fails a test here too.
+    gate: ``realm_access.roles`` for a realm role, and ``resource_access.<role_client>.roles``
+    for a client role — Keycloak namespaces client roles per client, so only the named
+    client's entry counts (AUZ-01). For the write gate that client is the catalogue's
+    (MCP-28): ``atlas-write`` rides it even when the caller signed in through another
+    client. The test set pins both shapes, so a change to the shared rule fails a test here too.
     """
     roles: set[str] = set()
     realm_access = claims.get("realm_access")
@@ -134,18 +135,18 @@ def token_roles(claims: dict, audience: str) -> set[str]:
         roles |= {str(role) for role in realm_access["roles"]}
     resource_access = claims.get("resource_access")
     if isinstance(resource_access, dict):
-        client = resource_access.get(audience)
+        client = resource_access.get(role_client)
         if isinstance(client, dict) and isinstance(client.get("roles"), list):
             roles |= {str(role) for role in client["roles"]}
     return roles
 
 
-def may_write(claims: dict, audience: str, write_role: str) -> bool:
-    """Whether the caller may run a write tool (MCP-11).
+def may_write(claims: dict, role_client: str, write_role: str) -> bool:
+    """Whether the caller may run a write tool (MCP-11, MCP-28).
 
     An empty ``write_role`` disables the gate — the development-only posture the shared
     library keeps (ADR 017), so the rule lives once.
     """
     if not write_role:
         return True
-    return write_role in token_roles(claims, audience)
+    return write_role in token_roles(claims, role_client)

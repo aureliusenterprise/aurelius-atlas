@@ -79,6 +79,11 @@ def test__every_app_dials_localhost(services: dict[str, Any]) -> None:
         prefix = name.upper().replace("-", "_")
         assert env[f"{prefix}_AUTH_SERVER_URL"] == f"{issuer}/", name
         assert env[f"{prefix}_OTEL_TOKEN_URL"] == f"{issuer}/realms/aurelius-atlas/protocol/openid-connect/token", name
+    # The front door dials the same issuer (MCP-17) and carries no OTEL token
+    # URL beside it — it has no ingest identity to mint with (MCP-18, DD-893).
+    mcp = services["aurelius-atlas-mcp"]["environment"]
+    assert mcp["AURELIUS_ATLAS_MCP_AUTH_SERVER_URL"] == f"{issuer}/"
+    assert "AURELIUS_ATLAS_MCP_OTEL_TOKEN_URL" not in mcp
     # SPC-02: the stack names the variable nowhere, and declares no render service (SPC-05 drops
     # the Keycloak build one shot too).
     text = yaml.dump(standalone_compose())
@@ -134,6 +139,7 @@ def test__the_proxy_names_localhost_and_catchalls() -> None:
         "aurelius-atlas-data2model",
         "aurelius-atlas-lineage-model",
         "aurelius-atlas-validate-entity",
+        "aurelius-atlas-mcp",  # the front door (21.2, MCP-17)
     ):
         assert services[name]["network_mode"] == "service:proxy", name
     config = json.loads(WEBAPP_CONFIG.read_text())
@@ -218,6 +224,7 @@ def test__the_shipped_script_issues_the_stacks_material() -> None:
         "apps/aurelius-atlas-data2model/certs",
         "apps/aurelius-atlas-lineage-model/certs",
         "apps/aurelius-atlas-validate-entity/certs",
+        "apps/aurelius-atlas-mcp/certs",
         "infra/elasticsearch/certs",
         "infra/keycloak/certs",
         "infra/observability/certs",

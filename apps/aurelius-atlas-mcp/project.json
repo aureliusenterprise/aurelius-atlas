@@ -12,6 +12,45 @@
     "sourceRoot": "{projectRoot}/aurelius_atlas_mcp",
     "tags": [],
     "targets": {
+        "e2e": {
+            "configurations": {
+                "ci": {
+                    "junitxml": "junit-e2e.xml",
+                    "trace-json": "trace-e2e.json"
+                }
+            },
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                {
+                    "projects": ["aurelius-atlas-server", "aurelius-atlas-validate-entity"],
+                    "target": "certgen"
+                },
+                { "target": "docker-build" },
+                {
+                    "projects": ["aurelius-atlas-server", "aurelius-atlas-validate-entity"],
+                    "target": "docker-build"
+                },
+                {
+                    "projects": [
+                        "aurelius-atlas-infra-keycloak",
+                        "aurelius-atlas-infra-observability",
+                        "aurelius-atlas-infra-elasticsearch"
+                    ],
+                    "target": "up"
+                }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "E2E: the image beside a real server and the real verdicts API (the 21.3 chain, DD-200's sibling); the chain's images are named here because the inferred target's dependency list would miss them when this suite runs alone"
+            },
+            "options": {
+                "command": "uv run pytest e2e",
+                "cwd": "{projectRoot}",
+                "envFile": "apps/aurelius-atlas-mcp/.env"
+            },
+            "parallelism": false
+        },
         "serve": {
             "continuous": true,
             "dependsOn": [

@@ -13,7 +13,7 @@ page, included by it.
 
 ## Layout
 
-- `docker-compose.yaml` — the umbrella: `name` and the `include` of the ten
+- `docker-compose.yaml` — the umbrella: `name` and the `include` of the eleven
   fragments; no service of its own (DD-677). Each piece is included from
   beside its owner (ADR 065): the gateway `proxy` (nginx, the only published
   port, 9000) from `gateway/compose.yaml`, which also carries the stack's
@@ -25,9 +25,12 @@ page, included by it.
   `apps/aurelius-atlas-server/docker/`; the webapp (its own nginx, reading the
   static `docker/webapp/nginx.conf`, SPC-04) from `apps/aurelius-atlas-webapp/docker/`; the
   extractor `aurelius-atlas-data2model`, the lineage API
-  `aurelius-atlas-lineage-model` and the validator
-  `aurelius-atlas-validate-entity` from each project's `docker/` (DD-674),
-  each in the proxy's network with the stack's issuer and realm; the
+  `aurelius-atlas-lineage-model`, the validator
+  `aurelius-atlas-validate-entity` and the MCP front door
+  `aurelius-atlas-mcp` from each project's `docker/` (DD-674, MCP-17),
+  each in the proxy's network with the stack's issuer and realm (the front
+  door carries no credential, DD-893; the webapp's nginx reaches it under
+  `/mcp`, DD-894); the
   `embedder` from `apps/aurelius-atlas-embedder/docker/`; the telemetry piece
   (collector, Prometheus, Loki, Tempo, Grafana, the `jwks-fetch` one shot) from
   `observability/compose.yaml`, which extends the infra observability slice
@@ -152,7 +155,7 @@ infra/elasticsearch/.env` (decrypted SOPS defaults, DD-669). Compose
   command. A new required variable goes in the owning project's `.env` and
   `.env.enc`, and in the README.
 - **Images are the `:local` tags** that `nx docker-build` of the server,
-  webapp, embedder and the three aux projects produce; each piece names its
+  webapp, embedder and the four aux projects produce; each piece names its
   image through a compose-time variable (`<PROJECT>_IMAGE`) with the `:local`
   tag as its default. The stack never pulls from a registry.
 - **Folders are required, never defaulted** (SBD-12, DD-687). Each app piece
@@ -160,7 +163,7 @@ infra/elasticsearch/.env` (decrypted SOPS defaults, DD-669). Compose
   (`${NAME_CERTS_DIR:?...}`, `${SAMPLE_DIR:?...}`) with no path default, so a
   customer install cannot inherit a repository path. The umbrella names
   `docker/stack.env` in each app `include` as `env_file`. That committed file
-  holds the repository's eight answers (paths, no secret), which keeps the
+  holds the repository's nine answers (paths, no secret), which keeps the
   README and CI commands unchanged. An e2e stack extends the pieces directly,
   so each project answers the names it transitively extends from its own `.env`
   (Nx injects it into every task). A relative value reads from the declaring
@@ -201,7 +204,7 @@ level-2 checks a human records in the PR, not part of this suite.
 The stack is `docker/` (umbrella and the gateway, store, identity and
 telemetry fragments in `gateway/`, `elasticsearch/`, `keycloak/` and
 `observability/` beside it) and
-the six `docker/` folders beside the server, webapp, embedder and the three aux
+the seven `docker/` folders beside the server, webapp, embedder and the four aux
 projects: delete them, its ten root tests, the two
 `mkdocs.yaml` nav entries (`Standalone Server`, `Add a Tenant to the
 Standalone Server`) and the links from `docs/user-guide/index.md`,

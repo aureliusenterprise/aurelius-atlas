@@ -48,8 +48,31 @@ from `.env.enc`); `aurelius_atlas_mcp/settings.py` documents each field. The
 auth block (`AURELIUS_ATLAS_MCP_AUTH_SERVER_URL`) is the only required setting;
 the two upstream URLs default to the dev services.
 
-## Not wired yet
+## Deployment
 
-The deployment increment for this app still owes: the Keycloak realm client and
-its compose piece, the Helm chart, the e2e suite that stands a real server, and
-the SonarCloud project. See the spec's "Not delivered" table.
+The app deploys with the cluster and the standalone stack (increment
+[21.2](specs/21-2-mcp-deployment/spec.md)):
+
+- **Kubernetes**: the `atlas-mcp` chart (next to this README, DD-290) joins the
+  umbrella like the aux siblings, with one difference — no credential join
+  anywhere (DD-893). Agents reach it through the webapp's nginx under
+  `/mcp/`, which proxies with buffering off so streamed responses flow
+  (DD-894).
+- **Standalone stack**: `docker/compose.yaml` is the stack's piece — the
+  proxy's network, the stack's issuer/realm/audience, no published port.
+  `docker compose -f docker/docker-compose.yaml up -d` starts it with the
+  rest of the stack; agents post to `https://localhost:9000/mcp`.
+- There is **no Keycloak realm client** and none is planned: the app has no
+  service identity (DV-208), the caller's token is the only credential.
+
+## Testing
+
+The unit suite runs offline against a fake issuer and a fake upstream, and
+drives a real MCP client session through the gated app (`nx test
+aurelius-atlas-mcp -c ci`). The chain suite (increment
+[21.3](specs/21-3-mcp-e2e/spec.md)) runs the image beside a real Atlas server
+and the real verdicts API (`npx nx e2e aurelius-atlas-mcp -c ci`): it mints
+browser tokens like an agent does, probes the realm's write-role claim before
+the stack starts, and proves both sides of the write gate live — a writer's
+`save_entity` lands, a reader's write refuses before the server sees it
+(MCP-25 to MCP-32, DD-898).

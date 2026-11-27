@@ -2,7 +2,9 @@
 
 The gate here is the tool-level one (MCP-11): a token without the write role is refused
 before any upstream request leaves the app — the test asserts the fake catalogue saw
-nothing. The role lookup is pinned in both claim shapes Keycloak answers (DD-891).
+nothing. The role lookup is pinned in both claim shapes Keycloak answers (DD-891), and
+under the catalogue client rather than the app's audience, the shape a real realm
+token carries (MCP-28, DD-898 — the e2e suite proves the same claim live).
 """
 
 from typing import Any
@@ -155,20 +157,41 @@ async def test__the_read_tools_need_no_write_role(reader: Any, upstream: FakeUps
     assert upstream.bearer_of(request)
 
 
-@pytest.mark.covers("aurelius_atlas_mcp.auth.token_roles", rules=["MCP-11"])
+@pytest.mark.covers("aurelius_atlas_mcp.auth.token_roles", rules=["MCP-11", "MCP-28"])
 def test__token_roles_reads_both_claim_shapes() -> None:
-    """DD-891: the realm role and this client's resource role both count; another client's does not."""
+    """DD-891: the realm role and the catalogue client's resource role both count; another's does not."""
     realm = {"realm_access": {"roles": ["atlas-write"]}}
-    resource = {"resource_access": {"aurelius": {"roles": ["atlas-write"]}}}
+    resource = {"resource_access": {"aurelius-atlas-server": {"roles": ["atlas-write"]}}}
     other_client = {"resource_access": {"someone-else": {"roles": ["atlas-write"]}}}
-    assert token_roles(realm, "aurelius") == {"atlas-write"}
-    assert may_write(realm, "aurelius", "atlas-write")
-    assert may_write(resource, "aurelius", "atlas-write")
-    assert not may_write(other_client, "aurelius", "atlas-write")
-    assert not may_write({}, "aurelius", "atlas-write")
+    assert token_roles(realm, "aurelius-atlas-server") == {"atlas-write"}
+    assert may_write(realm, "aurelius-atlas-server", "atlas-write")
+    assert may_write(resource, "aurelius-atlas-server", "atlas-write")
+    assert not may_write(other_client, "aurelius-atlas-server", "atlas-write")
+    assert not may_write({}, "aurelius-atlas-server", "atlas-write")
+
+
+@pytest.mark.covers("aurelius_atlas_mcp.auth.token_roles", rules=["MCP-28", "MCP-11"])
+def test__the_role_of_the_app_audience_alone_does_not_write() -> None:
+    """DD-898's regression: a browser token's `aurelius-write` is not the catalogue's role.
+
+    The live realm answers a writer with `resource_access.aurelius.roles = [aurelius-write]`
+    and `atlas-write` under the catalogue client. Reading the audience's entry — what this
+    gate did before the chain ran it — refuses every writer (the e2e suite proves the live
+    half of this claim).
+    """
+    browser_writer = {
+        "azp": "aurelius",
+        "resource_access": {
+            "aurelius": {"roles": ["aurelius-write"]},
+            "aurelius-atlas-server": {"roles": ["atlas-read", "atlas-write"]},
+        },
+    }
+    audience_only = {"resource_access": {"aurelius": {"roles": ["aurelius-write"]}}}
+    assert may_write(browser_writer, "aurelius-atlas-server", "atlas-write")
+    assert not may_write(audience_only, "aurelius-atlas-server", "atlas-write")
 
 
 @pytest.mark.covers("aurelius_atlas_mcp.auth.may_write", rules=["MCP-11"])
 def test__an_empty_write_role_disables_the_gate() -> None:
     """The shared library's development posture carries over: an empty role asks nothing."""
-    assert may_write({}, "aurelius", "")
+    assert may_write({}, "aurelius-atlas-server", "")

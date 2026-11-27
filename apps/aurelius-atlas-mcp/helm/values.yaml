@@ -1,0 +1,147 @@
+# The MCP chart — its runtime contract (CHT-02, MCP-20).
+# apps/aurelius-atlas-mcp: FastMCP over FastAPI, prefix AURELIUS_ATLAS_MCP_,
+# port 21005. Verifies the CALLER's own Keycloak bearer token (audience
+# aurelius — the browser client, since 21.1: an agent mints the token the
+# webapp's browser mints, AUX-04/DV-75) and forwards it unchanged to the
+# co-deployed Atlas server and the verdicts API (MCP-03, DD-890). This app
+# has NO service identity: no client secret, no token URL, no OTel client
+# (DV-208, DD-893) — the chart is the only aux chart without a credential
+# join. Shares the service shape with data2model and lineage-model by design —
+# each chart owns its templates (DD-290).
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+    # The umbrella's realm (CHT-74): the realm the caller's tokens come from.
+    # "" takes the chart default (aurelius-atlas).
+    realm: ""
+    trust:
+        # The issuer the chart's Certificate is signed by (umbrella default;
+        # DD-286/DD-259). Standalone renders need it present.
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
+
+enabled: true
+component: mcp
+componentEnvPrefix: AURELIUS_ATLAS_MCP_
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 1
+port: 21005
+
+image:
+    name: aurelius-atlas-mcp
+    tag: ""
+    # Operator override (CHT-92): a set digest always wins over the tag;
+    # the release's own bytes are attested by the chart signature (CHT-94).
+    digest: ""
+
+resources:
+    requests:
+        cpu: 100m
+        memory: 256Mi
+    limits:
+        memory: 512Mi
+
+probes:
+    livenessPath: /liveness
+    readinessPath: /liveness
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+tls:
+    # The mounted Secret is the Certificate's output below, which carries
+    # ca.crt beside the pair — cert-manager's contract — so the AUTH_CA_FILE
+    # path in config exists (DD-294's posture, as the aux siblings).
+    enabled: true
+    secretName: ""
+
+# The Certificate cert-manager issues for this Service (CHT-27): SANs are the
+# Service name and its FQDNs. cert-manager is a cluster prerequisite
+# (runbook), never installed by the chart; tls.secretName brings your own and
+# this renders nothing.
+certificate:
+    enabled: true
+    duration: 2160h
+    renewBefore: 720h
+
+# The catalogue legs (MCP-03, MCP-21): the Atlas server every discovery, read,
+# write and typedef tool forwards to, and the validate-entity API the verdicts
+# tool forwards to. "" derives this release's sibling chart names (the
+# siblingService name rule, as lineage-model's upstream join, CHT-28). Both
+# calls carry the caller's own token — no secret names either leg (DD-890).
+atlas:
+    service: ""
+    port: 21000
+validateEntity:
+    service: ""
+    port: 21003
+
+service:
+    type: ClusterIP
+    port: 21005
+
+serviceAccount:
+    create: true
+    name: ""
+
+config:
+    # The audience is the browser's, a literal (AUX-04, MCP-02): an agent
+    # mints the token the webapp's browser mints, and the app forwards it
+    # unchanged (DV-75) — there is no client whose audience this app would
+    # swap in. The trust root is the Certificate's own ca.crt (DD-294).
+    AURELIUS_ATLAS_MCP_AUTH_AUDIENCE: aurelius
+    AURELIUS_ATLAS_MCP_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    AURELIUS_ATLAS_MCP_LOG_LEVEL: info
+    AURELIUS_ATLAS_MCP_TLS_CERT_FILE: /etc/aurelius-atlas/tls/tls.crt
+    AURELIUS_ATLAS_MCP_TLS_KEY_FILE: /etc/aurelius-atlas/tls/tls.key
+
+secretRefs: []
+extraEnv: []
+
+# Network segmentation (21.2, MCP-19, DD-894): the ingress allow for this
+# Service — the webapp only (its /mcp proxy, the one path an agent uses).
+# peers.<peer> renames a peer's pods for a diverging deployment.
+networkPolicy:
+    enabled: true
+    peers:
+        webapp: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    # The image's declared user (DD-257): dhi.io/python-3.14-alpine runs as
+    # `nonroot` (uid/gid 65532, verified from the image), no privilege drop.
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+# The issuer guard is the chart's own (validate.yaml): AUTH_SERVER_URL may
+# arrive as global.issuer.url (the umbrella) or derive from global.domain.
+required: []

@@ -4,9 +4,9 @@ The shape the spec pins: a TLS listener on 8080 behind the Gateway (the
 Gateway's BackendTLSPolicy dials it, DD-270) with HTTPS probes and a
 chart-issued leaf; the nginx config shipped as a byte-copy chart asset
 resolved at pod start by an init container (DD-262) — Helm never renders a
-placeholder; the CHT-25 placeholders computed by the chart (seventeen, the
-fifteen plus the 7.24 validate-entity pair — 7.22a's lineage pair among them,
-joined by the Secret-fed token);
+placeholder; the CHT-25 placeholders computed by the chart (nineteen, the
+seventeen plus the 21.2 MCP pair — 7.22a's lineage pair and 7.24's
+validate-entity pair among them, joined by the Secret-fed token);
 /config.json rendered from values for the SPA's bootstrap fetch.
 """
 
@@ -21,10 +21,10 @@ from conftest import WEBAPP_CHART, container, env_map, env_value, find, helm_ren
 
 TEST_VALUES = (WEBAPP_CHART / "tests/values.test.yaml",)
 
-# The seventeen placeholder names the template contract fixes (CHT-25; the
+# The nineteen placeholder names the template contract fixes (CHT-25; the
 # listener leaf paths join DD-270's pair; HSTS_HEADER joined with CHT-99;
 # the lineage-model pair with 7.22a's LDG-06, DD-384; the validate-entity
-# pair with 7.24's EDT-22, DD-445).
+# pair with 7.24's EDT-22, DD-445; the MCP pair with 21.2's MCP-19, DD-894).
 PLACEHOLDERS = [
     "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM",
     "AURELIUS_ATLAS_WEBAPP_HSTS_HEADER",
@@ -35,6 +35,8 @@ PLACEHOLDERS = [
     "AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME",
     "AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM",
     "AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM_NAME",
+    "AURELIUS_ATLAS_WEBAPP_MCP_UPSTREAM",
+    "AURELIUS_ATLAS_WEBAPP_MCP_UPSTREAM_NAME",
     "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM",
     "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME",
     "AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT",
@@ -157,7 +159,7 @@ def test__root_redirect_is_relative(webapp_docs: list[dict[str, Any]]) -> None:
 
 
 @pytest.mark.covers(rules=["CHT-24"])
-def test__init_container_resolves_the_seventeen_placeholders(webapp_docs: list[dict[str, Any]]) -> None:
+def test__init_container_resolves_the_nineteen_placeholders(webapp_docs: list[dict[str, Any]]) -> None:
     """resolve-nginx-config: same image, sed per name, fail-loud guard."""
     init = _init(find(webapp_docs, "Deployment", "atlas-webapp"), "resolve-nginx-config")
     image_app = container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")
@@ -169,8 +171,8 @@ def test__init_container_resolves_the_seventeen_placeholders(webapp_docs: list[d
         # the shell expansion of the env var.
         assert f"s|\\${{{name}}}|${{{name}}}|g" in script, name
     assert "exit 1" in script  # the unresolved-placeholder guard
-    # The init's env is exactly the seventeen names (CHT-25, DD-270, DD-384,
-    # DD-445).
+    # The init's env is exactly the nineteen names (CHT-25, DD-270, DD-384,
+    # DD-445, DD-894).
     assert sorted(env_map(init)) == sorted(PLACEHOLDERS)
 
 
@@ -201,6 +203,8 @@ def test__placeholder_values_are_chart_joins(webapp_docs: list[dict[str, Any]]) 
         env_value(envs, "AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM_NAME")
         == "atlas-validate-entity.atlas.svc.cluster.local"
     )
+    assert env_value(envs, "AURELIUS_ATLAS_WEBAPP_MCP_UPSTREAM") == "https://atlas-mcp.atlas.svc.cluster.local:21005"
+    assert env_value(envs, "AURELIUS_ATLAS_WEBAPP_MCP_UPSTREAM_NAME") == "atlas-mcp.atlas.svc.cluster.local"
     assert (
         env_value(envs, "AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT")
         == "https://atlas-observability.atlas.svc.cluster.local:4320"
@@ -349,6 +353,31 @@ def test__validate_entity_location_proxies_and_verifies(webapp_docs: list[dict[s
     assert "proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM_NAME};" in body
     assert "limit_req zone=atlas_validate_entity burst=100 nodelay;" in body
     assert "limit_req_zone $atlas_api_limit_addr zone=atlas_validate_entity:10m rate=600r/m;" in template
+
+
+@pytest.mark.covers(rules=["MCP-19"])
+def test__mcp_location_proxies_streams_and_verifies(webapp_docs: list[dict[str, Any]]) -> None:
+    """/mcp proxies to the front door with the CA verified, buffering off (21.2, MCP-19, DD-894).
+
+    The fifth location beside /api/, /otel/, /lineage-model/ and
+    /validate-entity/ — and the only one that keeps its prefix: the MCP app
+    serves /mcp itself (21.1's URL), so no rewrite. An agent streams its
+    session's responses as they land, so the leg buffers nothing and its read
+    timeout outlives a long tool call; the CA verification is the DD-142
+    posture the bearer-carrying legs all share.
+    """
+    template = find(webapp_docs, "ConfigMap", "atlas-webapp-nginx")["data"]["nginx.conf.template"]
+    body = template.split("location /mcp {")[1].split("\n    }")[0]
+    assert "proxy_pass $mcp_upstream;" in body
+    assert "rewrite" not in body  # the prefix is kept (DD-894)
+    assert "proxy_buffering off;" in body
+    assert "proxy_read_timeout 3600s;" in body
+    assert "proxy_http_version 1.1;" in body
+    assert 'proxy_set_header Connection "";' in body
+    assert "proxy_ssl_verify on;" in body
+    assert "proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_MCP_UPSTREAM_NAME};" in body
+    assert "limit_req zone=atlas_mcp burst=100 nodelay;" in body
+    assert "limit_req_zone $atlas_api_limit_addr zone=atlas_mcp:10m rate=600r/m;" in template
 
 
 @pytest.mark.covers(rules=["CHT-100"])

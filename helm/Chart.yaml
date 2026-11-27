@@ -40,6 +40,10 @@ dependencies:
       version: "=0.1.0-rc.12"
       repository: "file://../apps/aurelius-atlas-validate-entity/helm"
       condition: atlas-validate-entity.enabled
+    - name: atlas-mcp
+      version: "=0.1.0-rc.12"
+      repository: "file://../apps/aurelius-atlas-mcp/helm"
+      condition: atlas-mcp.enabled
     - name: atlas-elasticsearch
       version: "=0.1.0-rc.12"
       repository: "file://../infra/elasticsearch/helm"
