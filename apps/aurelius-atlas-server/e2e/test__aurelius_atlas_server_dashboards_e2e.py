@@ -81,8 +81,20 @@ async def test__dashboard_loads_and_asks_the_server_for_the_session(browser: Bro
             broken.append(f"{response.status} {response.url}")
 
     page.on("response", record)
-    await page.goto(f"{server}{path}")
-    await page.wait_for_url(SIGN_IN_PAGE)
+    # A concurrent suite's compose stack starting its networks aborts this first
+    # navigation with ERR_NETWORK_CHANGED (the webapp suite's documented race,
+    # DD-224): one retry rides over the route change. wait_for_url is inside the
+    # guard because the abort can surface there too; re-navigating is idempotent.
+    for attempt in (1, 2):
+        broken.clear()
+        try:
+            await page.goto(f"{server}{path}")
+            await page.wait_for_url(SIGN_IN_PAGE)
+            break
+        except PlaywrightError:
+            if attempt == 2:
+                raise
+            await asyncio.sleep(1)
     await page.locator("#username").fill(USERNAME)
     await page.locator("#password").fill(os.environ["DEV_USER_WRITER_PASSWORD"])
     async with page.expect_response(lambda response: SESSION in response.url, timeout=30_000) as session:
