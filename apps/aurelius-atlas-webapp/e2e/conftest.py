@@ -75,8 +75,10 @@ class Settings(BaseSettings):
     reader_username: str = "aurelius-reader"
     """The reader user (atlas-read only) the editor-affordance tests sign in as (EDT-09)."""
 
-    reader_password: SecretStr = SecretStr("bzMCZRmdyOBOA3xHvaOu7Q")  # the public dev default, not a secret
-    """The reader user's password; never shown in logs (EDT-09)."""
+    reader_password: SecretStr
+    """The reader user's password; never shown in logs. Like the writer's, it comes
+    from the project's encrypted env (the realm import's ``DEV_USER_READER_PASSWORD``).
+    (EDT-09)."""
 
     model_config = SettingsConfigDict(
         # Namespace this project's e2e config: the Nx-injected .env uses
