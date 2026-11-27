@@ -1,5 +1,5 @@
 [project]
-dependencies = ["polars>=2.1.0"]
+dependencies = ["polars>=2.2.0"]
 description = "Data quality for Aurelius Atlas: the closed rule vocabulary, the row-mask engine and the score rollup."
 name = "aurelius-atlas-quality"
 requires-python = ">=3.14"
