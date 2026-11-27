@@ -2601,6 +2601,8 @@
       
         
       
+        
+      
     
     
     
@@ -4562,6 +4564,33 @@
     
   
   070. The catalogue ships one prose attribute
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/072-the-catalogue-answers-agents-through-mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  072. The catalogue answers agents through MCP
 
     
   </span>
@@ -7409,11 +7438,15 @@ edge, on one OIDC issuer:</p>
         d2m[atlas-data2model]
         lm[atlas-lineage-model]
         ve[atlas-validate-entity]
+        mcp[atlas-mcp&lt;br/&gt;/mcp front door]
     end
-    aux --&gt; es
     aux --&gt; keycloak
+    d2m &amp; lm &amp; ve --&gt; es
+    webapp --&gt;|"/lineage-model, /validate-entity, /mcp"| aux
+    mcp --&gt;|caller's token| server
+    mcp --&gt; ve
     server --&gt; coll[atlas-observability&lt;br/&gt;collector]
-    aux --&gt; coll
+    d2m &amp; lm &amp; ve --&gt; coll
     webapp -.-&gt;|OTLP web| coll
     coll --&gt; prom[(Prometheus)]
     coll --&gt; loki[(Loki)]
@@ -7461,6 +7494,12 @@ edge, on one OIDC issuer:</p>
 <td>as above</td>
 </tr>
 <tr>
+<td><code>atlas-mcp</code></td>
+<td>MCP front door for agents (ADR 072)</td>
+<td>21005</td>
+<td>no service identity (DV-208); the webapp proxies <code>/mcp</code> (DD-894)</td>
+</tr>
+<tr>
 <td><code>atlas-elasticsearch</code></td>
 <td>Elasticsearch 9 — the system's one store</td>
 <td>9200/TLS</td>
@@ -7482,7 +7521,7 @@ edge, on one OIDC issuer:</p>
 <td><code>aurelius-atlas</code></td>
 <td>Umbrella: edge, trust, secrets, the <code>global.*</code> contract</td>
 <td>443</td>
-<td>composes the eight charts above</td>
+<td>composes the nine charts above</td>
 </tr>
 </tbody>
 </table>

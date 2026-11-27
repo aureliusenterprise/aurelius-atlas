@@ -2601,6 +2601,8 @@
       
         
       
+        
+      
     
     
     
@@ -4562,6 +4564,33 @@
     
   
   070. The catalogue ships one prose attribute
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/072-the-catalogue-answers-agents-through-mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  072. The catalogue answers agents through MCP
 
     
   </span>
@@ -8768,6 +8797,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td><em>Supersedes DV-205 (7.25c):</em> The box keeps DET-35's seed - every rule of the <code>dataQuality</code> end is a card - and an unscored rule prints no score row (DET-65). Its two sorts ride the field view's <code>ruleScores</code> rows (AVS-13), joined to the cards by GUID, in place of the legacy's result documents (DET-66).</td>
 <td>The end is the field's own relationship, so hiding an associated rule because the scanner skipped it would hide a rule the person linked (DD-444). The score is a rule/field pair that only a field's view answers (DD-863), and 16.5j's join keeps the wire from gaining a consumer (ADR 064) where the legacy asked its engine directly. A rule entity carries no score totals (ASQ-04), so the row can only come from the field.</td>
 <td>7.25e</td>
+</tr>
+<tr>
+<td>DV-208</td>
+<td>Auxiliary API</td>
+<td>Atlas 2.4.0 offers no way for an agent (an MCP client) to ask the catalogue anything, and its auxiliary clients sign their own upstream calls with a service identity (VEV-04).</td>
+<td>The MCP app (<code>apps/aurelius-atlas-mcp</code>) answers agents over the Model Context Protocol, a surface Atlas does not have. Unlike the 8.x aux APIs, every catalogue call it makes forwards the caller's own bearer token and never a service identity of the app (MCP-03, ADR 072).</td>
+<td>An agent session is a user acting, not a batch job acting, so the catalogue must see the person behind the call. The write gate (MCP-11) rides the same token, and a service identity would let one caller's role answer for another's.</td>
+<td>21.1</td>
 </tr>
 </tbody>
 </table>

@@ -2779,6 +2779,8 @@
       
         
       
+        
+      
     
     
     
@@ -4737,6 +4739,33 @@
     
   
   070. The catalogue ships one prose attribute
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/072-the-catalogue-answers-agents-through-mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  072. The catalogue answers agents through MCP
 
     
   </span>
@@ -7561,10 +7590,11 @@ the two shapes the project tests, a local minikube cluster and a GKE cluster.</p
 <a href=".././standalone-server/">Standalone Server</a> instead.</p>
 <h2 id="what-you-install">What you install<a class="headerlink" href="#what-you-install" title="Permanent link">&para;</a></h2>
 <p>You install one Helm release into one namespace (default: <code>atlas</code>). The
-<code>aurelius-atlas</code> umbrella composes eight component charts: the Atlas API, the
-dashboard, three auxiliary APIs, the Elasticsearch store, the Keycloak issuer,
-and the observability stack. The umbrella also owns the shared edge, the trust
-issuers, and the generated Secrets.</p>
+<code>aurelius-atlas</code> umbrella composes nine component charts: the Atlas API, the
+dashboard, four auxiliary APIs (the extractor, the lineage graph, the entity
+validator, and the MCP front door agents talk to), the Elasticsearch store,
+the Keycloak issuer, and the observability stack. The umbrella also owns the
+shared edge, the trust issuers, and the generated Secrets.</p>
 <pre class="mermaid"><code>flowchart LR
     prep[Prepare the cluster] --&gt;|helm install| live[System running]
     live --&gt;|create administrators| users[People sign in]

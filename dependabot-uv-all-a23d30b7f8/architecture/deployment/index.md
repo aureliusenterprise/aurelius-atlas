@@ -21,11 +21,15 @@ flowchart LR
         d2m[atlas-data2model]
         lm[atlas-lineage-model]
         ve[atlas-validate-entity]
+        mcp[atlas-mcp<br/>/mcp front door]
     end
-    aux --> es
     aux --> keycloak
+    d2m & lm & ve --> es
+    webapp -->|"/lineage-model, /validate-entity, /mcp"| aux
+    mcp -->|caller's token| server
+    mcp --> ve
     server --> coll[atlas-observability<br/>collector]
-    aux --> coll
+    d2m & lm & ve --> coll
     webapp -.->|OTLP web| coll
     coll --> prom[(Prometheus)]
     coll --> loki[(Loki)]
@@ -42,10 +46,11 @@ The components and their charts:
 | `atlas-data2model` | Natural-language → model API | 21001 | audience/client per chart values |
 | `atlas-lineage-model` | Lineage graph API | 21002 | as above |
 | `atlas-validate-entity` | Entity validation API | 21003 | as above |
+| `atlas-mcp` | MCP front door for agents (ADR 072) | 21005 | no service identity (DV-208); the webapp proxies `/mcp` (DD-894) |
 | `atlas-elasticsearch` | Elasticsearch 9 — the system's one store | 9200/TLS | single-node now, HA later |
 | `atlas-keycloak` | Keycloak — the one issuer (ADR 007), bundled Postgres | 8443 | issuer URL is immutable once entities exist |
 | `atlas-observability` | OTel collector + Prometheus, Loki, Tempo, Grafana | 4317–4321 | the three ingest legs (DD-193/196/202) |
-| `aurelius-atlas` | Umbrella: edge, trust, secrets, the `global.*` contract | 443 | composes the eight charts above |
+| `aurelius-atlas` | Umbrella: edge, trust, secrets, the `global.*` contract | 443 | composes the nine charts above |
 
 Each component chart lives next to the project it deploys (`apps/<app>/helm/`, `infra/<name>/helm/`, DD-290, ADR-066); the umbrella `aurelius-atlas` is the one chart without an owning project and sits at the workspace root, `helm/` (DD-292). Helpers are chart-local — the naming convention is the dedupe, no library charts.
 

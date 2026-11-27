@@ -2752,6 +2752,8 @@
       
         
       
+        
+      
     
     
     
@@ -4710,6 +4712,33 @@
     
   
   070. The catalogue ships one prose attribute
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/072-the-catalogue-answers-agents-through-mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  072. The catalogue answers agents through MCP
 
     
   </span>
@@ -7554,7 +7583,7 @@ which makes the same material with <code>openssl</code> alone and needs none of 
 Your host and your certificates below).</p>
 <p>The seven app pieces name the folder they mount through a required variable, so a stack that names no folder
 fails the start with that folder's name and never reads a path of this repository (SBD-12, DD-687). In a
-checkout <code>docker/stack.env</code> answers the eight names, and the commands below need no extra argument. An install
+checkout <code>docker/stack.env</code> answers the nine names, and the commands below need no extra argument. An install
 that ships the stack without the repository names them in its own <code>.env</code>, as <code>docker/.env.example</code> explains.</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>infra/keycloak/.env<span class="w"> </span><span class="se">\</span>
@@ -7574,13 +7603,13 @@ add the person to the tenant's organization and its role groups under Organizati
 Tenants). One sign-in serves the webapp and the dashboards, as they share the realm; the admin
 console's own session does not sign you in to them. The certificate is the dev CA's, so the browser
 asks once, for <code>localhost:9000</code>.</p>
-<p>The six images are the <code>:local</code> tags <code>npx nx docker-build</code> of each project builds from the checkout. Each
+<p>The seven images are the <code>:local</code> tags <code>npx nx docker-build</code> of each project builds from the checkout. Each
 piece names its image through a compose variable: <code>SERVER_IMAGE</code>, <code>WEBAPP_IMAGE</code>, <code>EMBEDDER_IMAGE</code>,
-<code>DATA2MODEL_IMAGE</code>, <code>LINEAGE_MODEL_IMAGE</code>, <code>VALIDATE_ENTITY_IMAGE</code>. An install that runs published images
-sets those six values and leaves the defaults alone. The embedder and the three aux
-services need their own certificates too: <code>npx nx certgen aurelius-atlas-embedder</code>,
-<code>npx nx certgen aurelius-atlas-data2model</code>, <code>npx nx certgen aurelius-atlas-lineage-model</code> and
-<code>npx nx certgen aurelius-atlas-validate-entity</code>.</p>
+<code>DATA2MODEL_IMAGE</code>, <code>LINEAGE_MODEL_IMAGE</code>, <code>VALIDATE_ENTITY_IMAGE</code> and <code>MCP_IMAGE</code>. An install that
+runs published images sets those seven values and leaves the defaults alone. The embedder and the four
+aux services need their own certificates too: <code>npx nx certgen aurelius-atlas-embedder</code>,
+<code>npx nx certgen aurelius-atlas-data2model</code>, <code>npx nx certgen aurelius-atlas-lineage-model</code>,
+<code>npx nx certgen aurelius-atlas-validate-entity</code> and <code>npx nx certgen aurelius-atlas-mcp</code>.</p>
 <h2 id="a-sample-dataset">A sample dataset<a class="headerlink" href="#a-sample-dataset" title="Permanent link">&para;</a></h2>
 <p>The always-on stack imports nothing. The service <code>sample-import</code> sits behind the compose profile <code>demo</code>, and
 the script <code>docker/bin/import-sample.sh</code> runs it once in a stack that is already up (SPC-06, DD-697). It names
@@ -7769,7 +7798,8 @@ piece (ADR 065, DD-677) — the gateway from <code>docker/gateway/</code>, the s
 <code>apps/aurelius-atlas-server/docker/</code>, the webapp from <code>apps/aurelius-atlas-webapp/docker/</code>, the extractor from
 <code>apps/aurelius-atlas-data2model/docker/</code>, the lineage API from
 <code>apps/aurelius-atlas-lineage-model/docker/</code>, the validator from
-<code>apps/aurelius-atlas-validate-entity/docker/</code> (DD-674), the embedder from
+<code>apps/aurelius-atlas-validate-entity/docker/</code> (DD-674), the agent front door from
+<code>apps/aurelius-atlas-mcp/docker/</code> (21.2, DD-894), the embedder from
 <code>apps/aurelius-atlas-embedder/docker/</code>, the telemetry piece from <code>docker/observability/</code> (DD-675),
 and the store and the identity provider from <code>docker/elasticsearch/</code> and <code>docker/keycloak/</code>, which
 <code>extend</code> the infra slices' services and state only the stack's differences (ADR 066). Run the

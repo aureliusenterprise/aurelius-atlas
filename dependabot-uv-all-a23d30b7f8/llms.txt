@@ -131,6 +131,7 @@
 - [069\. Each browser-facing surface answers on its own hostname](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/index.md>)
 - [070\. The catalogue ships one prose attribute](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/070-the-catalogue-ships-one-prose-attribute/index.md>)
 - [071\. A rule's verdicts come through the view family](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/071-a-rule-s-verdicts-come-through-the-view-family/index.md>)
+- [072\. The catalogue answers agents through MCP](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/072-the-catalogue-answers-agents-through-mcp/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/design-log/index.md>)

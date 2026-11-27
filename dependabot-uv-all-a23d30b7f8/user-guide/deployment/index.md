@@ -6,7 +6,7 @@ To run the server on one machine without a cluster, see [Standalone Server](<htt
 
 ## What you install
 
-You install one Helm release into one namespace (default: `atlas`). The `aurelius-atlas` umbrella composes eight component charts: the Atlas API, the dashboard, three auxiliary APIs, the Elasticsearch store, the Keycloak issuer, and the observability stack. The umbrella also owns the shared edge, the trust issuers, and the generated Secrets.
+You install one Helm release into one namespace (default: `atlas`). The `aurelius-atlas` umbrella composes nine component charts: the Atlas API, the dashboard, four auxiliary APIs (the extractor, the lineage graph, the entity validator, and the MCP front door agents talk to), the Elasticsearch store, the Keycloak issuer, and the observability stack. The umbrella also owns the shared edge, the trust issuers, and the generated Secrets.
 
 ```
 flowchart LR
