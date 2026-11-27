@@ -71,7 +71,7 @@ def create_app(
             await verdicts_http.aclose()
 
     mcp: FastMCP[Any] = FastMCP(NAME, lifespan=_lifespan)
-    register_tools(mcp, relayed, audience=settings.auth_audience, write_role=settings.write_role)
+    register_tools(mcp, relayed, role_client=settings.write_role_client, write_role=settings.write_role)
 
     @mcp.custom_route(LIVENESS_PATH, methods=["GET"])
     async def _liveness(request: Request) -> Response:

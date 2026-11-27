@@ -21,6 +21,12 @@ DEFAULT_VALIDATE_ENTITY_URL = "https://localhost:21003"
 DEFAULT_WRITE_ROLE = "atlas-write"
 """The role a write tool requires (MCP-11): the webapp's own write role, kept as one name (ADR 017)."""
 
+DEFAULT_WRITE_ROLE_CLIENT = "aurelius-atlas-server"
+"""The client whose ``resource_access`` entry carries the write role (MCP-28, DD-898):
+the catalogue's client, because Keycloak namespaces client roles per client and
+``atlas-write`` is the catalogue client's role — the same client the webapp's editor
+gate reads and the server enforces (AUZ-01, DD-300)."""
+
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
 """Levels both uvicorn and the console accept."""
 
@@ -72,6 +78,12 @@ class McpSettings(BaseSettings):
     write_role: str = DEFAULT_WRITE_ROLE
     """The role a write tool requires (MCP-11); empty disables the gate, the development-only posture
     the shared auth library keeps (its ``write_role`` rule, ADR 017)."""
+
+    write_role_client: str = DEFAULT_WRITE_ROLE_CLIENT
+    """The client entry of ``resource_access`` the write role is read from (MCP-28, DD-898). It is
+    the catalogue's client, not this app's audience: a browser token of the public ``aurelius``
+    client carries ``atlas-write`` under ``aurelius-atlas-server``, the same claim the server's
+    own gate enforces on the forwarded token."""
 
     server_base_url: HttpUrl = DEFAULT_SERVER_URL  # pyright: ignore[reportAssignmentType] - pydantic validates the URL text
     """The catalogue server every discovery, read, write and typedef tool forwards to (MCP-03)."""

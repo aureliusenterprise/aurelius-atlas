@@ -23,11 +23,11 @@ own increment (21.3):
 
 This increment does not deliver:
 
-| Not delivered                                               | It lands in                                                                                                                   |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| The e2e chain (real server and verdicts API beside the app) | Increment 21.3 (DD-897's sibling note; the spec's chain rules, host port 21009 — 21005 is the quality scanner's e2e sidecar). |
-| A Keycloak realm client for the app                         | Not planned. The app holds no service identity (DV-208, DD-893), so there is no client to import.                             |
-| OTLP ingest for the app                                     | Not planned. The ingest identity is the service's own credential (DD-196), and the app has none (ADR 072).                    |
+| Not delivered                                               | It lands in                                                                                                |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| The e2e chain (real server and verdicts API beside the app) | Delivered by 21.3: the chain, host port 21009, the live write-gate proof (MCP-25 to MCP-32, DD-898).       |
+| A Keycloak realm client for the app                         | Not planned. The app holds no service identity (DV-208, DD-893), so there is no client to import.          |
+| OTLP ingest for the app                                     | Not planned. The ingest identity is the service's own credential (DD-196), and the app has none (ADR 072). |
 
 ## Semantics
 

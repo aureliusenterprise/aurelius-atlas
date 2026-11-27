@@ -56,12 +56,12 @@ _SERVER_KINDS = {
 }
 
 
-def register_tools(mcp: FastMCP[Any], clients: AtlasClients, audience: str, write_role: str) -> None:  # noqa: C901, PLR0915 - the tool table: twelve thin relays read as one surface
+def register_tools(mcp: FastMCP[Any], clients: AtlasClients, role_client: str, write_role: str) -> None:  # noqa: C901, PLR0915 - the tool table: twelve thin relays read as one surface
     """Register every catalogue tool on the server (MCP-04).
 
     :param mcp: the FastMCP server to register on
     :param clients: the app's shared clients, relayed per call with the caller's token
-    :param audience: this app's Keycloak audience, for the write gate's claim lookup
+    :param role_client: the client whose ``resource_access`` entry the write gate reads (MCP-28)
     :param write_role: the role a write tool requires (MCP-11)
     """
 
@@ -71,7 +71,7 @@ def register_tools(mcp: FastMCP[Any], clients: AtlasClients, audience: str, writ
 
     def require_write(action: str) -> None:
         """Refuse a write the caller may not run, before any upstream call (MCP-11)."""
-        if not may_write(caller_claims(), audience, write_role):
+        if not may_write(caller_claims(), role_client, write_role):
             LOGGER.info("Refused the write tool %s: the caller lacks %r", action, write_role)
             msg = f"the write role {write_role!r} is required to {action}"
             raise ToolError(msg)
