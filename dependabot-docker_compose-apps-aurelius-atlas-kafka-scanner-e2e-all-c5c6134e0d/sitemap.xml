@@ -289,6 +289,18 @@
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/adr/070-the-catalogue-ships-one-prose-attribute/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/adr/071-a-rule-s-verdicts-come-through-the-view-family/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/adr/072-the-catalogue-answers-agents-through-mcp/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/adr/template/</loc>
       </url>
       <url>
@@ -460,6 +472,9 @@
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/platform/security/secrets-management/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/platform/separation-and-seams-plan/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/platform/vector-search-and-chat/</loc>
       </url>
       <url>
@@ -514,6 +529,9 @@
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/contributor-guide/tls-certificates/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/contributor-guide/user-documentation-plan/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/contributor-guide/version-control/</loc>
       </url>
       <url>
@@ -523,12 +541,36 @@
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/change-data/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/check-data-quality/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/deployment/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/find-data/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/follow-lineage/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/quick-start/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/settings-and-alerts/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/standalone-server/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/standalone-tenants/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/understand-data/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/write-quality-rules/</loc>
       </url>
 </urlset>

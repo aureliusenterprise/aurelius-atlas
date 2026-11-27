@@ -89,7 +89,7 @@ bash docker/bin/tenant.sh list
 
 ## The tenant's dashboards
 
-`add`, `user add` and `user remove` keep the tenant's Grafana organization in step: its data sources, which read the tenant's indices alone, its dashboards *catalogue* and *activity*, and its people as Viewers. Open `https://localhost:9000/grafana/` and sign in as `acme_atlas`: Grafana opens acme's organization. A person in more than one tenant switches between them with Grafana's organization menu; operators also see the main organization, with the stack's own telemetry.
+`add`, `user add` and `user remove` keep the tenant's Grafana organization in step: its data sources, which read the tenant's indices alone, and its dashboards *catalogue* and *activity*. Its Viewers are the tenant's people with the role `atlas` or `steward`, and the operators the tenant trusts; a `scientist` doesn't see them. Those people find "Dashboards" in the webapp's account menu, under "Switch tenant": it opens the tenant's catalogue in Grafana in a new tab. Grafana is also at `https://localhost:9000/grafana/`. A person in more than one tenant switches between them with Grafana's organization menu; operators also see the main organization, with the stack's own telemetry.
 
 People added or removed in Keycloak's console, not with the command, reach Grafana with:
 
@@ -97,7 +97,7 @@ People added or removed in Keycloak's console, not with the command, reach Grafa
 bash docker/bin/tenant.sh grafana sync
 ```
 
-It also deletes the Grafana users who belong to no tenant any more and aren't operators.
+It also deletes the Grafana users who are no tenant's Viewer any more and aren't operators. A role changed in Keycloak's console reaches Grafana the same way, and the webapp's menu at the person's next sign-in.
 
 ## Remove a tenant
 

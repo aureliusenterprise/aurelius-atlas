@@ -26,6 +26,8 @@ nx docs
 
 Open your browser and navigate to [`http://localhost:8000`](<http://localhost:8000>) to view the documentation. The changes you make to the documentation will be automatically reflected in the browser.
 
+The webapp's development configuration points its header's Documentation link at this address, so `nx serve aurelius-atlas-webapp` and `nx docs` together let you follow a link from the app into the page you are editing. Run the docs command in another terminal: the webapp does not start it.
+
 ## Adding a New Page
 
 To add a new page to the documentation, create a new Markdown file in the `docs` directory.

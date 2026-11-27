@@ -2,13 +2,11 @@
 
 Aurelius Atlas runs on Kubernetes and ships as Helm charts. This page takes you from an empty cluster to a running system that people sign in to: the prerequisites, the install, how to tell that it worked, and the first administrators. It covers the two shapes the project tests, a local minikube cluster and a GKE cluster.
 
-This page is the guided path. The [deployment reference](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/index.md>) explains why the system has this shape, and the [runbook](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/runbook/index.md>) carries every DNS, certificate, and rename edge in full. This page links them instead of repeating them.
-
 To run the server on one machine without a cluster, see [Standalone Server](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/standalone-server/index.md>) instead.
 
 ## What you install
 
-You install one Helm release into one namespace (default: `atlas`). The `aurelius-atlas` umbrella composes eight component charts: the Atlas API, the dashboard, three auxiliary APIs, the Elasticsearch store, the Keycloak issuer, and the observability stack. The umbrella also owns the shared edge, the trust issuers, and the generated Secrets. The [deployment reference](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/#topology>) holds the topology and the component table.
+You install one Helm release into one namespace (default: `atlas`). The `aurelius-atlas` umbrella composes nine component charts: the Atlas API, the dashboard, four auxiliary APIs (the extractor, the lineage graph, the entity validator, and the MCP front door agents talk to), the Elasticsearch store, the Keycloak issuer, and the observability stack. The umbrella also owns the shared edge, the trust issuers, and the generated Secrets.
 
 ```
 flowchart LR
@@ -17,17 +15,17 @@ flowchart LR
     live -->|helm upgrade| live
 ```
 
-Each cluster needs the prerequisites once, and every later change is an upgrade of the same release ([ADR 057](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>)).
+Each cluster needs the prerequisites once, and every later change is an upgrade of the same release.
 
 > [!NOTE]
 >
 > **The scanner charts are separate**
 >
-> The three batch scanner charts install as their own releases and never travel with the umbrella. See [Scanner charts install on their own](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/#scanner-charts-install-on-their-own>).
+> The three batch scanner charts install as their own releases and never travel with the umbrella.
 
 ## Before you start
 
-A cluster must carry a few things before the first install. The [runbook prerequisites](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/runbook/#0-prerequisites>) give the exact command for each one.
+A cluster must carry a few things before the first install:
 
 - `kubectl` bound to your cluster context, and Helm.
 - cert-manager (CRDs and controller). The whole trust model depends on it.
@@ -46,7 +44,7 @@ A cluster must carry a few things before the first install. The [runbook prerequ
 >
 > **In-cluster producers need the issuer's public name**
 >
-> With observability on, in-cluster jobs reach Keycloak by its public host (`auth.<domain>`), so that name must resolve to the Keycloak Service inside the cluster too. The runbook's [split-horizon DNS step](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/runbook/#0-prerequisites>) covers both minikube (a CoreDNS rewrite) and GKE (a private Cloud DNS zone). On GKE with a public edge, this is a hard prerequisite, not an optimization.
+> With observability on, in-cluster jobs reach Keycloak by its public host (`auth.<domain>`), so that name must resolve to the Keycloak Service inside the cluster too. Minikube solves this with a CoreDNS rewrite, and GKE with a private Cloud DNS zone. On GKE with a public edge, this is a hard prerequisite, not an optimization.
 
 ## Choose an environment
 
@@ -54,10 +52,10 @@ An environment is a values overlay, not a separate chart. The repository ships t
 
 | Overlay | Gateway class | Edge trust | Hosts | For |
 | --- | --- | --- | --- | --- |
-| `minikube.yaml` | `envoy-gateway` | chart self-signed | `*.atlas.test` | local/dev, in devcontainer |
+| `minikube.yaml` | `envoy-gateway` | chart self-signed | `atlas.test` + subdomains | local/dev, in devcontainer |
 | `gke.yaml` | `gke-l7-global-external-managed` | Let's Encrypt + private CA | your domain | GKE (the documented target) |
 
-On minikube, start `minikube tunnel` in a second terminal and point your hosts file (`app.atlas.test`, `auth.atlas.test`, and `o11y.atlas.test` if enabled) at `127.0.0.1`. On GKE, enable the managed Gateway TLS APIs first: the Certificate Manager API is required or the edge refuses TLS and health checks. The `gke.yaml` overlay already sets the health check and the ECDSA edge key that GKE needs.
+On minikube, start `minikube tunnel` in a second terminal and point your hosts file (`atlas.test` for the product, `auth.atlas.test`, and `observability.atlas.test` if enabled) at `127.0.0.1`. On GKE, enable the managed Gateway TLS APIs first: the Certificate Manager API is required or the edge refuses TLS and health checks. The `gke.yaml` overlay already sets the health check and the edge certificate key type GKE needs.
 
 ## Install
 
@@ -80,7 +78,7 @@ cosign verify ghcr.io/aureliusenterprise/charts/aurelius-atlas:<chart-version> \
     --certificate-oidc-issuer-regexp '^https://token\.actions\.githubusercontent\.com$'
 ```
 
-The umbrella generates each credential (the Elasticsearch password, the Keycloak admin and database passwords, the ingest client Secrets) at the first install, then keeps it on every upgrade. Read one with `kubectl get secret`. The [secret storage](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/secret-storage/index.md>) page explains the generate-and-preserve rule.
+The umbrella generates each credential (the Elasticsearch password, the Keycloak admin and database passwords, the ingest client Secrets) at the first install, then keeps it on every upgrade. Read one with `kubectl get secret`.
 
 ## Make sure that the install worked
 
@@ -89,7 +87,7 @@ The pods come up, then the edge and the issuer answer.
 ```
 kubectl -n atlas get pods                          # all Running or Completed
 kubectl -n atlas get gateway,gatewayclass,httproute
-curl -k https://app.<domain>/api/atlas/admin/liveness
+curl -k https://<domain>/api/atlas/admin/liveness
 curl -k https://auth.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
 
@@ -132,17 +130,17 @@ curl -sk -X POST "$KC/admin/realms/aurelius-atlas/users" -H "Authorization: Bear
 >
 > **A wrong role key fails with a 201**
 >
-> The `clientRoles` map is keyed by the client's name, not its id. A misspelled or id-keyed entry creates the user with no roles and still answers `201`. Read the user's role mappings back before you hand over the account. The [runbook admin step](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/runbook/#admin-accounts>) adds email and password-policy detail and a generated password.
+> The `clientRoles` map is keyed by the client's name, not its id. A misspelled or id-keyed entry creates the user with no roles and still answers `201`. Read the user's role mappings back before you hand over the account.
 
 A script that calls the Atlas API uses a service client and a client-credentials token, not a person's password. The scanners and the provisioning command already work this way, and the server accepts their tokens by default.
 
 ## Sign in
 
-Open the dashboard at `https://app.<domain>` and sign in with the Keycloak button. Open the observability stack at `https://o11y.<domain>`. Its Grafana login also runs through Keycloak, and only the `admin` or `editor` role of the `grafana` client passes the door. The generated `atlas-grafana-admin` Secret is an account-recovery credential, for use only when the realm path is broken. The [runbook Grafana section](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/runbook/#grafana>) covers the full login path in detail.
+Open the product at `https://<domain>` and sign in with the Keycloak button. Open the observability stack at `https://observability.<domain>`. Its Grafana login also runs through Keycloak, and only the `admin` or `editor` role of the `grafana` client passes the door. The generated `atlas-grafana-admin` Secret is an account-recovery credential, for use only when the realm path is broken.
 
 ## Turn on tenancy (optional)
 
-Tenancy is off by default, and the server then answers as Apache Atlas does. Set `tenancy.enabled` and list your tenants in `tenancy.tenants` to switch it on ([ADR 063](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/adr/063-each-tenant-is-an-organization-with-its-own-store/index.md>)). Each tenant is a Keycloak organization with its own store. A provisioning hook runs after every install and upgrade and leaves an existing tenant alone, so you remove a tenant with the server's command, never by dropping it from the list. To add a tenant on the standalone server, see [Add a Tenant](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/standalone-tenants/index.md>).
+Tenancy is off by default, and the server then answers as Apache Atlas does. Set `tenancy.enabled` and list your tenants in `tenancy.tenants` to switch it on. Each tenant is a Keycloak organization with its own store. A provisioning hook runs after every install and upgrade and leaves an existing tenant alone, so you remove a tenant with the server's command, never by dropping it from the list. To add a tenant on the standalone server, see [Add a Tenant](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/user-guide/standalone-tenants/index.md>).
 
 ## Upgrade
 
@@ -177,7 +175,5 @@ Because the issuer is first-boot-immutable, a fresh install on the same domain r
 | --- | --- |
 | Pods stay `ImagePullBackOff` | The cluster cannot pull from `dhi.io` or `ghcr.io`. Create the pull Secrets named in [Before you start](<#before-you-start>). |
 | Install fails with a missing `Bundle` | trust-manager is absent, or its trust namespace is not the install namespace. See [Before you start](<#before-you-start>). |
-| A browser host's certificate stays `Pending` | DNS-01 cannot see the challenge in public DNS. See the [ACME edge step](<https://aureliusenterprise.github.io/dependabot-docker_compose-apps-aurelius-atlas-kafka-scanner-e2e-all-c5c6134e0d/architecture/deployment/runbook/#0-prerequisites>). |
+| A browser host's certificate stays `Pending` | DNS-01 cannot see the challenge in public DNS. Confirm the public DNS records. |
 | Panels answer `plugin.notRegistered` | The first-boot plugin download is still running. Wait a minute, then reload the page. |
-
-Each fix above points at the step that owns the detail.

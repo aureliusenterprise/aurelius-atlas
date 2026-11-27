@@ -535,7 +535,7 @@ Classes:
   One entity of a write: its new state, and the version it was read in, or None for a new entity.
 - **`EntityStore`** –
 
-  Entities of the registry's entity types, and the relationships between them, in `EntityDocuments`.
+  Entities of the registry's entity types, and the relationships between them, in `StoreDocuments`.
 - **`EntityVersionConflictError`** –
 
   Another write changed an entity after it was read (ENS-08); nothing was written.
@@ -551,6 +551,9 @@ Classes:
 - **`UniqueValueTakenError`** –
 
   A write needs a unique value another entity holds (ENS-05); nothing was written.
+- **`WriteStore`** –
+
+  The store the write path calls (WRS-01, DD-773, DD-774).
 
 Attributes:
 
@@ -683,14 +686,14 @@ remove: bool = False
 ```
 EntityStore(
     registry: TypeRegistry,
-    documents: EntityDocuments,
+    documents: StoreDocuments,
     *,
     clock: Callable[[], float] = time,
     new_id: Callable[[], str] = lambda: str(uuid4()),
 )
 ```
 
-Entities of the registry's entity types, and the relationships between them, in `EntityDocuments`.
+Entities of the registry's entity types, and the relationships between them, in `StoreDocuments`.
 
 Methods:
 
@@ -760,6 +763,9 @@ Methods:
 
 Attributes:
 
+- **`documents`** (`StoreDocuments`) –
+
+  The documents this store keeps (WRS-03, DD-775).
 - **`registry`** –
 - **`task_listeners`** (`list[Callable[[], None]]`) –
 
@@ -767,6 +773,16 @@ Attributes:
 - **`write_listeners`** (`list[Callable[[], None]]`) –
 
   Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).
+
+#### documents
+
+```
+documents: StoreDocuments
+```
+
+The documents this store keeps (WRS-03, DD-775).
+
+Public so the rewind wrapper reads before-images through the documents contract instead of reaching `_documents` of the class it composes.
 
 #### registry
 
@@ -1110,41 +1126,225 @@ holder = holder
 key = key
 ```
 
+### WriteStore
+
+Bases: `Protocol`
+
+The store the write path calls (WRS-01, DD-773, DD-774).
+
+`EntityWriter`, `ViewMutationDoor` and the internals they drive are typed on this instead of on `EntityStore`, so a spec can drive a write against a small fake or the in-memory store without a server. `EntityStore` is the contract's only production implementation; it satisfies it unchanged, and so do the in-memory store and the test fake.
+
+The contract names the members the whole write path reaches, not only the ones the writer and the door call themselves: the rewind store composes its real store instead of subclassing it (DD-775), so every member an internal forwards to the store has to be on the contract. `search` is here because the door's meanings step drives `GlossaryService`, which searches for a term.
+
+Methods:
+
+- **`classified`** –
+
+  The entities listing any of these classification instances (DD-075, DD-076).
+- **`find_by_unique_attributes`** –
+
+  The `ACTIVE` entity holding every given unique value, if any (ENS-06).
+- **`get`** –
+
+  The entity with `guid` as last written, or None (ENS-04).
+- **`get_classifications`** –
+
+  The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070).
+- **`get_many`** –
+
+  The entities with these GUIDs that exist (ENS-04).
+- **`get_relationships`** –
+
+  The relationships with these GUIDs that exist, as last written (REL-06, DD-061).
+- **`list_tasks`** –
+
+  Every task, or those `PENDING` or `IN_PROGRESS`, oldest first (TSK-04, TSK-06).
+- **`new_guid`** –
+
+  A new entity's GUID (ENS-02, DD-044).
+- **`now`** –
+
+  The current time in epoch milliseconds, as Atlas stores times.
+- **`referring`** –
+
+  The entities whose references name any of these GUIDs (EDL-10, DD-057).
+- **`search`** –
+
+  The entities of a search query's page, how many match it in all, their scores and facets (DD-089).
+- **`write`** –
+
+  Write the changes of one request, all or nothing (ENS-05, ENS-07, ENS-08).
+
+Attributes:
+
+- **`documents`** (`StoreDocuments`) –
+
+  The documents the store keeps, for a wrapper that records before-images (WRS-03, DD-775).
+- **`registry`** (`TypeRegistry`) –
+- **`task_listeners`** (`list[Callable[[], None]]`) –
+
+  Called after a write that recorded tasks, to wake a worker (DD-080).
+- **`write_listeners`** (`list[Callable[[], None]]`) –
+
+  Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).
+
+#### documents
+
+```
+documents: StoreDocuments
+```
+
+The documents the store keeps, for a wrapper that records before-images (WRS-03, DD-775).
+
+#### registry
+
+```
+registry: TypeRegistry
+```
+
+#### task\_listeners
+
+```
+task_listeners: list[Callable[[], None]]
+```
+
+Called after a write that recorded tasks, to wake a worker (DD-080).
+
+#### write\_listeners
+
+```
+write_listeners: list[Callable[[], None]]
+```
+
+Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).
+
+#### classified
+
+```
+classified(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities listing any of these classification instances (DD-075, DD-076).
+
+#### find\_by\_unique\_attributes
+
+```
+find_by_unique_attributes(entity_type: EntityType, values: Mapping[str, Any]) -> VersionedEntity | None
+```
+
+The `ACTIVE` entity holding every given unique value, if any (ENS-06).
+
+#### get
+
+```
+get(guid: str) -> VersionedEntity | None
+```
+
+The entity with `guid` as last written, or None (ENS-04).
+
+#### get\_classifications
+
+```
+get_classifications(guids: Sequence[str]) -> dict[str, VersionedClassification]
+```
+
+The classification instances with these GUIDs that exist, as last written (CLS-02, DD-070).
+
+#### get\_many
+
+```
+get_many(guids: Sequence[str]) -> dict[str, VersionedEntity]
+```
+
+The entities with these GUIDs that exist (ENS-04).
+
+#### get\_relationships
+
+```
+get_relationships(guids: Sequence[str]) -> dict[str, VersionedRelationship]
+```
+
+The relationships with these GUIDs that exist, as last written (REL-06, DD-061).
+
+#### list\_tasks
+
+```
+list_tasks(*, open_only: bool = False) -> list[tuple[StoredTask, DocumentVersion]]
+```
+
+Every task, or those `PENDING` or `IN_PROGRESS`, oldest first (TSK-04, TSK-06).
+
+#### new\_guid
+
+```
+new_guid() -> AssignedGuid
+```
+
+A new entity's GUID (ENS-02, DD-044).
+
+#### now
+
+```
+now() -> int
+```
+
+The current time in epoch milliseconds, as Atlas stores times.
+
+#### referring
+
+```
+referring(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities whose references name any of these GUIDs (EDL-10, DD-057).
+
+#### search
+
+```
+search(query: SearchQuery) -> SearchHits
+```
+
+The entities of a search query's page, how many match it in all, their scores and facets (DD-089).
+
+#### write
+
+```
+write(
+    changes: Sequence[EntityChange],
+    relationship_changes: Sequence[RelationshipChange] = (),
+    classification_changes: Sequence[ClassificationChange] = (),
+    task_changes: Sequence[TaskChange] = (),
+) -> None
+```
+
+Write the changes of one request, all or nothing (ENS-05, ENS-07, ENS-08).
+
 ## aurelius\_atlas\_core.entity\_documents
 
 The entities' documents in Elasticsearch: entities, unique value reservations and the write journal (ENS-01).
 
 The I/O behind `EntityStore`: reads in real time, conditional writes, create-only reservations (DD-043 to DD-047). Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep their digits (DD-039).
 
-Type Aliases:
-
-- **`Linked`** –
-
-  A document an entity lists: a relationship or a classification instance.
-
 Classes:
 
-- **`ElasticsearchEntityDocuments`** –
-
-  `EntityDocuments` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046).
-- **`EmbeddingDimensionsError`** –
-
-  The entity index maps vectors of other dimensions than the configured ones (VEC-03, DD-438).
 - **`EntityDocuments`** –
 
-  Where `EntityStore` keeps entities, reservations and its journal.
+  The documents the indexers and the doors reach (EDS-03, DD-791).
 - **`JournalEntry`** –
 
   A write in flight: its id, lease, the entities' states before it, its reservations, releases and removals.
-- **`LinkedKind`** –
-
-  The documents an entity lists besides itself, each in an index of its own (DD-061, DD-070).
 - **`LinkedWrite`** –
 
   What a write does to the documents of one `LinkedKind`: written ones at a version or new, removed ones.
 - **`Reservation`** –
 
   A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+- **`SearchDocuments`** –
+
+  The one search the App Search engine and the view door run on (QRY-05, DD-770).
+- **`StoreDocuments`** –
+
+  The documents `EntityStore` keeps: everything the narrow contract has, plus the store's reads.
 - **`TypeCount`** –
 
   How many entities of a type are in a state, shells (`isIncomplete`) or not (MET-02).
@@ -1161,495 +1361,61 @@ Classes:
 
   How one entity of a bulk write ended: written, or failed by a version conflict or another error.
 
-Attributes:
+### EntityDocuments
 
-- **`CLASSIFICATION_INDEX`** –
+Bases: `Protocol`
 
-  The alias of the classification index (DD-070).
-- **`CLASSIFICATION_MAPPING`** (`dict[str, Any]`) –
+The documents the indexers and the doors reach (EDS-03, DD-791).
 
-  Classification instances by type and entity; attribute values stored, not indexed (DD-070).
-- **`CLASSIFICATION_PAGE`** –
-
-  How many classification instances one search page holds.
-- **`COUNT_PAGE`** –
-
-  How many buckets one page of a composite count aggregation holds (MET-02).
-- **`ENTITY_DOCUMENTS`** –
-- **`ENTITY_FIELD_LIMIT`** –
-
-  `index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
-- **`ENTITY_INDEX`** –
-
-  The alias of the entity index (DD-043).
-- **`ENTITY_MAPPING`** (`dict[str, Any]`) –
-
-  System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched
-- **`GOV_QUALITY`** –
-
-  The indices an App Search engine searches: the entities', and the governance verdicts' (DD-534).
-- **`INDEX_PREFIX`** –
-
-  The prefix of the three aliases; tests give their own.
-- **`JOURNAL_INDEX`** –
-
-  The alias of the write journal (DD-046).
-- **`JOURNAL_PAGE`** –
-
-  How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
-- **`KEEP_SOURCE_VECTORS`** –
-
-  The entity index's setting with vectors: each document's source stays as written, vector and digits alike, and
-- **`KEYWORD_LIMIT`** –
-
-  `ignore_above` of keyword search fields: the longest value a keyword holds, in characters (DD-092).
-- **`LINKED_MODELS`** (`dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]]`) –
-- **`LOGGER`** –
-- **`REFERRING_PAGE`** –
-
-  How many referring entities one search page holds (DD-057).
-- **`RELATIONSHIP_INDEX`** –
-
-  The alias of the relationship index (DD-061).
-- **`RELATIONSHIP_MAPPING`** (`dict[str, Any]`) –
-
-  Relationships by type, label, ends and state, and the state their ends' App Search documents saw; attribute
-- **`TASK_MAPPING`** (`dict[str, Any]`) –
-
-  Tasks by status and creation time; parameters stored, not indexed (DD-079).
-- **`TASK_PAGE`** –
-
-  How many tasks one search page holds.
-- **`UNIQUE_VALUE_INDEX`** –
-
-  The alias of the unique value reservations (DD-045).
-- **`WRITE_REFRESH`** –
-
-### CLASSIFICATION\_INDEX
-
-```
-CLASSIFICATION_INDEX = f'{INDEX_PREFIX}-classifications'
-```
-
-The alias of the classification index (DD-070).
-
-### CLASSIFICATION\_MAPPING
-
-```
-CLASSIFICATION_MAPPING: dict[str, Any] = {
-    "dynamic": False,
-    "properties": {
-        "guid": _KEYWORD,
-        "typeName": _KEYWORD,
-        "superTypeNames": _KEYWORD,
-        "entityGuid": _KEYWORD,
-        "entityStatus": _KEYWORD,
-        "writeId": _KEYWORD,
-        "attributes": {"type": "object", "dynamic": False},
-    },
-}
-```
-
-Classification instances by type and entity; attribute values stored, not indexed (DD-070).
-
-### CLASSIFICATION\_PAGE
-
-```
-CLASSIFICATION_PAGE = 1000
-```
-
-How many classification instances one search page holds.
-
-### COUNT\_PAGE
-
-```
-COUNT_PAGE = 1000
-```
-
-How many buckets one page of a composite count aggregation holds (MET-02).
-
-### ENTITY\_DOCUMENTS
-
-```
-ENTITY_DOCUMENTS = 'entities'
-```
-
-### ENTITY\_FIELD\_LIMIT
-
-```
-ENTITY_FIELD_LIMIT = 100000
-```
-
-`index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
-
-### ENTITY\_INDEX
-
-```
-ENTITY_INDEX = f'{INDEX_PREFIX}-entities'
-```
-
-The alias of the entity index (DD-043).
-
-### ENTITY\_MAPPING
-
-```
-ENTITY_MAPPING: dict[str, Any] = {
-    "dynamic": False,
-    "properties": {
-        "guid": _KEYWORD,
-        "typeName": _KEYWORD,
-        "superTypeNames": _KEYWORD,
-        "state": _KEYWORD,
-        "createTime": {"type": "long"},
-        "updateTime": {"type": "long"},
-        "createdBy": _KEYWORD,
-        "updatedBy": _KEYWORD,
-        "version": {"type": "long"},
-        "isIncomplete": {"type": "boolean"},
-        "isProxy": {"type": "boolean"},
-        "provenanceType": {"type": "integer"},
-        "homeId": _KEYWORD,
-        "labels": _KEYWORD,
-        "writeId": _KEYWORD,
-        "references": _KEYWORD,
-        "relationshipGuids": _KEYWORD,
-        "classificationGuids": _KEYWORD,
-        "pendingTasks": _KEYWORD,
-        "attributes": {"type": "object", "dynamic": False},
-        "customAttributes": {"type": "object", "dynamic": False},
-        "search": {"type": "object", "dynamic": True, "subobjects": False},
-        APP_SEARCH_FIELD: app_search_mapping(),
-        QUALITY_RESULT_FIELD: quality_result_mapping(),
-        QUALITY_TOTALS_FIELD: quality_totals_mapping(),
-        GOVERNED_FIELD: {"type": "boolean"},
-    },
-    "dynamic_templates": [
-        {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
-    ],
-}
-```
-
-System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched in the typed fields of `search`, which the dynamic templates map by their kind (DD-043, DD-057, DD-088); the App Search document's fields, by name (ASD-02).
-
-### GOV\_QUALITY
-
-```
-GOV_QUALITY = 'gov-quality'
-```
-
-The indices an App Search engine searches: the entities', and the governance verdicts' (DD-534).
-
-### INDEX\_PREFIX
-
-```
-INDEX_PREFIX = 'aurelius-atlas'
-```
-
-The prefix of the three aliases; tests give their own.
-
-### JOURNAL\_INDEX
-
-```
-JOURNAL_INDEX = f'{INDEX_PREFIX}-entity-journal'
-```
-
-The alias of the write journal (DD-046).
-
-### JOURNAL\_PAGE
-
-```
-JOURNAL_PAGE = 1000
-```
-
-How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
-
-### KEEP\_SOURCE\_VECTORS
-
-```
-KEEP_SOURCE_VECTORS = {'index.mapping.exclude_source_vectors': False}
-```
-
-The entity index's setting with vectors: each document's source stays as written, vector and digits alike, and every read returns it. Elasticsearch 9.5's default rewrites the source of every document of an index that maps a vector (VEC-03, VEC-04, DD-434). Static: only an index's creation sets it.
-
-### KEYWORD\_LIMIT
-
-```
-KEYWORD_LIMIT = 8191
-```
-
-`ignore_above` of keyword search fields: the longest value a keyword holds, in characters (DD-092).
-
-### LINKED\_MODELS
-
-```
-LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]] = {
-    LinkedKind.RELATIONSHIP: StoredRelationship,
-    LinkedKind.CLASSIFICATION: StoredClassification,
-    LinkedKind.TASK: StoredTask,
-}
-```
-
-### LOGGER
-
-```
-LOGGER = logging.getLogger(__name__)
-```
-
-### REFERRING\_PAGE
-
-```
-REFERRING_PAGE = 1000
-```
-
-How many referring entities one search page holds (DD-057).
-
-### RELATIONSHIP\_INDEX
-
-```
-RELATIONSHIP_INDEX = f'{INDEX_PREFIX}-relationships'
-```
-
-The alias of the relationship index (DD-061).
-
-### RELATIONSHIP\_MAPPING
-
-```
-RELATIONSHIP_MAPPING: dict[str, Any] = {
-    "dynamic": False,
-    "properties": {
-        "guid": _KEYWORD,
-        "typeName": _KEYWORD,
-        "label": _KEYWORD,
-        "end1Guid": _KEYWORD,
-        "end2Guid": _KEYWORD,
-        "state": _KEYWORD,
-        "writeId": _KEYWORD,
-        "appSearchState": _KEYWORD,
-        "attributes": {"type": "object", "dynamic": False},
-    },
-}
-```
-
-Relationships by type, label, ends and state, and the state their ends' App Search documents saw; attribute values stored, not indexed (DD-061, DD-520).
-
-### TASK\_MAPPING
-
-```
-TASK_MAPPING: dict[str, Any] = {
-    "dynamic": False,
-    "properties": {
-        "guid": _KEYWORD,
-        "type": _KEYWORD,
-        "status": _KEYWORD,
-        "createdTime": {"type": "long"},
-        "claimedUntil": {"type": "long"},
-        "writeId": _KEYWORD,
-    },
-}
-```
-
-Tasks by status and creation time; parameters stored, not indexed (DD-079).
-
-### TASK\_PAGE
-
-```
-TASK_PAGE = 1000
-```
-
-How many tasks one search page holds.
-
-### UNIQUE\_VALUE\_INDEX
-
-```
-UNIQUE_VALUE_INDEX = f'{INDEX_PREFIX}-unique-values'
-```
-
-The alias of the unique value reservations (DD-045).
-
-### WRITE\_REFRESH
-
-```
-WRITE_REFRESH = 'true'
-```
-
-### Linked
-
-```
-Linked = StoredRelationship | StoredClassification | StoredTask
-```
-
-A document an entity lists: a relationship or a classification instance.
-
-### ElasticsearchEntityDocuments
-
-```
-ElasticsearchEntityDocuments(
-    client: AsyncElasticsearch, prefix: str = INDEX_PREFIX, *, embedding_dimensions: int | None = None
-)
-```
-
-`EntityDocuments` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046).
+A narrow contract on purpose: an indexer or a door reads entities and linked documents, finds the ones it has work for, and writes its results back — nothing else. `StoreDocuments` is the contract `EntityStore` is typed on, and it lists the rest.
 
 Methods:
 
-- **`classifications_of_types`** –
-
-  Page through the classification index for the instances of the types by GUID (DD-090).
-- **`classified`** –
-
-  Page through the entities whose `classificationGuids` hold one (DD-076): writes refresh (ENS-11).
-- **`count_linked_type`** –
-
-  Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11).
-- **`count_type`** –
-
-  Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).
-- **`delete_journal`** –
-
-  Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247).
 - **`get`** –
 
-  `mget` of the entity index: real time, as a get by id is (ENS-04).
-- **`get_journal`** –
-
-  The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).
+  The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
 - **`get_linked`** –
 
-  `mget` of the kind's index: real time (DD-061, DD-070).
+  The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
 - **`governance_rules`** –
 
-  Page through the active governance rule entities (ASG-03): writes refresh (ENS-11).
-- **`journal`** –
-
-  The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has
-- **`linked_type_counts`** –
-
-  A composite aggregation of the kind's documents by type (MET-02): writes refresh (ENS-11).
-- **`list_tasks`** –
-
-  Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
+  The active governance rule entities, by GUID (ASG-03).
 - **`naming`** –
 
-  Page through the entities whose App Search GUID fields hold one (ASU-03): writes refresh (ENS-11).
-- **`of_types`** –
-
-  Page through the entities whose `typeName` is one of these (EXP-03): writes refresh (ENS-11).
-- **`prepare`** –
-
-  Create each index behind its alias unless it exists (ENS-01).
-- **`put_journal`** –
-
-  Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).
+  The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03).
 - **`quality_holders`** –
 
-  Page through the entities holding a quality result or score totals (ASQ-07): writes refresh (ENS-11).
-- **`referring`** –
-
-  Page through the entities whose `references` hold a GUID (DD-057): writes refresh (ENS-11).
-- **`release`** –
-
-  Delete the reservation when `guid` still holds it, guarded by its version.
+  Every entity holding a quality result or score totals, by GUID (ASQ-07).
 - **`replace_verdicts`** –
 
-  One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).
-- **`reservations`** –
+  Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
+- **`results_by_field`** –
 
-  `mget` of the reservations, in real time.
-- **`reserve`** –
-
-  `op_type=create`: of two processes reserving one value, one fails (DD-045).
-- **`restore`** –
-
-  Index the state before, or delete an entity that did not exist before (DD-046).
-- **`restore_linked`** –
-
-  Put back a linked document's state before a write, or delete one the write created (DD-062).
+  The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
 - **`scores`** –
 
-  Page through the active score entities (ASQ-02): writes refresh (ENS-11).
-- **`search`** –
-
-  Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
-- **`search_app_search`** –
-
-  One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact
-- **`terms`** –
-
-  A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
+  Every active score entity, by GUID (ASQ-02).
 - **`to_govern`** –
 
-  The entities to judge by GUID, a page of them: those of a ruled type judged otherwise, those that lost
-- **`type_counts`** –
-
-  A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
+  The entities to judge, by GUID: those with a document of a type in `digests` judged by another digest
 - **`unseen_relationships`** –
 
-  The relationships deleted whose record is not, and those active whose record is, by GUID (ASU-04).
+  Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+- **`verdicts_by_entity`** –
+
+  The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+- **`verdicts_by_rule`** –
+
+  The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
 - **`without_app_search`** –
 
-  The active entities of m4i types with a document that have none, and those with a stale one, by GUID
+  Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
 - **`without_embedding`** –
 
-  The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436); with
+  Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436);
 - **`write`** –
 
-  One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
-
-Attributes:
-
-- **`aliases`** (`tuple[str, ...]`) –
-
-  The aliases of the entity index, the reservations, the journal, the linked documents' indices and the
-
-#### aliases
-
-```
-aliases: tuple[str, ...]
-```
-
-The aliases of the entity index, the reservations, the journal, the linked documents' indices and the governance verdicts' (DD-534).
-
-#### classifications\_of\_types
-
-```
-classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
-```
-
-Page through the classification index for the instances of the types by GUID (DD-090).
-
-Writes refresh (ENS-11).
-
-#### classified
-
-```
-classified(guids: Sequence[str]) -> list[VersionedEntity]
-```
-
-Page through the entities whose `classificationGuids` hold one (DD-076): writes refresh (ENS-11).
-
-#### count\_linked\_type
-
-```
-count_linked_type(kind: LinkedKind, type_name: str) -> int
-```
-
-Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11).
-
-#### count\_type
-
-```
-count_type(type_name: str) -> int
-```
-
-Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).
-
-#### delete\_journal
-
-```
-delete_journal(write_id: str) -> None
-```
-
-Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247).
+  Write and remove entities and linked documents, new (no version) or at the version given.
 
 #### get
 
@@ -1657,15 +1423,7 @@ Delete the entry, without waiting for a refresh; one already gone is fine (ENS-1
 get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 ```
 
-`mget` of the entity index: real time, as a get by id is (ENS-04).
-
-#### get\_journal
-
-```
-get_journal(write_id: str) -> JournalEntry | None
-```
-
-The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).
+The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
 
 #### get\_linked
 
@@ -1673,7 +1431,7 @@ The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).
 get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]
 ```
 
-`mget` of the kind's index: real time (DD-061, DD-070).
+The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
 
 #### governance\_rules
 
@@ -1681,31 +1439,7 @@ get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, Do
 governance_rules() -> list[VersionedEntity]
 ```
 
-Page through the active governance rule entities (ASG-03): writes refresh (ENS-11).
-
-#### journal
-
-```
-journal() -> list[JournalEntry]
-```
-
-The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has passed, long after the index's own refresh (DD-247), and acts on each as `get_journal` reads it.
-
-#### linked\_type\_counts
-
-```
-linked_type_counts(kind: LinkedKind) -> dict[str, int]
-```
-
-A composite aggregation of the kind's documents by type (MET-02): writes refresh (ENS-11).
-
-#### list\_tasks
-
-```
-list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
-```
-
-Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
+The active governance rule entities, by GUID (ASG-03).
 
 #### naming
 
@@ -1713,33 +1447,7 @@ Page through the task index by creation time (TSK-04, TSK-06): writes refresh (E
 naming(guids: Sequence[str]) -> list[VersionedEntity]
 ```
 
-Page through the entities whose App Search GUID fields hold one (ASU-03): writes refresh (ENS-11).
-
-#### of\_types
-
-```
-of_types(type_names: Sequence[str]) -> list[VersionedEntity]
-```
-
-Page through the entities whose `typeName` is one of these (EXP-03): writes refresh (ENS-11).
-
-#### prepare
-
-```
-prepare() -> None
-```
-
-Create each index behind its alias unless it exists (ENS-01).
-
-An existing entity or relationship index gets the fields it lacks mapped, as `references` (EDL-10) and `appSearchState` (DD-520); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02). With embedding on, the entity index keeps each document's source as written beside its vector: a new one is created so, and an existing one that is not moves to a new generation behind its alias first (VEC-03, DD-434, DD-439).
-
-#### put\_journal
-
-```
-put_journal(entry: JournalEntry) -> None
-```
-
-Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).
+The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03).
 
 #### quality\_holders
 
@@ -1747,23 +1455,7 @@ Index the entry under its write id, without waiting for a refresh (ENS-11, DD-24
 quality_holders() -> list[VersionedEntity]
 ```
 
-Page through the entities holding a quality result or score totals (ASQ-07): writes refresh (ENS-11).
-
-#### referring
-
-```
-referring(guids: Sequence[str]) -> list[VersionedEntity]
-```
-
-Page through the entities whose `references` hold a GUID (DD-057): writes refresh (ENS-11).
-
-#### release
-
-```
-release(key: str, guid: str) -> None
-```
-
-Delete the reservation when `guid` still holds it, guarded by its version.
+Every entity holding a quality result or score totals, by GUID (ASQ-07).
 
 #### replace\_verdicts
 
@@ -1771,45 +1463,17 @@ Delete the reservation when `guid` still holds it, guarded by its version.
 replace_verdicts(verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None
 ```
 
-One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).
+Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
 
-Raises:
-
-- `RuntimeError` –
-
-  Elasticsearch refused an action of the request, so an entity keeps a verdict it no longer holds or misses one it gained (ASG-06, DD-705).
-
-#### reservations
+#### results\_by\_field
 
 ```
-reservations(keys: Sequence[str]) -> dict[str, Reservation]
+results_by_field(field_guid: str) -> list[StoredQualityResult]
 ```
 
-`mget` of the reservations, in real time.
+The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
 
-#### reserve
-
-```
-reserve(reservation: Reservation) -> Reservation | None
-```
-
-`op_type=create`: of two processes reserving one value, one fails (DD-045).
-
-#### restore
-
-```
-restore(guid: str, before: StoredEntity | None) -> None
-```
-
-Index the state before, or delete an entity that did not exist before (DD-046).
-
-#### restore\_linked
-
-```
-restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
-```
-
-Put back a linked document's state before a write, or delete one the write created (DD-062).
+The same paged read `scores()` runs, filtered over `qualityResult.fieldguid` (ASQ-03's keyword); a score holding no result answers no row, and a field no score names answers the empty list. The read door joins these rows into a field's view (VDR-16).
 
 #### scores
 
@@ -1817,17 +1481,245 @@ Put back a linked document's state before a write, or delete one the write creat
 scores() -> list[VersionedEntity]
 ```
 
-Page through the active score entities (ASQ-02): writes refresh (ENS-11).
+Every active score entity, by GUID (ASQ-02).
 
-#### search
+#### to\_govern
 
 ```
-search(query: SearchQuery) -> SearchHits
+to_govern(digests: Mapping[str, str], limit: int) -> list[VersionedEntity]
 ```
 
-Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
+The entities to judge, by GUID: those with a document of a type in `digests` judged by another digest or none, and those with verdicts no longer judged (ASG-06, DD-535).
 
-Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093). A vector is a `knn` search with the same filters inside it, so they apply before the nearest are picked; with free text, an entity's score is the sum (DD-441, DD-442).
+#### unseen\_relationships
+
+```
+unseen_relationships(limit: int) -> list[VersionedRelationship]
+```
+
+Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+
+#### verdicts\_by\_entity
+
+```
+verdicts_by_entity(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]
+```
+
+The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+
+Each group is in document id order, and an entity with no verdicts has no key. The doors answer a card's `verdicts` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
+
+#### verdicts\_by\_rule
+
+```
+verdicts_by_rule(rule_guid: str) -> list[StoredVerdict]
+```
+
+The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
+
+The same paged read as `verdicts_by_entity`, filtered over `guid`; a rule with no verdict documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).
+
+#### without\_app\_search
+
+```
+without_app_search(limit: int) -> list[VersionedEntity]
+```
+
+Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04, ASU-02).
+
+#### without\_embedding
+
+```
+without_embedding(model: str, limit: int, *, wait_for_documents: bool = False) -> list[VersionedEntity]
+```
+
+Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436); with `wait_for_documents`, also those awaiting their App Search document (EMC-04, DD-540).
+
+#### write
+
+```
+write(
+    items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
+    removed: Sequence[tuple[str, DocumentVersion]] = (),
+    linked: Mapping[LinkedKind, LinkedWrite] | None = None,
+) -> list[WriteResult]
+```
+
+Write and remove entities and linked documents, new (no version) or at the version given.
+
+One bulk request; the results are in order: entities written, removed, then each kind's written, removed (DD-056, DD-062, DD-071).
+
+### JournalEntry
+
+Bases: `AtlasModel`
+
+A write in flight: its id, lease, the entities' states before it, its reservations, releases and removals.
+
+DD-046, DD-056.
+
+Methods:
+
+- **`before_entity`** –
+
+  The state of `guid` before the write, or None for an entity the write created.
+- **`before_linked`** –
+
+  The state of a linked document before the write, or None for one the write created (DD-062, DD-071).
+
+Attributes:
+
+- **`before`** (`dict[str, dict[str, Any] | None]`) –
+- **`committed`** (`bool`) –
+- **`lease_until`** (`int`) –
+- **`linked_before`** (`dict[str, dict[str, dict[str, Any] | None]]`) –
+- **`released`** (`list[str]`) –
+- **`removed`** (`list[str]`) –
+- **`removed_linked`** (`dict[str, list[str]]`) –
+- **`reserved`** (`list[str]`) –
+- **`write_id`** (`str`) –
+
+#### before
+
+```
+before: dict[str, dict[str, Any] | None] = Field(default_factory=dict)
+```
+
+#### committed
+
+```
+committed: bool = False
+```
+
+#### lease\_until
+
+```
+lease_until: int
+```
+
+#### linked\_before
+
+```
+linked_before: dict[str, dict[str, dict[str, Any] | None]] = Field(default_factory=dict)
+```
+
+#### released
+
+```
+released: list[str] = Field(default_factory=list)
+```
+
+#### removed
+
+```
+removed: list[str] = Field(default_factory=list)
+```
+
+#### removed\_linked
+
+```
+removed_linked: dict[str, list[str]] = Field(default_factory=dict)
+```
+
+#### reserved
+
+```
+reserved: list[str] = Field(default_factory=list)
+```
+
+#### write\_id
+
+```
+write_id: str
+```
+
+#### before\_entity
+
+```
+before_entity(guid: str) -> StoredEntity | None
+```
+
+The state of `guid` before the write, or None for an entity the write created.
+
+#### before\_linked
+
+```
+before_linked(kind: LinkedKind, guid: str) -> Linked | None
+```
+
+The state of a linked document before the write, or None for one the write created (DD-062, DD-071).
+
+### LinkedWrite
+
+```
+LinkedWrite(
+    written: Sequence[tuple[Linked, DocumentVersion | None]] = (), removed: Sequence[tuple[str, DocumentVersion]] = ()
+)
+```
+
+What a write does to the documents of one `LinkedKind`: written ones at a version or new, removed ones.
+
+Attributes:
+
+- **`removed`** (`Sequence[tuple[str, DocumentVersion]]`) –
+- **`written`** (`Sequence[tuple[Linked, DocumentVersion | None]]`) –
+
+#### removed
+
+```
+removed: Sequence[tuple[str, DocumentVersion]] = ()
+```
+
+#### written
+
+```
+written: Sequence[tuple[Linked, DocumentVersion | None]] = ()
+```
+
+### Reservation
+
+Bases: `AtlasModel`
+
+A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+
+`key` is the document's id, not part of its source, so it stays out of `to_json` (DD-560).
+
+Attributes:
+
+- **`guid`** (`str`) –
+- **`key`** (`str`) –
+- **`write_id`** (`str`) –
+
+#### guid
+
+```
+guid: str
+```
+
+#### key
+
+```
+key: str = Field(exclude=True)
+```
+
+#### write\_id
+
+```
+write_id: str
+```
+
+### SearchDocuments
+
+Bases: `Protocol`
+
+The one search the App Search engine and the view door run on (QRY-05, DD-770).
+
+A narrow contract on purpose: an App Search search needs the engine's field table, its nested index paths and its weighted vector scoring, so the in-memory store answers the basic search and the terms search it already answers and does not become a third query engine. Specs that drive an engine pass a small fake for this method, the pattern `FakeEmbedder` uses.
+
+Methods:
+
+- **`search_app_search`** –
+
+  One search of an engine's index: hits with scores, the exact total, the aggregations (DD-523, DD-534).
 
 #### search\_app\_search
 
@@ -1844,102 +1736,15 @@ search_app_search(
 ) -> Mapping[str, Any]
 ```
 
-One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact total, the aggregations (DD-523). A `knn` searches the nearest with its own filter inside, the scores of both added (ASV-03, DD-596). Writes refresh (ENS-11).
+One search of an engine's index: hits with scores, the exact total, the aggregations (DD-523, DD-534).
 
-#### terms
+### StoreDocuments
 
-```
-terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
-```
+Bases: `EntityDocuments`, `Protocol`
 
-A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
+The documents `EntityStore` keeps: everything the narrow contract has, plus the store's reads.
 
-#### to\_govern
-
-```
-to_govern(digests: Mapping[str, str], limit: int) -> list[VersionedEntity]
-```
-
-The entities to judge by GUID, a page of them: those of a ruled type judged otherwise, those that lost their verdicts' cause (ASG-06, DD-535).
-
-#### type\_counts
-
-```
-type_counts() -> list[TypeCount]
-```
-
-A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
-
-#### unseen\_relationships
-
-```
-unseen_relationships(limit: int) -> list[VersionedRelationship]
-```
-
-The relationships deleted whose record is not, and those active whose record is, by GUID (ASU-04).
-
-#### without\_app\_search
-
-```
-without_app_search(limit: int) -> list[VersionedEntity]
-```
-
-The active entities of m4i types with a document that have none, and those with a stale one, by GUID (LAS-01, ASD-04, ASU-02, DD-500).
-
-#### without\_embedding
-
-```
-without_embedding(model: str, limit: int, *, wait_for_documents: bool = False) -> list[VersionedEntity]
-```
-
-The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436); with `wait_for_documents`, also those awaiting their App Search document (EMC-04, DD-540).
-
-#### write
-
-```
-write(
-    items: Sequence[tuple[StoredEntity, DocumentVersion | None]],
-    removed: Sequence[tuple[str, DocumentVersion]] = (),
-    linked: Mapping[LinkedKind, LinkedWrite] | None = None,
-) -> list[WriteResult]
-```
-
-One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
-
-DD-047, DD-056, DD-062, DD-071.
-
-### EmbeddingDimensionsError
-
-```
-EmbeddingDimensionsError(mapped: int, configured: int)
-```
-
-Bases: `RuntimeError`
-
-The entity index maps vectors of other dimensions than the configured ones (VEC-03, DD-438).
-
-Attributes:
-
-- **`configured`** –
-- **`mapped`** –
-
-#### configured
-
-```
-configured = configured
-```
-
-#### mapped
-
-```
-mapped = mapped
-```
-
-### EntityDocuments
-
-Bases: `Protocol`
-
-Where `EntityStore` keeps entities, reservations and its journal.
+The store drives writes, reservations, the journal, the counts, and the searches the basic door answers, so it is typed on the wide contract; an indexer or a door stays on the narrow one (EDS-03, DD-791).
 
 Methods:
 
@@ -2015,6 +1820,9 @@ Methods:
 - **`restore_linked`** –
 
   Put back a linked document's state before a write, or delete one the write created (DD-062).
+- **`results_by_field`** –
+
+  The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
 - **`scores`** –
 
   Every active score entity, by GUID (ASQ-02).
@@ -2033,6 +1841,12 @@ Methods:
 - **`unseen_relationships`** –
 
   Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+- **`verdicts_by_entity`** –
+
+  The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+- **`verdicts_by_rule`** –
+
+  The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
 - **`without_app_search`** –
 
   Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
@@ -2235,6 +2049,16 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 
 Put back a linked document's state before a write, or delete one the write created (DD-062).
 
+#### results\_by\_field
+
+```
+results_by_field(field_guid: str) -> list[StoredQualityResult]
+```
+
+The quality results of the active scores naming this field, in score GUID order (ASQ-09, DD-862).
+
+The same paged read `scores()` runs, filtered over `qualityResult.fieldguid` (ASQ-03's keyword); a score holding no result answers no row, and a field no score names answers the empty list. The read door joins these rows into a field's view (VDR-16).
+
 #### scores
 
 ```
@@ -2283,6 +2107,26 @@ unseen_relationships(limit: int) -> list[VersionedRelationship]
 
 Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
 
+#### verdicts\_by\_entity
+
+```
+verdicts_by_entity(entity_guids: Sequence[str]) -> dict[str, list[StoredVerdict]]
+```
+
+The stored governance verdicts of these entities, grouped by entity GUID (ASG-08, DD-838).
+
+Each group is in document id order, and an entity with no verdicts has no key. The doors answer a card's `verdicts` from this read (VDR-13), so a whole page costs one paged search (DD-836's pattern).
+
+#### verdicts\_by\_rule
+
+```
+verdicts_by_rule(rule_guid: str) -> list[StoredVerdict]
+```
+
+The stored governance verdicts of one rule, in document id order (ASG-09, DD-845).
+
+The same paged read as `verdicts_by_entity`, filtered over `guid`; a rule with no verdict documents answers the empty list. The verdicts door answers its rows from this read (VDR-14).
+
 #### without\_app\_search
 
 ```
@@ -2312,194 +2156,6 @@ write(
 Write and remove entities and linked documents, new (no version) or at the version given.
 
 One bulk request; the results are in order: entities written, removed, then each kind's written, removed (DD-056, DD-062, DD-071).
-
-### JournalEntry
-
-Bases: `AtlasModel`
-
-A write in flight: its id, lease, the entities' states before it, its reservations, releases and removals.
-
-DD-046, DD-056.
-
-Methods:
-
-- **`before_entity`** –
-
-  The state of `guid` before the write, or None for an entity the write created.
-- **`before_linked`** –
-
-  The state of a linked document before the write, or None for one the write created (DD-062, DD-071).
-
-Attributes:
-
-- **`before`** (`dict[str, dict[str, Any] | None]`) –
-- **`committed`** (`bool`) –
-- **`lease_until`** (`int`) –
-- **`linked_before`** (`dict[str, dict[str, dict[str, Any] | None]]`) –
-- **`released`** (`list[str]`) –
-- **`removed`** (`list[str]`) –
-- **`removed_linked`** (`dict[str, list[str]]`) –
-- **`reserved`** (`list[str]`) –
-- **`write_id`** (`str`) –
-
-#### before
-
-```
-before: dict[str, dict[str, Any] | None] = Field(default_factory=dict)
-```
-
-#### committed
-
-```
-committed: bool = False
-```
-
-#### lease\_until
-
-```
-lease_until: int
-```
-
-#### linked\_before
-
-```
-linked_before: dict[str, dict[str, dict[str, Any] | None]] = Field(default_factory=dict)
-```
-
-#### released
-
-```
-released: list[str] = Field(default_factory=list)
-```
-
-#### removed
-
-```
-removed: list[str] = Field(default_factory=list)
-```
-
-#### removed\_linked
-
-```
-removed_linked: dict[str, list[str]] = Field(default_factory=dict)
-```
-
-#### reserved
-
-```
-reserved: list[str] = Field(default_factory=list)
-```
-
-#### write\_id
-
-```
-write_id: str
-```
-
-#### before\_entity
-
-```
-before_entity(guid: str) -> StoredEntity | None
-```
-
-The state of `guid` before the write, or None for an entity the write created.
-
-#### before\_linked
-
-```
-before_linked(kind: LinkedKind, guid: str) -> Linked | None
-```
-
-The state of a linked document before the write, or None for one the write created (DD-062, DD-071).
-
-### LinkedKind
-
-Bases: `StrEnum`
-
-The documents an entity lists besides itself, each in an index of its own (DD-061, DD-070).
-
-Attributes:
-
-- **`CLASSIFICATION`** –
-- **`RELATIONSHIP`** –
-- **`TASK`** –
-
-#### CLASSIFICATION
-
-```
-CLASSIFICATION = 'classifications'
-```
-
-#### RELATIONSHIP
-
-```
-RELATIONSHIP = 'relationships'
-```
-
-#### TASK
-
-```
-TASK = 'tasks'
-```
-
-### LinkedWrite
-
-```
-LinkedWrite(
-    written: Sequence[tuple[Linked, DocumentVersion | None]] = (), removed: Sequence[tuple[str, DocumentVersion]] = ()
-)
-```
-
-What a write does to the documents of one `LinkedKind`: written ones at a version or new, removed ones.
-
-Attributes:
-
-- **`removed`** (`Sequence[tuple[str, DocumentVersion]]`) –
-- **`written`** (`Sequence[tuple[Linked, DocumentVersion | None]]`) –
-
-#### removed
-
-```
-removed: Sequence[tuple[str, DocumentVersion]] = ()
-```
-
-#### written
-
-```
-written: Sequence[tuple[Linked, DocumentVersion | None]] = ()
-```
-
-### Reservation
-
-Bases: `AtlasModel`
-
-A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
-
-`key` is the document's id, not part of its source, so it stays out of `to_json` (DD-560).
-
-Attributes:
-
-- **`guid`** (`str`) –
-- **`key`** (`str`) –
-- **`write_id`** (`str`) –
-
-#### guid
-
-```
-guid: str
-```
-
-#### key
-
-```
-key: str = Field(exclude=True)
-```
-
-#### write\_id
-
-```
-write_id: str
-```
 
 ### TypeCount
 
@@ -2743,6 +2399,9 @@ Attributes:
 - **`governed_source`** (`str | None`) –
 
   The hash of what the verdicts read on the entity; a write that changes it drops both marks (DD-535).
+- **`hasparent`** (`bool`) –
+
+  Whether the entity holds any parent (RPS-06, DD-758).
 - **`name`** (`str | None`) –
 - **`parentguid`** (`str | None`) –
 - **`referenceablequalifiedname`** (`str`) –
@@ -2955,6 +2614,16 @@ governed_source: str | None = None
 ```
 
 The hash of what the verdicts read on the entity; a write that changes it drops both marks (DD-535).
+
+#### hasparent
+
+```
+hasparent: bool = False
+```
+
+Whether the entity holds any parent (RPS-06, DD-758).
+
+`parentguid` alone cannot answer a search filter for it: an entity with no parent has no `parentguid` in the document, and Elasticsearch reads a missing field as neither true nor false.
 
 #### name
 
