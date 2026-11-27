@@ -66,6 +66,11 @@ limit_req_zone $atlas_api_limit_addr zone=atlas_lineage_model:10m rate=600r/m;
 # /lineage-model/ (an editor validates on a debounced cadence; a flood is
 # sustained).
 limit_req_zone $atlas_api_limit_addr zone=atlas_validate_entity:10m rate=600r/m;
+# The MCP twin (21.2, MCP-19, DD-894): the front door verifies every caller
+# (MCP-08), but the 401 path is still work — the same browser-sized bucket as
+# /validate-entity/ (an agent session opens once and streams; a flood is
+# sustained).
+limit_req_zone $atlas_api_limit_addr zone=atlas_mcp:10m rate=600r/m;
 limit_req_status 429;
 
 # Native edge tracing (SHL-15, DD-239): every /api/ request gets an edge span
@@ -291,6 +296,38 @@ server {
         proxy_ssl_verify on;
         proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE};
         proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM_NAME};
+        proxy_redirect off;
+    }
+
+    # The MCP front door (21.2, MCP-19, DD-894): an agent opens one Streamable
+    # HTTP session here and reads responses as they land, so this leg buffers
+    # nothing and never times out a long tool call mid-stream. The prefix is
+    # kept, not stripped — the MCP app serves /mcp itself (21.1's URL), unlike
+    # the aux siblings that serve at their root. The app verifies the bearer
+    # token itself (MCP-08) — nginx adds no auth of its own, an anonymous
+    # request reaches the gate's 401. The prefix carries user bearer tokens,
+    # so the upstream certificate is verified exactly as /api/'s is
+    # (DD-142's reason: unverified, a path attacker harvests tokens).
+    location /mcp {
+        limit_req zone=atlas_mcp burst=100 nodelay;
+
+        set $mcp_upstream ${AURELIUS_ATLAS_WEBAPP_MCP_UPSTREAM};
+        proxy_pass $mcp_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # The streaming pair (DD-894): buffering or a stock 60s read timeout
+        # turns a long tool call into a broken pipe; 1.1 with an empty
+        # Connection keeps the hop reusable for the session's follow-ups.
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE};
+        proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_MCP_UPSTREAM_NAME};
         proxy_redirect off;
     }
 

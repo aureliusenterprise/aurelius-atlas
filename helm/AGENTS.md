@@ -22,6 +22,8 @@ observability workloads; 10.4 secrets + publish; 10.5 cluster validation;
 - Component charts (the map; each project's `AGENTS.md` covers its own):
   `atlas-server` + `atlas-webapp` in `apps/aurelius-atlas-{server,webapp}/helm`,
   the three aux APIs in `apps/aurelius-atlas-{data2model,lineage-model,validate-entity}/helm`,
+  the MCP front door in `apps/aurelius-atlas-mcp/helm` (21.2 — the aux chart
+  shape without the credential join, DD-893),
   `atlas-elasticsearch` in `infra/elasticsearch/helm`, `atlas-keycloak` in
   `infra/keycloak/helm`, `atlas-observability` in `infra/observability/helm`.
 - Every chart ships `tests/values.test.yaml` (its CHT-06 render inputs) and a

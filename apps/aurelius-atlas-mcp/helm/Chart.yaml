@@ -1,0 +1,11 @@
+apiVersion: v2
+name: atlas-mcp
+description: "The MCP front door: twelve catalogue tools over the Model Context Protocol (increment 21.1, ADR 072)."
+type: application
+version: 0.1.0-rc.12
+appVersion: "v0.1.0-rc.12"
+keywords:
+    - aurelius-atlas
+home: https://aureliusenterprise.github.io/aurelius-atlas/
+sources:
+    - https://github.com/aureliusenterprise/aurelius-atlas

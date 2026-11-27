@@ -1,16 +1,20 @@
-"""Chart-contract suite for the three aux API charts (CHT-27/28, 10.3a).
+"""Chart-contract suite for the four aux API charts (CHT-27/28, 10.3a; MCP-20/22, 21.2).
 
-The aux apps (data2model, lineage-model, validate-entity) share one template
-family, so the rules are parametrized across all three. CHT-27 pins the
-per-Service leaf certificate; CHT-28 applies to lineage-model only — its two
-upstream URLs are joins to the co-deployed Services (DD-294's second finding:
-settings.py requires both with no defaults).
+The aux apps (data2model, lineage-model, validate-entity, mcp) share one
+template family, so the shape rules are parametrized across all four. CHT-27
+pins the per-Service leaf certificate; CHT-28 applies to lineage-model only —
+its two upstream URLs are joins to the co-deployed Services (DD-294's second
+finding: settings.py requires both with no defaults). MCP is the aux shape
+without a credential (DD-893): it joins no telemetry roster, so the OTLP
+parametrizations run over the three credential-bearing charts and the MCP
+absence is pinned in its own case.
 """
 
 from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from conftest import (
     AUX_CHARTS,
     env_map,
@@ -25,6 +29,10 @@ from conftest import (
 )
 
 AUX = sorted(AUX_CHARTS)
+
+# The three aux charts that carry the OTLP leg; MCP has none (DD-893 — the
+# front door mints nothing: it has no service identity to mint with, DV-208).
+AUX_CREDENTIALED = [c for c in AUX if c != "mcp"]
 
 
 @pytest.fixture(scope="session", params=AUX)
@@ -107,7 +115,7 @@ def test__lineage_admits_the_browser_client(lineage_docs: list[dict[str, Any]]) 
 
 
 @pytest.mark.covers(rules=["CHT-42", "CHT-90"])
-@pytest.mark.parametrize("component", AUX)
+@pytest.mark.parametrize("component", AUX_CREDENTIALED)
 def test__telemetry_join_names_collector_and_public_issuer(component: str) -> None:
     """telemetry.enabled wires the per-service OTLP join (CHT-21's twin, CHT-42).
 
@@ -159,7 +167,7 @@ def test__auth_realm_follows_the_global_realm(component: str) -> None:
 
 
 @pytest.mark.covers(rules=["CHT-90", "CHT-91"])
-@pytest.mark.parametrize("component", AUX)
+@pytest.mark.parametrize("component", AUX_CREDENTIALED)
 def test__master_realm_join_falls_back_to_the_shared_key(component: str) -> None:
     """global.realm=master restores the shared ingest key on the join (CHT-90/91).
 
@@ -197,10 +205,13 @@ _PREFIXES = {
     "data2model": "AURELIUS_ATLAS_DATA2MODEL_",
     "lineage-model": "AURELIUS_ATLAS_LINEAGE_MODEL_",
     "validate-entity": "AURELIUS_ATLAS_VALIDATE_ENTITY_",
+    "mcp": "AURELIUS_ATLAS_MCP_",
 }
 
-# The ingest client each aux chart is (CHT-90): the key it joins on in the
-# <release>-otel-clients Secret on a non-master realm (DD-277).
+# The ingest client each credential-bearing aux chart is (CHT-90): the key it
+# joins on in the <release>-otel-clients Secret on a non-master realm
+# (DD-277). MCP has none — the absence is the rule (DD-893, DV-208), pinned
+# by test__mcp_renders_no_credential_even_with_telemetry_on.
 _OTEL_CLIENT_IDS = {
     "data2model": "otel-data2model",
     "lineage-model": "otel-lineage-model",
@@ -329,6 +340,89 @@ def test__validate_entity_catalogue_leg_joins_server_secret_and_issuer(tmp_path:
     envs = env_map(_app(docs))
     join = envs["AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert join == {"name": "my-leg-secret", "key": "client-secret"}
+
+
+@pytest.mark.covers(rules=["MCP-19"])
+def test__mcp_admits_the_webapp() -> None:
+    """21005 accepts the webapp join only (21.2, MCP-19, DD-894).
+
+    An agent never dials this API — the webapp's nginx /mcp location is the
+    one front door (the deployment decision for 21.2), the same shape the
+    webapp's chart pins for /validate-entity/ (EDT-22's sibling).
+    """
+    chart = AUX_CHARTS["mcp"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    policy = find(docs, "NetworkPolicy", "atlas-mcp-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-mcp")
+    assert policy_peers_by_port(docs, "atlas-mcp-ingress") == {21005: {"atlas-webapp"}}
+
+    off = helm_render(chart, value_files=(chart / "tests/values.test.yaml",), sets=("networkPolicy.enabled=false",))
+    assert names(off, "NetworkPolicy") == set()
+
+
+@pytest.mark.covers(rules=["MCP-02"])
+def test__mcp_verifies_the_browser_client() -> None:
+    """The chart verifies the browser client's own audience (21.1 MCP-02, DD-890).
+
+    An agent mints the token the webapp's browser mints and the app forwards
+    it unchanged, so the audience is `aurelius` itself (AUX-04, DV-75) — the
+    validate-entity/data2model shape, no extra-audiences join: the app keeps
+    no own client identity anywhere (DV-208).
+    """
+    chart = AUX_CHARTS["mcp"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    envs = env_map(_app(docs))
+    assert env_value(envs, "AURELIUS_ATLAS_MCP_AUTH_AUDIENCE") == "aurelius"
+    assert "AURELIUS_ATLAS_MCP_AUTH_EXTRA_AUDIENCES" not in envs
+
+
+@pytest.mark.covers(rules=["MCP-21"])
+def test__mcp_catalogue_legs_are_joins() -> None:
+    """The two catalogue legs join the co-deployed Services (21.2, MCP-21, DD-895).
+
+    SERVER_BASE_URL (every discovery, read, write and typedef tool) and
+    VALIDATE_ENTITY_BASE_URL (the verdicts tool, MCP-12) both derive from the
+    sibling chart names (CHT-28's shape) and each takes its own override by
+    name — the siblingService rule the aux charts share.
+    """
+    chart = AUX_CHARTS["mcp"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    envs = env_map(_app(docs))
+    assert env_value(envs, "AURELIUS_ATLAS_MCP_SERVER_BASE_URL") == "https://atlas-server:21000"
+    assert env_value(envs, "AURELIUS_ATLAS_MCP_VALIDATE_ENTITY_BASE_URL") == "https://atlas-validate-entity:21003"
+
+    # Named overrides win, per leg (CHT-28's rule).
+    docs = helm_render(
+        chart,
+        value_files=(chart / "tests/values.test.yaml",),
+        sets=("atlas.service=our-catalogue", "validateEntity.service=our-verdicts"),
+    )
+    envs = env_map(_app(docs))
+    assert env_value(envs, "AURELIUS_ATLAS_MCP_SERVER_BASE_URL") == "https://our-catalogue:21000"
+    assert env_value(envs, "AURELIUS_ATLAS_MCP_VALIDATE_ENTITY_BASE_URL") == "https://our-verdicts:21003"
+
+
+@pytest.mark.covers(rules=["MCP-22"])
+def test__mcp_renders_no_credential_even_with_telemetry_on() -> None:
+    """The front door names no secret, under any values (21.2, MCP-22, DD-893).
+
+    The aux family's credential joins — a service client secret, a TOKEN_URL
+    to mint with, the OTLP leg and its ingest client — all need an identity
+    this app does not have (DV-208): every call carries the caller's own
+    token. Even a telemetry.enabled=true render stays empty, because the
+    deployment template carries no such block to switch on.
+    """
+    chart = AUX_CHARTS["mcp"]
+    for sets in ((), ("telemetry.enabled=true",)):
+        docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",), sets=sets)
+        envs = env_map(_app(docs))
+        assert not [k for k in envs if "CLIENT_SECRET" in k], sets
+        assert not [k for k in envs if k.endswith("TOKEN_URL")], sets
+        assert not [k for k in envs if k.endswith("OTEL_ENDPOINT")], sets
+        assert not [k for k in envs if "OTEL_" in k], sets
+        rendered = yaml.dump(docs)
+        assert "secretKeyRef" not in rendered, sets  # tls mounts are `secret:`, not refs
+        assert "otel-clients" not in rendered, sets
 
 
 @pytest.mark.covers(rules=["LDG-06"])

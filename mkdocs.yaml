@@ -202,6 +202,7 @@ nav:
                 - 068. A catalogue bootstraps only the metamodel it serves: architecture/adr/068-a-catalogue-bootstraps-only-the-metamodel-it-serves.md
                 - 069. Each browser-facing surface answers on its own hostname: architecture/adr/069-each-browser-facing-surface-answers-on-its-own-hostname.md
                 - 070. The catalogue ships one prose attribute: architecture/adr/070-the-catalogue-ships-one-prose-attribute.md
+                - 072. The catalogue answers agents through MCP: architecture/adr/072-the-catalogue-answers-agents-through-mcp.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md

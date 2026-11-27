@@ -72,8 +72,9 @@ dnsResolver: ""
 
 # The upstreams the nginx template names (placeholders _API_UPSTREAM,
 # _API_UPSTREAM_NAME, _OTEL_UPSTREAM, _OTEL_UPSTREAM_NAME, the
-# _LINEAGE_MODEL pair of 7.22a, and the _VALIDATE_ENTITY pair of 7.24).
-# "" defaults in 10.3: server/collector/lineage-model/validate-entity
+# _LINEAGE_MODEL pair of 7.22a, the _VALIDATE_ENTITY pair of 7.24, and the
+# _MCP pair of 21.2).
+# "" defaults in 10.3: server/collector/lineage-model/validate-entity/mcp
 # service DNS in this namespace. _NAME is the
 # proxy_ssl_name — it must match the upstream certificate's SAN (DD-286).
 nginx:
@@ -85,6 +86,8 @@ nginx:
     lineageModelUpstreamName: ""
     validateEntityUpstream: ""
     validateEntityUpstreamName: ""
+    mcpUpstream: ""
+    mcpUpstreamName: ""
     # Override for the edge exporter's endpoint — the template's
     # _OTLP_ENDPOINT, nginx's own edge-span leg (DD-239). "" derives
     # https://<collector>:<collector.legacyGrpcPort> (CHT-25). The SPA's
@@ -173,6 +176,12 @@ lineageModel:
 validateEntity:
     service: ""
     port: 21003
+# The MCP front door this nginx proxies /mcp to (21.2, MCP-19, DD-894):
+# the agent data path (MCP-01). The prefix is kept — the app serves /mcp
+# itself, unlike the aux siblings that serve at their root.
+mcp:
+    service: ""
+    port: 21005
 collector:
     service: ""
     # The browser leg (OTLP/HTTP + OIDC) — the /otel/ proxy's upstream

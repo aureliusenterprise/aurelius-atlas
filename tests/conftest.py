@@ -32,6 +32,10 @@ AUX_CHARTS = {
     "data2model": WORKSPACE / "apps/aurelius-atlas-data2model/helm",
     "lineage-model": WORKSPACE / "apps/aurelius-atlas-lineage-model/helm",
     "validate-entity": WORKSPACE / "apps/aurelius-atlas-validate-entity/helm",
+    # 21.2 (DD-893): the aux shape without a credential — no client secret,
+    # no OTel client (DV-208). It shares the parametrized shape but joins no
+    # telemetry roster.
+    "mcp": WORKSPACE / "apps/aurelius-atlas-mcp/helm",
 }
 SCANNER_CHARTS = {
     "quality-scanner": WORKSPACE / "apps/aurelius-atlas-quality-scanner/helm",

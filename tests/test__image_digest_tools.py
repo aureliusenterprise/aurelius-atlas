@@ -136,7 +136,7 @@ def test__workspace_triples_match_the_committed_pin_map() -> None:
         assert triple.digest == PINNED[triple.repository], triple.repository
 
 
-# The six Aurelius image blocks and where each one's digest field lives
+# The seven Aurelius image blocks and where each one's digest field lives
 # (dotted path into its chart's values). CHT-94: not digest-pinned — the
 # fields exist for operators and stay empty in every committed values file.
 AURELIUS_DIGEST_PATHS = {
@@ -145,13 +145,14 @@ AURELIUS_DIGEST_PATHS = {
     "apps/aurelius-atlas-data2model/helm/values.yaml": "image",
     "apps/aurelius-atlas-lineage-model/helm/values.yaml": "image",
     "apps/aurelius-atlas-validate-entity/helm/values.yaml": "image",
+    "apps/aurelius-atlas-mcp/helm/values.yaml": "image",
     "infra/elasticsearch/helm/values.yaml": "agent.image",
 }
 
 
 @pytest.mark.covers(rules=["CHT-94"])
 def test__repo_keeps_aurelius_digest_fields_empty() -> None:
-    r"""The six Aurelius blocks carry digest: "" — the pipeline bakes nothing (CHT-94)."""
+    r"""The seven Aurelius blocks carry digest: "" — the pipeline bakes nothing (CHT-94)."""
     for values_rel, dotted in AURELIUS_DIGEST_PATHS.items():
         block = yaml.safe_load((WORKSPACE / values_rel).read_text())
         for part in dotted.split("."):

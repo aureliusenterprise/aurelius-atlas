@@ -43,7 +43,7 @@ Your host and your certificates below).
 
 The seven app pieces name the folder they mount through a required variable, so a stack that names no folder
 fails the start with that folder's name and never reads a path of this repository (SBD-12, DD-687). In a
-checkout `docker/stack.env` answers the eight names, and the commands below need no extra argument. An install
+checkout `docker/stack.env` answers the nine names, and the commands below need no extra argument. An install
 that ships the stack without the repository names them in its own `.env`, as `docker/.env.example` explains.
 
 ```bash
@@ -67,13 +67,13 @@ Tenants). One sign-in serves the webapp and the dashboards, as they share the re
 console's own session does not sign you in to them. The certificate is the dev CA's, so the browser
 asks once, for `localhost:9000`.
 
-The six images are the `:local` tags `npx nx docker-build` of each project builds from the checkout. Each
+The seven images are the `:local` tags `npx nx docker-build` of each project builds from the checkout. Each
 piece names its image through a compose variable: `SERVER_IMAGE`, `WEBAPP_IMAGE`, `EMBEDDER_IMAGE`,
-`DATA2MODEL_IMAGE`, `LINEAGE_MODEL_IMAGE`, `VALIDATE_ENTITY_IMAGE`. An install that runs published images
-sets those six values and leaves the defaults alone. The embedder and the three aux
-services need their own certificates too: `npx nx certgen aurelius-atlas-embedder`,
-`npx nx certgen aurelius-atlas-data2model`, `npx nx certgen aurelius-atlas-lineage-model` and
-`npx nx certgen aurelius-atlas-validate-entity`.
+`DATA2MODEL_IMAGE`, `LINEAGE_MODEL_IMAGE`, `VALIDATE_ENTITY_IMAGE` and `MCP_IMAGE`. An install that
+runs published images sets those seven values and leaves the defaults alone. The embedder and the four
+aux services need their own certificates too: `npx nx certgen aurelius-atlas-embedder`,
+`npx nx certgen aurelius-atlas-data2model`, `npx nx certgen aurelius-atlas-lineage-model`,
+`npx nx certgen aurelius-atlas-validate-entity` and `npx nx certgen aurelius-atlas-mcp`.
 
 ## A sample dataset
 
@@ -252,7 +252,8 @@ piece (ADR 065, DD-677) — the gateway from `docker/gateway/`, the server and i
 `apps/aurelius-atlas-server/docker/`, the webapp from `apps/aurelius-atlas-webapp/docker/`, the extractor from
 `apps/aurelius-atlas-data2model/docker/`, the lineage API from
 `apps/aurelius-atlas-lineage-model/docker/`, the validator from
-`apps/aurelius-atlas-validate-entity/docker/` (DD-674), the embedder from
+`apps/aurelius-atlas-validate-entity/docker/` (DD-674), the agent front door from
+`apps/aurelius-atlas-mcp/docker/` (21.2, DD-894), the embedder from
 `apps/aurelius-atlas-embedder/docker/`, the telemetry piece from `docker/observability/` (DD-675),
 and the store and the identity provider from `docker/elasticsearch/` and `docker/keycloak/`, which
 `extend` the infra slices' services and state only the stack's differences (ADR 066). Run the

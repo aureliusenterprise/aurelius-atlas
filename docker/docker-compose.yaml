@@ -17,7 +17,8 @@
 # apps/aurelius-atlas-server/docker/, the webapp from apps/aurelius-atlas-webapp/docker/, the
 # extractor from apps/aurelius-atlas-data2model/docker/, the lineage API from
 # apps/aurelius-atlas-lineage-model/docker/, the validator from apps/aurelius-atlas-validate-entity/docker/,
-# the embedder from apps/aurelius-atlas-embedder/docker/, the store from docker/elasticsearch/, the
+# the agent front door from apps/aurelius-atlas-mcp/docker/, the embedder from
+# apps/aurelius-atlas-embedder/docker/, the store from docker/elasticsearch/, the
 # identity provider from docker/keycloak/, and the telemetry (collector, Prometheus, Loki, Tempo,
 # Grafana, DD-675) from docker/observability/. Compose merges them by service name into this one
 # project; a relative path in a fragment reads from the fragment's own folder. The fragments are not a
@@ -25,7 +26,7 @@
 name: aurelius-atlas-standalone
 
 include:
-    # The seven app pieces read their certificate and sample folders through a
+    # The eight app pieces read their certificate and sample folders through a
     # required variable (DD-687). stack.env holds the repository's own answers
     # (no secret) so the README and CI commands need no extra argument; an install
     # overrides them with its own .env (docker/.env.example).
@@ -42,6 +43,8 @@ include:
     - path: ../apps/aurelius-atlas-validate-entity/docker/compose.yaml
       env_file: stack.env
     - path: ../apps/aurelius-atlas-embedder/docker/compose.yaml
+      env_file: stack.env
+    - path: ../apps/aurelius-atlas-mcp/docker/compose.yaml
       env_file: stack.env
     # The three infra pieces keep their literal ./certs paths (no default to
     # remove). The 17.3 bundle mirrors this tree, so the literal still names the

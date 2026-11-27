@@ -1,0 +1,47 @@
+# The standalone stack's MCP piece, included by ../../../docker/docker-compose.yaml (ADR 065).
+# Relative paths read from this file's folder; the service name is the stack's, so keep it.
+# The agent front door (21.1, ADR 072): twelve catalogue tools over the Model Context Protocol,
+# every one forwarding the caller's own bearer token. In the stack an MCP client reaches it through
+# the webapp's nginx under /mcp (DD-894), so like the server and its validators it shares the proxy's
+# network: its issuer is https://localhost:9000/auth, the address the browser and the agent both use,
+# which is the issuer its bearer check compares. The caller-side audience is the browser's public
+# client by design (AUX-04, DV-75) — an agent mints the token the browser mints, and that token
+# stops at the app's gate. The app forwards it, unchanged, to the stack's server (localhost:21000)
+# and verdicts API (localhost:21003) — both certificates cover localhost. This app has NO credential
+# of its own: no client secret, no token URL, no OTel client (DV-208, DD-893). It publishes no port.
+# Its own e2e stack (../e2e/, increment 21.3) extends this service and states the e2e differences.
+# MCP_IMAGE names the image (compose-time variable, like SAMPLE_ZIP: not a .env setting).
+# Unset, it is the `nx docker-build` tag (ADR 065: the stack builds, never pulls). An install that
+# ships published images sets it to the registry reference or a digest.
+# MCP_CERTS_DIR names the certificate folder and carries no default: an install names it, so the
+# stack holds no repository-relative path an outside deployment inherits by mistake. A relative value
+# reads from this file's folder, so `../certs` is this project's `nx certgen` folder. The repository
+# names it in stack.env; the e2e stack extends this service and reads the same value.
+name: aurelius-atlas-standalone
+
+services:
+    aurelius-atlas-mcp:
+        image: ${MCP_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-mcp:local}
+        # In the proxy's network: the issuer it verifies is the browser's address, localhost:9000,
+        # the webapp's nginx reaches it on 127.0.0.1:21005 (its /mcp location), and its two legs
+        # reach the server and the verdicts API on 127.0.0.1 — both certificates cover localhost.
+        network_mode: service:proxy
+        environment:
+            AURELIUS_ATLAS_MCP_LOG_LEVEL: info
+            # HTTPS with this project's certificate (`nx certgen`); the healthcheck verifies it.
+            AURELIUS_ATLAS_MCP_TLS_CERT_FILE: /certs/aurelius-atlas-mcp.pem
+            AURELIUS_ATLAS_MCP_TLS_KEY_FILE: /certs/aurelius-atlas-mcp-key.pem
+            # The stack's issuer, behind the proxy: POST /mcp verifies the caller's bearer token (MCP-02).
+            # The audience is the browser's public client, a literal (AUX-04).
+            AURELIUS_ATLAS_MCP_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_MCP_AUTH_REALM: aurelius-atlas
+            AURELIUS_ATLAS_MCP_AUTH_AUDIENCE: aurelius
+            AURELIUS_ATLAS_MCP_AUTH_CA_FILE: /certs/ca.pem
+            # The two catalogue legs (MCP-03): both ride the stack's services, in the proxy's network
+            # on 127.0.0.1 — the name localhost is in their certificates. Each call carries the
+            # caller's own token; there is no secret here to name (DV-208, DD-893), and no OTel
+            # identity to mint: the app exports no OTLP (ADR 072).
+            AURELIUS_ATLAS_MCP_SERVER_BASE_URL: https://localhost:21000
+            AURELIUS_ATLAS_MCP_VALIDATE_ENTITY_BASE_URL: https://localhost:21003
+        volumes:
+            - ${MCP_CERTS_DIR:?name the MCP certificate folder}:/certs:ro

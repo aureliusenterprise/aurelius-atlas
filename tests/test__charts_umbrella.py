@@ -83,6 +83,7 @@ def test__certificates_reference_the_umbrella_issuer(umbrella_docs: list[dict[st
         "atlas-data2model",
         "atlas-lineage-model",
         "atlas-validate-entity",
+        "atlas-mcp",  # the agent front door's leaf (21.2, MCP-20, DD-895)
         "atlas-observability",  # the collector's cluster-names-only leaf (CHT-36)
         "atlas-observability-loki",  # the mesh leaves (CHT-134, DD-655)
         "atlas-observability-tempo",
@@ -553,13 +554,14 @@ def test__every_consumer_names_the_imported_realm(umbrella_docs: list[dict[str, 
     assert yaml.safe_load(webapp["data"]["config.json"])["keycloak"]["realm"] == realm
 
     # CHT-111 (10.12): the auth realm is a realm-bearing env too — the server
-    # and the three aux APIs verify against the imported realm, never a
-    # static literal.
+    # and the aux APIs verify against the imported realm, never a static
+    # literal.
     for kind, name, prefix, container_name in (
         ("Deployment", "atlas-server", "AURELIUS_ATLAS_SERVER_", "server"),
         ("Deployment", "atlas-data2model", "AURELIUS_ATLAS_DATA2MODEL_", "data2model"),
         ("Deployment", "atlas-lineage-model", "AURELIUS_ATLAS_LINEAGE_MODEL_", "lineage-model"),
         ("Deployment", "atlas-validate-entity", "AURELIUS_ATLAS_VALIDATE_ENTITY_", "validate-entity"),
+        ("Deployment", "atlas-mcp", "AURELIUS_ATLAS_MCP_", "mcp"),  # 21.2, MCP-20
     ):
         workload = find(umbrella_docs, kind, name)
         auth_realm = env_value(env_map(container(workload, container_name)), f"{prefix}AUTH_REALM")
