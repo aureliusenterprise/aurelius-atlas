@@ -87,6 +87,23 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.38 | History attribute restore | `apps/aurelius-atlas-webapp` | HST (DD-822) |
 | 7.39 | History change tables | `apps/aurelius-atlas-webapp` | HST (DD-823) |
 | 7.40 | History definition diff | `apps/aurelius-atlas-webapp` | HST (DD-825) |
+| 7.41 | Editor drops the term-assignment picker | `apps/aurelius-atlas-webapp` | EDT-36 (EDT-13 amended, DD-828, DV-193) |
+| 7.42 | Webapp test harness | `apps/aurelius-atlas-webapp` | none (proves AVS-01/06, EDT-09; DD-868) |
+| 7.43 | Section config split | `apps/aurelius-atlas-webapp` | none (proves DET-16/56..66, VCF-10/18; DD-869) |
+| 7.44 | Search keeps its layers | `apps/aurelius-atlas-webapp` | none (proves EDT-09, VDE-01, WFE-02; DD-870) |
+| 7.45 | Stores hold failures, screens alert | apps/aurelius-atlas-webapp | none (proves SDX-01, DET-13/18; DD-871) |
+| 7.46 | History pane leaves the editor drawer | apps/aurelius-atlas-webapp | none (proves HST-01..16, LR-002/005; DD-872) |
+| 7.47 | Type field leaves the editor drawer | apps/aurelius-atlas-webapp | none (proves EDT-04, DD-330; DD-873) |
+| 7.48 | Governance banner leaves the editor drawer | apps/aurelius-atlas-webapp | none (proves EDT-24, VEV-09; DD-874) |
+| 7.49 | Field controls leave the editor drawer | apps/aurelius-atlas-webapp | none (proves EDT-03, EDT-20; DD-875) |
+| 7.50 | Compliance Chart box leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-54, DD-849; DD-877) |
+| 7.51 | Layout's first row leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-15/DET-16, DD-518; DD-878) |
+| 7.52 | Stats bar leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-24, DET-40; DD-879) |
+| 7.53 | Chips row leaves the details header | apps/aurelius-atlas-webapp | none (proves DET-09, VDR-12; DD-880) |
+| 7.54 | Properties accordion leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-11, DD-154; DD-881) |
+| 7.55 | Side navigation leaves the details screen | apps/aurelius-atlas-webapp | none (proves DET-25, DD-381; DD-882) |
+| 7.56 | Shared chrome labels move to one module | apps/aurelius-atlas-webapp | none (proves UIC-21, UIC-34; DD-883) |
+| 7.57 | Lineage leaves search/ and gets a barrel | apps/aurelius-atlas-webapp | none (proves LDG-09/25; DD-884) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
@@ -127,3 +144,6 @@ This table is the reference for a move: it fixes the home before files are touch
 | 19.5 | A server whose routes state their dependencies | `specs/19-5-server-routes/` + `apps/aurelius-atlas-server` | SVC |
 | 19.6 | An editor that reports its own outcome | `specs/19-6-webapp-editor/` + `apps/aurelius-atlas-webapp` | WFE |
 | 19.7 | Small deletions | `specs/19-7-small-deletions/` + `libs/python/aurelius-atlas-core` | PAR |
+| 21.1 | The catalogue answers agents through MCP | `apps/aurelius-atlas-mcp` | MCP |
+| 21.2 | The front door deploys with the cluster and the stack | `apps/aurelius-atlas-mcp` + `apps/aurelius-atlas-webapp` + `docker/` + `helm/` | MCP |
+| 21.3 | The chain proves the front door live | `apps/aurelius-atlas-mcp` | MCP |
