@@ -1,7 +1,7 @@
 # 11.6 The similarity cut-off
 
 - **Status:** planned
-- **Pull request:** –
+- **Pull request:** [#495](https://github.com/aureliusenterprise/aurelius-atlas/pull/495)
 - **Records:** DD-901 to DD-903 (in [design.md](./design.md)); amends 16.4's ASV-03 to ASV-05 (DD-597)
   and 11.4's SBM-02 and SBM-03 (DD-441) while a cut-off is set; relies on 11.2 (the embedder's model,
   DD-429), 11.3 (VEC, the cosine vector field)
